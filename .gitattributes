@@ -1,0 +1,5 @@
+# The whole game is one 7,700-line index.html. Every file in the project is
+# currently LF, and it is pinned that way on purpose: if a Windows editor were
+# allowed to write CRLF, a one-line change would show up as a whole-file diff
+# and the history would stop being readable.
+* text=auto eol=lf

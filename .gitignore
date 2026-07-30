@@ -1,0 +1,18 @@
+# Claude Code per-machine settings. The shared .claude/settings.json, if one is
+# ever added, SHOULD be tracked - this file is the local override and is not.
+.claude/settings.local.json
+
+# tools/check.py bytecode
+__pycache__/
+*.py[cod]
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
