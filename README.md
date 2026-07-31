@@ -22,8 +22,8 @@ narration controls rather than offering dead buttons.
 4. Open `https://<you>.github.io/<repo>/`
 
 `index.html` is at the repository root, which is what `/root` above means. Pages
-needs the repo public on a free account — and that publishes `CLAUDE.md` and
-`docs/` along with the game.
+needs the repo public on a free account, which is why the working notes live in a
+separate private repository — see **Read first** below.
 
 Hosting matters for more than convenience: `localStorage` is unreliable over
 `file://`, so save-and-resume only works properly on a served page. Students on
@@ -55,9 +55,14 @@ git config core.hooksPath .githooks
 
 ## Read first
 
-- `CLAUDE.md` — conventions, invariants, and the bug classes that recurred
-- `docs/BUILD_PLAN.md` — status, settled decisions, phase order, open questions
-- `docs/CHAPTER_2_DESIGN.md` — the original Chapter II design (§1–8 still stand)
+This repository is the game. The project's standing instructions, build plan and
+design documents are kept in a **separate private repository** — they are candid
+working notes rather than published material, and this one has to be public for
+Pages to serve it.
+
+If you are working on the code, open the notes repository alongside this one and
+read its `CLAUDE.md` before proposing changes. It carries the conventions, the
+invariants, and the bug classes that recurred; re-deriving them costs real time.
 
 ## Where things stand
 
