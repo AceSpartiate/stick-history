@@ -1,0 +1,11 @@
+{
+  "name": "Stick History — Jamestown",
+  "short_name": "Stick History",
+  "description": "A browser history game for 6th–8th grade Social Studies. Jamestown, 1607.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#17130c",
+  "theme_color": "#17130c"
+}

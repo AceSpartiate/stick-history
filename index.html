@@ -2,8 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Stick History — Jamestown</title>
+<!-- Add to Home Screen. On a phone this is what turns a link into something that
+     opens fullscreen with no address bar and no browser chrome eating the top of
+     the screen - which on a game played in portrait is a third of the viewport.
+     There are deliberately NO icons: an icon is a PNG, and this project's whole
+     discipline is that it ships no image assets. iOS falls back to a snapshot of
+     the page, which is honest enough for a test build. -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#17130c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stick History">
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
 <style>
   :root{--ink:#17130c;--parch:#e7dabb;--parch-2:#d8c69e;--vellum:#f0e6cd;
@@ -55,6 +67,16 @@
   #title canvas{display:block;margin:0 auto .8em;border-radius:8px}
   #title .menu{display:flex;flex-direction:column;gap:.6em;max-width:280px;margin:0 auto}
   #title .tag{margin:1.3em auto 0;color:rgba(224,218,187,.4);font-size:.8rem;font-style:italic;max-width:330px}
+  /* Shown only inside an app's built-in browser. A link opened from Messenger or
+     Instagram runs in a WebView with no speech engine, so the read-aloud simply
+     does nothing - and a player has no way to know that is the app's fault and
+     not the game's. Say so, and say how to fix it. */
+  #inapp{display:none;max-width:330px;margin:0 auto 1em;padding:.7em .85em;
+    border:1px solid rgba(176,141,62,.55);border-radius:6px;
+    background:rgba(176,141,62,.14);color:var(--parch);
+    font-size:.86rem;line-height:1.45;text-align:left}
+  #inapp.on{display:block}
+  #inapp b{font-family:'IM Fell English SC',serif;color:var(--gold-bright);display:block;margin-bottom:.2em}
 
   #intro{align-items:center;justify-content:center;padding:24px}
   #intro .card{max-width:400px;width:100%;padding:28px 24px}
@@ -362,12 +384,13 @@
       <h1>Stick History</h1>
       <div class="sub">Jamestown</div>
       <div class="yr">CHAPTER I · 1606–1607</div>
+      <div id="inapp"></div>
       <div class="menu">
         <button class="btn wide" id="btnContinue" style="display:none">Continue</button>
         <button class="btn wide" id="btnBegin">Begin the Voyage</button>
         <button class="btn ghost wide" id="btnWardrobe1">Wardrobe</button>
         <button class="btn ghost wide" id="btnCodex1">Historian's Notes</button>
-        <button class="btn ghost wide" id="btnAdmin" style="opacity:.6;font-size:.9rem">Admin</button>
+        <button class="btn ghost wide" id="btnAdmin" style="display:none;opacity:.6;font-size:.9rem">Admin</button>
       </div>
       <div class="tag">Aboard a reconstruction of the Susan Constant. Question the crew, and prove what you learned to earn what your figure wears.</div>
     </div>
@@ -6014,7 +6037,11 @@ $("btnBegin").onclick=function(){
      overwriting somebody's afternoon. */
   if(hasSave()&&!confirm("Begin again? The run you have kept will be discarded."))return;
   clearSave();
-  if(S.admin){openChapters();return;}
+  /* This used to divert to the chapter picker whenever S.admin was set - and
+     S.admin persists, and is carried in the save AND the muster code. So one
+     curious tester typing the code could never start the game normally again;
+     the only way back was erasing their progress. Begin begins. The chapter
+     picker has its own button. */
   openIntro("ch1");
 };
 $("btnContinue").onclick=function(){
@@ -8565,6 +8592,44 @@ function openChapters(){
   $("mChapters").classList.add("on");
 }
 function toastMenu(m){$("adminMsg").textContent=m;}
+/* ========== "IT DOESN'T READ ALOUD" IS USUALLY NOT THE GAME ==========
+   A link tapped inside Messenger, Instagram, Facebook or Gmail does not open the
+   phone's browser - it opens a WebView inside that app. Android WebView has no
+   Web Speech API at all, so narration is silently absent, and the player has no
+   way to know that is the app's doing rather than a broken game.
+
+   Two signals, either of which is enough: a user-agent that names a known in-app
+   browser, or no speech engine on a touch device (a real mobile browser always
+   has one). Both are cheap and neither is load-bearing - the worst case is a
+   banner someone did not need. */
+const IN_APP=/(FBAN|FBAV|FB_IAB|Instagram|Line\/|Twitter|GSA\/|MicroMessenger|; ?wv\))/i.test(navigator.userAgent||"");
+const TOUCH=("ontouchstart" in window)||(navigator.maxTouchPoints||0)>0;
+function warnInAppBrowser(){
+  const el=$("inapp");
+  if(!el)return;
+  if(!(IN_APP||(!SPEECH_OK&&TOUCH)))return;
+  const ios=/iPad|iPhone|iPod/i.test(navigator.userAgent||"");
+  el.innerHTML="<b>Open this in your browser</b>You are in an app's built-in viewer, "+
+    "where reading aloud cannot work. Tap the "+(ios?"share or ⋯ button and choose <b style='display:inline'>Open in Safari</b>"
+                                                    :"⋮ menu and choose <b style='display:inline'>Open in browser</b>")+
+    " — everything else works either way.";
+  el.classList.add("on");
+}
+warnInAppBrowser();
+
+/* ---- the Admin button is for whoever built this, not for testers ----
+   It sat on the title screen for everyone, which for a build being handed round
+   to friends is an invitation to poke at chapter select and skip the game. It is
+   hidden unless the URL asks for it:
+
+       .../index.html?admin
+
+   so the teacher has a one-character route in and nobody else sees it. The code
+   is still required after that. */
+if(/(^|[?&#])admin\b/i.test(location.search+location.hash)){
+  const ab=$("btnAdmin");
+  if(ab)ab.style.display="inline-flex";
+}
 $("btnAdmin").onclick=openAdmin;
 $("adminGo").onclick=tryAdmin;
 $("adminCancel").onclick=function(){$("mAdmin").classList.remove("on");};
