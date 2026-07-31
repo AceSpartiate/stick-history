@@ -1392,9 +1392,9 @@ function buildFigureRaw(eq){
      And a neck. There was none - the jaw sat straight on the collar, which is
      most of why the head read as a block balanced on a block. */
   B.oct(0,0,1.33,1.455,0.135,0.145,0.165,0.175,0.30,shadeRGB(SK,0.80),SK);
-  B.oct(0,0,1.44,1.575,0.315,0.395,0.385,0.395,0.34,HEADC,HEADC);   /* jaw */
-  B.oct(0,0,1.575,1.715,0.385,0.395,0.385,0.395,0.34,HEADC,HEADC);  /* temples */
-  B.oct(0,0,1.715,1.835,0.385,0.395,0.285,0.305,0.34,HEADC,HEADC);  /* crown */
+  B.oct(0,0,1.44,1.575,0.315,0.395,0.385,0.395,0.34,HEADC,HEADC,0.90);   /* jaw */
+  B.oct(0,0,1.575,1.715,0.385,0.395,0.385,0.395,0.34,HEADC,HEADC,0.90);  /* temples */
+  B.oct(0,0,1.715,1.835,0.385,0.395,0.285,0.305,0.34,HEADC,HEADC,0.90);  /* crown */
   B.oct(0,-0.01,1.80,1.875,0.395,0.405,0.34,0.35,0.34,RGB(0x4e3a26),RGB(0x42301f));
   B.box(0,0.80,0,0.22,thin,thin,SK);
   if(fkey)addFace(B,extra,fkey);
@@ -1405,7 +1405,7 @@ function buildFigureRaw(eq){
      The pivot stays at y=0, so the animation is untouched. */
   const arm=function(L){
     L.oct(0,0,-0.52,0,limbW*0.78,limbW*0.80,limbW*1.06,limbW*1.06,0.34,
-          shadeRGB(sleeveCol,0.94),sleeveCol);
+          shadeRGB(sleeveCol,0.94),sleeveCol,0.82);
     if(cuffCol!==null){
       L.oct(0,0,-0.515,-0.445,limbW*1.30,limbW*1.30,limbW*1.22,limbW*1.22,0.34,cuffCol,cuffCol);
       L.oct(0,0,-0.60,-0.505,thin*1.02,thin*1.02,thin*1.14,thin*1.14,0.34,shadeRGB(SK,0.90),SK);
@@ -1413,11 +1413,11 @@ function buildFigureRaw(eq){
   };
   const leg=function(L){
     /* thigh into calf into ankle */
-    L.oct(0,0,-0.44,0,thin*1.14,thin*1.16,thin*1.30,thin*1.30,0.34,stockCol,stockCol);
+    L.oct(0,0,-0.44,0,thin*1.14,thin*1.16,thin*1.30,thin*1.30,0.34,stockCol,stockCol,0.88);
     L.oct(0,0,-0.78,-0.44,thin*0.94,thin*0.98,thin*1.14,thin*1.16,0.34,
-          shadeRGB(stockCol,0.90),stockCol);
+          shadeRGB(stockCol,0.90),stockCol,0.88);
     if(breechCol!==null){
-      L.oct(0,0,-breechLen,0,0.196,0.206,0.222,0.232,0.32,breechCol,breechCol);
+      L.oct(0,0,-breechLen,0,0.196,0.206,0.222,0.232,0.32,breechCol,breechCol,0.86);
       L.oct(0,0,-breechLen-0.045,-breechLen+0.005,0.180,0.190,0.196,0.206,0.32,
             breechIsWool?WOOL_T:breechCol,breechIsWool?WOOL_T:breechCol);
     }
@@ -1430,7 +1430,7 @@ function buildFigureRaw(eq){
 
   if(T==="torso_doublet"){
     /* waist 0.295 to chest 0.365: a doublet was cut to do exactly this */
-    B.oct(0,0,0.98,1.44,0.295,0.225,0.365,0.265,0.30,shadeRGB(WOOL_D,0.90),WOOL_D);
+    B.oct(0,0,0.98,1.44,0.295,0.225,0.365,0.265,0.30,shadeRGB(WOOL_D,0.90),WOOL_D,0.78);
     B.oct(0,0,0.85,0.99,0.395,0.290,0.355,0.265,0.28,WOOL_D,shadeRGB(WOOL_D,0.94));
     B.box(0,1.445,0.01,0.47,0.05,0.32,LINEN);
     B.box(0,1.44,0.16,0.26,0.05,0.16,LINEN);
@@ -1442,7 +1442,7 @@ function buildFigureRaw(eq){
     B.box(-0.215,0.90,0.05,0.115,0.14,0.08,RGB(0x7a5433));
     B.box(-0.215,0.965,0.05,0.125,0.05,0.09,RGB(0x63431f));
   } else if(T==="torso_buffcoat"){
-    B.oct(0,0,1.00,1.44,0.315,0.235,0.385,0.275,0.30,shadeRGB(BUFF,0.90),BUFF);
+    B.oct(0,0,1.00,1.44,0.315,0.235,0.385,0.275,0.30,shadeRGB(BUFF,0.90),BUFF,0.78);
     B.box(0,0.94,0,0.44,0.20,0.30,RGB(0xb09062));
     B.box(0,1.00,0,0.46,0.06,0.31,RGB(0x6b4a2f));
     B.box(0,1.20,0.15,0.07,0.60,0.03,RGB(0x5a3d26),0.5);
@@ -1450,14 +1450,14 @@ function buildFigureRaw(eq){
     B.box(-0.215,1.395,0,0.11,0.09,0.26,RGB(0xa2814f));
     B.box(0.215,1.395,0,0.11,0.09,0.26,RGB(0xa2814f));
   } else if(T==="torso_merchant"){
-    B.oct(0,0,0.98,1.44,0.290,0.220,0.365,0.265,0.30,shadeRGB(FINE,0.88),FINE);
+    B.oct(0,0,0.98,1.44,0.290,0.220,0.365,0.265,0.30,shadeRGB(FINE,0.88),FINE,0.78);
     B.oct(0,0,0.865,1.00,0.385,0.280,0.350,0.260,0.28,FINE,shadeRGB(FINE,0.94));
     B.box(0,1.445,0.01,0.52,0.05,0.34,LINEN);
     B.box(0,1.44,0.17,0.30,0.05,0.18,LINEN);
     for(let i=0;i<11;i++)B.box(0,1.02+i*0.04,0.128,0.034,0.034,0.034,RGB(0xd8b25a));
     B.box(0,0.99,0,0.37,0.05,0.27,RGB(0x53381f));
   } else {
-    B.oct(0,0,0.91,1.41,0.272,0.212,0.322,0.246,0.30,shadeRGB(CLOTH,0.90),CLOTH);
+    B.oct(0,0,0.91,1.41,0.272,0.212,0.322,0.246,0.30,shadeRGB(CLOTH,0.90),CLOTH,0.78);
     B.oct(0,0,1.365,1.435,0.322,0.246,0.335,0.252,0.30,CLOTH,CLOTH);
     B.box(0,1.425,0.05,0.17,0.05,0.13,LINEN);
     B.box(0,0.94,0,0.32,0.05,0.245,RGB(0x6b4a2a));
@@ -1784,7 +1784,16 @@ Geo.prototype.beam8=function(a,b,w0,w1,col0,col1){
    28 triangles against a box's 12 - and triangles were never this project's
    constraint. Draw calls were, and this adds none: it all merges into the same
    Geo the boxes went into. */
-Geo.prototype.oct=function(cx,cz,y0,y1,w0,d0,w1,d1,cham,col0,col1){
+/* `flank` (optional, default 1) darkens the facets that face along the body's
+   WIDTH - the +X and -X sides - leaving front and back at full value, with the
+   four corner chamfers taking the halfway figure so the falloff is gradual.
+
+   This is occlusion, not light, which is why it can be baked at all: a figure
+   turns, so a lit side would be a lie the moment he faced the other way. But a
+   torso's flanks are genuinely more enclosed than its front, because the arms
+   hang there - and that stays true whichever way he stands. It is the fix for
+   arms reading as part of the torso whenever both take the same dye. */
+Geo.prototype.oct=function(cx,cz,y0,y1,w0,d0,w1,d1,cham,col0,col1,flank){
   const c0=col0, c1=col1||col0;
   const ring=function(w,d){
     const hx=w/2, hz=d/2, c=Math.min(hx,hz)*cham;
@@ -1794,9 +1803,15 @@ Geo.prototype.oct=function(cx,cz,y0,y1,w0,d0,w1,d1,cham,col0,col1){
   const A=ring(w0,d0), B=ring(w1,d1);
   const mid=[cx,(y0+y1)/2,cz];
   const P=function(R,i,y){return [cx+R[i][0],y,cz+R[i][1]];};
+  /* facet 1 is +Z front and 5 is -Z back; 3 and 7 are the flanks; the rest are
+     the corner chamfers between them */
+  const f=(flank===undefined)?1:flank, h=(1+f)/2;
+  const W=[h,1,h,f,h,1,h,f];
   for(let i=0;i<8;i++){
     const j=(i+1)%8;
-    quadOut4(this,P(A,i,y0),P(A,j,y0),P(B,j,y1),P(B,i,y1),c0,c0,c1,c1,mid);
+    const k=W[i];
+    const a=(k===1)?c0:shadeRGB(c0,k), b=(k===1)?c1:shadeRGB(c1,k);
+    quadOut4(this,P(A,i,y0),P(A,j,y0),P(B,j,y1),P(B,i,y1),a,a,b,b,mid);
   }
   /* caps, fanned from vertex 0 */
   for(let i=1;i<7;i++){
@@ -2389,8 +2404,44 @@ function buildFittings(root){
 }
 
 
+/* ========== BAKING THE SHADOW THE HULL CANNOT CAST ==========
+   three.js hemisphere and directional lights are not occluded by anything, so the
+   hold was lit as though the deck above it were not there: a uniform warm wash in
+   which the two hanging lamps counted for nothing at all. Shadow maps are the
+   wrong answer on a Chromebook and this project has no textures, so the timber is
+   PAINTED with the shadow instead - per vertex, at build time, nothing per frame.
+
+   Darker toward the hull sides, because a lamp hangs on the centreline, and
+   darker again into the ends, because that is where it does not reach. The point
+   lights then read as pools rather than as a tint on an already-lit room. */
+Geo.prototype.shade=function(fn){
+  const p=this.p, c=this.c;
+  for(let i=0;i<c.length;i+=3){
+    const m=fn(p[i],p[i+1],p[i+2]);
+    if(m===1)continue;
+    c[i]*=m;c[i+1]*=m;c[i+2]*=m;
+  }
+  return this;
+};
+function belowDecks(lampZs,base,deckY,lampY){
+  const span=Math.max(1,(lampY===undefined?8*K:lampY)-(deckY===undefined?0:deckY));
+  return function(x,y,z){
+    let m=base;
+    const hb=Math.max(1,halfBeam(z,y));
+    m*=1-0.34*Math.min(1,Math.abs(x)/hb);
+    let d=1e9;
+    for(let i=0;i<lampZs.length;i++)d=Math.min(d,Math.abs(z-lampZs[i]));
+    m*=1-0.40*Math.min(1,d/(26*K));
+    /* A lamp hangs from the deckhead, so the DECK is the furthest thing in the
+       room from it. Without this the tops of the cargo were as dark as their
+       sides and the whole hold read as one warm mass. */
+    if(deckY!==undefined)m*=0.78+0.36*Math.min(1,Math.max(0,(y-deckY)/span));
+    return m;
+  };
+}
+
 /* ========== INTERIOR HELPERS ========== */
-function planks(root,z0,z1,y,inset,col1,col2){
+function planks(root,z0,z1,y,inset,col1,col2,shadeFn){
   const g=new Geo(),c1=RGB(col1),c2=RGB(col2);
   for(let z=z0;z<z1;z+=4.6*K){
     const zn=Math.min(z+4.6*K,z1);
@@ -2405,14 +2456,25 @@ function planks(root,z0,z1,y,inset,col1,col2){
       g.quad([x00,y,z],[x01,y,z],[x11,y,zn],[x10,y,zn],col);
     }
   }
+  if(shadeFn)g.shade(shadeFn);
   root.add(g.mesh(false,true));
 }
-function beams(root,z0,z1,y,col){
+/* One mesh for the whole deckhead. This used to emit a separate box() per beam -
+   about twenty meshes a deck, four decks, every one of them its own draw call for
+   a piece of timber that never moves. Merged it is one, and being vertex-coloured
+   it can take the bake as well. */
+function beams(root,z0,z1,y,col,shadeFn){
+  const g=new Geo(), c=RGB(col), up=shadeRGB(c,0.66);
   for(let z=z0;z<z1;z+=4*K){
     const hbw=halfBeam(z,y);
     if(hbw<1)continue;
-    const b=box(hbw*2,0.7*K,0.8*K,col);b.position.set(0,y-0.5*K,z);root.add(b);
+    /* Lit underside, dark top. The lamps hang BELOW a deckhead beam, so its
+       soffit is the face that catches them and the shoulder against the deck
+       above is the face that never does. */
+    g.oct(0,z,y-0.85*K,y-0.15*K,hbw*2,0.8*K,hbw*2,0.8*K,0.14,c,up);
   }
+  if(shadeFn)g.shade(shadeFn);
+  root.add(g.mesh(false,false));
 }
 function wallSeg(root,x,z,w,d,y,h,col,lvl,noSolid){
   const b=box(w,h,d,col);b.position.set(x,y+h/2,z);root.add(b);
@@ -2494,17 +2556,32 @@ function buildInnerShell(root){
       quad([-hb(z,y0),y0,z],[hb(z,y0),y0,z],[hb(z,y1),y1,z],[-hb(z,y1),y1,z]);
     }
   }
+  /* The inner hull is the largest surface on every deck below the main, and it
+     was one flat colour top to bottom - so a hull that runs from bilge to
+     deckhead read as a wall of even paint. Vertex-coloured with a height ramp:
+     black in the bilge where no lamp has ever reached, lifting toward the
+     deckhead. Same mesh, same one draw call, no texture. */
+  const BASE=0x3b2d1b, yTop=topAt(0)-0.6*K;
+  const cols=new Float32Array(v.length);
+  for(let i=0;i<v.length;i+=3){
+    const t=Math.min(1,Math.max(0,(v[i+1]-yA)/Math.max(1,yTop-yA)));
+    const c=RGB(BASE), m=0.34+0.92*Math.pow(t,0.85);
+    cols[i]=c[0]*m;cols[i+1]=c[1]*m;cols[i+2]=c[2]*m;
+  }
   const g=new THREE.BufferGeometry();
   g.setAttribute("position",new THREE.Float32BufferAttribute(v,3));
+  g.setAttribute("color",new THREE.Float32BufferAttribute(cols,3));
   g.computeVertexNormals();
-  root.add(new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:lin(0x3b2d1b),side:THREE.DoubleSide})));
+  root.add(new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide})));
 }
 
 /* ========== THE HOLD ========== */
 function buildHoldLevel(root){
   const y=SHIP.HOLD_Y;
-  planks(root,SHIP.Z_BOW+10*K,SHIP.Z_STERN-8*K,y,0.7*K,0x4a3a24,0x40321e);
-  beams(root,SHIP.Z_BOW+10*K,SHIP.Z_STERN-8*K,SHIP.TWEEN_Y,0x3a2c1a);
+  /* the two lamps this space actually has, so the bake agrees with the lights */
+  const SH=belowDecks([-13*K,16*K],0.60,SHIP.HOLD_Y,SHIP.HOLD_Y+5.4*K);
+  planks(root,SHIP.Z_BOW+10*K,SHIP.Z_STERN-8*K,y,0.7*K,0x4a3a24,0x40321e,SH);
+  beams(root,SHIP.Z_BOW+10*K,SHIP.Z_STERN-8*K,SHIP.TWEEN_Y,0x3a2c1a,SH);
   const HG=new Geo(),cBal=RGB(0x5a5a55),cC1=RGB(0x6a4f2c),cC2=RGB(0x5e4626);
   for(let z=SHIP.Z_BOW+12*K;z<SHIP.Z_STERN-10*K;z+=3.4*K)HG.box(0,y+0.3*K,z,5*K,0.9*K,3*K,cBal);
   for(let z=SHIP.Z_BOW+14*K;z<SHIP.Z_STERN-12*K;z+=5.2*K){
@@ -2515,7 +2592,7 @@ function buildHoldLevel(root){
       solid(sd*hbw,z,1.5*K,1.5*K,LVL.HOLD);
     }
   }
-  root.add(HG.mesh(false,false));
+  root.add(HG.shade(SH).mesh(false,false));
   lamp(root,0,y+5.4*K,-13*K,22,true);
   lamp(root,0,y+5.4*K,16*K,20);
 }
@@ -2524,8 +2601,10 @@ function buildHoldLevel(root){
 /* ========== THE GUN DECK ========== */
 function buildTweenLevel(root){
   const y=SHIP.TWEEN_Y;
-  planks(root,SHIP.Z_BOW+5*K,SHIP.Z_STERN-4*K,y,0.7*K,0x6b5433,0x5d4a2e);
-  beams(root,SHIP.Z_BOW+5*K,SHIP.Z_STERN-4*K,SHIP.DECK_Y,0x46341f);
+  /* lighter than the hold: eight gunports let real daylight onto this deck */
+  const SH=belowDecks([-14*K,-4.5*K,5*K,15*K],0.80,SHIP.TWEEN_Y,SHIP.TWEEN_Y+5*K);
+  planks(root,SHIP.Z_BOW+5*K,SHIP.Z_STERN-4*K,y,0.7*K,0x6b5433,0x5d4a2e,SH);
+  beams(root,SHIP.Z_BOW+5*K,SHIP.Z_STERN-4*K,SHIP.DECK_Y,0x46341f,SH);
   /* Passengers berthed in the ends. A gun crew needs the whole width to run a
      piece in and out, so nobody slept beside the ports. */
   const BG2=new Geo(),cBunk=RGB(0x7a6039),cPost=RGB(0x46341f),cRoll=RGB(0x8a7f66),cRoll2=RGB(0x7f7460),cChest=RGB(0x54432a);
@@ -2548,7 +2627,7 @@ function buildTweenLevel(root){
     BG2.box(0,y+0.9*K,z,2.4*K,1.8*K,3.4*K,cChest);
     solid(0,z,1.4*K,1.9*K,LVL.TWEEN);
   }
-  root.add(BG2.mesh(false,false));
+  root.add(BG2.shade(SH).mesh(false,false));
   /* eight pieces, four a side, run out at their ports */
   CANNONS.length=0;
   for(let i=0;i<GUN_Z.length;i++){
