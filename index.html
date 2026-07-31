@@ -1868,6 +1868,23 @@ function deckHeight(x,z,lvl){
 let renderer,scene,cam,player,playerParts,clock,labelHost;
 let camYaw=0,camPitch=0.30,camDist=30,camHeight=17;
 let camZoom=30;const ZOOM_MIN=0,ZOOM_MAX=52,FP_AT=4.5;
+/* ========== RECOIL, AND A BUG THAT HID THE WHOLE SHOT ==========
+   `camKick` was written in six places and DECLARED IN NONE. This file is strict
+   mode, so every one of those writes threw a ReferenceError - and the one in
+   discharge() sits on the third line, which means the entire firing path after it
+   never ran. No trace, no fall of shot, no impact mark, no hit on a target, no
+   consequence for hitting a man. The piece has never actually fired a ball.
+
+   It also broke the count during a flogging, the arrow that lands near you in the
+   ambush, and the beats where Archer and Morton are hit.
+
+   check.py could not have caught it: check 6 looks for calls to undefined
+   FUNCTIONS, and this is a write to an undeclared variable. A check for that has
+   been added.
+
+   Declared here, and actually wired to the camera below - it was plainly meant to
+   be recoil, and recoil is also the evidence that something left the barrel. */
+let camKick=0;
 let LOOK_AT=0;                    /* when the player last moved the camera */
 /* ========== JUMPING ==========
    Deliberately modest: about 1.8 units, which against a six-unit figure is
@@ -3089,7 +3106,7 @@ function setGunCarried(on){
   /* IN HANDS MEANS SIGHTING DOWN IT. First person already falls out of the camera
      code at camDist < FP_AT, and openDrill proved the mechanism, so this reuses it
      rather than inventing a mode. The previous zoom is put back on slinging. */
-  if(on&&gunEarned()){
+  if(on){
     if(GUN.savedZoom===undefined)GUN.savedZoom=camZoom;
     setZoom(0);
     buildGunModel();
@@ -4203,11 +4220,11 @@ function animate(){
     animT+=dt*(running?17:10);
   } else animT+=dt*1.4;
 
-  updateFx(dt);updateReload(dt);updateDrill(dt);updateShadows();
+  updateFx(dt);updateReload(dt);updateBlow(dt);updateDrill(dt);updateShadows();
   /* IN HANDS MEANS SIGHTING DOWN IT. Held here rather than only set on pick-up, so
      the zoom buttons and the pinch cannot quietly pull the player back out to third
      person while a loaded piece is at their shoulder. */
-  if(gunInHands()&&gunEarned()&&!CS.active&&!LESSON.on&&camZoom>0)setZoom(0);
+  if(gunInHands()&&!CS.active&&!LESSON.on&&camZoom>0)setZoom(0);
   const amp=moving?0.75:0.06,sw=Math.sin(animT)*amp;
   if(playerParts){playerParts.la.rotation.x=sw;playerParts.ra.rotation.x=-sw;
     playerParts.ll.rotation.x=-sw;playerParts.rl.rotation.x=sw;}
@@ -4245,6 +4262,17 @@ function animate(){
     const cy=py+camHeight*t+camDist*Math.sin(camPitch);
     cam.position.lerp(new THREE.Vector3(cx,cy,cz),Math.min(1,dt*7));
     cam.lookAt(px,py+(below?3.4:5)*t+3.2*(1-t),pz);
+  }
+  /* Recoil. Applied AFTER the lookAt, so it jolts the whole view rather than being
+     smoothed away by the camera's own easing. Ten pounds of iron going off three
+     inches from your cheek should be felt, and it is the plainest possible evidence
+     that something actually left the barrel. */
+  if(camKick>0){
+    camKick=Math.max(0,camKick-dt*0.9);
+    const a=camKick;
+    cam.position.x+=(Math.random()-0.5)*a*22;
+    cam.position.y+=(Math.random()*0.7+0.3)*a*22;   /* muzzle rises, it does not dip */
+    cam.position.z+=(Math.random()-0.5)*a*22;
   }
 
   let best=null,bd=1e9;
@@ -6638,6 +6666,8 @@ const G_HINT={
   ready:"Drag to aim. Hold still and the sway settles. The match must be bright."
 };
 let TARGETS=[],gunPiece=null,gunFlask=null,gunRammer=null,gunStream=null,gunCoal=null;
+/* the stowed scouring stick, and the ball going down the bore - see buildGunModel */
+let gunRamStow=null,gunBall=null;
 /* Three poses, not two.
    load  - muzzle raised, so powder and ball go down it
    port  - held across the body, loaded but not presented
@@ -6747,6 +6777,27 @@ function buildGunModel(){
   gunRammer=R.mesh(false,false);gunRammer.visible=false;gunPiece.add(gunRammer);
   const St=new Geo();St.box(0,0,0.14,0.016,0.016,0.30,RGB(0x2b2b30));
   gunStream=St.mesh(false,false);gunStream.visible=false;gunPiece.add(gunStream);
+  /* ---- THE THINGS THAT WERE NEVER THERE TO SEE ----
+     Reported from play: "I never saw a ramrod get removed, I never saw a ball be
+     physically dropped down into the barrel."
+
+     Both were true. The scouring stick simply appeared in mid-air at the muzzle
+     when the ram step began, because there was nothing representing it AT REST -
+     so it could not be seen to come from anywhere. And there was no ball at all;
+     the step was a button and a delay.
+
+     STOWED RAMMER: where it actually lived, in a pipe under the barrel. Visible
+     whenever the working stick is not, so the eye sees it leave and return.
+     THE BALL: an ounce of lead, dropped down the muzzle and swallowed. */
+  const Rs=new Geo();
+  Rs.box(0,-0.075,-2.45,0.026,0.026,3.10,RGB(0x8a7048));      /* the stick, stowed */
+  Rs.box(0,-0.075,-0.95,0.05,0.05,0.10,RGB(0x6b5433));        /* its head */
+  Rs.box(0,-0.062,-1.70,0.055,0.030,0.10,RGB(0x2b2b30));      /* the pipe holding it */
+  Rs.box(0,-0.062,-3.30,0.055,0.030,0.10,RGB(0x2b2b30));
+  gunRamStow=Rs.mesh(false,false);gunPiece.add(gunRamStow);
+  const B=new Geo();
+  B.oct(0,0,-0.045,0.045,0.09,0.09,0.09,0.09,0.5,RGB(0x8f8f97),RGB(0xb9b9c2));
+  gunBall=B.mesh(true,false);gunBall.visible=false;gunPiece.add(gunBall);
 }
 function openDrill(onHit){
   /* You cannot load what you are not holding. Kendall's lesson hands you
@@ -6851,15 +6902,43 @@ function updateReload(dt){
     refreshGunUI();
   }
 }
+/* ---- blowing the match, rather than wasting the shot ----
+   A cold match used to swallow the whole discharge: "Nothing. The match is dead",
+   the charge gone, and another thirty-eight seconds to find out why. That is a dead
+   end, not a lesson. Now the soldier does the obvious thing first - cups the cord
+   and blows it bright - and then fires. It costs a second and a half, which is the
+   right size of penalty, and you can SEE the coal come up. */
+const BLOW={on:false,t:0,then:false};
+function updateBlow(dt){
+  if(!BLOW.on)return;
+  if(!gunInHands()){BLOW.on=false;BLOW.then=false;return;}
+  BLOW.t+=dt;
+  GUN.glow=Math.min(1,GUN.glow+dt*0.72);
+  if(BLOW.t>=1.5){
+    BLOW.on=false;stopSfx();
+    if(BLOW.then){BLOW.then=false;giveFire();}
+    refreshGunUI();
+  }
+}
 /* ---- firing, from a mouse or from a button ---- */
 function tryFire(){
   if(GUN.active)return false;                 /* the taught drill has its own button */
-  if(!gunInHands()||!gunEarned())return false;
+  if(!gunInHands())return false;
   if(anyModalOpen()||CS.active||LESSON.on||paused)return false;
   if(RELOAD.on){toast("Still loading.");return false;}
+  if(BLOW.on)return false;
+  if(!gunEarned()){toast("Captain Kendall has not shown you the drill yet.");return false;}
   if(!GUN.hasBall||GUN.spent){
     toast(INPUT==="kbm"?"Empty — press R to load.":"Empty — tap Load.");
     return false;
+  }
+  if(GUN.glow<0.18){
+    /* blow first, then fire, rather than throwing the charge away */
+    BLOW.on=true;BLOW.t=0;BLOW.then=true;
+    playSfx("blow",0.12);
+    toast("The match is cold — blowing it bright.");
+    refreshGunUI();
+    return true;
   }
   giveFire();
   refreshGunUI();
@@ -7503,7 +7582,16 @@ function updateDrill(dt){
      the flask, stream, scouring stick and coal animate the same way they always
      did. Automatic was never meant to mean invisible. */
   if(!GUN.active&&!RELOAD.on&&!gunInHands())return;
-  GUN.glow=Math.max(0,GUN.glow-dt*0.018);
+  /* A real slow match is saltpetred cord that smoulders for HOURS - inches an
+     hour. 0.018 a second burned it out in under a minute, which was tuned for the
+     forty-second taught drill where keeping it alive is the tension. As a
+     persistent world state it silently disabled the gun: the piece loaded fine,
+     said "Nothing. The match is dead" in a toast easy to miss, and there was no way
+     to relight it short of another full reload.
+     Fast while you are actively loading, because that is where the lesson lives.
+     Slow while merely carrying her, because that is what cord does. */
+  const burn=(GUN.active||RELOAD.on)?0.018:0.0022;
+  GUN.glow=Math.max(0,GUN.glow-dt*burn);
   if(GUN.step==="ram"){
     GUN.ramT+=dt;
     const mk=$("gMark");
@@ -7527,7 +7615,13 @@ function updateDrill(dt){
      instead - your hands are still visibly full, which is the whole point of the
      time sink; you can just also see where you are going. */
   const walk=(RELOAD.on&&!GUN.active);
-  const OFF=walk?[0.30,-0.62,0.30]:[0,0,0];
+  /* Pulled aside LESS during the steps that have something to watch. Reported from
+     play: "I never saw the ramrod go up and down while in barrel" - and pushing the
+     whole piece into a corner to keep the view clear was working against exactly
+     that. Ball, wad and ram sit near enough to follow; powder, prime and carrying
+     her loaded get out of the way. */
+  const watch=(GUN.step==="ball"||GUN.step==="wad"||GUN.step==="ram");
+  const OFF=walk?(watch?[0.14,-0.30,0.14]:[0.30,-0.62,0.30]):[0,0,0];
   const ease=Math.min(1,dt*4.2);
   for(let i=0;i<3;i++){
     GUN.pose.p[i]+=((TGT.p[i]+OFF[i])-GUN.pose.p[i])*ease;
@@ -7595,14 +7689,55 @@ function updateDrill(dt){
   if(gunRammer){
     const show=(GUN.step==="ram"||GUN.step==="wad")&&grounded;
     gunRammer.visible=show;
+    /* THE STICK COMES FROM SOMEWHERE. Its stowed copy hides exactly when the
+       working one appears, so the eye sees it drawn from the pipe under the barrel
+       and put back afterwards, instead of materialising at the muzzle. */
+    if(gunRamStow)gunRamStow.visible=!show;
     if(show){
-      GUN.ramAnim=Math.max(0,GUN.ramAnim-dt*3.2);
+      /* THE STROKE, DURING THE AUTOMATIC RELOAD TOO. gRamStrike drove ramAnim on
+         each manual tap; the automatic sequence tapped nothing, so the stick sat
+         dead still in the bore - which is why the ramming was never seen to happen.
+         Four strokes across the ram stage, on a saw wave. */
+      if(RELOAD.on&&!GUN.active){
+        const st=RELOAD_STAGES[3];                       /* the ram stage */
+        let base=0; for(let i=0;i<3;i++)base+=RELOAD_STAGES[i].f;
+        const within=Math.max(0,Math.min(1,(RELOAD.t/RELOAD.dur-base)/st.f));
+        const STROKES=4;
+        const phase=(within*STROKES)%1;
+        GUN.ramAnim=1-phase;                             /* down, then drawn back */
+        /* one knock per stroke, at the bottom of each */
+        const strokeNo=Math.floor(within*STROKES);
+        if(GUN.ramHeard!==strokeNo&&phase>0.42&&phase<0.58){
+          GUN.ramHeard=strokeNo;playSfx("ram",0.34);
+        }
+      } else {
+        GUN.ramAnim=Math.max(0,GUN.ramAnim-dt*3.2);
+      }
       /* On the bore axis, sliding down it. With the butt grounded the bore runs
          upright, so this reads as the stroke it actually is - the stick driven
          down the barrel and drawn back - rather than a stick waved at a gun. */
       const insert=0.25+Math.sin(GUN.ramAnim*Math.PI)*1.75;
       gunRammer.position.set(G_BORE[0],G_BORE[1],G_BORE[2]+insert);
       gunRammer.rotation.set(0,0,0);
+    }
+  }
+  /* THE BALL, VISIBLY GOING IN. An ounce of lead held at the muzzle and swallowed
+     by it. Only during the ball step, and only while the piece is grounded so the
+     bore is upright and gravity reads correctly. */
+  if(gunBall){
+    const show=(GUN.step==="ball")&&grounded;
+    gunBall.visible=show;
+    if(show){
+      let k=0;
+      if(RELOAD.on&&!GUN.active){
+        let base=0; for(let i=0;i<1;i++)base+=RELOAD_STAGES[i].f;
+        k=Math.max(0,Math.min(1,(RELOAD.t/RELOAD.dur-base)/RELOAD_STAGES[1].f));
+      } else {
+        k=1-Math.max(0,Math.min(1,GUN.ballHold||0));
+      }
+      /* from a hand's breadth above the muzzle, down into it and out of sight */
+      const drop=0.55-k*0.85;
+      gunBall.position.set(G_BORE[0],G_BORE[1],G_BORE[2]+drop);
     }
   }
   gPaint();
@@ -9347,7 +9482,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260731-2011-1483243";
+const BUILD="20260731-2027-db7fa3d";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

@@ -96,6 +96,26 @@ for mm in re.finditer(r'\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)', t): dec.add(m
 # multi-declarations: const X=..., Y=...  (comma-splitting breaks on function
 # bodies, so match the ", NAME=" shape directly instead)
 for mm in re.finditer(r',\s*([A-Za-z_$][\w$]*)\s*=', t): dec.add(mm.group(1))
+# Comma-separated declarations with NO initialiser - `let renderer,scene,cam;` -
+# were invisible to the pattern above, which requires an `=`. Walk each
+# declaration list and take the leading identifier of every top-level comma part,
+# tracking bracket depth so a call or object inside an initialiser is not mistaken
+# for another declared name.
+for mm in re.finditer(r'\b(?:const|let|var)\s+([^;{}\n]*)', t):
+    depth, buf, parts = 0, "", []
+    for ch in mm.group(1):
+        if ch in "([":
+            depth += 1
+        elif ch in ")]":
+            depth -= 1
+        if ch == "," and depth == 0:
+            parts.append(buf); buf = ""
+        else:
+            buf += ch
+    parts.append(buf)
+    for p in parts:
+        m2 = re.match(r'\s*([A-Za-z_$][\w$]*)', p)
+        if m2: dec.add(m2.group(1))
 for mm in re.finditer(r'function\s*[A-Za-z_$\w]*\s*\(([^)]*)\)', t):
     for p in mm.group(1).split(","):
         p = p.strip()
@@ -118,6 +138,30 @@ HOST = {'Math','JSON','Object','Array','String','Number','Boolean','Date','Promi
         'URL','URLSearchParams','sessionStorage','localStorage','Intl','Symbol'}
 undef = sorted(called - dec - KW - HOST)
 ok("no undefined calls") if not undef else bad("undefined: %s" % undef)
+
+print("\n6b. No assignment to an undeclared variable")
+# The bug this exists for: `camKick` was written in six places and declared in
+# none. The file is strict mode, so every write threw a ReferenceError - and the
+# one in discharge() sits three lines in, so the whole firing path after it never
+# ran. The piece had never actually fired a ball, and check 6 could not see it
+# because that check looks for CALLS to undefined functions, not writes to
+# undeclared names.
+#
+# Only bare `name = ...` at a statement boundary counts. `a.b = ...`, `a[i] = ...`,
+# `==`, `===`, `!=`, `>=`, `<=`, `+=` and friends are all excluded, as are the
+# declaration keywords themselves.
+assigned = {}
+for mm in re.finditer(r'(?:^|[;{}\)]|\belse\b)\s*([A-Za-z_$][\w$]*)\s*=(?![=>])', t):
+    nm = mm.group(1)
+    if nm in KW or nm in HOST:
+        continue
+    assigned.setdefault(nm, t[:mm.start()].count("\n") + 1)
+wild = sorted(n for n in assigned if n not in dec)
+if not wild:
+    ok("every assignment targets a declared name")
+else:
+    bad("assigned but never declared (strict mode throws): %s"
+        % ", ".join("%s (~line %d of the script blocks)" % (n, assigned[n]) for n in wild))
 
 print("\n7. Cutscene steps are long enough for their narration")
 # csNext takes MAX(given, 2.6, spoken). Anything much over ~60s is a wall the
