@@ -5,11 +5,16 @@ Pre-flight checks for index.html.
 These exist because the same handful of mistakes kept shipping. Each check below
 corresponds to a bug that reached the player at least once. Run after any change:
 
-    python3 tools/check.py
+    python3 tools/check.py        (python tools/check.py on Windows)
 
-Exit code is non-zero if anything fails, so it can gate a commit.
+Exit code is non-zero if anything fails, so it can gate a commit - which is
+what .githooks/pre-commit does with it.
+
+Check 1 needs `node` on PATH; it is the only external dependency and it SKIPS
+rather than failing when node is absent, so checks 2-8 still run on a machine
+that has only Python.
 """
-import re, sys, os, subprocess, tempfile
+import re, sys, os, subprocess, tempfile, shutil
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC  = os.path.join(ROOT, "index.html")
@@ -21,11 +26,18 @@ def bad(msg):  print("  FAIL  " + msg); fail.append(msg)
 print("\n1. JavaScript parses")
 blocks = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', s, re.S)
 js = "\n".join(blocks)
-with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
-    f.write(js); tmp = f.name
-r = subprocess.run(["node", "--check", tmp], capture_output=True, text=True)
-os.unlink(tmp)
-ok("syntax") if r.returncode == 0 else bad("syntax:\n" + r.stderr)
+# node is the one thing here that is not Python. Without it this used to die on
+# a CreateProcess error and take checks 2-8 down with it - so a school machine
+# with no Node, or a commit hook running anywhere but this desk, lost every
+# check rather than one. Skip loudly instead.
+if shutil.which("node") is None:
+    print("  skip  node not on PATH — syntax unchecked (install Node.js to enable)")
+else:
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
+        f.write(js); tmp = f.name
+    r = subprocess.run(["node", "--check", tmp], capture_output=True, text=True)
+    os.unlink(tmp)
+    ok("syntax") if r.returncode == 0 else bad("syntax:\n" + r.stderr)
 
 print("\n2. Every interactable action is fully wired")
 # A new action needs a dispatcher branch AND a prompt verb. Missing either one

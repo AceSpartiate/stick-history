@@ -1,0 +1,33 @@
+#!/bin/sh
+# "Check before committing" - the README's instruction, enforced rather than
+# remembered. tools/check.py exits non-zero if any of its eight checks fail.
+#
+# This lives in .githooks/ (tracked) rather than .git/hooks/ (not tracked), so
+# it travels with the repository. A fresh clone still has to point git at it:
+#
+#     git config core.hooksPath .githooks
+#
+# To commit past a failure on purpose:  git commit --no-verify
+
+root=$(git rev-parse --show-toplevel) || exit 1
+
+# Find a python that actually RUNS. `command -v python3` is not enough on
+# Windows: there is an App Execution Alias at WindowsApps/python3.exe that
+# resolves fine, then prints "Python was not found; run without arguments to
+# install from the Microsoft Store" and exits non-zero. Trusting the name meant
+# the fallback to `python` was never reached and every commit died. So each
+# candidate is probed before it is believed.
+py=""
+for c in python3 python py; do
+  if command -v "$c" >/dev/null 2>&1 && "$c" -c "import sys" >/dev/null 2>&1; then
+    py=$c
+    break
+  fi
+done
+
+if [ -z "$py" ]; then
+  echo "pre-commit: no working python interpreter — skipping tools/check.py" >&2
+  exit 0
+fi
+
+exec "$py" "$root/tools/check.py"
