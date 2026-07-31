@@ -812,14 +812,199 @@ function checkpoint(why){
    A school Chromebook on Monday and a home laptop on Tuesday are two different
    stores. A code they can write down or paste crosses that gap, is period-
    appropriate, and doubles as something a teacher can collect. */
+/* ========== THE INSIGHT REGISTRY ==========
+   Every insight in the game, collected by walking the content that declares it -
+   the same trick `CH.targets` already uses, so a registry cannot drift from the
+   dialogue the way a hand-maintained list would.
+
+   Built LAZILY, because most of what it walks (SERJEANT, CAPE_DOC,
+   SEALED_INSIGHT) is declared thousands of lines further down the file and would
+   be in the temporal dead zone at parse time. Nothing calls this until the player
+   asks for a code, which is long after everything exists.
+
+   This is what makes the muster code small: an insight can travel as its INDEX
+   instead of as its title and a paragraph of prose. */
+let _INS=null;
+function insightReg(){
+  if(_INS)return _INS;
+  const list=[], at={};
+  const add=function(i){
+    if(!i||!i.b||at[i.b]!==undefined)return;
+    at[i.b]=list.length;list.push(i);
+  };
+  const walk=function(n){
+    if(!n)return;
+    (n.beats||[]).forEach(function(b){(b.choices||[]).forEach(function(c){add(c.insight);});});
+    if(n.bonus)add(n.bonus.insight);
+  };
+  try{
+    CH.npcs.forEach(walk);
+    add(CH.steal.note); add(CH.charter.insight);
+    walk(typeof SERJEANT!=="undefined"?SERJEANT:null);
+    if(typeof CAPE_DOC!=="undefined")add(CAPE_DOC.insight);
+    if(typeof SEALED_INSIGHT!=="undefined")add(SEALED_INSIGHT);
+    if(typeof PROVED_INSIGHT!=="undefined")add(PROVED_INSIGHT);
+    if(typeof BELL_INSIGHT!=="undefined")add(BELL_INSIGHT);
+  }catch(e){}
+  _INS={list:list,at:at};
+  return _INS;
+}
+/* every id the game can record as "met", in a stable order */
+function metReg(){
+  const ids=[];
+  CH.npcs.forEach(function(n){ids.push(n.id);});
+  CH.idlers.forEach(function(n){ids.push(n.id);});
+  if(typeof CAPE_PEOPLE!=="undefined")CAPE_PEOPLE.forEach(function(n){ids.push(n.id);});
+  ids.push("kendall");
+  if(typeof SHORE_TASKS!=="undefined")
+    SHORE_TASKS.forEach(function(g){g.names.forEach(function(nm){
+      ids.push("crowd_"+nm.replace(/\s+/g,"_"));});});
+  return ids;
+}
+
+/* ---- the muster code: localStorage is per-device, and a student is not ----
+   A school Chromebook on Monday and a home laptop on Tuesday are two different
+   stores. A code they can write down or paste crosses that gap, is period-
+   appropriate, and doubles as something a teacher can collect.
+
+   IT HAS TO BE SHORT TO BE ANY OF THAT. The first version was the whole save
+   blob, base64'd: 12,024 characters at full progress, which is not a code, it is
+   a document. Nobody writes that down and nobody pastes it on a phone without
+   losing a character.
+
+   What made it enormous was prose. `S.codex` carries the full text of every
+   insight, and each title appeared THREE times over - in codex, in codexKeys and
+   as a key of S.insight. So insights travel as indices into the registry above,
+   in discovery order, and all three are rebuilt from that one list. Unlocks,
+   faces, palettes, equipment and met-people are indices too.
+
+   Voice preferences are deliberately dropped: they name a speech engine installed
+   on one particular device, so carrying them to another is meaningless.
+
+   This is a TRANSFER format, not the save format. `saveBlob` is untouched and
+   still stores everything verbatim - a student's own progress on their own
+   machine is not the place to be clever. */
+const MUSTER_V=2;
+function idxList(keysObj,set){
+  const keys=Object.keys(keysObj), out=[];
+  for(let i=0;i<keys.length;i++)if(set.has(keys[i]))out.push(i);
+  return out;
+}
+function musterBlob(){
+  const R=insightReg(), MET=metReg();
+  /* insights in the order they were discovered, so the codex reads back the same */
+  const ins=[];
+  (S.codex||[]).forEach(function(e){ if(R.at[e.b]!==undefined)ins.push(R.at[e.b]); });
+  /* anything flagged in S.insight but somehow not in the codex still travels */
+  for(const k in S.insight)
+    if(S.insight[k]&&R.at[k]!==undefined&&ins.indexOf(R.at[k])<0)ins.push(R.at[k]);
+  const eqKeys=["palette","cloak","torso","accessory","head","build","face"];
+  const dyeKeys=["torso","breech","stock","cloak","head"];
+  const pal=Object.keys(PALETTES), cos=Object.keys(COSMETICS), fac=Object.keys(FACES);
+  const met=[];
+  for(let i=0;i<MET.length;i++)if(S.met&&S.met[MET[i]])met.push(i);
+  /* one integer for all the one-bit facts */
+  let b=0, bit=1;
+  [S.shotAMan,S.killedAMan,S.boxOpened,S.smithRecognised,S.heardKendall,
+   S.ambushFired,(typeof AMBUSH!=="undefined")&&AMBUSH.done,S.shipNote,
+   S.chapterDone,S.firedGun,S.admin,
+   S.chartSeen&&S.chartSeen.ch1,S.chartSeen&&S.chartSeen.ch2
+  ].forEach(function(f){ if(f)b|=bit; bit*=2; });
+  return {
+    v:MUSTER_V,
+    w:(typeof CURRENT_WORLD!=="undefined"&&CURRENT_WORLD)||"ch1",
+    k:S.ink||0, c:S.corrections||0, r:S.reckTries||0, b:b,
+    i:ins,
+    u:idxList(COSMETICS,S.unlocked), p:idxList(PALETTES,S.paletteUnlocked),
+    f:idxList(FACES,S.faces),
+    e:eqKeys.map(function(key){
+        const tbl=(key==="palette")?pal:(key==="face")?fac:cos;
+        return Math.max(0,tbl.indexOf(S.equip[key]));
+      }),
+    d:dyeKeys.map(function(key){return Math.max(0,pal.indexOf(dyeId(S.equip,key)));}),
+    m:met,
+    fl:CH.npcs.map(function(n){return S.flawless[n.id]?1:0;}),
+    te:CH.npcs.map(function(n){return S.talkErr[n.id]||0;}),
+    it:S.items&&S.items.matchlock?S.items.matchlock:"",
+    ia:S.itemAt&&S.itemAt.matchlock?(function(a){
+        return [a.world,Math.round(a.x),Math.round(a.z),Math.round(a.y),a.lvl,+(a.rot||0).toFixed(2)];
+      })(S.itemAt.matchlock):0,
+    inc:(S.incidents||[]).map(function(x){return [x.kind==="killed"?1:0,x.who,x.world];}),
+    rk:S.reportedKendall||0, as:S.ambushShots||0
+  };
+}
+function applyMuster(d){
+  if(!d||d.v!==MUSTER_V)return false;
+  try{
+    const R=insightReg(), MET=metReg();
+    const pal=Object.keys(PALETTES), cos=Object.keys(COSMETICS), fac=Object.keys(FACES);
+    S.ink=d.k||0; S.corrections=d.c||0; S.reckTries=d.r||0;
+    /* rebuild all three insight structures from the one ordered list */
+    S.insight={}; S.codex=[]; S.codexKeys=new Set();
+    (d.i||[]).forEach(function(ix){
+      const e=R.list[ix];
+      if(!e)return;
+      S.insight[e.b]=true;
+      if(!S.codexKeys.has(e.b)){S.codexKeys.add(e.b);S.codex.push(e);}
+    });
+    S.unlocked=new Set((d.u||[]).map(function(i){return cos[i];}).filter(Boolean));
+    ["none_cloak","none_torso","none_acc","none_head","build_normal"]
+      .forEach(function(k){S.unlocked.add(k);});
+    S.paletteUnlocked=new Set((d.p||[]).map(function(i){return pal[i];}).filter(Boolean));
+    S.paletteUnlocked.add("ink");
+    S.faces=new Set((d.f||[]).map(function(i){return fac[i];}).filter(Boolean));
+    const eqKeys=["palette","cloak","torso","accessory","head","build","face"];
+    if(!S.equip)S.equip={};
+    S.equip.skin="english";
+    (d.e||[]).forEach(function(ix,n){
+      const key=eqKeys[n]; if(!key)return;
+      const tbl=(key==="palette")?pal:(key==="face")?fac:cos;
+      if(tbl[ix])S.equip[key]=tbl[ix];
+    });
+    S.equip.dye={};
+    ["torso","breech","stock","cloak","head"].forEach(function(key,n){
+      S.equip.dye[key]=pal[(d.d||[])[n]]||"ink";
+    });
+    S.met={};
+    (d.m||[]).forEach(function(i){ if(MET[i])S.met[MET[i]]=true; });
+    S.flawless={}; S.talkErr={};
+    CH.npcs.forEach(function(n,i){
+      if((d.fl||[])[i])S.flawless[n.id]=true;
+      if((d.te||[])[i])S.talkErr[n.id]=(d.te||[])[i];
+    });
+    S.items=d.it?{matchlock:d.it}:{};
+    S.itemAt={};
+    if(d.ia&&d.ia.length===6)
+      S.itemAt.matchlock={world:d.ia[0],x:d.ia[1],z:d.ia[2],y:d.ia[3],lvl:d.ia[4],rot:d.ia[5]};
+    S.incidents=(d.inc||[]).map(function(x){
+      return {kind:x[0]?"killed":"wounded",who:x[1],world:x[2]};});
+    const b=d.b||0, bit=function(n){return !!(b&(1<<n));};
+    S.shotAMan=bit(0); S.killedAMan=bit(1); S.boxOpened=bit(2);
+    S.smithRecognised=bit(3); S.heardKendall=bit(4); S.ambushFired=bit(5);
+    if(typeof AMBUSH!=="undefined")AMBUSH.done=bit(6);
+    S.shipNote=bit(7); S.chapterDone=bit(8); S.firedGun=bit(9); S.admin=bit(10);
+    S.chartSeen={}; if(bit(11))S.chartSeen.ch1=true; if(bit(12))S.chartSeen.ch2=true;
+    S.reportedKendall=d.rk||null; S.ambushShots=d.as||0;
+    SAVED_WORLD=d.w||"ch1";
+    return true;
+  }catch(e){return false;}
+}
+/* base64url with a short human prefix, so a code is recognisable as one and a
+   pasted line break or stray space cannot break it */
 function musterCode(){
-  try{return btoa(unescape(encodeURIComponent(JSON.stringify(saveBlob()))));}
-  catch(e){return null;}
+  try{
+    const raw=btoa(unescape(encodeURIComponent(JSON.stringify(musterBlob()))));
+    return "SH2-"+raw.replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  }catch(e){return null;}
 }
 function readMusterCode(txt){
   try{
-    const d=JSON.parse(decodeURIComponent(escape(atob(String(txt).trim()))));
-    if(!applyBlob(d))return false;
+    let t=String(txt).replace(/\s+/g,"");
+    t=t.replace(/^SH2-/i,"");
+    t=t.replace(/-/g,"+").replace(/_/g,"/");
+    while(t.length%4)t+="=";
+    const d=JSON.parse(decodeURIComponent(escape(atob(t))));
+    if(!applyMuster(d))return false;
     saveGame();
     return true;
   }catch(e){return false;}
@@ -5404,8 +5589,7 @@ function ringBell(){
     if(bellMesh)bellMesh.rotation.z=0;
     /* Insights are keyed by their title and mirrored into the codex - the
        same shape the dialogue and the stolen note use. */
-    const bn={g:"known",b:"Bells, Not Hours",
-      s:"A ship's day runs in watches of four hours, struck in bells: one at each half hour, up to eight. Eight bells ends a watch. Nobody aboard is reading a clock."};
+    const bn=BELL_INSIGHT;
     if(!S.insight[bn.b]){
       S.insight[bn.b]=true;S.ink+=6;
       if(!S.codexKeys.has(bn.b)){S.codexKeys.add(bn.b);S.codex.push(bn);}
@@ -6464,8 +6648,7 @@ function gPaint(){
 function serjeantHit(inner,dist){
   if(S.insight["Proved the Piece"])return;
   S.insight["Proved the Piece"]=true;S.ink+=12;
-  const ins={g:"known",b:"Proved the Piece",
-    s:"A matchlock takes the better part of a minute to load and misses as often as it hits at fifty yards. The English relied on armour and on the ships' ordnance, not on marksmanship."};
+  const ins=PROVED_INSIGHT;
   if(!S.codexKeys.has(ins.b)){S.codexKeys.add(ins.b);S.codex.push(ins);}
   updateInk();
   /* This used to call closeDrill(), which ended the lesson on your first hit
