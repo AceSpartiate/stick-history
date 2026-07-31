@@ -70,6 +70,22 @@
   #viewport{position:relative;flex:1;min-height:0;overflow:hidden}
   #world{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
   #labels{position:absolute;inset:0;pointer-events:none;z-index:3}
+  /* ---- the vignette ----
+     Outstanding since Phase 1, and the cheapest thing left on the list: a static
+     gradient laid over the canvas by the COMPOSITOR. No second render pass, no
+     render target, and not one fragment of work for the GPU that is drawing the
+     scene - which is why it is the one post effect a Chromebook can have for
+     free. Two layers: a fall-off toward the edges, which is what a lens does and
+     what settles the eye on the middle of the frame, and a breath of warm light
+     from the top, which is where the sun is.
+     z-index 2 puts it over the canvas and under the labels, and pointer-events
+     none keeps it out of the way of the touch controls that sit at 4. */
+  #vig{position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:
+      radial-gradient(125% 105% at 50% 46%,
+        rgba(0,0,0,0) 40%, rgba(14,10,6,.20) 72%, rgba(9,7,4,.46) 100%),
+      radial-gradient(95% 62% at 50% 4%,
+        rgba(255,238,205,.06), rgba(255,238,205,0) 62%)}
   .lbl{position:absolute;transform:translate(-50%,-100%);font-family:'IM Fell English SC',serif;
     color:#f0e6cd;font-size:12px;text-shadow:0 1px 3px #000,0 0 8px #000;white-space:nowrap;text-align:center;line-height:1.25}
   .lbl b{display:block;font-weight:400} .lbl i{color:var(--gold-bright);font-style:normal;font-size:11px}
@@ -372,6 +388,7 @@
   <section id="scene" class="screen">
     <div id="viewport">
       <canvas id="world"></canvas>
+      <div id="vig"></div>
       <div id="labels"></div>
       <div id="hud">
         <div class="chip"><span id="hudChapter">Ch. I — Main Deck</span><small id="hudObj"></small></div>
