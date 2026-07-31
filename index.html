@@ -804,6 +804,27 @@ function loadedSave(){
 }
 function hasSave(){return !!loadedSave();}
 function clearSave(){try{if(window.localStorage)window.localStorage.removeItem(SAVE_KEY);}catch(e){}}
+/* ========== WHAT A NEW RUN RESETS, AND WHAT IT KEEPS ==========
+   The standing rule is that losing never costs the wardrobe: Ink, unlocks, faces,
+   the outfit and the Historian's Notes are yours for good - the drowning ending
+   says so in as many words. Everything that GATES a chapter's content has to go,
+   or you would begin Chapter I already knowing everything, with every colonist
+   marked as spoken to and the scrivener waiting on the first turn.
+
+   S.insight is the gate; S.codex is the notes. Resetting the first and keeping the
+   second is the whole point: you have read it, and you must still earn it again. */
+function newRun(){
+  S.insight={};
+  S.met={};S.flawless={};S.talkErr={};
+  S.items={};S.itemAt={};S.incidents=[];
+  S.shotAMan=false;S.killedAMan=false;
+  S.boxOpened=false;S.smithRecognised=false;
+  S.heardKendall=false;S.reportedKendall=null;
+  S.ambushFired=false;S.ambushShots=0;
+  S.shipNote=false;S.chapterDone=false;S.firedGun=false;
+  S.corrections=0;S.reckTries=0;S.chartSeen={};
+  if(typeof AMBUSH!=="undefined")AMBUSH.done=false;
+}
 /* named so the player knows what a checkpoint is: a boundary, not an autosave */
 function checkpoint(why){
   if(saveGame())toast("Progress kept \u2014 "+(why||"checkpoint")+".");
@@ -6241,9 +6262,13 @@ $("pauseTitle").onclick=function(){
 };
 $("btnBegin").onclick=function(){
   /* Beginning afresh discards a kept run, so say so rather than silently
-     overwriting somebody's afternoon. */
-  if(hasSave()&&!confirm("Begin again? The run you have kept will be discarded."))return;
+     overwriting somebody's afternoon - and say accurately WHAT is discarded, now
+     that the kept run is already in memory when this is pressed. */
+  if(hasSave()&&!confirm("Begin the voyage again?\n\nYour Ink, wardrobe and Historian's Notes are kept. Only this run's progress — who you have questioned, and how far you got — is discarded."))return;
   clearSave();
+  /* The save is loaded at boot now, so S holds the finished run at this point.
+     Without this the new voyage would start with every insight already known. */
+  newRun();
   /* This used to divert to the chapter picker whenever S.admin was set - and
      S.admin persists, and is carried in the save AND the muster code. So one
      curious tester typing the code could never start the game normally again;
@@ -8992,6 +9017,27 @@ function paintTitleFig(){
     })();
   }
 }
+/* ========== TAKE UP THE KEPT RUN AT BOOT ==========
+   The save used to be read into memory in exactly ONE place: the Continue button.
+   Everything else on the title screen - the Wardrobe, the Historian's Notes - was
+   therefore editing a blank slate while a real save sat on disk beside it. That is
+   why the two wardrobes did not agree: one showed the run, the other showed
+   nothing.
+
+   And it was not merely a display fault. afterEquip() calls saveGame(), so
+   touching the title-screen wardrobe wrote the empty in-memory state straight over
+   the player's progress. Measured before the fix: 140 Ink and six unlocks on disk,
+   0 and five in memory, and one click in that wardrobe destroyed the save.
+
+   So the run is loaded before anything can be shown. There is now one state, and
+   every screen is looking at it. */
+(function(){
+  try{
+    const d=loadedSave();
+    if(d)applyBlob(d);
+  }catch(e){}
+})();
+refreshContinue();
 paintTitleFig();
 
 updateInk();
