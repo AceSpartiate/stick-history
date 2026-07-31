@@ -1711,6 +1711,46 @@ function triOut4(G,a,b,c,ca,cb,cc,inside){
   if(nx*wx+ny*wy+nz*wz<0)G.tri3(a,c,b,ca,cc,cb);
   else G.tri3(a,b,c,ca,cb,cc);
 }
+/* ========== A TAPERED BEAM ALONG ANY AXIS ==========
+   `beam` is a square cross-section of constant width between two points, and it
+   is exactly why the merged shore party read as thirty-four posts once the real
+   figures grew forms. This is the same thing with an octagonal section that can
+   taper end to end, and per-vertex colour so a limb can be dark where it meets
+   the ground and light where it meets the sky.
+
+   Arbitrary axis matters: a crowd figure's arms and legs are angled and its hat
+   brim is horizontal, so Geo.oct - which runs y0 to y1 - cannot build them. The
+   frame is built the way beam already built it, from a reference up-vector that
+   flips when the axis is near vertical.
+
+   28 triangles against beam's 12, and it keeps the property that mattered: it is
+   all emitted into ONE shared Geo, so the whole shore party is still one draw
+   call. */
+Geo.prototype.beam8=function(a,b,w0,w1,col0,col1){
+  const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2];
+  const L=Math.hypot(dx,dy,dz)||1;
+  const d=[dx/L,dy/L,dz/L];
+  const up=(Math.abs(d[1])>0.9)?[1,0,0]:[0,1,0];
+  let u=[d[1]*up[2]-d[2]*up[1], d[2]*up[0]-d[0]*up[2], d[0]*up[1]-d[1]*up[0]];
+  const ul=Math.hypot(u[0],u[1],u[2])||1;u=[u[0]/ul,u[1]/ul,u[2]/ul];
+  const v=[d[1]*u[2]-d[2]*u[1], d[2]*u[0]-d[0]*u[2], d[0]*u[1]-d[1]*u[0]];
+  const c0=col0, c1=col1||col0;
+  const N=8, r0=w0/2, r1=(w1===undefined?w0:w1)/2;
+  const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2];
+  const P=function(o,r,i){
+    const ang=(i/N)*Math.PI*2+Math.PI/N;
+    const su=Math.cos(ang)*r, sv=Math.sin(ang)*r;
+    return [o[0]+u[0]*su+v[0]*sv, o[1]+u[1]*su+v[1]*sv, o[2]+u[2]*su+v[2]*sv];
+  };
+  for(let i=0;i<N;i++){
+    const j=(i+1)%N;
+    quadOut4(this,P(a,r0,i),P(a,r0,j),P(b,r1,j),P(b,r1,i),c0,c0,c1,c1,mid);
+  }
+  for(let i=1;i<N-1;i++){
+    triOut4(this,P(a,r0,0),P(a,r0,i),P(a,r0,i+1),c0,c0,c0,mid);
+    triOut4(this,P(b,r1,0),P(b,r1,i),P(b,r1,i+1),c1,c1,c1,mid);
+  }
+};
 /* ========== THE FORM PRIMITIVE ==========
    A tapered prism with its vertical corners cut off: independent width and depth
    at each end, and a chamfer that turns a square cross-section into a squared
@@ -7489,8 +7529,13 @@ const CROWD_COL={
   gent:   {cloth:0x4e6076, trim:0x3a2c1a, hat:0x2c2417, skin:0xd8b48c},
   soldier:{cloth:0x8a7a55, trim:0x4a3a26, hat:0x1d1d21, skin:0xd8b48c},
   trade:  {cloth:0xbdb39a, trim:0x6b5433, hat:0x1d1d21, skin:0xd8b48c},
-  labour: {cloth:0xa8a08a, trim:0x6f6552, hat:0x00000,  skin:0xd8b48c},
-  boy:    {cloth:0xc0b79c, trim:0x6f6552, hat:0x00000,  skin:0xd8b48c}
+  /* Bare-headed, and now it SAYS so. This read `hat:0x00000` - five digits, not
+     six - which evaluates to 0, which is falsy, which is why `if(C.hat)` skipped
+     it. The intent was right by accident: a malformed literal standing in for
+     "none", and a hat that genuinely wanted to be black would have been
+     unrepresentable. */
+  labour: {cloth:0xa8a08a, trim:0x6f6552, hat:null, skin:0xd8b48c},
+  boy:    {cloth:0xc0b79c, trim:0x6f6552, hat:null, skin:0xd8b48c}
 };
 /* one man, emitted as beams into a shared Geo. `pose` tilts him to his work. */
 function crowdMan(G,kind,x,y,z,yaw,pose){
@@ -7506,16 +7551,33 @@ function crowdMan(G,kind,x,y,z,yaw,pose){
   const stoop=(pose==="stoop")?0.30:(pose==="kneel")?0.55:0;
   const hip=1.02-stoop*0.55, sho=1.46-stoop*0.42;
   const lean=stoop*0.42;
-  G.beam(T(R(-0.09),0.02,0),T(R(-0.07),hip,0),R(0.16),RGB(C.trim));
-  G.beam(T(R(0.09),0.02,0),T(R(0.07),hip,0),R(0.16),RGB(C.trim));
-  G.beam(T(R(-0.02),hip,R(lean*0.2)),T(R(0.02),sho,R(lean)),R(0.30),RGB(C.cloth));
-  /* arms: reaching forward at a task, or down at rest */
+  /* Occlusion baked per part, the same way the pines get it: dark where a form
+     tucks under another or meets the ground, light where it is open to the sky.
+     On a figure with no animation and no separate meshes this is the only tool
+     there is for describing where one limb ends and the next begins. */
+  const cloth=RGB(C.cloth), trim=RGB(C.trim), skin=RGB(C.skin);
+  const clothLo=shadeRGB(cloth,0.70), trimLo=shadeRGB(trim,0.58);
+  const skinLo=shadeRGB(skin,0.74);
+  /* legs: ankle narrow into a thicker thigh, and darkest at the sand */
+  G.beam8(T(R(-0.09),0.02,0),T(R(-0.07),hip,0),R(0.125),R(0.185),trimLo,trim);
+  G.beam8(T(R(0.09),0.02,0),T(R(0.07),hip,0),R(0.125),R(0.185),trimLo,trim);
+  /* torso: waist into chest */
+  G.beam8(T(R(-0.02),hip,R(lean*0.2)),T(R(0.02),sho,R(lean)),R(0.255),R(0.325),clothLo,cloth);
+  /* arms: reaching forward at a task, or down at rest - shoulder into wrist */
   const ax=(pose==="stoop"||pose==="kneel")?R(0.34):R(0.06);
   const ay=(pose==="stoop"||pose==="kneel")?hip+0.10:hip-0.02;
-  G.beam(T(R(-0.17),sho-0.06,R(lean)),T(R(-0.13),ay,ax),R(0.13),RGB(C.cloth));
-  G.beam(T(R(0.17),sho-0.06,R(lean)),T(R(0.13),ay,ax),R(0.13),RGB(C.cloth));
-  G.beam(T(0,sho+0.02,R(lean)),T(0,sho+0.30,R(lean*1.3)),R(0.26),RGB(C.skin));
-  if(C.hat)G.beam(T(R(-0.14),sho+0.31,R(lean*1.3)),T(R(0.14),sho+0.31,R(lean*1.3)),R(0.13),RGB(C.hat));
+  G.beam8(T(R(-0.17),sho-0.06,R(lean)),T(R(-0.13),ay,ax),R(0.145),R(0.105),cloth,clothLo);
+  G.beam8(T(R(0.17),sho-0.06,R(lean)),T(R(0.13),ay,ax),R(0.145),R(0.105),cloth,clothLo);
+  /* a neck, then a head that is wider than it - the old single beam was a peg */
+  G.beam8(T(0,sho+0.01,R(lean)),T(0,sho+0.10,R(lean*1.1)),R(0.115),R(0.135),skinLo,skinLo);
+  G.beam8(T(0,sho+0.09,R(lean*1.1)),T(0,sho+0.32,R(lean*1.3)),R(0.215),R(0.245),skin,skin);
+  if(C.hat){
+    const hat=RGB(C.hat), hatLo=shadeRGB(hat,0.62);
+    /* a flat brim - a very short wide beam is a disc - and a crown above it,
+       rather than the horizontal roll that used to stand in for a hat */
+    G.beam8(T(0,sho+0.30,R(lean*1.3)),T(0,sho+0.335,R(lean*1.3)),R(0.42),R(0.40),hatLo,hat);
+    G.beam8(T(0,sho+0.325,R(lean*1.3)),T(0,sho+0.46,R(lean*1.4)),R(0.255),R(0.215),hat,hat);
+  }
 }
 const CROWD_ROLE={shallop:"carpenter, at the shallop",cross:"at the cross",
   guard:"on guard",idle:"gentleman",stores:"labourer",surgeon:"surgeon to the voyage",
@@ -7575,7 +7637,9 @@ function buildShoreParty(root){
       count++;
     }
   });
-  root.add(G.mesh(false,false));
+  /* smooth-shaded now the sections are octagonal, so a limb reads as round
+     rather than as eight flat strips */
+  root.add(G.mesh(true,false));
   return count;
 }
 
