@@ -111,7 +111,11 @@ HOST = {'Math','JSON','Object','Array','String','Number','Boolean','Date','Promi
         'cancelAnimationFrame','console','document','window','THREE','performance','alert',
         'Float32Array','Uint8Array','Error','RegExp','SpeechSynthesisUtterance','prompt',
         'AudioContext','webkitAudioContext','encodeURIComponent','decodeURIComponent',
-        'btoa','atob','escape','unescape','fetch','structuredClone'}
+        'btoa','atob','escape','unescape','fetch','structuredClone',
+        # browser globals, not project functions. This check exists to catch a
+        # mistyped function name of OURS; a standard constructor tripping it is the
+        # allowlist being short, not a fault in the game.
+        'URL','URLSearchParams','sessionStorage','localStorage','Intl','Symbol'}
 undef = sorted(called - dec - KW - HOST)
 ok("no undefined calls") if not undef else bad("undefined: %s" % undef)
 

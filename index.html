@@ -9041,6 +9041,40 @@ refreshContinue();
 paintTitleFig();
 
 updateInk();
+
+/* ========== PICKING UP A NEW BUILD WITHOUT BEING ASKED TO ==========
+   GitHub Pages serves index.html with a cache lifetime, so a tester can be playing
+   a copy from before the last fix and reporting bugs that are already mended. That
+   happened during this very session: the server had the fix and the browser was
+   still running the old file, which cost a round of confused debugging.
+
+   So the page asks. BUILD is stamped in at deploy time by tools/stamp.py, which
+   writes the same value to version.txt; if the file on the server says something
+   different, this copy is stale and reloads itself once.
+
+   Guarded three ways, because a reload loop would be far worse than a stale page:
+   the attempted version is recorded in sessionStorage so a given build is only ever
+   chased once per session; a failed or offline fetch does nothing at all; and the
+   reload carries ?v= so it cannot be answered from the same cache that caused it.
+   Existing query parameters are preserved, so ?admin survives an update. */
+const BUILD="20260731-1553-419fb6d";
+(function(){
+  try{
+    if(!window.fetch||location.protocol==="file:")return;
+    fetch("version.txt?t="+Date.now(),{cache:"no-store"}).then(function(r){
+      return r.ok?r.text():null;
+    }).then(function(t){
+      if(!t)return;
+      const latest=t.trim();
+      if(!latest||latest===BUILD)return;
+      if(sessionStorage.getItem("sh.build")===latest)return;   /* already tried */
+      sessionStorage.setItem("sh.build",latest);
+      const u=new URL(location.href);
+      u.searchParams.set("v",latest);
+      location.replace(u.toString());
+    }).catch(function(){});
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
