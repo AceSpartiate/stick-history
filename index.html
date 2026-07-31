@@ -618,10 +618,22 @@
     <div id="cineFade"></div>
   </div>
 
-  <div id="err"><div><h2>Could not load the 3D engine</h2><p>This game needs an internet connection the first time it runs, to fetch the three.js library.</p></div></div>
+  <div id="err"><div><h2>Could not load the 3D engine</h2><p>The file <b>three.min.js</b> should sit in the same folder as this page. If you were sent a single file on its own, ask for the whole folder — or open the online version, which always has it.</p></div></div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- Three.js r128, MIT, bundled rather than fetched. It used to come from cdnjs on
+     every run, which meant the game simply did not start on a network that blocks
+     that host - and school networks sometimes do - or on a phone with bad signal.
+     Bundled, the only thing needed after the first load is the page itself. -->
+<script src="three.min.js"></script>
+<script>
+/* And if the bundled copy is not beside index.html - someone emailed the HTML on
+   its own - fall back to the CDN. document.write during parsing is the one idiom
+   that loads a script SYNCHRONOUSLY at this point, which matters because the
+   game's own script runs immediately below and expects THREE to already exist. */
+if(typeof THREE==="undefined")
+  document.write('<scr'+'ipt src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/scr'+'ipt>');
+</script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
