@@ -3073,6 +3073,8 @@ function disposeWorld(){
      their materials; drop the references so the next world builds fresh ones */
   fxRoot=null;POOL.smoke=null;POOL.trace=null;POOL.impacts=null;POOL.arrows=null;
   CROWD_HITS.length=0;
+  /* the instanced shadows lived under worldRoot and went with it */
+  shadowMesh=null;SHADOW_CASTERS.length=0;
   ARROWS.length=0;FALLING.length=0;
   JUMP.y=0;JUMP.v=0;JUMP.air=false;
   /* the grounded item meshes lived under worldRoot and have gone with it; drop
@@ -3082,6 +3084,107 @@ function disposeWorld(){
   if(labelHost)labelHost.innerHTML="";
   return freed;
 }
+/* ========== CONTACT SHADOWS ==========
+   Every figure in this game floated. Nothing said a man was standing ON the sand
+   rather than in front of it, and that single missing cue is why the shore party
+   read as cardboard.
+
+   A real shadow map is the wrong tool here: it wants a depth pass over the whole
+   scene every frame, and the target is a Chromebook. The right tool - and what
+   games have shipped on weak hardware for twenty years - is a blob under each
+   figure. The trick is making it SOFT without a texture, which the standing
+   constraint forbids: r128 supports a four-component colour attribute
+   (USE_COLOR_ALPHA, verified in the console), so the falloff is per-vertex ALPHA
+   on a fan. Dark at the middle, fully transparent at the rim, no image involved.
+
+   All of them ride in ONE InstancedMesh: one draw call for thirty-nine people,
+   about fourteen triangles each. It is drawn with depthWrite off so the blobs
+   cannot fight each other where they overlap, and depthTest ON so a shadow is
+   properly hidden by a dune between it and the camera. */
+const SHADOW_MAX=96;
+let shadowMesh=null,SHADOW_CASTERS=[];
+const SH_M=new THREE.Matrix4();
+function shadowDisc(){
+  const SEG=14, pos=[], col=[];
+  const A=0.40;                    /* how dark under the middle of a man */
+  for(let i=0;i<SEG;i++){
+    const a0=i/SEG*Math.PI*2, a1=(i+1)/SEG*Math.PI*2;
+    pos.push(0,0,0, Math.cos(a1),0,Math.sin(a1), Math.cos(a0),0,Math.sin(a0));
+    col.push(0,0,0,A, 0,0,0,0, 0,0,0,0);
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));
+  /* itemSize 4 is what turns on vertex alpha - a 3-wide colour attribute would
+     silently drop the falloff and give hard-edged discs */
+  g.setAttribute("color",new THREE.Float32BufferAttribute(col,4));
+  return g;
+}
+function buildShadows(root){
+  SHADOW_CASTERS.length=0;
+  /* the player, then every real figure, then the merged crowd - who have no
+     mesh at all and would otherwise be the only men on the beach still floating */
+  /* The player is held by FLAG, not by reference: refreshPlayer() throws the
+     figure away and builds a new one on every wardrobe change, so a stored mesh
+     would leave a shadow standing where the old body was. */
+  SHADOW_CASTERS.push({player:true,r:1.75});
+  /* `y0` is recorded here rather than sampled per frame, and that is not just an
+     optimisation - it is a correctness fix for the ship. WORLD.ground aboard is
+     deckHeight(x,z), which reads the PLAYER's current level, so sampling it live
+     would drop every figure's shadow onto whichever deck the player happens to
+     be standing on: the crew of the hold would cast shadows on the main deck.
+     A standing figure never leaves the surface it was built on, so its own y at
+     build time IS its ground - and a man knocked onto his back keeps the shadow
+     where he fell rather than following his body down. */
+  for(let i=0;i<npcMeshes.length;i++)
+    if(npcMeshes[i].mesh)
+      SHADOW_CASTERS.push({mesh:npcMeshes[i].mesh,y0:npcMeshes[i].mesh.position.y,r:1.75});
+  for(let i=0;i<CROWD_HITS.length;i++){
+    const c=CROWD_HITS[i];
+    /* CROWD_HITS carries the hit sphere at chest height; the sand is 4.2 below */
+    SHADOW_CASTERS.push({x:c.x,z:c.z,y0:c.y-4.2,r:c.stooped?1.95:1.6});
+  }
+  if(!SHADOW_CASTERS.length)return 0;
+  shadowMesh=new THREE.InstancedMesh(shadowDisc(),
+    new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,
+      depthWrite:false,side:THREE.DoubleSide,toneMapped:false}),
+    Math.min(SHADOW_MAX,SHADOW_CASTERS.length));
+  shadowMesh.frustumCulled=false;
+  shadowMesh.renderOrder=1;
+  root.add(shadowMesh);
+  updateShadows();
+  return SHADOW_CASTERS.length;
+}
+/* The sun sits at (60,150,40) - about 64 degrees up - so a true projection would
+   throw the blob nearly three units out and read as detached. Offset a third of
+   that: enough to say which way the light comes from, not enough to look like a
+   separate object. */
+const SH_OFF=0.95, SH_DX=-0.83, SH_DZ=-0.55;
+function updateShadows(){
+  if(!shadowMesh)return;
+  const n=Math.min(SHADOW_MAX,SHADOW_CASTERS.length);
+  for(let i=0;i<n;i++){
+    const c=SHADOW_CASTERS[i];
+    const m=c.player?player:c.mesh;
+    let x,z,gy,lift=0;
+    if(c.player){
+      /* only the player moves, and only the player changes deck, so this is the
+         one caster whose ground has to be sampled live */
+      if(!m){shadowMesh.setMatrixAt(i,SH_M.makeScale(0,0,0));continue;}
+      x=m.position.x;z=m.position.z;gy=WORLD.ground(x,z);
+      lift=Math.max(0,m.position.y-gy);
+    } else if(m){
+      x=m.position.x;z=m.position.z;gy=c.y0;
+    } else {x=c.x;z=c.z;gy=c.y0;}
+    const y=gy+0.06;
+    const k=1/(1+lift*0.22);            /* smaller and softer the higher he is */
+    SH_M.makeScale(c.r*k,1,c.r*k);
+    SH_M.setPosition(x+SH_DX*SH_OFF,y,z+SH_DZ*SH_OFF);
+    shadowMesh.setMatrixAt(i,SH_M);
+  }
+  shadowMesh.count=n;
+  shadowMesh.instanceMatrix.needsUpdate=true;
+}
+
 function enterWorld(id){
   if(!WORLDS[id]){console.warn("no world '"+id+"'");return null;}
   disposeWorld();
@@ -3105,6 +3208,8 @@ function enterWorld(id){
   }
   placeGroundItems();
   dressCarried(player);
+  /* after the world builder, so npcMeshes and CROWD_HITS are populated */
+  buildShadows(worldRoot);
   refreshGunHud();
   /* a fresh world starts in daylight, whatever the last one ended in */
   DUSK.t=0;DUSK.on=false;AMBUSH.on=false;
@@ -3203,6 +3308,13 @@ function initRenderer(){
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure=1.05;
   clock=new THREE.Clock();
+  /* The sky follows the camera from here rather than from animate(), because
+     there are five render call sites - cutscene, camera lock, lesson, the main
+     path and assertBudget - and a dome that only re-centres on one of them
+     drifts during exactly the scenes that are framed most carefully. */
+  scene.onBeforeRender=function(r,s,camera){
+    if(skyDome&&camera)skyDome.position.copy(camera.position);
+  };
   window.addEventListener("resize",resize);
 }
 /* One render loop for the life of the page. Every world entry used to call
@@ -3364,7 +3476,7 @@ function animate(){
     animT+=dt*(running?17:10);
   } else animT+=dt*1.4;
 
-  updateFx(dt);updateDrill(dt);
+  updateFx(dt);updateDrill(dt);updateShadows();
   const amp=moving?0.75:0.06,sw=Math.sin(animT)*amp;
   if(playerParts){playerParts.la.rotation.x=sw;playerParts.ra.rotation.x=-sw;
     playerParts.ll.rotation.x=-sw;playerParts.rl.rotation.x=sw;}
@@ -7351,24 +7463,94 @@ const AMBUSH={on:false,t:0,phase:0,shots:0,fired:false,hits:0,done:false};
 const DUSK={t:0,on:false};
 const AMBUSH_LEN=40;
 /* the sky and the light at noon and at dusk, lerped between */
-const SKY_DAY={bg:0x9fb4bd,fog:0xa8bcc4,near:220,far:1150,hemi:0.90,sun:0.80,sunC:0xffe6bd};
-const SKY_DUSK={bg:0x2b3038,fog:0x39404a,near:70,far:520,hemi:0.30,sun:0.16,sunC:0xff9b5e};
+/* `bg` is the fallback flat colour behind the dome, and is kept in step with the
+   dome's horizon so any seam is invisible. `fog` follows the horizon too - that
+   coupling is the whole trick to a horizon that reads: distant geometry has to
+   dissolve into the SAME colour the sky is at that height, or the treeline ends
+   in a visible band. */
+/* Authored a little deeper and more saturated than the target, because ACES
+   lifts midtones: a measured 0x808080 leaves the framebuffer at 0x939393. */
+const SKY_DAY={bg:0xbec4bb,fog:0xbec4bb,near:220,far:1150,hemi:0.90,sun:0.80,sunC:0xffe6bd,
+  top:0x35688f, hor:0xbec4bb};
+const SKY_DUSK={bg:0x8a5a3a,fog:0x8a5a3a,near:70,far:520,hemi:0.30,sun:0.16,sunC:0xff9b5e,
+  top:0x141c28, hor:0x8a5a3a};
 let hemiLight=null,sunLight=null;
 function lerpHex(a,b,t){return mixHex(a,b,t);}
+
+/* ========== THE SKY ==========
+   `scene.background` is one flat colour, which is why the horizon was a seam
+   rather than a distance: pale sand met pale sky at a hard line and nothing in
+   the frame said which was further away. A gradient does most of the work that
+   an expensive sky usually does.
+
+   No texture, per the standing constraint - the gradient is VERTEX COLOURS on a
+   dome, repainted whenever the light changes. That is about 400 triangles and
+   ONE draw call, and it makes the dusk transition nearly free: the same lerp
+   that dims the lights also drives the sky from blue to a low orange band.
+
+   It is drawn with depthTest off at renderOrder -1, so it lays down first and
+   everything else paints over it. That means the radius is arbitrary - it can
+   never occlude anything - and it simply follows the camera so you can never
+   reach its edge. NOT parented to the camera: the gradient has to stay aligned
+   to WORLD up, or it would tilt with the pitch and the horizon would roll. */
+const SKY_SEG=20;
+let skyDome=null;
+function buildSkyDome(){
+  if(skyDome||!scene)return;
+  /* 16 height rings rather than 12: the ramp is the whole point, and vertex
+     colours interpolated across 15-degree bands read as printed steps */
+  const g=new THREE.SphereGeometry(60,SKY_SEG,16);
+  g.setAttribute("color",new THREE.Float32BufferAttribute(
+    new Float32Array(g.attributes.position.count*3),3));
+  skyDome=new THREE.Mesh(g,new THREE.MeshBasicMaterial({
+    vertexColors:true,side:THREE.BackSide,fog:false,
+    depthTest:false,depthWrite:false,toneMapped:true}));
+  skyDome.renderOrder=-1;
+  skyDome.frustumCulled=false;
+  scene.add(skyDome);
+}
+/* repaint the gradient for a given dusk fraction */
+function paintSky(k){
+  if(!skyDome)return;
+  const top=lerpHex(SKY_DAY.top,SKY_DUSK.top,k);
+  const hor=lerpHex(SKY_DAY.hor,SKY_DUSK.hor,k);
+  const p=skyDome.geometry.attributes.position;
+  const c=skyDome.geometry.attributes.color;
+  for(let i=0;i<p.count;i++){
+    /* height on the dome, 0 at the horizon and 1 overhead. Below the horizon it
+       stays horizon-coloured, so looking down over a rail shows sky rather than
+       a dark hemisphere. */
+    const t=Math.max(0,Math.min(1,p.getY(i)/60));
+    /* a power curve, because a linear sky gradient reads as a printed ramp -
+       the real thing changes fast near the horizon and slowly overhead */
+    const h=lerpHex(hor,top,Math.pow(t,0.45));
+    c.setXYZ(i,((h>>16)&255)/255,((h>>8)&255)/255,(h&255)/255);
+  }
+  c.needsUpdate=true;
+}
+/* Reused rather than allocated: applySky runs every frame for the whole eight
+   seconds of the dusk transition, and two Colors a frame is two Colors a frame. */
+const SKY_BG=new THREE.Color(), SKY_FOG=new THREE.Color(), SKY_SUN=new THREE.Color();
 function applySky(k){
   if(!scene)return;
-  const bg=lerpHex(SKY_DAY.bg,SKY_DUSK.bg,k);
-  scene.background=new THREE.Color(bg);
+  buildSkyDome();
+  paintSky(k);
+  SKY_BG.setHex(lerpHex(SKY_DAY.bg,SKY_DUSK.bg,k));
+  scene.background=SKY_BG;
   if(scene.fog){
-    scene.fog.color=new THREE.Color(lerpHex(SKY_DAY.fog,SKY_DUSK.fog,k));
+    scene.fog.color=SKY_FOG.setHex(lerpHex(SKY_DAY.fog,SKY_DUSK.fog,k));
     scene.fog.near=SKY_DAY.near+(SKY_DUSK.near-SKY_DAY.near)*k;
     scene.fog.far=SKY_DAY.far+(SKY_DUSK.far-SKY_DAY.far)*k;
   }
   if(hemiLight)hemiLight.intensity=SKY_DAY.hemi+(SKY_DUSK.hemi-SKY_DAY.hemi)*k;
   if(sunLight){
     sunLight.intensity=SKY_DAY.sun+(SKY_DUSK.sun-SKY_DAY.sun)*k;
-    sunLight.color=new THREE.Color(lerpHex(SKY_DAY.sunC,SKY_DUSK.sunC,k));
+    sunLight.color=SKY_SUN.setHex(lerpHex(SKY_DAY.sunC,SKY_DUSK.sunC,k));
   }
+  /* A cast shadow needs something casting it. As the sun goes down the blobs go
+     with it, which also means the ambush is lit by almost nothing but the match -
+     which is the point that scene is making. */
+  if(shadowMesh)shadowMesh.material.opacity=1-k*0.88;
 }
 /* ---- arrows: they come AT you, and there is nothing to aim back at ---- */
 function arrowSpawn(){
