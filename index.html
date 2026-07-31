@@ -614,17 +614,17 @@ const PALETTES={
      sat permanently locked with no way to reach them. Every cloth now has a
      path, and a note on the dye that made it - which is a small lesson in what
      colour cost in 1607. */
-  ink:{name:"Undyed Linen",color:lin(0xd9cdae),free:1,
+  ink:{name:"Undyed Linen",color:0xd9cdae,free:1,
     desc:"No dye at all. Cloth as it came off the loom - the cheapest thing a man could wear, and what most of this company owns."},
-  lostcolony:{name:"Lost Colony Grey",color:lin(0x8a8272),
+  lostcolony:{name:"Lost Colony Grey",color:0x8a8272,
     desc:"Undyed wool from a grey-fleeced sheep. Earned, not bought - it comes to you with what you learn about Roanoke."},
-  company:{name:"Company Red",color:lin(0x8a3b2f),buy:30,
+  company:{name:"Company Red",color:0x8a3b2f,buy:30,
     desc:"Madder root, boiled with alum. Cheap enough to be common and bright enough to be livery, which is why a company dresses its men in it."},
-  river:{name:"River Green",color:lin(0x4c7d6e),buy:45,
+  river:{name:"River Green",color:0x4c7d6e,buy:45,
     desc:"Weld yellow over woad blue - two dyeings, two costs. Green could not be had in one bath, so green was never cheap."},
-  slate:{name:"Slate Blue",color:lin(0x4e6076),buy:55,
+  slate:{name:"Slate Blue",color:0x4e6076,buy:55,
     desc:"Woad, fermented in stale urine and worked by men paid to stand the smell. The deeper the blue, the more baths, and the more it cost."},
-  boom:{name:"Boom Gold",color:lin(0xa9862c),locked:1,
+  boom:{name:"Boom Gold",color:0xa9862c,locked:1,
     desc:"The colour of money once the leaf sold. (Later chapters.)"}
 };
 /* Each piece of clothing carries its own dye. eq.palette stays as the fallback,
@@ -1361,26 +1361,50 @@ function buildFigureRaw(eq){
   const HEADC=(fdef&&fdef.tint)?RGB(fdef.tint):SK;
 
   B.box(0,1.10,0,thin,0.62,thin,SK);
-  B.box(0,1.62,0,0.40,0.40,0.40,HEADC);
-  B.box(0,1.83,0,0.42,0.10,0.42,RGB(0x4e3a26));
+  /* ---- head, and a neck to carry it ----
+     A 0.40 cube was the single most block-like thing on the figure. It is three
+     stacked octagonal sections now: narrow at the jaw, widest across the
+     temples, drawing in again at the crown. Corners cut, so the silhouette
+     turns instead of stepping.
+
+     The DEPTH is held at 0.395 through the whole face band on purpose. addFace
+     draws the eyes, brows and mouth on a flat plane at z=0.203, so the front of
+     the head has to stay where it was or every face in the game would float off
+     it. Width and the vertical profile do the work; the face plate is untouched.
+
+     And a neck. There was none - the jaw sat straight on the collar, which is
+     most of why the head read as a block balanced on a block. */
+  B.oct(0,0,1.33,1.455,0.135,0.145,0.165,0.175,0.30,shadeRGB(SK,0.80),SK);
+  B.oct(0,0,1.44,1.575,0.315,0.395,0.385,0.395,0.34,HEADC,HEADC);   /* jaw */
+  B.oct(0,0,1.575,1.715,0.385,0.395,0.385,0.395,0.34,HEADC,HEADC);  /* temples */
+  B.oct(0,0,1.715,1.835,0.385,0.395,0.285,0.305,0.34,HEADC,HEADC);  /* crown */
+  B.oct(0,-0.01,1.80,1.875,0.395,0.405,0.34,0.35,0.34,RGB(0x4e3a26),RGB(0x42301f));
   B.box(0,0.80,0,0.22,thin,thin,SK);
   if(fkey)addFace(B,extra,fkey);
 
   function limbMesh(build){const L=new Geo();build(L);return L.mesh(false,false);}
+  /* Limbs taper. An untapered limb is a plank, and the eye reads a plank as
+     scenery - a forearm is narrower than an upper arm and a calf than a thigh.
+     The pivot stays at y=0, so the animation is untouched. */
   const arm=function(L){
-    L.box(0,-0.26,0,limbW,0.52,limbW,sleeveCol);
+    L.oct(0,0,-0.52,0,limbW*0.78,limbW*0.80,limbW*1.06,limbW*1.06,0.34,
+          shadeRGB(sleeveCol,0.94),sleeveCol);
     if(cuffCol!==null){
-      L.box(0,-0.48,0,limbW*1.35,0.07,limbW*1.35,cuffCol);
-      L.box(0,-0.55,0,thin*1.1,0.09,thin*1.1,SK);
+      L.oct(0,0,-0.515,-0.445,limbW*1.30,limbW*1.30,limbW*1.22,limbW*1.22,0.34,cuffCol,cuffCol);
+      L.oct(0,0,-0.60,-0.505,thin*1.02,thin*1.02,thin*1.14,thin*1.14,0.34,shadeRGB(SK,0.90),SK);
     }
   };
   const leg=function(L){
-    L.box(0,-0.39,0,thin*1.1,0.78,thin*1.1,stockCol);
+    /* thigh into calf into ankle */
+    L.oct(0,0,-0.44,0,thin*1.14,thin*1.16,thin*1.30,thin*1.30,0.34,stockCol,stockCol);
+    L.oct(0,0,-0.78,-0.44,thin*0.94,thin*0.98,thin*1.14,thin*1.16,0.34,
+          shadeRGB(stockCol,0.90),stockCol);
     if(breechCol!==null){
-      L.box(0,-breechLen/2,0,0.21,breechLen,0.22,breechCol);
-      L.box(0,-breechLen-0.01,0,0.185,0.05,0.195,breechIsWool?WOOL_T:breechCol);
+      L.oct(0,0,-breechLen,0,0.196,0.206,0.222,0.232,0.32,breechCol,breechCol);
+      L.oct(0,0,-breechLen-0.045,-breechLen+0.005,0.180,0.190,0.196,0.206,0.32,
+            breechIsWool?WOOL_T:breechCol,breechIsWool?WOOL_T:breechCol);
     }
-    L.box(0,-0.76,0.03,0.13,0.07,0.20,SHOE);
+    L.oct(0,0.035,-0.80,-0.735,0.125,0.20,0.132,0.185,0.30,shadeRGB(SHOE,0.85),SHOE);
   };
   const la=limbMesh(arm);la.position.set(-0.17,1.36,0);
   const ra=limbMesh(arm);ra.position.set(0.17,1.36,0);
@@ -1388,8 +1412,9 @@ function buildFigureRaw(eq){
   const rl=limbMesh(leg);rl.position.set(0.11,0.80,0);
 
   if(T==="torso_doublet"){
-    B.box(0,1.21,0,0.34,0.46,0.25,WOOL_D);
-    B.box(0,0.92,0,0.39,0.14,0.28,WOOL_D);
+    /* waist 0.295 to chest 0.365: a doublet was cut to do exactly this */
+    B.oct(0,0,0.98,1.44,0.295,0.225,0.365,0.265,0.30,shadeRGB(WOOL_D,0.90),WOOL_D);
+    B.oct(0,0,0.85,0.99,0.395,0.290,0.355,0.265,0.28,WOOL_D,shadeRGB(WOOL_D,0.94));
     B.box(0,1.445,0.01,0.47,0.05,0.32,LINEN);
     B.box(0,1.44,0.16,0.26,0.05,0.16,LINEN);
     for(let i=0;i<13;i++)B.box(0,1.00+i*0.036,0.128,0.032,0.032,0.032,PEWTER);
@@ -1400,7 +1425,7 @@ function buildFigureRaw(eq){
     B.box(-0.215,0.90,0.05,0.115,0.14,0.08,RGB(0x7a5433));
     B.box(-0.215,0.965,0.05,0.125,0.05,0.09,RGB(0x63431f));
   } else if(T==="torso_buffcoat"){
-    B.box(0,1.22,0,0.36,0.44,0.26,BUFF);
+    B.oct(0,0,1.00,1.44,0.315,0.235,0.385,0.275,0.30,shadeRGB(BUFF,0.90),BUFF);
     B.box(0,0.94,0,0.44,0.20,0.30,RGB(0xb09062));
     B.box(0,1.00,0,0.46,0.06,0.31,RGB(0x6b4a2f));
     B.box(0,1.20,0.15,0.07,0.60,0.03,RGB(0x5a3d26),0.5);
@@ -1408,15 +1433,15 @@ function buildFigureRaw(eq){
     B.box(-0.215,1.395,0,0.11,0.09,0.26,RGB(0xa2814f));
     B.box(0.215,1.395,0,0.11,0.09,0.26,RGB(0xa2814f));
   } else if(T==="torso_merchant"){
-    B.box(0,1.21,0,0.34,0.46,0.25,FINE);
-    B.box(0,0.93,0,0.38,0.13,0.27,FINE);
+    B.oct(0,0,0.98,1.44,0.290,0.220,0.365,0.265,0.30,shadeRGB(FINE,0.88),FINE);
+    B.oct(0,0,0.865,1.00,0.385,0.280,0.350,0.260,0.28,FINE,shadeRGB(FINE,0.94));
     B.box(0,1.445,0.01,0.52,0.05,0.34,LINEN);
     B.box(0,1.44,0.17,0.30,0.05,0.18,LINEN);
     for(let i=0;i<11;i++)B.box(0,1.02+i*0.04,0.128,0.034,0.034,0.034,RGB(0xd8b25a));
     B.box(0,0.99,0,0.37,0.05,0.27,RGB(0x53381f));
   } else {
-    B.box(0,1.16,0,0.30,0.50,0.23,CLOTH);
-    B.box(0,1.40,0,0.33,0.07,0.25,CLOTH);
+    B.oct(0,0,0.91,1.41,0.272,0.212,0.322,0.246,0.30,shadeRGB(CLOTH,0.90),CLOTH);
+    B.oct(0,0,1.365,1.435,0.322,0.246,0.335,0.252,0.30,CLOTH,CLOTH);
     B.box(0,1.425,0.05,0.17,0.05,0.13,LINEN);
     B.box(0,0.94,0,0.32,0.05,0.245,RGB(0x6b4a2a));
     if(survivor)B.box(0,1.26,0,0.42,0.34,0.28,RGB(0x7a7264));
@@ -1665,6 +1690,62 @@ Geo.prototype.tri3=function(a,b,c,ca,cb,cc){
 };
 Geo.prototype.quad4=function(a,b,c,d,ca,cb,cc,cd){
   this.tri3(a,b,c,ca,cb,cc);this.tri3(a,c,d,ca,cc,cd);
+};
+/* Winding-safe emission with per-vertex colour. Same idea as quadOut/triOut -
+   orient the normal away from an interior reference point - so no face has to be
+   hand-solved. One cross product at build time against a class of bug that is
+   invisible until a whole surface is missing. */
+function quadOut4(G,a,b,c,d,ca,cb,cc,cd,inside){
+  const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2];
+  const vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
+  const nx=uy*vz-uz*vy, ny=uz*vx-ux*vz, nz=ux*vy-uy*vx;
+  const wx=a[0]-inside[0],wy=a[1]-inside[1],wz=a[2]-inside[2];
+  if(nx*wx+ny*wy+nz*wz<0)G.quad4(a,d,c,b,ca,cd,cc,cb);
+  else G.quad4(a,b,c,d,ca,cb,cc,cd);
+}
+function triOut4(G,a,b,c,ca,cb,cc,inside){
+  const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2];
+  const vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
+  const nx=uy*vz-uz*vy, ny=uz*vx-ux*vz, nz=ux*vy-uy*vx;
+  const wx=a[0]-inside[0],wy=a[1]-inside[1],wz=a[2]-inside[2];
+  if(nx*wx+ny*wy+nz*wz<0)G.tri3(a,c,b,ca,cc,cb);
+  else G.tri3(a,b,c,ca,cb,cc);
+}
+/* ========== THE FORM PRIMITIVE ==========
+   A tapered prism with its vertical corners cut off: independent width and depth
+   at each end, and a chamfer that turns a square cross-section into a squared
+   octagon. This one function is most of the difference between a figure made of
+   blocks and a figure made of forms.
+
+   Why an octagon and not something rounder: the FRONT facet has to stay wide and
+   flat, because that is where a face is drawn. At a head half-width of 0.19 a
+   true octagon leaves facets 0.15 across and the mouth is 0.17 - it would wrap
+   around the corner. Cutting only the corners keeps a 0.26 front while the
+   silhouette reads round, which is the thing the eye is actually judging.
+
+   `cham` is a fraction of the smaller half-extent, so it scales with the part.
+   28 triangles against a box's 12 - and triangles were never this project's
+   constraint. Draw calls were, and this adds none: it all merges into the same
+   Geo the boxes went into. */
+Geo.prototype.oct=function(cx,cz,y0,y1,w0,d0,w1,d1,cham,col0,col1){
+  const c0=col0, c1=col1||col0;
+  const ring=function(w,d){
+    const hx=w/2, hz=d/2, c=Math.min(hx,hz)*cham;
+    return [[hx,hz-c],[hx-c,hz],[-(hx-c),hz],[-hx,hz-c],
+            [-hx,-(hz-c)],[-(hx-c),-hz],[hx-c,-hz],[hx,-(hz-c)]];
+  };
+  const A=ring(w0,d0), B=ring(w1,d1);
+  const mid=[cx,(y0+y1)/2,cz];
+  const P=function(R,i,y){return [cx+R[i][0],y,cz+R[i][1]];};
+  for(let i=0;i<8;i++){
+    const j=(i+1)%8;
+    quadOut4(this,P(A,i,y0),P(A,j,y0),P(B,j,y1),P(B,i,y1),c0,c0,c1,c1,mid);
+  }
+  /* caps, fanned from vertex 0 */
+  for(let i=1;i<7;i++){
+    triOut4(this,P(B,0,y1),P(B,i,y1),P(B,i+1,y1),c1,c1,c1,mid);
+    triOut4(this,P(A,0,y0),P(A,i,y0),P(A,i+1,y0),c0,c0,c0,mid);
+  }
 };
 /* multiply an RGB triple - darker where a surface is occluded */
 function shadeRGB(c,f){return [c[0]*f,c[1]*f,c[2]*f];}
