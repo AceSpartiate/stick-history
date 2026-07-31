@@ -1373,6 +1373,13 @@ let backTo="title";
    attaches any missing buttons and speaks the ones marked auto. */
 function show(id){
   for(const k in screens)screens[k].classList.toggle("on",k===id);
+  /* ONE owner for whether Continue is offered, and it is "whenever the title
+     screen appears". It used to be refreshed at page load, from the pause menu
+     and from Reset - so arriving at the title any OTHER way left the button
+     showing whatever was true when the page opened. Finish Chapter I, step into
+     the wardrobe to spend your Ink, come back: the title screen said there was
+     nothing to continue, because at page load there had not been. */
+  if(id==="title")refreshContinue();
   /* wire any new readers, then speak this screen if it asks to be spoken */
   attachReaders(screens[id]);
   const auto=screens[id]&&screens[id].querySelector('[data-read="auto"]');
@@ -6156,7 +6163,11 @@ function openCodex(){
 }
 
 /* ========== NAV ========== */
-function backFromPanel(){if(backTo==="scene"){show("scene");resize();setPaused(false);}else show("title");}
+function backFromPanel(){
+  if(backTo==="scene"){show("scene");resize();setPaused(false);}
+  else if(backTo==="ending")showEnding(ENDING_WORLD);
+  else show("title");
+}
 $("wbBack").onclick=backFromPanel;$("cxBack").onclick=backFromPanel;
 $("wbHome").onclick=goHome;$("cxHome").onclick=goHome;
 /* The pause menu used to read CH.npcs whatever world you were standing in, so
@@ -6244,6 +6255,15 @@ $("btnContinue").onclick=function(){
   const d=loadedSave();
   if(!d||!applyBlob(d)){toast("That kept run could not be read.");return;}
   updateInk();paintTitleFig();
+  /* A finished chapter resumes at its ENDING, because that is genuinely where the
+     player left off - and because the alternative is being put back aboard a ship
+     with every objective ticked, nobody left to question, and no route onward. The
+     ending screen is the one that carries the way into Chapter II. */
+  if(S.chapterDone&&SAVED_WORLD==="ch1"){
+    closeAllModals();setPaused(true);
+    showEnding("ch1");
+    return;
+  }
   show("scene");closeAllModals();setPaused(false);
   if(!renderer){initRenderer();enterWorld(SAVED_WORLD);resize();startLoop();}
   else{if(CURRENT_WORLD!==SAVED_WORLD)enterWorld(SAVED_WORLD);resize();}
@@ -6323,15 +6343,22 @@ function beginWorld(worldId){
 $("btnEnter").onclick=function(){beginWorld(INTRO_WORLD);};
 $("btnWardrobe1").onclick=function(){backTo="title";openWardrobe();};
 $("btnCodex1").onclick=function(){backTo="title";openCodex();};
-$("endWardrobe").onclick=function(){backTo="title";openWardrobe();};
+/* Back to the ENDING, not to the title. Spending the Ink you were just awarded is
+   the obvious next thing to do at the end of a chapter, and sending the player to
+   the main menu afterwards threw away the screen carrying the route into Chapter
+   II - so finishing the chapter and then dressing for it lost you the game. */
+$("endWardrobe").onclick=function(){backTo="ending";openWardrobe();};
 $("endTitle").onclick=goHome;
 /* ---- the end of a chapter, and the way into the next one ----
    Chapter I used to end here permanently: the only buttons were Wardrobe and
    Main Menu, so the second chapter was reachable only through the admin code.
    The closing prose, the heading and what comes next all live on the chapter
    entry now, so a chapter ends by describing itself. */
+/* which chapter's ending is on screen, so the wardrobe can come back to it */
+let ENDING_WORLD="ch1";
 function showEnding(worldId){
   const c=chapterOf(worldId||CURRENT_WORLD);
+  ENDING_WORLD=(c&&c.world)||"ch1";
   const e=c&&c.end;
   if(e){
     $("endHead").textContent=e.head;
