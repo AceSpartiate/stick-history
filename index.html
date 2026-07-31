@@ -3118,10 +3118,73 @@ function enterWorld(id){
   return assertBudget(id);
 }
 
+/* ========== GRAPHICS QUALITY, AND WHY IT HAS TO BE ADAPTIVE ==========
+   This game is aimed at a school Chromebook and a phone, and there is no way to
+   know in advance which one you got: user-agent sniffing is a lie, and a 2019
+   Celeron Chromebook and a flagship phone report the same "desktop Chrome".
+   The only honest measurement is the frame time on the machine in front of you.
+
+   So quality is a tier that moves. Frame time is averaged over a couple of
+   seconds; if it will not hold 45fps the tier drops, and if it sits comfortably
+   above 58 for a long while it climbs back. Hysteresis and a cooldown, because a
+   scaler that oscillates is worse than one that never moves.
+
+   RESOLUTION is the first thing to give up, and by a distance. This art is flat
+   vertex-coloured geometry with hard silhouettes, so it survives being drawn at
+   three quarters scale far better than it survives losing its antialiasing -
+   which is why MSAA stays on at every tier. Fill rate is what a weak integrated
+   GPU actually runs out of.
+
+   `bestPixelRatio` used to have a hard floor of 1.0, so on a 1366x768 Chromebook
+   at devicePixelRatio 1 it always returned exactly 1 and there was no downward
+   room at all. The floor is the tier's now. */
+const GFX={tier:"high",res:1,fx:1};
+const GFX_TIERS={
+  /* res: multiplier on the pixel budget.  fx: transparent-overdraw allowance. */
+  high:  {res:1.00, fx:1.00},
+  medium:{res:0.78, fx:0.65},
+  low:   {res:0.58, fx:0.40}
+};
+const GFX_ORDER=["low","medium","high"];
+function setTier(t){
+  if(!GFX_TIERS[t]||GFX.tier===t)return false;
+  GFX.tier=t;GFX.res=GFX_TIERS[t].res;GFX.fx=GFX_TIERS[t].fx;
+  if(renderer)resize();
+  console.log("graphics tier -> "+t+" (res x"+GFX.res+", effects x"+GFX.fx+")");
+  return true;
+}
+/* rolling frame time, and a tier that follows it */
+const FT={n:0,sum:0,cool:2.5,good:0};
+function watchFrames(dt){
+  /* a hitch from a world build or a stall is not a frame rate; ignore the spike */
+  if(dt>0.25)return;
+  FT.cool-=dt;
+  FT.sum+=dt;FT.n++;
+  if(FT.n<90)return;                        /* ~1.5s of evidence before acting */
+  const avg=FT.sum/FT.n;
+  FT.sum=0;FT.n=0;
+  if(FT.cool>0)return;
+  const i=GFX_ORDER.indexOf(GFX.tier);
+  if(avg>1/45){                             /* cannot hold 45fps: give up pixels */
+    FT.good=0;
+    if(i>0&&setTier(GFX_ORDER[i-1]))FT.cool=4;
+  } else if(avg<1/58){
+    FT.good++;
+    /* four good samples - about six seconds - before climbing, so a quiet
+       moment on a struggling machine does not promote it straight back */
+    if(FT.good>=4&&i<GFX_ORDER.length-1&&setTier(GFX_ORDER[i+1])){FT.good=0;FT.cool=6;}
+  } else FT.good=0;
+}
+
 function initRenderer(){
   if(renderer)return;
   const canvas=$("world");
-  renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true});
+  /* MSAA stays on at every tier: hard-edged flat colour is exactly the case
+     where antialiasing earns its cost, and resolution is the cheaper thing to
+     trade. powerPreference is a hint, and on a Chromebook there is only one GPU
+     to prefer, but it costs nothing to ask. */
+  renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,
+    powerPreference:"high-performance",stencil:false});
   renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
   scene=new THREE.Scene();
   scene.background=new THREE.Color(0x9fb4bd);
@@ -3252,7 +3315,13 @@ function blocked(x,z){
 function animate(){
   requestAnimationFrame(animate);
   if(!renderer||!screens.scene.classList.contains("on"))return;
-  const dt=Math.min(0.05,clock.getDelta());
+  /* RAW delta for the quality watcher and a clamped one for the simulation. The
+     clamp exists so a hitch cannot teleport the player through a bulkhead, but it
+     also means a machine running at 12fps reports 0.05 - i.e. 20fps - so
+     measuring the clamped value would hide exactly the devices this is for. */
+  const raw=clock.getDelta();
+  const dt=Math.min(0.05,raw);
+  watchFrames(raw);
   if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateCutscene(dt);renderer.render(scene,cam);return;}
   if(CAMLOCK.on){
     updateFx(dt);updateFlog(dt);
@@ -4702,8 +4771,14 @@ function spawnPuff(pool,x,y,z,vx,vy,vz,o){
   const op=(o.op===undefined)?0.75:o.op;
   m.material.opacity=op;
   if(o.delay)m.visible=false;
+  /* Transparent quads are the one thing that reliably kills a weak integrated
+     GPU: every overlapping puff is a full-screen-rate blend with no depth
+     rejection, and the shot trail alone can leave forty of them five units wide
+     hanging for fifteen seconds. Shortening the LIFE rather than the count keeps
+     the author's staging - the trail still lays itself out and still reads - it
+     just clears sooner on a machine that cannot afford it. */
   smoke.push({m:m,pool:pool,t:0,vx:vx,vy:vy,vz:vz,base:size,
-    life:(o.life===undefined)?2.7:o.life, op:op,
+    life:((o.life===undefined)?2.7:o.life)*GFX.fx, op:op,
     grow:(o.grow===undefined)?1.5:o.grow, delay:o.delay||0,
     ease:(o.ease===undefined)?1:o.ease});
   return m;
@@ -6057,7 +6132,9 @@ function shotTrail(o,d,dist){
      puff the same brightness as the ground behind it. A mid warm grey reads
      against sand, sky, treeline AND the dusk sky, which is the set of
      backgrounds a shot can actually be fired at. */
-  const n=Math.max(10,Math.min(40,Math.round(dist/1.5)));  /* denser again: a line, not dots */
+  /* density follows the tier too - ten puffs still read as a line, and on the
+     bottom tier that is a quarter of the blended pixels of forty */
+  const n=Math.max(10,Math.min(40,Math.round(dist/1.5*GFX.fx)));
   const step=dist/n;
   for(let i=1;i<=n;i++){
     const s=i*step, k=i/n;
@@ -7904,7 +7981,15 @@ function bestPixelRatio(w,h){
   const dpr=Math.min(2,window.devicePixelRatio||1);
   const budget=2600000;
   const px=Math.max(1,w*h*dpr*dpr);
-  return (px<=budget)?dpr:Math.max(1,dpr*Math.sqrt(budget/px));
+  /* First the absolute cap, which keeps a 4K monitor sane. */
+  const fit=(px<=budget)?dpr:dpr*Math.sqrt(budget/px);
+  /* Then the tier, as a DIRECT multiplier rather than a bigger budget. Scaling
+     the budget does nothing for the machines this is actually for: a 1366x768
+     Chromebook at dpr 1 draws 1.0 megapixels, which is comfortably inside the
+     budget at every tier, so the budget branch never fires and the scaler had
+     nothing to give up. Multiplying the result is what makes the tier real.
+     The old hard floor of 1.0 had the same effect from the other direction. */
+  return Math.max(0.5,fit*GFX.res);
 }
 try{
   ["fullscreenchange","webkitfullscreenchange","msfullscreenchange"].forEach(function(ev){
