@@ -359,9 +359,9 @@
 
   <section id="intro" class="screen">
     <div class="parchment deckle card fade" id="introCard" data-read="auto">
-      <div class="eyebrow">Chapter I</div>
-      <h2>The Crossing</h2>
-      <div class="date">Aboard the Susan Constant · the mouth of the Chesapeake, 26 April 1607</div>
+      <div class="eyebrow" id="introEyebrow">Chapter I</div>
+      <h2 id="introTitle">The Crossing</h2>
+      <div class="date" id="introDate">Aboard the Susan Constant · the mouth of the Chesapeake, 26 April 1607</div>
       <p id="introBody"></p>
       <div class="obj"><b>Your task —</b> <span id="introObj"></span></div>
       <div class="ctrls" id="introCtrls"></div>
@@ -561,10 +561,11 @@
 
   <section id="ending" class="screen">
     <div class="inner fade">
-      <h2>The Crossing — Complete</h2>
-      <div class="yr">Chapter I · to be continued</div>
+      <h2 id="endHead">The Crossing — Complete</h2>
+      <div class="yr" id="endYr">Chapter I · to be continued</div>
       <div id="endBody" data-read="auto"></div>
-      <button class="btn wide mt" id="endWardrobe">Open Your Wardrobe</button>
+      <button class="btn wide mt" id="endNext" style="display:none">Go Ashore</button>
+      <button class="btn ghost wide mt" id="endWardrobe">Open Your Wardrobe</button>
       <button class="btn ghost wide mt" id="endTitle">Main Menu</button>
     </div>
   </section>
@@ -667,7 +668,7 @@ const S={ink:0,unlocked:new Set(["none_cloak","none_torso","none_acc","none_head
   paletteUnlocked:new Set(["ink"]),
   voicePref:{male:null,female:null,narrator:null},
   items:{},itemAt:{},incidents:[],shotAMan:false,heardKendall:false,reportedKendall:null,
-  boxOpened:false,smithRecognised:false,
+  boxOpened:false,smithRecognised:false,chartSeen:{},
   equip:{skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"none_head",build:"build_normal",face:"none",
     dye:{torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"}},
   codex:[],codexKeys:new Set(),insight:{},shipNote:false,chapterDone:false,flawless:{},met:{},
@@ -694,7 +695,7 @@ function saveBlob(){
     codexKeys:Array.from(S.codexKeys), faces:Array.from(S.faces),
     codex:S.codex, insight:S.insight, met:S.met, flawless:S.flawless, talkErr:S.talkErr,
     equip:S.equip, voicePref:S.voicePref,
-    items:S.items, itemAt:S.itemAt, incidents:S.incidents,
+    items:S.items, itemAt:S.itemAt, incidents:S.incidents, chartSeen:S.chartSeen,
     shotAMan:!!S.shotAMan, killedAMan:!!S.killedAMan,
     boxOpened:!!S.boxOpened, smithRecognised:!!S.smithRecognised,
     heardKendall:!!S.heardKendall, reportedKendall:S.reportedKendall,
@@ -718,6 +719,7 @@ function applyBlob(d){
     if(!S.equip.dye)S.equip.dye={torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"};
     if(d.voicePref)S.voicePref=d.voicePref;
     S.items=d.items||{};S.itemAt=d.itemAt||{};S.incidents=d.incidents||[];
+    S.chartSeen=d.chartSeen||{};
     S.shotAMan=!!d.shotAMan;S.killedAMan=!!d.killedAMan;
     S.boxOpened=!!d.boxOpened;S.smithRecognised=!!d.smithRecognised;
     S.heardKendall=!!d.heardKendall;S.reportedKendall=d.reportedKendall||null;
@@ -3108,6 +3110,11 @@ function enterWorld(id){
   DUSK.t=0;DUSK.on=false;AMBUSH.on=false;
   if(id!=="ch2")AMBUSH.done=false;
   applySky(0);
+  /* One owner for the HUD's chapter line and the guide. Every route into a
+     world - the intro card, Continue, a pasted muster code, the admin picker,
+     being returned to the deck after a hanging - comes through here, so none of
+     them can arrive wearing the previous chapter's name. */
+  setChapterLabel();updateGuide();
   return assertBudget(id);
 }
 
@@ -3380,49 +3387,67 @@ function animate(){
       p.innerHTML='<span class="key">F</span>'+verb+"<small>"+best.label+"</small>";
     } else p.classList.remove("on");
   }
+  /* The guide is a DOM write and a little trigonometry, so it does not want to
+     run every frame - but it does have to run. Every eighth frame is about
+     seven times a second, which reads as live. */
+  if((labelTick&7)===0)updateGuide();
   renderer.render(scene,cam);
+}
+
+/* ========== WHICH CHAPTER AM I IN ==========
+   `CHAPTERS` already carried the numeral, the title and the date line for the
+   admin picker, so it is the one owner of chapter identity and everything else
+   reads it rather than keeping a second copy. Four places used to hardcode
+   "Ch. I" into the HUD, which is why walking ashore left the label lying.
+
+   A chapter entry may also carry its own intro text, objectives, guide target,
+   HUD summary and closing prose - so adding Chapter III is a table entry and a
+   world builder, not a hunt through the file. */
+function chapterOf(id){
+  for(let i=0;i<CHAPTERS.length;i++)if(CHAPTERS[i].world===id)return CHAPTERS[i];
+  return null;
+}
+function chapterLabel(){
+  const c=chapterOf(CURRENT_WORLD);
+  if(!c)return "";
+  /* the deck name means something aboard ship and nothing at all on a beach */
+  return "Ch. "+c.n+" \u2014 "+((c.decks)?LVL_NAME[plevel]:c.t);
+}
+function setChapterLabel(){const e=$("hudChapter");if(e)e.textContent=chapterLabel();}
+/* how many of the merged shore party the player has actually spoken to */
+function crowdMet(){
+  let n=0;
+  for(const k in S.met)if(k.indexOf("crowd_")===0)n++;
+  return n;
 }
 
 /* ========== NAVIGATION AID ==========
    Tells you WHERE to go and who still has something to say. It never hints at
-   which reply is the sound one - the thinking stays yours. */
-function nextGoal(){
-  if(CURRENT_WORLD!=="ch1")return null;
-  if(S.chapterDone)return null;
-  let best=null,bd=1e9;
-  for(let i=0;i<interactables.length;i++){
-    const it=interactables[i];
-    if(it.action!=="talk")continue;
-    if(npcDone(it.id))continue;
-    const d=Math.hypot(it.x-player.position.x,it.z-player.position.z)+(it.lvl!==plevel?400:0);
-    if(d<bd){bd=d;best=it;}
-  }
-  if(best)return {it:best,why:"still has something to tell you"};
-  if(!chapterReady()&&!S.shipNote){
-    for(let i=0;i<interactables.length;i++)
-      if(interactables[i].action==="steal")return {it:interactables[i],why:"provisions are stowed here"};
-  }
-  if(chapterReady()){
-    for(let i=0;i<interactables.length;i++)
-      if(interactables[i].action==="reck")return {it:interactables[i],why:"the scrivener is ready for you"};
-  }
+   which reply is the sound one - the thinking stays yours.
+
+   This was written, commented, and then called from exactly one place -
+   useLadder - so the arrow only recomputed when you changed decks and the HUD
+   line froze between ladder trips. It is ticked from the main loop now. */
+function findSpot(test){
+  for(let i=0;i<interactables.length;i++)if(test(interactables[i]))return interactables[i];
   return null;
+}
+function nextGoal(){
+  if(!player)return null;
+  const c=chapterOf(CURRENT_WORLD);
+  return (c&&c.next)?c.next():null;
 }
 function updateGuide(){
   const g=$("guide"),o=$("hudObj");
+  if(!g||!o)return;
+  const c=chapterOf(CURRENT_WORLD);
+  o.textContent=(c&&c.status)?c.status():"";
   const goal=nextGoal();
-  if(!goal){
-    g.classList.remove("on");
-    o.textContent=(CURRENT_WORLD!=="ch1")?"":(S.chapterDone?"Chapter complete":"Questions ready "+reckReady()+" of 5");
-    return;
-  }
-  o.textContent=chapterReady()
-    ? "Ready \u00b7 go to the scrivener's desk"
-    : "Questions ready "+reckReady()+" of 5 \u00b7 learn more";
+  if(!goal||!goal.it){g.classList.remove("on");return;}
   const it=goal.it;
   const dx=it.x-player.position.x, dz=it.z-player.position.z;
   const dist=Math.hypot(dx,dz);
-  if(it.lvl===plevel&&dist<9*K){g.classList.remove("on");return;}
+  if(it.lvl===plevel&&dist<(c&&c.near?c.near:9*K)){g.classList.remove("on");return;}
   g.classList.add("on");
   if(it.lvl!==plevel){
     $("guideArw").style.transform=(LVL_Y[it.lvl]<LVL_Y[plevel])?"rotate(90deg)":"rotate(-90deg)";
@@ -3434,7 +3459,10 @@ function updateGuide(){
     const n=dist||1, ux=dx/n, uz=dz/n;
     const a=Math.atan2(ux*rx+uz*rz, ux*fx+uz*fz);
     $("guideArw").style.transform="rotate("+(a*180/Math.PI)+"deg)";
-    $("guideTxt").textContent=it.label+" \u2014 "+Math.round(dist/K)+" paces";
+    /* a pace is not the same length in the two chapters: the ship is built at
+       K units to the foot, the cape at one unit to the foot */
+    const pace=(c&&c.pace)?c.pace:K;
+    $("guideTxt").textContent=it.label+" \u2014 "+Math.max(1,Math.round(dist/pace))+" paces";
   }
 }
 
@@ -3619,7 +3647,7 @@ function useLadder(d){
   plevel=d.toLvl;
   player.position.set(d.tx,LVL_Y[d.toLvl],d.tz);
   activeSpot=null;$("action").classList.remove("on");
-  $("hudChapter").textContent="Ch. I \u2014 "+LVL_NAME[plevel];updateGuide();
+  setChapterLabel();updateGuide();
   toast(LVL_NAME[plevel]);
 }
 function setPaused(p){paused=p;$("action").classList.toggle("on",!p&&!!activeSpot);}
@@ -3735,6 +3763,8 @@ function openDoc(d){
     const p1=document.createElement("span");p1.className="tagpill";p1.textContent="+10 Ink";
     const p2=document.createElement("span");p2.className="tagpill";p2.textContent="Recorded in your notes";
     t.appendChild(p1);t.appendChild(p2);host.appendChild(t);
+    /* quiet: the panel already says it was recorded, so a toast on top is noise */
+    saveGame();
   }
   openModal("mDoc");setPaused(true);
   const sh=document.querySelector("#mDoc .sheet");if(sh)sh.scrollTop=0;
@@ -3921,6 +3951,10 @@ function endDialogue(){
   meters();
   $("dlgLine").textContent="\u201cThat is all I have for you. Mind what I have said.\u201d"+tail;
   showLeave("Take your leave");
+  /* A finished conversation is a boundary, and it is the natural unit of
+     Chapter I's progress. Nothing in this chapter used to save at all, so a
+     closed tab discarded every insight the player had earned. */
+  checkpoint("what the "+n.name.toLowerCase()+" told you");
 }
 
 /* ========== STEAL ========== */
@@ -3960,6 +3994,7 @@ function stealWin(){
   const n=CH.steal.note;
   if(!S.insight[n.b]){S.insight[n.b]=true;S.ink+=12;
     if(!S.codexKeys.has(n.b)){S.codexKeys.add(n.b);S.codex.push(n);}updateInk();}
+  saveGame();
   result(true,"The Note",CH.steal.noteText,["+12 Ink","Recorded in your notes"],function(){
     setPaused(false);if(chapterReady())toast("You have learned enough. The scrivener's desk awaits.");});
 }
@@ -4856,7 +4891,7 @@ function cannonCutscene(d){
     {do:function(){
       plevel=LVL.MAIN;
       player.position.set(0,mainY,-3.2*K);player.rotation.y=0;
-      $("hudChapter").textContent="Ch. I \u2014 "+LVL_NAME[plevel];
+      setChapterLabel();
       const n=csActor("newport");
       if(n){n.position.set(1.9*K,mainY,-9.4*K);n.rotation.y=0;}
       CS.lastLook.set(0,mainY+5,-3.2*K);
@@ -4902,7 +4937,7 @@ function beginFlogging(){
   plevel=LVL.MAIN;
   const y=LVL_Y[LVL.MAIN], pz=-3.2*K;
   player.position.set(0,y,pz);player.rotation.y=0;player.rotation.z=0;
-  $("hudChapter").textContent="Ch. I \u2014 "+LVL_NAME[plevel];
+  setChapterLabel();
   const cap=buildFigure(CH.captain.eq);
   cap.position.set(1.9*K,y,pz-6.2*K);cap.rotation.y=0;scene.add(cap);
   const cp=cap.userData.parts;
@@ -5054,7 +5089,7 @@ function resetRun(){
     const p=player.userData.parts;
     if(p){p.la.rotation.x=0;p.ra.rotation.x=0;p.ll.rotation.x=0;p.rl.rotation.x=0;}
   }
-  $("hudChapter").textContent="Ch. I \u2014 "+LVL_NAME[plevel];
+  setChapterLabel();
 }
 
 /* ========== RESULT ========== */
@@ -5136,9 +5171,12 @@ function rkEnd(){
     const cp=document.createElement("span");cp.className="tagpill";
     cp.textContent=(c===0?"a flawless passage":c+" correction"+(c===1?"":"s")+" needed");rw.appendChild(cp);
     refreshPlayer();$("resBtn").textContent="See how the chapter ends";
-  } else {S.reckTries++;$("resBtn").textContent="Study and retry";}
+    /* the chapter's own boundary, and the one that most needs to survive a
+       closed tab: the unlocks, the earned face and twenty Ink all land here */
+    checkpoint("Chapter I complete");
+  } else {S.reckTries++;$("resBtn").textContent="Study and retry";saveGame();}
   updateInk();openModal("mResult");
-  $("resBtn").onclick=function(){$("mResult").classList.remove("on");if(passed)showEnding();else setPaused(false);};
+  $("resBtn").onclick=function(){$("mResult").classList.remove("on");if(passed)showEnding("ch1");else setPaused(false);};
 }
 
 /* ========== WARDROBE ========== */
@@ -5382,17 +5420,13 @@ function openCodex(){
 function backFromPanel(){if(backTo==="scene"){show("scene");resize();setPaused(false);}else show("title");}
 $("wbBack").onclick=backFromPanel;$("cxBack").onclick=backFromPanel;
 $("wbHome").onclick=goHome;$("cxHome").onclick=goHome;
+/* The pause menu used to read CH.npcs whatever world you were standing in, so
+   Cape Henry told you to question the Weathered Sailor and read the Charter in
+   the great cabin - both of them a boat ride away. Each chapter owns its list. */
 function objectiveRows(){
-  const rows=[];
-  for(let i=0;i<CH.npcs.length;i++){
-    const n=CH.npcs[i];
-    rows.push({t:"Question the "+n.name,done:npcDone(n.id)});
-  }
-  rows.push({t:"Read the Charter in the great cabin",done:!!S.insight[CH.charter.insight.b]});
-  rows.push({t:"The provisions stowed in the hold",done:S.shipNote,opt:true});
-  rows.push({t:S.chapterDone?"Records set true":"Set the records true at the scrivener's desk",
-    done:S.chapterDone,goal:true,locked:!chapterReady()});
-  return rows;
+  const c=chapterOf(CURRENT_WORLD);
+  if(!c||!c.goals)return [];
+  try{return c.goals()||[];}catch(e){return [];}
 }
 function renderObjectives(){
   const host=$("pauseObj");if(!host)return;
@@ -5461,7 +5495,7 @@ $("btnBegin").onclick=function(){
   if(hasSave()&&!confirm("Begin again? The run you have kept will be discarded."))return;
   clearSave();
   if(S.admin){openChapters();return;}
-  $("introBody").textContent=CH.intro;$("introObj").textContent=CH.obj;show("intro");
+  openIntro("ch1");
 };
 $("btnContinue").onclick=function(){
   const d=loadedSave();
@@ -5514,23 +5548,62 @@ $("pauseCode").onclick=function(){
   };
   row.appendChild(cp);row.appendChild(ld);box.appendChild(row);
 };
-$("btnEnter").onclick=function(){
+/* ---- the intro card, for whichever chapter is about to start ----
+   This was hardwired to Chapter I: the eyebrow, the title and the date line
+   were literals in the HTML and btnEnter always entered ch1. So there was no
+   way to begin a chapter other than the first, and no way to arrive anywhere
+   with the date and the place named - which for a history game is most of the
+   work an intro card does. */
+let INTRO_WORLD="ch1";
+function openIntro(worldId){
+  const c=chapterOf(worldId);
+  if(!c){toast("That chapter is not built yet.");return;}
+  INTRO_WORLD=worldId;
+  $("introEyebrow").textContent="Chapter "+c.n;
+  $("introTitle").textContent=c.t;
+  $("introDate").textContent=c.d;
+  $("introBody").textContent=c.intro?c.intro():"";
+  $("introObj").textContent=c.obj?c.obj():"";
+  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":"Into the Boats";
+  show("intro");
+}
+function beginWorld(worldId){
   show("scene");closeAllModals();setPaused(false);
-  if(!renderer)initWorld();
-  else{ if(CURRENT_WORLD!=="ch1")enterWorld("ch1"); resize(); }
+  if(!renderer){initRenderer();enterWorld(worldId);resize();startLoop();}
+  else{ if(CURRENT_WORLD!==worldId)enterWorld(worldId); resize(); }
   setTimeout(resize,60);
   $("hint").style.opacity="1";
   setTimeout(function(){$("hint").style.opacity="0";},5600);
-};
+  const c=chapterOf(worldId);
+  checkpoint(c?("Chapter "+c.n+" begun"):"chapter begun");
+}
+$("btnEnter").onclick=function(){beginWorld(INTRO_WORLD);};
 $("btnWardrobe1").onclick=function(){backTo="title";openWardrobe();};
 $("btnCodex1").onclick=function(){backTo="title";openCodex();};
 $("endWardrobe").onclick=function(){backTo="title";openWardrobe();};
 $("endTitle").onclick=goHome;
-function showEnding(){
-  $("endBody").innerHTML=
-    "<p>The river narrows ahead. Roanoke's warning sits behind you, the Company's arithmetic understood, and its hidden tally seen with your own eyes.</p>"+
-    "<p>Somewhere upstream is the low, marshy peninsula they will choose, and the fort, and the Powhatan whose homeland this already is - and a starving winter the gentleman in the good doublet cannot yet imagine. Those are chapters still to come.</p>"+
-    "<p class='note'>Chapter I complete. Your figure now wears what you earned: the weathered traveller's cloak and the muted grey of the Lost Colony. Spend your Ink in the Wardrobe.</p>";
+/* ---- the end of a chapter, and the way into the next one ----
+   Chapter I used to end here permanently: the only buttons were Wardrobe and
+   Main Menu, so the second chapter was reachable only through the admin code.
+   The closing prose, the heading and what comes next all live on the chapter
+   entry now, so a chapter ends by describing itself. */
+function showEnding(worldId){
+  const c=chapterOf(worldId||CURRENT_WORLD);
+  const e=c&&c.end;
+  if(e){
+    $("endHead").textContent=e.head;
+    $("endYr").textContent=e.yr;
+    $("endBody").innerHTML=e.body;
+  }
+  const nb=$("endNext");
+  if(nb){
+    const nx=e&&e.nextWorld&&chapterOf(e.nextWorld);
+    if(nx){
+      nb.style.display="block";
+      nb.textContent=e.nextLabel||("Chapter "+nx.n+" — "+nx.t);
+      nb.onclick=function(){openIntro(e.nextWorld);};
+    } else nb.style.display="none";
+  }
   show("ending");
 }
 
@@ -7097,6 +7170,10 @@ function openChart(){
   openModal("mMap");
   drawChart(spec);
   setPaused(true);
+  /* recorded per world, so a chapter's objective list can ask whether the
+     player has actually seen where they are */
+  if(!S.chartSeen)S.chartSeen={};
+  S.chartSeen[CURRENT_WORLD]=true;
 }
 
 /* ========== THE SEALED BOX ==========
@@ -7167,7 +7244,11 @@ function sealedBox(){
         : "One of the seven has been in irons below the half deck since the Canaries, and you never spoke to him.")+
       " Kendall heard his own name read out an hour after complaining that nobody had shown a warrant. Within the year the other six will have him shot.",
       knewSmith?["+"+ink+" Ink","You knew the man in irons"]:["+"+ink+" Ink"],
-      function(){setPaused(false);checkpoint("the box is opened");});
+      function(){
+        setPaused(false);checkpoint("the box is opened");
+        /* the box is the last beat of Chapter II, so this is where it closes */
+        setTimeout(function(){showEnding("ch2");},900);
+      });
   });
 }
 
@@ -7592,8 +7673,99 @@ const CHAPTERS=[
      first light; the landing party goes ashore later the same day. So Chapter I
      is the morning and Chapter II is the afternoon of 26 April - the same date,
      in order, and no reordering needed. The James River is three weeks away. */
-  {n:"I",t:"The Crossing",d:"Aboard the Susan Constant \u2014 the bay mouth, dawn, 26 April 1607",ready:true,world:"ch1"},
-  {n:"II",t:"Landfall",d:"Cape Henry \u2014 ashore that afternoon, 26 April 1607",ready:true,world:"ch2"},
+  {n:"I",t:"The Crossing",d:"Aboard the Susan Constant \u2014 the bay mouth, dawn, 26 April 1607",
+   ready:true,world:"ch1",
+   /* four walkable decks, so the HUD names the deck rather than the chapter */
+   decks:true, pace:K, near:9*K,
+   intro:function(){return CH.intro;},
+   obj:function(){return CH.obj;},
+   goals:function(){
+     const rows=[];
+     for(let i=0;i<CH.npcs.length;i++)
+       rows.push({t:"Question the "+CH.npcs[i].name,done:npcDone(CH.npcs[i].id)});
+     rows.push({t:"Read the Charter in the great cabin",done:!!S.insight[CH.charter.insight.b]});
+     rows.push({t:"The provisions stowed in the hold",done:S.shipNote,opt:true});
+     rows.push({t:S.chapterDone?"Records set true":"Set the records true at the scrivener's desk",
+       done:S.chapterDone,goal:true,locked:!chapterReady()});
+     return rows;
+   },
+   status:function(){
+     if(S.chapterDone)return "Chapter complete";
+     return chapterReady()?"Ready \u00b7 go to the scrivener's desk"
+                          :"Questions ready "+reckReady()+" of 5 \u00b7 learn more";
+   },
+   next:function(){
+     if(S.chapterDone)return null;
+     let best=null,bd=1e9;
+     for(let i=0;i<interactables.length;i++){
+       const it=interactables[i];
+       if(it.action!=="talk"||npcDone(it.id))continue;
+       const d=Math.hypot(it.x-player.position.x,it.z-player.position.z)+(it.lvl!==plevel?400:0);
+       if(d<bd){bd=d;best=it;}
+     }
+     if(best)return {it:best,why:"still has something to tell you"};
+     if(!chapterReady()&&!S.shipNote){
+       const s=findSpot(function(it){return it.action==="steal";});
+       if(s)return {it:s,why:"provisions are stowed here"};
+     }
+     if(chapterReady()){
+       const r=findSpot(function(it){return it.action==="reck";});
+       if(r)return {it:r,why:"the scrivener is ready for you"};
+     }
+     return null;
+   },
+   end:{head:"The Crossing \u2014 Complete", yr:"Chapter I \u00b7 the same morning, 26 April 1607",
+     nextWorld:"ch2", nextLabel:"Go Ashore \u2014 Chapter II",
+     body:"<p>The river narrows ahead. Roanoke's warning sits behind you, the Company's arithmetic understood, and its hidden tally seen with your own eyes.</p>"+
+       "<p>The boats are going down. Thirty men are to be put ashore on the southern cape this afternoon \u2014 the same day you first saw this country \u2014 to set up a cross and prove the pieces before dark. The sealed box is still shut.</p>"+
+       "<p class='note'>Your figure now wears what you earned: the weathered traveller's cloak and the muted grey of the Lost Colony. Spend your Ink in the Wardrobe, then go ashore.</p>"}},
+
+  {n:"II",t:"Landfall",d:"Cape Henry \u2014 ashore that afternoon, 26 April 1607",
+   ready:true,world:"ch2",
+   /* one unit to the foot ashore, and a pace is about two and a half feet */
+   pace:2.5, near:9,
+   intro:function(){
+     return "The ships are anchored inside the capes and the boats are down. About thirty of you are put ashore on a low sandy point, in the afternoon of the same day you first descried this country. There is a cross to set up, a shallop to be got out of the hold in pieces and put together again, and stores to be landed while the light holds. Captain Kendall has been ordered to prove the pieces before dark, and every man ashore is to learn the drill. Nobody has opened the sealed box yet.";
+   },
+   obj:function(){
+     return "Take the drill from Captain Kendall, and put a ball in the mark. Speak to the men on the strand while you can \u2014 every one of them is on the Company's roll, and most have something to say. The light will not hold.";
+   },
+   goals:function(){
+     const met=crowdMet();
+     return [
+       {t:"Take the drill from Captain Kendall",done:!!S.insight["The Six Motions"]},
+       {t:"Put a ball in the mark",done:!!S.insight["Proved the Piece"]},
+       {t:"Read the cross on the cape",done:!!S.insight["Cape Henry"],opt:true},
+       {t:"Look at the Captain's chart",done:!!(S.chartSeen&&S.chartSeen.ch2),opt:true},
+       {t:"Speak with the men on the strand"+(met?" ("+met+" of 34)":""),
+         done:met>=5,opt:true},
+       {t:S.boxOpened?"The Council was read out":"See the day out on this beach",
+         done:!!S.boxOpened,goal:true,locked:!S.insight["Proved the Piece"]}
+     ];
+   },
+   status:function(){
+     if(S.boxOpened)return "Chapter complete";
+     if(AMBUSH.on)return "Arrows \u00b7 get to the boats";
+     if(!S.insight["The Six Motions"])return "Find Captain Kendall \u00b7 he has the drill";
+     if(!S.insight["Proved the Piece"])return "Prove the piece at the mark";
+     return "Cape Henry \u00b7 26 April 1607";
+   },
+   next:function(){
+     /* Once the arrows start, nothing the arrow could point at is any help -
+        and pointing at a treeline you are not meant to shoot into would be a
+        lie about what this scene wants from you. */
+     if(AMBUSH.on||S.boxOpened)return null;
+     if(!S.insight["Proved the Piece"]){
+       const k=findSpot(function(it){return it.id==="kendall";});
+       if(k)return {it:k,why:"will teach you the drill"};
+     }
+     return null;
+   },
+   end:{head:"Landfall \u2014 Complete", yr:"Chapter II \u00b7 to be continued",
+     nextWorld:null,
+     body:"<p>Two men wounded, a cross standing in sand that will not hold it through a winter, and seven names read out of a box that crossed an ocean shut.</p>"+
+       "<p>One of the seven has been in irons since the Canaries. Another heard his own name read an hour after complaining that nobody had shown a warrant, and within the year the other six will have him shot. Neither of those is a story anybody on this beach can see yet.</p>"+
+       "<p class='note'>Chapter II complete. Upstream is the marshy peninsula they will choose, the fort, and the Powhatan whose homeland this already is. Those are chapters still to come.</p>"}},
   {n:"III",t:"First Contact",d:"The Powhatan homeland, 1607",ready:false},
   {n:"IV",t:"Smith & the Record",d:"The fort and the woods, 1607-09",ready:false},
   {n:"V",t:"The Starving Time",d:"The besieged fort, winter 1609-10",ready:false},
@@ -7630,16 +7802,12 @@ function openChapters(){
     b.className="chap"+(c.ready?"":" soon");
     b.innerHTML="<b>Chapter "+c.n+" \u2014 "+c.t+"</b><small>"+c.d+
       (c.ready?"":" \u00b7 not yet built")+"</small>";
+    /* Every chapter now starts the same way a player would start it - through
+       its own intro card - rather than the picker having a second, shorter path
+       into the world that skipped the date, the place and the task. */
     if(c.ready){b.onclick=function(){
       $("mChapters").classList.remove("on");
-      if(c.world&&c.world!=="ch1"){
-        show("scene");closeAllModals();setPaused(false);
-        initRenderer();enterWorld(c.world);resize();startLoop();
-        $("hudChapter").textContent="Chapter "+c.n+" \u2014 "+c.t;
-        return;
-      }
-      if(CURRENT_WORLD&&CURRENT_WORLD!=="ch1"&&renderer)enterWorld("ch1");
-      $("introBody").textContent=CH.intro;$("introObj").textContent=CH.obj;show("intro");
+      openIntro(c.world);
     };}
     else b.onclick=function(){toastMenu("Chapter "+c.n+" is still on the drawing board.");};
     host.appendChild(b);
@@ -7662,7 +7830,14 @@ $("adminCode").addEventListener("keydown",function(e){
    Choosing also rewrites the control hints, so they describe the way you
    are actually going to play rather than listing everything at once. */
 let LAYOUT="phone";
-function setLayout(mode){
+/* Whether the player picked the shape themselves. Auto-detection ran exactly
+   once, at script time, from the window ratio - so a window that was tall when
+   the page loaded, or a pane that had not finished laying out, locked the game
+   to phone for the session and told a player with a keyboard to slide their
+   thumbs. It re-checks on resize now, and a manual choice always wins. */
+let LAYOUT_CHOSEN=false;
+function setLayout(mode,manual){
+  if(manual)LAYOUT_CHOSEN=true;
   LAYOUT=mode;
   document.body.classList.toggle("wide",mode==="computer");
   $("layPhone").classList.toggle("on",mode==="phone");
@@ -7682,10 +7857,20 @@ function updateControlText(){
     ? "Left thumb walks \u00b7 right thumb looks \u00b7 pinch to zoom \u00b7 tap the green button"
     : "W A S D to walk \u00b7 drag to look \u00b7 scroll to zoom \u00b7 <b>F</b> to use";
 }
-$("layPhone").onclick=function(){setLayout("phone");};
-$("layPC").onclick=function(){setLayout("computer");};
-/* start in whichever shape the window already is */
-setLayout((window.innerWidth||0)>(window.innerHeight||1)*1.25?"computer":"phone");
+$("layPhone").onclick=function(){setLayout("phone",true);};
+$("layPC").onclick=function(){setLayout("computer",true);};
+/* start in whichever shape the window is, and follow it until the player
+   overrides - a phone rotated to landscape is still a phone, so this only
+   flips the CONTROL HINTS and the frame, never a stated preference */
+function autoLayout(first){
+  if(LAYOUT_CHOSEN)return;
+  const want=((window.innerWidth||0)>(window.innerHeight||1)*1.25)?"computer":"phone";
+  /* the first call must run even when `want` already equals the initial value,
+     or the control hints are never written at all */
+  if(first||want!==LAYOUT)setLayout(want);
+}
+autoLayout(true);
+window.addEventListener("resize",function(){autoLayout(false);});
 
 
 /* ---- full screen, and a render resolution that follows the window ---- */
@@ -7698,7 +7883,8 @@ function toggleFull(){
       const el=document.documentElement;
       const go=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;
       if(go)go.call(el);
-      if(LAYOUT!=="computer")setLayout("computer");
+      /* deliberate act, so it counts as a choice and resize will not undo it */
+      if(LAYOUT!=="computer")setLayout("computer",true);
     } else {
       const out=document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen;
       if(out)out.call(document);
