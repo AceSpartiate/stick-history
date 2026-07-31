@@ -193,12 +193,40 @@
     border:1px solid rgba(224,218,187,.3);background:rgba(24,20,14,.42);
     color:rgba(231,218,187,.88);pointer-events:auto;cursor:pointer}
   #hudJump:active{background:rgba(169,130,47,.32)}
-  #hudGun,#hudLoad{display:none;height:30px;padding:0 .6em;border-radius:7px;flex:none;
-    font-family:'IM Fell English SC',serif;font-size:.66rem;letter-spacing:.04em;line-height:28px;
-    border:1px solid rgba(224,218,187,.3);background:rgba(24,20,14,.42);
-    color:rgba(231,218,187,.88);pointer-events:auto;cursor:pointer}
-  #hudLoad{border-color:rgba(169,130,47,.5);color:#e8c877}
-  #hudGun:active,#hudLoad:active{background:rgba(169,130,47,.32)}
+  /* ---- the piece, bottom middle ----
+     Slinging and loading used to be two small buttons in the top-right corner of
+     the HUD, which is the furthest point on the screen from either thumb and the
+     wrong end of the screen from the weapon. One button now, centre bottom, under
+     the barrel, carrying a drawing of the thing it controls.
+     z-index 6 to clear the two touch zones at 4, which tile the whole viewport. */
+  #gunBtn{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+    z-index:6;display:none;align-items:center;gap:.55em;
+    padding:.42em .8em .42em .6em;border-radius:10px;
+    background:linear-gradient(180deg,rgba(42,34,19,.92),rgba(24,20,14,.92));
+    border:1px solid rgba(176,141,62,.55);color:var(--parch);
+    font-family:'IM Fell English SC',serif;font-size:.82rem;letter-spacing:.03em;
+    box-shadow:0 3px 0 rgba(0,0,0,.4);cursor:pointer;overflow:hidden}
+  #gunBtn.on{display:flex}
+  #gunBtn:active{transform:translateX(-50%) translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.4)}
+  #gunBtn canvas{display:block;width:44px;height:20px;flex:none}
+  #gunBtn .glab{display:block;line-height:1.15;text-align:left}
+  #gunBtn .glab small{display:block;font-family:'EB Garamond',serif;font-size:.68rem;
+    font-style:italic;color:var(--gold-bright);letter-spacing:0}
+  /* the reload, as a bar filling under the button - the time sink made visible */
+  #gunBtn .gfill{position:absolute;left:0;bottom:0;height:3px;width:0;
+    background:linear-gradient(90deg,#8a6a22,#d8b25a)}
+  #gunBtn.hot{border-color:var(--copper-bright)}
+  /* FIRE, for touch. On a mouse the left button does it and this stays hidden. */
+  #fireBtn{position:absolute;right:20px;bottom:96px;z-index:6;display:none;
+    width:74px;height:74px;border-radius:50%;
+    background:radial-gradient(circle at 38% 32%,#a34638,#6d271d);
+    border:2px solid rgba(240,214,200,.5);color:#f6e9e2;
+    font-family:'IM Fell English SC',serif;font-size:.9rem;letter-spacing:.04em;
+    box-shadow:0 4px 0 rgba(0,0,0,.45)}
+  #fireBtn.on{display:block}
+  #fireBtn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.45)}
+  #fireBtn.cold{background:radial-gradient(circle at 38% 32%,#5a5348,#332f28);
+    border-color:rgba(224,218,187,.28);color:rgba(231,218,187,.5)}
   #hudVoice.off{color:rgba(231,218,187,.32);text-decoration:line-through}
   #codeBox{margin-top:.6em;text-align:left}
   #codeBox textarea{width:100%;height:70px;font-family:ui-monospace,Menlo,monospace;
@@ -418,8 +446,6 @@
         <div class="ink"><span class="dot"></span><span id="hudInk">0</span></div>
         <button id="hudVoice" title="Narration (M)">&#9835;</button>
         <button id="hudJump" title="Jump (space)">Jump</button>
-        <button id="hudGun" title="Sling or take in hand (G)">Sling</button>
-        <button id="hudLoad" title="Load her (R)">Load</button>
       </div>
       <div id="guide"><span class="arw" id="guideArw">➤</span><span id="guideTxt"></span></div>
       <div id="hint">Drag left to walk · right to look · scroll to zoom · <b>F</b> to use</div>
@@ -445,6 +471,12 @@
         <button class="camb" id="zOut" title="Zoom out">−</button>
       </div>
       <button id="action"></button>
+      <button id="gunBtn" title="The piece (G)">
+        <canvas id="gunIcon" width="88" height="40"></canvas>
+        <span class="glab" id="gunLab">Take her up<small>slung</small></span>
+        <span class="gfill" id="gunFill"></span>
+      </button>
+      <button id="fireBtn">Give<br>Fire</button>
     </div>
   </section>
 
@@ -2956,40 +2988,152 @@ function setItemState(id,st){if(!S.items)S.items={};S.items[id]=st;}
 function itemHeld(id){const st=itemState(id);return st==="stowed"||st==="carried";}
 
 /* ========== REACHING FOR THE PIECE ==========
-   Slinging and loading were buried two taps deep in the pause menu, which is no
-   use at all when the light is going and arrows are landing. They are on the HUD
-   now, and on G and R, and the buttons only exist while you actually have her. */
-function refreshGunHud(){
-  const g=$("hudGun"), l=$("hudLoad");
-  if(!g||!l)return;
-  const st=itemState("matchlock");
-  const have=(st==="carried"||st==="stowed");
-  /* NOT style.display="" - clearing the inline value falls back to the
-     stylesheet, and the stylesheet rule for these two is display:none, so they
-     could never appear however the state changed. Set the value explicitly. */
-  g.style.display=have?"inline-block":"none";
-  l.style.display=(st==="carried")?"inline-block":"none";
-  g.textContent=(st==="carried")?"Sling":"Take up";
-  g.title=(st==="carried")?"Sling her on your back (G)":"Take her in hand (G)";
+   The old controls were two small buttons in the top-right corner of the HUD, which
+   is the furthest point on the screen from either thumb and the wrong end of the
+   screen from the weapon. One button now, centre bottom, under the barrel, showing
+   a drawing of the thing it governs. It has exactly one job: on your back, or in
+   your hands.
+
+   `setGunCarried` is the single owner of that transition. The button, the G key and
+   anything else all go through it, so nothing can disagree about where the piece is.
+
+   WHICH INPUT IS IN USE. Capability is the wrong question - a touchscreen laptop
+   reports touch and would be handed the fiddlier controls while its owner holds a
+   mouse. So this follows the last input actually USED, via PointerEvent.pointerType
+   and any keypress, seeded from the layout guess. */
+/* ========== THE RELOAD, WHICH RUNS ITSELF ==========
+   The six-motion drill stays exactly as it is for Kendall's lesson - it IS the
+   chapter's argument, that an honest 1607 matchlock is nearly useless in a surprise
+   attack, and no codex entry can make that point the way six inputs can. But once
+   the piece is proved, repeating six taps every forty seconds is friction rather
+   than teaching, so from then on the sequence runs itself.
+
+   AUTOMATIC IS NOT INVISIBLE. This drives GUN.step through the same order the
+   manual drill uses, so every prop animation updateDrill already owns - the flask
+   tipping, the powder stream, the scouring stick going down the bore, the coal
+   brightening - plays exactly as before. The player still watches forty seconds
+   pass with their hands full. That is the same lesson, without the mashing.
+
+   Declared up here rather than beside the drill because refreshGunUI reads it and
+   runs at top level; further down it would be in the temporal dead zone. */
+const RELOAD={on:false,t:0,dur:0,stage:-1};
+/* fractions of the whole, summing to 1. Ramming is the long part, which is true. */
+const RELOAD_STAGES=[
+  {k:"powder",f:0.22},{k:"ball",f:0.10},{k:"wad",f:0.10},
+  {k:"ram",f:0.30},{k:"prime",f:0.18},{k:"ready",f:0.10}
+];
+let INPUT=(("ontouchstart" in window)||(navigator.maxTouchPoints||0)>0)?"touch":"kbm";
+function setInput(m){
+  if(INPUT===m)return;
+  INPUT=m;
+  refreshGunUI();
+  updateControlText();
 }
-function toggleSling(){
+window.addEventListener("pointerdown",function(e){
+  if(e.pointerType==="mouse")setInput("kbm");
+  else if(e.pointerType==="touch")setInput("touch");
+},{capture:true});
+window.addEventListener("keydown",function(e){
+  /* a real key, not a modifier tap from an on-screen keyboard */
+  if(e.key&&e.key.length>0)setInput("kbm");
+},{capture:true});
+
+function gunHeld(){const st=itemState("matchlock");return st==="carried"||st==="stowed";}
+function gunInHands(){return itemState("matchlock")==="carried";}
+/* the drill has been given and a ball put in the mark: from here the piece is
+   yours to use, and the six motions are not asked for again */
+function gunEarned(){return !!S.insight["Proved the Piece"];}
+function gunReady(){return gunInHands()&&GUN.hasBall&&GUN.hasWad&&!GUN.spent&&!RELOAD.on;}
+
+/* ---- the icon: drawn, not an asset ----
+   A 2D silhouette rather than a fifth WebGLRenderer. There are already four
+   contexts (world, portrait, wardrobe, menu) and browsers cap them around sixteen;
+   spending one on a 44px picture would be absurd. */
+function paintGunIcon(){
+  const c=$("gunIcon"); if(!c)return;
+  const g=c.getContext("2d"); if(!g)return;
+  const W=c.width,H=c.height;
+  g.clearRect(0,0,W,H);
+  const cold=(GUN.glow<0.18);
+  g.save();
+  g.translate(4,H*0.5);
+  /* barrel */
+  g.strokeStyle="#cfc6ae";g.lineWidth=3.4;g.lineCap="round";
+  g.beginPath();g.moveTo(4,-3);g.lineTo(58,-6);g.stroke();
+  /* stock, swelling to the butt */
+  g.fillStyle="#a9814e";
+  g.beginPath();
+  g.moveTo(4,-1);g.lineTo(30,-3);g.lineTo(28,3);g.lineTo(2,8);g.lineTo(-2,3);
+  g.closePath();g.fill();
+  /* lock and serpentine */
+  g.fillStyle="#d8b25a";g.fillRect(22,-6,7,4);
+  g.strokeStyle="#d8b25a";g.lineWidth=1.6;
+  g.beginPath();g.moveTo(26,-6);g.lineTo(29,-10);g.stroke();
+  /* the burning match - the one part that says whether she will go off at all */
+  g.fillStyle=cold?"#4a3a2a":"#ff8a2e";
+  g.beginPath();g.arc(29.5,-10.5,cold?1.6:2.6,0,Math.PI*2);g.fill();
+  if(!cold){
+    g.globalAlpha=0.35;g.beginPath();g.arc(29.5,-10.5,5,0,Math.PI*2);g.fill();g.globalAlpha=1;
+  }
+  g.restore();
+}
+
+/* ---- one owner for where the piece is ---- */
+function setGunCarried(on){
   const st=itemState("matchlock");
-  if(st==="ground"){toast("The piece is where you set it down.");return;}
   if(st==="absent"){toast("You have no piece yet.");return;}
-  if(GUN.active){closeDrill();setPaused(false);}
-  setItemState("matchlock",(st==="carried")?"stowed":"carried");
-  refreshPlayer();refreshGunHud();
-  toast((st==="carried")?"Slung across your back.":"In your hands.");
-}
-function loadAtWill(){
-  const st=itemState("matchlock");
-  if(st==="absent"){toast("You have no piece yet.");return;}
   if(st==="ground"){toast("The piece is where you set it down.");return;}
-  if(GUN.active){closeDrill();setPaused(false);refreshGunHud();return;}
-  if(anyModalOpen())return;
-  openDrill(null);            /* your own time, no lesson watching */
-  refreshGunHud();
+  if(GUN.active){closeDrill();setPaused(false);}   /* leave the taught drill first */
+  if(!on)cancelReload();
+  setItemState("matchlock",on?"carried":"stowed");
+  /* IN HANDS MEANS SIGHTING DOWN IT. First person already falls out of the camera
+     code at camDist < FP_AT, and openDrill proved the mechanism, so this reuses it
+     rather than inventing a mode. The previous zoom is put back on slinging. */
+  if(on&&gunEarned()){
+    if(GUN.savedZoom===undefined)GUN.savedZoom=camZoom;
+    setZoom(0);
+    buildGunModel();
+    if(gunPiece)gunPiece.visible=true;
+  } else if(!on){
+    if(GUN.savedZoom!==undefined){setZoom(GUN.savedZoom);GUN.savedZoom=undefined;}
+    if(gunPiece)gunPiece.visible=false;
+    if(gunFlask)gunFlask.visible=false;
+    if(gunRammer)gunRammer.visible=false;
+    if(gunStream)gunStream.visible=false;
+    if(cam&&Math.abs(cam.fov-G_FOV.normal)>0.05){cam.fov=G_FOV.normal;cam.updateProjectionMatrix();}
+  }
+  refreshPlayer();refreshGunUI();
+  toast(on?"In your hands.":"Slung across your back.");
 }
+function toggleGun(){setGunCarried(!gunInHands());}
+
+/* ---- what the two controls should look like right now ---- */
+function refreshGunUI(){
+  const b=$("gunBtn"), lab=$("gunLab"), fb=$("fireBtn");
+  if(!b||!lab||!fb)return;
+  const show=gunHeld()&&!GUN.active;
+  b.classList.toggle("on",show);
+  if(show){
+    const inh=gunInHands();
+    let sub;
+    if(!inh)sub="on your back";
+    else if(RELOAD.on)sub="loading…";
+    else if(!gunEarned())sub="not yet proved";
+    else if(gunReady())sub=(GUN.glow<0.18)?"loaded · match cold":"loaded";
+    else sub=(INPUT==="kbm")?"empty · press R":"empty · tap Load";
+    lab.innerHTML=(inh?"Sling her":"Take her up")+"<small>"+sub+"</small>";
+    b.classList.toggle("hot",inh&&gunReady());
+    paintGunIcon();
+  }
+  /* FIRE is a touch control. With a mouse the left button does it, and a button
+     that duplicates the mouse is a button in the way. */
+  const wantFire=gunInHands()&&gunEarned()&&!GUN.active&&INPUT==="touch";
+  fb.classList.toggle("on",wantFire);
+  fb.classList.toggle("cold",!gunReady());
+  fb.innerHTML=RELOAD.on?"Load…":(gunReady()?"Give<br>Fire":"Load");
+}
+/* kept as the old name so the many existing call sites still mean something */
+function refreshGunHud(){refreshGunUI();}
 /* ---- what rides on the player ---- */
 function dressCarried(fig){
   if(!fig)return;
@@ -4059,7 +4203,11 @@ function animate(){
     animT+=dt*(running?17:10);
   } else animT+=dt*1.4;
 
-  updateFx(dt);updateDrill(dt);updateShadows();
+  updateFx(dt);updateReload(dt);updateDrill(dt);updateShadows();
+  /* IN HANDS MEANS SIGHTING DOWN IT. Held here rather than only set on pick-up, so
+     the zoom buttons and the pinch cannot quietly pull the player back out to third
+     person while a loaded piece is at their shoulder. */
+  if(gunInHands()&&gunEarned()&&!CS.active&&!LESSON.on&&camZoom>0)setZoom(0);
   const amp=moving?0.75:0.06,sw=Math.sin(animT)*amp;
   if(playerParts){playerParts.la.rotation.x=sw;playerParts.ra.rotation.x=-sw;
     playerParts.ll.rotation.x=-sw;playerParts.rl.rotation.x=sw;}
@@ -4155,6 +4303,13 @@ function animate(){
      run every frame - but it does have to run. Every eighth frame is about
      seven times a second, which reads as live. */
   if((labelTick&7)===0)updateGuide();
+  /* The gun control is POLLED, not pushed. What it has to show depends on values
+     that change with no event to hang a refresh on: the match burning down, a hang
+     fire resolving on a timer, giveFire's delayed reset, the ambush emptying the
+     piece. Driving it from events left the label reading "loaded" over an empty
+     barrel - which is the worst possible lie for this particular button to tell.
+     Every eighth frame, same as the guide, and it is a handful of DOM writes. */
+  if((labelTick&7)===4&&gunHeld())refreshGunUI();
   renderer.render(scene,cam);
 }
 
@@ -4301,6 +4456,25 @@ function lookMove(e){
   lookX=e.clientX;lookY=e.clientY;
 }
 function lookEnd(e){if(e.pointerId===lookId)lookId=null;}
+/* ---- left mouse fires, but the same surface is also drag-to-look ----
+   #touchLook owns the right half of the viewport for turning the camera, so a naive
+   click-to-fire would discharge the piece every time the player looked around.
+   A press only counts as a shot if the mouse barely moved and was not held: under
+   six pixels and under a third of a second. Anything else was aiming.
+   Mouse only - on touch the FIRE button does this, because a tap on the look zone
+   is how you turn round. */
+let clkX=0,clkY=0,clkT=0,clkOk=false;
+tLook.addEventListener("pointerdown",function(e){
+  clkOk=(e.pointerType==="mouse"&&e.button===0);
+  clkX=e.clientX;clkY=e.clientY;clkT=performance.now();
+});
+tLook.addEventListener("pointerup",function(e){
+  if(!clkOk||e.pointerType!=="mouse"||e.button!==0)return;
+  clkOk=false;
+  if(Math.hypot(e.clientX-clkX,e.clientY-clkY)>6)return;   /* that was a look */
+  if(performance.now()-clkT>330)return;                    /* that was a hold */
+  tryFire();
+});
 tLook.addEventListener("pointerdown",lookStart);
 tLook.addEventListener("pointermove",lookMove);
 ["pointerup","pointercancel"].forEach(function(ev){tLook.addEventListener(ev,lookEnd);});
@@ -4363,8 +4537,8 @@ window.addEventListener("keydown",function(e){
     e.preventDefault();return;
   }
   if(k===" "||k==="spacebar"){doJump();e.preventDefault();return;}
-  if(k==="g"){toggleSling();e.preventDefault();return;}
-  if(k==="r"){loadAtWill();e.preventDefault();return;}
+  if(k==="g"){toggleGun();e.preventDefault();return;}
+  if(k==="r"){startReload();e.preventDefault();return;}
   if(k==="i"){
     /* the inventory, from the keyboard */
     if($("mPause").classList.contains("on")){$("pauseInv").click();}
@@ -6132,7 +6306,9 @@ function renderInv(){
         f.textContent="Load her";
         f.onclick=function(){
           $("mPause").classList.remove("on");setPaused(false);
-          openDrill(null);            /* no lesson callback: this is your own time */
+          /* the automatic sequence, not the taught drill - openDrill is now only
+             ever entered from Kendall's lesson */
+          startReload();
         };
         acts.appendChild(f);
       }
@@ -6241,9 +6417,14 @@ $("hudVoice").onclick=function(e){e.stopPropagation();setVoiceOn(!VOICE_ON);};
    rather than sitting there inert. */
 $("mapClose").onclick=function(){$("mMap").classList.remove("on");setPaused(false);};
 $("hudJump").onclick=function(e){e.stopPropagation();doJump();};
-$("hudGun").onclick=function(e){e.stopPropagation();toggleSling();};
-refreshGunHud();      /* correct from the first frame, not just after a change */
-$("hudLoad").onclick=function(e){e.stopPropagation();loadAtWill();};
+$("gunBtn").onclick=function(e){e.stopPropagation();toggleGun();};
+$("fireBtn").onclick=function(e){e.stopPropagation();
+  if(RELOAD.on)return;
+  /* one control, two jobs, and never ambiguous: loaded means fire, empty means
+     load. On touch there is no left mouse button to lean on. */
+  if(gunReady())tryFire();else startReload();
+};
+refreshGunUI();       /* correct from the first frame, not just after a change */
 if(!SPEECH_OK){
   VOICE_ON=false;
   const hv=$("hudVoice");if(hv)hv.style.display="none";
@@ -6586,8 +6767,105 @@ function openDrill(onHit){
   resetCharge();
   $("gun").classList.add("on");
   $("prompt").classList.remove("on");$("action").classList.remove("on");
+  /* the taught drill owns the screen while it runs, so the standing gun control
+     stands down - without this it lingers for a few frames until the poll notices */
+  cancelReload();refreshGunUI();
   gStep("powder");
 }
+/* ========== THE AUTOMATIC RELOAD ========== */
+function startReload(){
+  if(!gunInHands()){
+    if(gunHeld()){setGunCarried(true);}else{toast("You have no piece yet.");return;}
+  }
+  if(!gunEarned()){toast("Captain Kendall has not shown you the drill yet.");return;}
+  if(GUN.active||anyModalOpen()||CS.active||LESSON.on)return;
+  if(RELOAD.on)return;
+  if(gunReady()){toast("She is already loaded.");return;}
+  buildGunModel();
+  if(gunPiece)gunPiece.visible=true;
+  resetCharge();
+  RELOAD.on=true;RELOAD.t=0;RELOAD.stage=-1;
+  /* ARMS.reload has sat in the weapon table since it was written, read by nothing.
+     This is what it was for: thirty-eight seconds for one ball. */
+  RELOAD.dur=(ARMS[GUN.arm]&&ARMS[GUN.arm].reload)||38;
+  playSfx("click",0.2);
+  refreshGunUI();
+}
+function cancelReload(){
+  if(!RELOAD.on)return;
+  RELOAD.on=false;RELOAD.stage=-1;GUN.pourOn=false;stopSfx();
+  resetCharge();                    /* an interrupted load is a wasted charge */
+  if(gunFlask)gunFlask.visible=false;
+  if(gunRammer)gunRammer.visible=false;
+  if(gunStream)gunStream.visible=false;
+  refreshGunUI();
+}
+function updateReload(dt){
+  if(!RELOAD.on)return;
+  /* Slung, or taken out of your hands, and the load stops. */
+  if(!gunInHands()){cancelReload();return;}
+  RELOAD.t+=dt;
+  const k=Math.min(1,RELOAD.t/RELOAD.dur);
+  /* which motion are we on */
+  let acc=0,idx=RELOAD_STAGES.length-1;
+  for(let i=0;i<RELOAD_STAGES.length;i++){
+    acc+=RELOAD_STAGES[i].f;
+    if(k<=acc){idx=i;break;}
+  }
+  if(idx!==RELOAD.stage){
+    RELOAD.stage=idx;
+    const st=RELOAD_STAGES[idx].k;
+    GUN.step=st;                    /* updateDrill animates from this, unchanged */
+    /* the sounds the manual drill makes, at the moments it makes them */
+    if(st==="powder"||st==="prime"){GUN.pourOn=true;playSfx("pour",0.14);}
+    else{GUN.pourOn=false;stopSfx();
+      if(st==="ram")playSfx("ram",0.30);
+      else if(st==="ball"||st==="wad")playSfx("click",0.22);}
+    if(st==="ready"){
+      /* Loaded competently, because the soldier is doing it rather than the player
+         fumbling. What remains uncertain is the WEAPON, not the handling: misfire
+         and hang fire are untouched, which is the historical point. */
+      GUN.charge=(G_LO+G_HI)/2;
+      GUN.prime=(P_LO+P_HI)/2;
+      GUN.hasBall=true;GUN.hasWad=true;GUN.ramQ=1;GUN.ramHits=4;
+      GUN.spent=false;
+      /* the match is tended as part of the sequence - it is one of the motions.
+         It still burns down afterwards, so a piece held loaded too long goes cold
+         and has to be loaded again. That is why you cannot simply carry a ready
+         musket about all day, which is the whole tyranny of the thing. */
+      GUN.glow=Math.max(GUN.glow,0.85);
+    }
+    refreshGunUI();
+  }
+  const f=$("gunFill");
+  if(f)f.style.width=(k*100).toFixed(1)+"%";
+  if(k>=1){
+    RELOAD.on=false;RELOAD.stage=-1;GUN.pourOn=false;stopSfx();
+    if(gunFlask)gunFlask.visible=false;
+    if(gunRammer)gunRammer.visible=false;
+    if(gunStream)gunStream.visible=false;
+    GUN.step="ready";
+    if(f)f.style.width="0%";
+    playSfx("click",0.3);
+    toast("Loaded. She will not stay hot long.");
+    refreshGunUI();
+  }
+}
+/* ---- firing, from a mouse or from a button ---- */
+function tryFire(){
+  if(GUN.active)return false;                 /* the taught drill has its own button */
+  if(!gunInHands()||!gunEarned())return false;
+  if(anyModalOpen()||CS.active||LESSON.on||paused)return false;
+  if(RELOAD.on){toast("Still loading.");return false;}
+  if(!GUN.hasBall||GUN.spent){
+    toast(INPUT==="kbm"?"Empty — press R to load.":"Empty — tap Load.");
+    return false;
+  }
+  giveFire();
+  refreshGunUI();
+  return true;
+}
+
 function closeDrill(){
   GUN.active=false;GUN.pourOn=false;stopSfx();
   $("gun").classList.remove("on");
@@ -7221,7 +7499,10 @@ function gunSmoke(scale){
 }
 /* the drill, animated in the world so you can watch it happen */
 function updateDrill(dt){
-  if(!GUN.active)return;
+  /* Also runs for the AUTOMATIC reload and while simply holding her sighted, so
+     the flask, stream, scouring stick and coal animate the same way they always
+     did. Automatic was never meant to mean invisible. */
+  if(!GUN.active&&!RELOAD.on&&!gunInHands())return;
   GUN.glow=Math.max(0,GUN.glow-dt*0.018);
   if(GUN.step==="ram"){
     GUN.ramT+=dt;
@@ -7238,9 +7519,18 @@ function updateDrill(dt){
                :"load";
   const TGT=G_POSE[tgtName];
   if(!GUN.pose)GUN.pose={p:G_POSE.load.p.slice(),r:G_POSE.load.r.slice()};
+  /* CARRIED LOW WHILE WALKING. The taught drill's poses were authored for a man
+     standing still at the mark who is MEANT to watch the stroke, so the barrel sits
+     across the middle of the screen. During the automatic reload the player is
+     walking about, and a musket through the centre of the view is not atmosphere,
+     it is a blindfold. Dropped and pushed aside so it fills a lower corner
+     instead - your hands are still visibly full, which is the whole point of the
+     time sink; you can just also see where you are going. */
+  const walk=(RELOAD.on&&!GUN.active);
+  const OFF=walk?[0.30,-0.62,0.30]:[0,0,0];
   const ease=Math.min(1,dt*4.2);
   for(let i=0;i<3;i++){
-    GUN.pose.p[i]+=(TGT.p[i]-GUN.pose.p[i])*ease;
+    GUN.pose.p[i]+=((TGT.p[i]+OFF[i])-GUN.pose.p[i])*ease;
     GUN.pose.r[i]+=(TGT.r[i]-GUN.pose.r[i])*ease;
   }
   /* how far into the sighted stance we are, for the sway and the field of view */
@@ -9057,7 +9347,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260731-1553-419fb6d";
+const BUILD="20260731-2011-1483243";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
