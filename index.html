@@ -614,17 +614,17 @@ const PALETTES={
      sat permanently locked with no way to reach them. Every cloth now has a
      path, and a note on the dye that made it - which is a small lesson in what
      colour cost in 1607. */
-  ink:{name:"Undyed Linen",color:0xd9cdae,free:1,
+  ink:{name:"Undyed Linen",color:lin(0xd9cdae),free:1,
     desc:"No dye at all. Cloth as it came off the loom - the cheapest thing a man could wear, and what most of this company owns."},
-  lostcolony:{name:"Lost Colony Grey",color:0x8a8272,
+  lostcolony:{name:"Lost Colony Grey",color:lin(0x8a8272),
     desc:"Undyed wool from a grey-fleeced sheep. Earned, not bought - it comes to you with what you learn about Roanoke."},
-  company:{name:"Company Red",color:0x8a3b2f,buy:30,
+  company:{name:"Company Red",color:lin(0x8a3b2f),buy:30,
     desc:"Madder root, boiled with alum. Cheap enough to be common and bright enough to be livery, which is why a company dresses its men in it."},
-  river:{name:"River Green",color:0x4c7d6e,buy:45,
+  river:{name:"River Green",color:lin(0x4c7d6e),buy:45,
     desc:"Weld yellow over woad blue - two dyeings, two costs. Green could not be had in one bath, so green was never cheap."},
-  slate:{name:"Slate Blue",color:0x4e6076,buy:55,
+  slate:{name:"Slate Blue",color:lin(0x4e6076),buy:55,
     desc:"Woad, fermented in stale urine and worked by men paid to stand the smell. The deeper the blue, the more baths, and the more it cost."},
-  boom:{name:"Boom Gold",color:0xa9862c,locked:1,
+  boom:{name:"Boom Gold",color:lin(0xa9862c),locked:1,
     desc:"The colour of money once the leaf sold. (Later chapters.)"}
 };
 /* Each piece of clothing carries its own dye. eq.palette stays as the fallback,
@@ -1273,7 +1273,7 @@ function addFace(B,extra,key){
   const P=d.prop;
   if(P==="halo"){
     const h=new THREE.Mesh(new THREE.TorusGeometry(0.155,0.024,6,18),
-      new THREE.MeshBasicMaterial({color:0xffe08a}));
+      new THREE.MeshBasicMaterial({color:lin(0xffe08a)}));
     h.rotation.x=Math.PI/2;h.position.set(0,1.99,0);extra.push(h);
   } else if(P==="glasses"){
     for(let sx=-1;sx<=1;sx+=2){
@@ -1305,7 +1305,7 @@ function addFace(B,extra,key){
 }
 
 const MATS={};
-function mat(hex){if(!MATS[hex]){MATS[hex]=new THREE.MeshLambertMaterial({color:hex});SHARED.add(MATS[hex]);}return MATS[hex];}
+function mat(hex){if(!MATS[hex]){MATS[hex]=new THREE.MeshLambertMaterial({color:lin(hex)});SHARED.add(MATS[hex]);}return MATS[hex];}
 const FIG_SCALE=3.24;
 
 function buildFigureRaw(eq){
@@ -1439,7 +1439,7 @@ function buildFigureRaw(eq){
   }
   if(eq.accessory==="acc_candle"){
     B.box(0.22,1.02,0.10,0.05,0.14,0.05,RGB(0xe8dcc0));
-    const fl=new THREE.Mesh(boxGeom(0.07,0.10,0.07),new THREE.MeshBasicMaterial({color:0xffd98a}));
+    const fl=new THREE.Mesh(boxGeom(0.07,0.10,0.07),new THREE.MeshBasicMaterial({color:lin(0xffd98a)}));
     fl.position.set(0.22,1.14,0.10);extra.push(fl);
   }
   /* Felt and knitted wool both took dye, so hats follow the hat dye. They are
@@ -1576,7 +1576,78 @@ function solid(x,z,hw,hd,lvl){if(BG)return;colliders.push({x:x,z:z,hw:hw,hd:hd,l
    Surfaces that used to be hundreds of little boxes are now emitted as vertex
    coloured triangle soup and uploaded as ONE mesh each: far fewer draw calls,
    smooth normals, and no seams for the river to show through. */
-function RGB(hex){return [((hex>>16)&255)/255,((hex>>8)&255)/255,(hex&255)/255];}
+/* ========== COLOUR, AND THE ONE TRANSFER FUNCTION THAT WAS MISSING ==========
+   Every colour in this file is authored the way a person picks colour: as an sRGB
+   hex, the thing a colour picker shows you. Light, though, does not add up in
+   sRGB. Doubling a light should double the number of photons, and photons live in
+   a LINEAR space; sRGB is a curve fitted to human perception with roughly a 2.2
+   power in it. Multiply in the wrong space and every shaded surface, every fog
+   blend and every light sum is wrong by that curve.
+
+   Until now the renderer was handed sRGB numbers and told they were linear, with
+   no encoding on the way out, and ACES filmic tone mapping on top of that. It did
+   not look broken - it looked FLAT, and measurably so: the beach sand is authored
+   with an R-B spread of 61 and was reaching the screen at 30. That missing
+   saturation was the curve, not the art.
+
+   So: convert at the authoring boundary, do all the arithmetic in linear, and let
+   the renderer encode back to sRGB on the way out. ACES stays, and now receives
+   the linear input it was designed for.
+
+   TWO THINGS DELIBERATELY NOT CONVERTED, both verified against r128's own shader
+   source rather than assumed:
+
+     scene.background is the GL clear colour. It is written by gl.clearColor and
+     never passes through a fragment shader, so output encoding is never applied
+     to it - it has to stay in display space. (Moot in practice now that the sky
+     dome encloses the camera, but wrong is wrong.)
+
+     scene.fog.color is mixed in AFTER <encodings_fragment> in three's fragment
+     shader - checked: fog is at index 2186, encoding at 2155 - so fog is a
+     display-space colour too. Converting it would give a horizon that dissolves
+     into something far too dark. */
+function s2l(c){return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4);}
+/* One exposure for every canvas in the game. The dialogue portrait, the wardrobe
+   figure and the menu figure each had their own renderer with NO tone mapping at
+   all, so the same man was graded one way in the world and another in the panel
+   describing him. `gradeRenderer` is the single place that decides. */
+/* Trimmed from 1.05. With the lights summing correctly in linear space a fully
+   sunlit surface was landing about 7% over its own albedo - sand authored at 198
+   reaching the screen at 212. A lit diffuse surface should read near the colour
+   it was painted, not above it. */
+const EXPOSURE=0.95;
+function gradeRenderer(r){
+  if(!r)return r;
+  r.outputEncoding=THREE.sRGBEncoding;
+  r.toneMapping=THREE.ACESFilmicToneMapping;
+  r.toneMappingExposure=EXPOSURE;
+  return r;
+}
+/* And one light rig for every canvas that shows a FIGURE - the dialogue
+   portrait, the wardrobe and the menu. All three had their own hand-set lights,
+   which is how the same man came to be lit three different ways in three panels
+   that all claim to show him.
+
+   Same character as the world's: pale ambient, warm key, cool fill from the
+   other side. Deliberately a little hotter than the world, because these are
+   70x90 and 230x270 canvases where legibility beats atmosphere - a portrait is
+   an identification, not a scene. */
+function figureLights(sc){
+  sc.add(new THREE.HemisphereLight(lin(0xdfe8ee),lin(0x6a5a42),0.80));
+  const key=new THREE.DirectionalLight(lin(0xffe6bd),1.00);
+  key.position.set(4,9,8);sc.add(key);
+  const fill=new THREE.DirectionalLight(lin(0xa9c2d2),0.30);
+  fill.position.set(-6,3,4);sc.add(fill);
+}
+/* an authored hex as a linear THREE.Color, for material and light constructors */
+function lin(hex){
+  return new THREE.Color(s2l(((hex>>16)&255)/255),s2l(((hex>>8)&255)/255),s2l((hex&255)/255));
+}
+/* Vertex colours. These are multiplied straight into the lighting result, so
+   they have to be linear for the same reason the lights do - and every darkening
+   this project bakes in (tree undersides, ground concavity, hull strakes) becomes
+   physically meaningful rather than approximate. */
+function RGB(hex){return [s2l(((hex>>16)&255)/255),s2l(((hex>>8)&255)/255),s2l((hex&255)/255)];}
 function Geo(){this.p=[];this.c=[];}
 Geo.prototype.tri=function(a,b,c,col){
   this.p.push(a[0],a[1],a[2],b[0],b[1],b[2],c[0],c[1],c[2]);
@@ -1964,17 +2035,17 @@ function buildBeakAndRig(root){
   const spy=box(15*K,0.5*K,0.5*K,0x5a4728);spy.position.set(0,spyY,spyZ);root.add(spy);
   if(SAIL_SET){
     const sps=new THREE.Mesh(new THREE.PlaneGeometry(14*K,7*K),
-      new THREE.MeshLambertMaterial({color:0xd8cdb0,side:THREE.DoubleSide}));
+      new THREE.MeshLambertMaterial({color:lin(0xd8cdb0),side:THREE.DoubleSide}));
     sps.position.set(0,spyY-3.6*K,spyZ);root.add(sps);
   } else {
     /* the spritsail handed too: it hung directly over the beakhead, which is
        where a player standing at the bow is trying to look forward from */
     const spb=new THREE.Mesh(new THREE.CylinderGeometry(0.62*K,0.62*K,13*K,7),
-      new THREE.MeshLambertMaterial({color:0xd8cdb0}));
+      new THREE.MeshLambertMaterial({color:lin(0xd8cdb0)}));
     spb.rotation.z=Math.PI/2;spb.position.set(0,spyY+0.5*K,spyZ);root.add(spb);
   }
 
-  const sailMat=new THREE.MeshLambertMaterial({color:0xdcd2b6,side:THREE.DoubleSide});
+  const sailMat=new THREE.MeshLambertMaterial({color:lin(0xdcd2b6),side:THREE.DoubleSide});
   function mast(z,topY,rake){
     const h=topY-SHIP.DECK_Y+2*K;
     const m=box(1.5*K,h,1.5*K,0x4e3a22);
@@ -2009,7 +2080,7 @@ function buildBeakAndRig(root){
     /* handed: the bundle sits on the yard, and the gaskets that hold it there */
     const bundle=new THREE.Mesh(
       new THREE.CylinderGeometry(drop*0.085,drop*0.085,span*0.92,7),
-      new THREE.MeshLambertMaterial({color:0xd8cdb0}));
+      new THREE.MeshLambertMaterial({color:lin(0xd8cdb0)}));
     bundle.rotation.z=Math.PI/2;
     bundle.position.set(0,yardY+drop*0.075,z+0.15*K);
     root.add(bundle);
@@ -2078,7 +2149,7 @@ function buildBeakAndRig(root){
       /* the lateen brailed in to its own yard - the thing that was hanging like a
          curtain across the whole quarterdeck */
       const lb=new THREE.Mesh(new THREE.CylinderGeometry(1.05*K,1.05*K,40*K,7),
-        new THREE.MeshLambertMaterial({color:0xd8cdb0}));
+        new THREE.MeshLambertMaterial({color:lin(0xd8cdb0)}));
       lb.position.set(0.5*K,40*K,SHIP.MIZZ_Z+1.2*K);lb.rotation.x=0.95;root.add(lb);
     }
     shrouds(SHIP.MIZZ_Z,44*K,13*K);
@@ -2087,14 +2158,14 @@ function buildBeakAndRig(root){
   /* flags: 1606 Union at the main, St George fore and mizzen */
   function stGeorge(x,y,z){
     const f=new THREE.Mesh(new THREE.PlaneGeometry(6*K,3.6*K),
-      new THREE.MeshLambertMaterial({color:0xf2ecdc,side:THREE.DoubleSide}));
+      new THREE.MeshLambertMaterial({color:lin(0xf2ecdc),side:THREE.DoubleSide}));
     f.position.set(x+3*K,y,z);root.add(f);
     const v=box(0.7*K,3.6*K,0.12*K,0x9c2b22);v.position.set(x+3*K,y,z+0.12*K);root.add(v);
     const h=box(6*K,0.7*K,0.12*K,0x9c2b22);h.position.set(x+3*K,y,z+0.12*K);root.add(h);
   }
   function unionFlag(x,y,z){
     const f=new THREE.Mesh(new THREE.PlaneGeometry(7*K,4.2*K),
-      new THREE.MeshLambertMaterial({color:0x25397a,side:THREE.DoubleSide}));
+      new THREE.MeshLambertMaterial({color:lin(0x25397a),side:THREE.DoubleSide}));
     f.position.set(x+3.5*K,y,z);root.add(f);
     const d1=box(8*K,0.6*K,0.1*K,0xf2ecdc);d1.position.set(x+3.5*K,y,z+0.1*K);d1.rotation.z=0.54;root.add(d1);
     const d2=d1.clone();d2.rotation.z=-0.54;root.add(d2);
@@ -2162,7 +2233,7 @@ function buildFittings(root){
   /* lanterns */
   const lz=[[0,SHIP.QUARTER_Y+2.6*K,40*K],[-10*K,SHIP.DECK_Y+3.4*K,-6*K],[10*K,SHIP.DECK_Y+3.4*K,12*K]];
   for(let i=0;i<lz.length;i++){
-    const l=new THREE.Mesh(boxGeom(1.4*K,2*K,1.4*K),new THREE.MeshBasicMaterial({color:0xffd98a}));
+    const l=new THREE.Mesh(boxGeom(1.4*K,2*K,1.4*K),new THREE.MeshBasicMaterial({color:lin(0xffd98a)}));
     l.position.set(lz[i][0],lz[i][1],lz[i][2]);root.add(l);
   }
   /* cargo, casks and coils to clutter the working deck */
@@ -2240,11 +2311,11 @@ function bulkhead(root,z,halfW,y,h,col,lvl,doorHalf){
 let LIT=0;
 function lamp(root,x,y,z,range,strong){
   if(BG)return;
-  const l=new THREE.Mesh(boxGeom(1.1*K,1.5*K,1.1*K),new THREE.MeshBasicMaterial({color:0xffd08a}));
+  const l=new THREE.Mesh(boxGeom(1.1*K,1.5*K,1.1*K),new THREE.MeshBasicMaterial({color:lin(0xffd08a)}));
   l.position.set(x,y,z);root.add(l);
   if(strong&&LIT<3){
     LIT++;
-    const pl=new THREE.PointLight(0xffb46a,1.25,(range||22)*K*1.6);pl.position.set(x,y,z);root.add(pl);
+    const pl=new THREE.PointLight(lin(0xffb46a),1.25,(range||22)*K*1.6);pl.position.set(x,y,z);root.add(pl);
   }
 }
 
@@ -2288,7 +2359,7 @@ function buildInnerShell(root){
   const g=new THREE.BufferGeometry();
   g.setAttribute("position",new THREE.Float32BufferAttribute(v,3));
   g.computeVertexNormals();
-  root.add(new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:0x3b2d1b,side:THREE.DoubleSide})));
+  root.add(new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:lin(0x3b2d1b),side:THREE.DoubleSide})));
 }
 
 /* ========== THE HOLD ========== */
@@ -2771,9 +2842,9 @@ function buildCabins(root){
   const hearth=box(3.0*K,2.0*K,4.2*K,0x7d4a3a);hearth.position.set(hx,y+1.0*K,GZ);root.add(hearth);
   const bricks=box(3.3*K,0.35*K,4.5*K,0x8a5445);bricks.position.set(hx,y+2.1*K,GZ);root.add(bricks);
   const emb=new THREE.Mesh(new THREE.BoxGeometry(2.1*K,0.4*K,3.1*K),
-    new THREE.MeshBasicMaterial({color:0xd8702a}));
+    new THREE.MeshBasicMaterial({color:lin(0xd8702a)}));
   emb.position.set(hx,y+2.3*K,GZ);root.add(emb);
-  if(!BG){const fl=new THREE.PointLight(0xff8a3a,1.35,32*K);fl.position.set(hx,y+3.2*K,GZ);root.add(fl);}
+  if(!BG){const fl=new THREE.PointLight(lin(0xff8a3a),1.35,32*K);fl.position.set(hx,y+3.2*K,GZ);root.add(fl);}
   solid(hx,GZ,1.7*K,2.3*K,LVL.MAIN);
   const hood=box(3.4*K,0.5*K,4.6*K,0x3a2c1a);hood.position.set(hx,y+5.4*K,GZ);root.add(hood);
   const kettle=new THREE.Mesh(new THREE.CylinderGeometry(1.0*K,0.78*K,1.3*K,8),mat(0x2b2b30));
@@ -3329,8 +3400,8 @@ function initRenderer(){
      R-B spread of 61 down to 25 - warm tan rendering as grey-green. Ambient on a
      sunlit beach is a pale sky, not a blue gel. Warm bounce from the ground
      below is kept, because that IS what the sand does. */
-  hemiLight=new THREE.HemisphereLight(0xc9d8de,0x4a3a22,0.58);scene.add(hemiLight);
-  sunLight=new THREE.DirectionalLight(0xffe6bd,0.86);sunLight.position.set(60,150,40);
+  hemiLight=new THREE.HemisphereLight(lin(0xc9d8de),lin(0x4a3a22),0.58);scene.add(hemiLight);
+  sunLight=new THREE.DirectionalLight(lin(0xffe6bd),0.86);sunLight.position.set(60,150,40);
   scene.add(sunLight);
   /* A FILL, from the opposite quarter and low. With one sun at 64 degrees and
      nothing else directional, every surface facing away from it fell to flat
@@ -3340,13 +3411,20 @@ function initRenderer(){
      stepping. Directional lights are the cheapest kind there is and Lambert
      shades per vertex, so on the geometry counts here this is free.
      It is NOT a point light, so it does not touch the four-per-scene budget. */
-  fillLight=new THREE.DirectionalLight(0xa9c2d2,0.22);
+  fillLight=new THREE.DirectionalLight(lin(0xa9c2d2),0.22);
   fillLight.position.set(-70,40,-55);
   scene.add(fillLight);
   /* film tone mapping: the copper and gold of the interface finally matches the
      scene, and it costs one line */
+  /* ---- the output half of the colour pipeline ----
+     Tone mapping maps linear scene values into a displayable range; the encoding
+     then puts them back on the sRGB curve the monitor expects. Without the
+     encoding, ACES output was being written to the framebuffer as though it were
+     already sRGB - which is why midtones lifted and saturation compressed.
+     These two lines and the linear conversions are one change, not two. */
+  renderer.outputEncoding=THREE.sRGBEncoding;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure=1.05;
+  renderer.toneMappingExposure=EXPOSURE;
   clock=new THREE.Clock();
   /* The sky follows the camera from here rather than from animate(), because
      there are five render call sites - cutscene, camera lock, lesson, the main
@@ -3943,12 +4021,11 @@ function framePortrait(f,c){
 function drawPortrait(eq){
   const c=$("dlgFig");
   if(!portR){
-    portR=new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true,preserveDrawingBuffer:true});
+    portR=gradeRenderer(new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true,preserveDrawingBuffer:true}));
     portR.setPixelRatio(2);
     portScene=new THREE.Scene();portCam=new THREE.PerspectiveCamera(34,c.width/c.height,0.1,120);
     portCam.position.set(0,4.4,10.2);portCam.lookAt(0,3.4,0);
-    portScene.add(new THREE.HemisphereLight(0xffffff,0x554433,1.15));
-    const d=new THREE.DirectionalLight(0xffe6bd,0.6);d.position.set(2,8,6);portScene.add(d);
+    figureLights(portScene);
   }
   if(portScene.userData.fig)portScene.remove(portScene.userData.fig);
   const f=buildFigure(eq);f.rotation.y=0.5;portScene.add(f);portScene.userData.fig=f;
@@ -4877,7 +4954,7 @@ const POOL={smoke:null,trace:null,impacts:null,arrows:null};
 function makePools(){
   POOL.smoke=new Pool(48,function(){
     const m=new THREE.Mesh(boxGeom(1,1,1),
-      new THREE.MeshBasicMaterial({color:0x7d7a70,transparent:true,opacity:0.75}));
+      new THREE.MeshBasicMaterial({color:lin(0x7d7a70),transparent:true,opacity:0.75}));
     fxRoot.add(m);return m;
   });
   /* the shot's air trail gets its own pool: sharing with muzzle smoke meant a
@@ -4887,7 +4964,7 @@ function makePools(){
   /* 40 to a trail, ten seconds each, so room for two overlapping and change */
   POOL.trace=new Pool(96,function(){
     const m=new THREE.Mesh(boxGeom(1,1,1),
-      new THREE.MeshBasicMaterial({color:0x6f6d64,transparent:true,opacity:0.5}));
+      new THREE.MeshBasicMaterial({color:lin(0x6f6d64),transparent:true,opacity:0.5}));
     fxRoot.add(m);return m;
   });
   /* Cane shafts. Hard cap of 24 in the air at once - the ambush should feel
@@ -4902,7 +4979,7 @@ function makePools(){
   });
   POOL.impacts=new Pool(24,function(){
     const m=new THREE.Mesh(boxGeom(1,1,1),
-      new THREE.MeshBasicMaterial({color:0x1a1510,transparent:true,opacity:1}));
+      new THREE.MeshBasicMaterial({color:lin(0x1a1510),transparent:true,opacity:1}));
     fxRoot.add(m);return m;
   });
 }
@@ -4919,7 +4996,7 @@ function spawnPuff(pool,x,y,z,vx,vy,vz,o){
   const size=(o.size===undefined)?1:o.size;
   m.position.set(x,y,z);
   m.scale.setScalar(size);
-  if(o.col!==undefined)m.material.color.setHex(o.col);
+  if(o.col!==undefined)m.material.color.setHex(o.col).convertSRGBToLinear();
   const op=(o.op===undefined)?0.75:o.op;
   m.material.opacity=op;
   if(o.delay)m.visible=false;
@@ -4982,9 +5059,9 @@ function fireCannon(d){
   boom();
   /* muzzle flash */
   flash={mesh:new THREE.Mesh(new THREE.SphereGeometry(2.6*K,8,6),
-    new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:0.95})),t:0};
+    new THREE.MeshBasicMaterial({color:lin(0xffd27a),transparent:true,opacity:0.95})),t:0};
   flash.mesh.position.copy(d.muzzle);(fxRoot||worldRoot||scene).add(flash.mesh);
-  const pl=new THREE.PointLight(0xffb257,4.0,90*K);pl.position.copy(d.muzzle);
+  const pl=new THREE.PointLight(lin(0xffb257),4.0,90*K);pl.position.copy(d.muzzle);
   (fxRoot||worldRoot||scene).add(pl);
   flash.light=pl;
   /* powder smoke, from the pool */
@@ -5411,12 +5488,11 @@ let wbR=null,wbScene=null,wbCam=null,wbFig=null,wbSpin=0;
 let WB_PART="torso";   /* which garment the colour chips are dyeing */
 function initWb(){
   const c=$("wbCanvas");
-  wbR=new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true});
+  wbR=gradeRenderer(new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true}));
   wbR.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
   wbScene=new THREE.Scene();wbCam=new THREE.PerspectiveCamera(36,230/270,0.1,120);
   wbCam.position.set(0,4.6,12);wbCam.lookAt(0,3.2,0);
-  wbScene.add(new THREE.HemisphereLight(0xcfe3ff,0x4a3a22,1.2));
-  const d=new THREE.DirectionalLight(0xffe6bd,0.7);d.position.set(6,10,8);wbScene.add(d);
+  figureLights(wbScene);
   (function spin(){
     requestAnimationFrame(spin);
     if(!screens.wardrobe.classList.contains("on")||!wbFig)return;
@@ -5983,7 +6059,7 @@ function buildGunModel(){
   P.box(0.02,-0.06,-0.30,0.10,0.035,0.035,cord);
   P.box(0.075,-0.02,-0.62,0.035,0.035,0.30,cord);
   gunPiece=P.mesh(false,false);cam.add(gunPiece);
-  gunCoal=new THREE.Mesh(boxGeom(0.05,0.05,0.05),new THREE.MeshBasicMaterial({color:0xff7a1e}));
+  gunCoal=new THREE.Mesh(boxGeom(0.05,0.05,0.05),new THREE.MeshBasicMaterial({color:lin(0xff7a1e)}));
   gunCoal.position.set(0.10,0.17,-0.88);gunPiece.add(gunCoal);
   /* Everything the hands do is parented to the PIECE, not the camera. Parented
      to the camera they stayed level while the gun tilted to load, so nothing
@@ -6270,7 +6346,7 @@ function panFlash(){
     gunPiece.localToWorld(lp);
     m.position.copy(lp);
     m.scale.setScalar(0.16);
-    m.material.color.setHex(i<2?0xffd27a:0xbfb8a8);
+    m.material.color.setHex(i<2?0xffd27a:0xbfb8a8).convertSRGBToLinear();
     m.material.opacity=0.9;
     smoke.push({m:m,pool:POOL.smoke,t:0,
       vx:(Math.random()-0.5)*1.2,vy:1.6+Math.random(),vz:(Math.random()-0.5)*1.2,
@@ -6321,7 +6397,7 @@ function markImpact(x,y,z,d,dist,col){
   const size=0.55+dist*0.022;
   mk.position.set(x-d.x*0.28,y-d.y*0.28,z-d.z*0.28);
   mk.scale.set(size,size,size*0.35);
-  mk.material.color.setHex(col);
+  mk.material.color.setHex(col).convertSRGBToLinear();
   smoke.push({m:mk,pool:POOL.impacts,t:0,vx:0,vy:0,vz:0,base:size,
     life:34,op:1,grow:0,delay:0,ease:0.28});
 }
@@ -7697,7 +7773,10 @@ function paintSky(k){
     /* a power curve, because a linear sky gradient reads as a printed ramp -
        the real thing changes fast near the horizon and slowly overhead */
     const h=lerpHex(hor,top,Math.pow(t,0.45));
-    c.setXYZ(i,((h>>16)&255)/255,((h>>8)&255)/255,(h&255)/255);
+    /* vertex colours, so linear - the gradient is authored in sRGB and mixed
+       there (which is the right space to interpolate a hand-picked ramp in),
+       then converted once per vertex on the way into the buffer */
+    c.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
   }
   c.needsUpdate=true;
 }
@@ -7718,7 +7797,7 @@ function applySky(k){
   if(hemiLight)hemiLight.intensity=SKY_DAY.hemi+(SKY_DUSK.hemi-SKY_DAY.hemi)*k;
   if(sunLight){
     sunLight.intensity=SKY_DAY.sun+(SKY_DUSK.sun-SKY_DAY.sun)*k;
-    sunLight.color=SKY_SUN.setHex(lerpHex(SKY_DAY.sunC,SKY_DUSK.sunC,k));
+    sunLight.color=SKY_SUN.setHex(lerpHex(SKY_DAY.sunC,SKY_DUSK.sunC,k)).convertSRGBToLinear();
   }
   /* A cast shadow needs something casting it. As the sun goes down the blobs go
      with it, which also means the ambush is lit by almost nothing but the match -
@@ -8366,11 +8445,10 @@ function paintTitleFig(){
   const c=$("titleCanvas");
   if(!c)return;
   if(!ttR){
-    ttR=new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true});ttR.setPixelRatio(2);
+    ttR=gradeRenderer(new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true}));ttR.setPixelRatio(2);
     ttScene=new THREE.Scene();
     ttCam=new THREE.PerspectiveCamera(36,200/190,0.1,120);
-    ttScene.add(new THREE.HemisphereLight(0xcfe3ff,0x4a3a22,1.15));
-    const d=new THREE.DirectionalLight(0xffe6bd,0.7);d.position.set(6,10,8);ttScene.add(d);
+    figureLights(ttScene);
   }
   if(ttFig)ttScene.remove(ttFig);
   ttFig=buildFigure(S.equip);
