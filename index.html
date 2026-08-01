@@ -4323,8 +4323,14 @@ registerWorld("ch1",function(root){
   solid(4*K,cz,2.2*K,2.2*K,LVL.HOLD);
   interactables.push({id:"casks",label:"Ration Casks",x:4*K,z:cz,y:cy,lvl:LVL.HOLD,r:9*K,action:"steal"});
 
-  /* the scrivener's desk, under the half deck aft */
-  const dz=33*K,dy=LVL_Y[LVL.MAIN];
+  /* THE SCRIVENER'S DESK, under the half deck aft.
+     It stood at x 7.0K and it is 3K deep across the ship once turned, so its
+     outboard edge reached 11.48 - and the hull's half-beam at this frame, on this
+     deck, is 9.59. Nearly half the desk was inside the ship's side and through it.
+     Enumerated rather than eyeballed, per the standing note about spatial
+     complaints. At 5.0K the outboard edge lands at 8.78, which leaves it snug
+     against the planking with eight tenths of a unit to spare. */
+  const dz=33*K,dy=LVL_Y[LVL.MAIN],dx=5.0*K;
   const desk=new THREE.Group();
   const top=box(5*K,0.4*K,3*K,0x6b5433);top.position.y=2.6*K;desk.add(top);
   const lg=[[-2*K,-K],[2*K,-K],[-2*K,K],[2*K,K]];
@@ -4332,9 +4338,18 @@ registerWorld("ch1",function(root){
   const pap=box(1.7*K,0.1*K,1.2*K,0xefe6cd);pap.position.set(-0.7*K,2.85*K,0);desk.add(pap);
   const pap2=box(1.4*K,0.1*K,K,0xe0d4b4);pap2.position.set(K,2.85*K,0.3*K);pap2.rotation.y=0.3;desk.add(pap2);
   const pot=box(0.4*K,0.5*K,0.4*K,0x241f17);pot.position.set(1.8*K,3*K,-0.7*K);desk.add(pot);
-  desk.position.set(7.0*K,dy,dz);desk.rotation.y=-Math.PI/2;root.add(desk);
-  solid(7.0*K,dz,1.7*K,2.7*K,LVL.MAIN);
-  interactables.push({id:"reck",label:"The Scrivener's Desk",x:4.4*K,z:dz,y:dy,lvl:LVL.MAIN,r:7*K,action:"reck"});
+  /* A LIT CANDLE, because this is where the chapter ends and nothing said so.
+     It sits under the half deck where the light does not reach, and a dark desk
+     against a dark hull is not a destination - reported as "it is not clear that
+     is where we are supposed to go". An unlit basic material, so it costs a
+     handful of triangles and none of the four point lights. */
+  const cand=new THREE.Mesh(boxGeom(0.22*K,0.9*K,0.22*K),new THREE.MeshBasicMaterial({color:lin(0xf2e2b0)}));
+  cand.position.set(-1.9*K,3.3*K,0.8*K);desk.add(cand);
+  const fl=new THREE.Mesh(boxGeom(0.16*K,0.30*K,0.16*K),new THREE.MeshBasicMaterial({color:lin(0xffb03a),toneMapped:false}));
+  fl.position.set(-1.9*K,3.9*K,0.8*K);desk.add(fl);
+  desk.position.set(dx,dy,dz);desk.rotation.y=-Math.PI/2;root.add(desk);
+  solid(dx,dz,1.7*K,2.7*K,LVL.MAIN);
+  interactables.push({id:"reck",label:"The Scrivener's Desk",x:dx-2.6*K,z:dz,y:dy,lvl:LVL.MAIN,r:7*K,action:"reck"});
   interactables.push({id:"charter",label:"The Charter",x:-3.4*K,z:32.6*K,y:dy,lvl:LVL.MAIN,r:6.5*K,
     action:"doc",data:CH.charter});
 
@@ -4599,7 +4614,16 @@ function updateGuide(){
   const it=goal.it;
   const dx=it.x-player.position.x, dz=it.z-player.position.z;
   const dist=Math.hypot(dx,dz);
-  if(it.lvl===plevel&&dist<(c&&c.near?c.near:9*K)){g.classList.remove("on");return;}
+  /* THE ARROW MUST NOT LET GO BEFORE THE PROMPT TAKES HOLD. This hid the guide
+     inside a fixed 9K, while the thing it points at is reachable inside its OWN
+     radius - 7K for the scrivener's desk. Between the two there was a ring two
+     and a half units wide where the arrow had stopped pointing and the green
+     button had not yet appeared, and the player was told nothing at all. It is
+     the last stretch before every goal in the game, and it is where "it is not
+     clear that is where we are supposed to go" comes from.
+     Held until the player is actually in range of the thing. */
+  const letGo=Math.min((c&&c.near?c.near:9*K),(it.r||9*K)*0.92);
+  if(it.lvl===plevel&&dist<letGo){g.classList.remove("on");return;}
   g.classList.add("on");
   if(it.lvl!==plevel){
     $("guideArw").style.transform=(LVL_Y[it.lvl]<LVL_Y[plevel])?"rotate(90deg)":"rotate(-90deg)";
@@ -6865,7 +6889,14 @@ function resolveMisfire(arm,st){
 }
 const GUN={arm:"matchlock",step:"powder",charge:0,prime:0,ramQ:0,ramHits:0,
   hasBall:false,hasWad:false,glow:0.6,active:false,t0:0,shots:0,hits:0,
-  onHit:null,pourOn:false,poseT:0,sightT:0,ramT:0,ramAnim:0,cont:null};
+  onHit:null,pourOn:false,poseT:0,sightT:0,ramT:0,ramAnim:0,ramCycle:0,ramSeat:0,cont:null};
+/* One swing of the scouring stick. Short enough that four of them is a rhythm to
+   be kept rather than four unrelated taps. */
+const RAM_PERIOD=1.05;
+/* Where the tip ENDS its stroke: shallow while the ball is still near the muzzle,
+   deeper as it is driven down. The stick visibly goes further in with every blow
+   that lands, which is the ball seating, shown rather than scored in silence. */
+const RAM_HOME_MIN=2.98, RAM_HOME_MAX=3.40;
 const G_LO=0.52,G_HI=0.74,P_LO=0.28,P_HI=0.50;
 const G_ORDER=["powder","ball","wad","ram","prime","ready"];
 const G_NAME={powder:"Charge the piece",ball:"Ball",wad:"Wad",ram:"Ram it home",
@@ -6874,16 +6905,19 @@ const G_HINT={
   powder:"Hold to pour from the flask. Stop inside the green \u2014 too little will not carry, too much may burst the barrel.",
   ball:"Drop the ball down the muzzle.",
   wad:"Now the wad, to hold the ball in. Skip it and the ball rolls out again.",
-  ram:"Four strokes of the scouring stick. Strike as the marker crosses the green.",
+  ram:"Four strokes. Watch the stick, not the bar — strike at the bottom of the swing, when it is hard down on the ball.",
   prime:"A little powder in the pan. Too much and it will only flash.",
   ready:"Drag to aim. Hold still and the sway settles. The match must be bright."
 };
 let TARGETS=[],gunPiece=null,gunFlask=null,gunRammer=null,gunStream=null,gunCoal=null;
 /* the stowed scouring stick, the ball going down the bore, and the serpentine -
    see buildGunModel */
-let gunRamStow=null,gunBall=null,gunSerp=null,gunRear=null;
-/* scratch for the heel-depth test in updateDrill; THREE is not loaded yet here */
+let gunRamStow=null,gunBall=null,gunSerp=null,gunRear=null,gunWrist=null;
+/* scratch for the depth tests in updateDrill; THREE is not loaded yet here */
 let G_HEEL=null;
+/* The two parts that can end up inside the near plane, and the gun-local point on
+   each that decides it: the heel of the butt, and the rear cap of the wrist. */
+const G_PT_HEEL=[0,-0.150,0.52], G_PT_WRIST=[0,-0.118,-0.26];
 /* At rest the arm stands UP AND BACK over the wrist, the burning match a hand's
    breadth from your cheek; pulling the trigger swings it FORWARD and DOWN until
    the match meets the priming. These two angles ARE the mechanism.
@@ -7062,10 +7096,21 @@ function buildGunModel(){
      So the rear of the stock is its own group and simply is not drawn when
      sighted, which is what every first-person viewmodel does and is also honest:
      you cannot see your own shoulder. It is there in the loading and grounded
-     poses, where you are looking AT the piece rather than along it. */
+     poses, where you are looking AT the piece rather than along it.
+
+     AND THE WRIST IS NOT PART OF IT. Reported from play: "looking down the barrel
+     I can't see a lot of the weapon that I should be seeing, it's transparent."
+     Measured in the sighted pose: the wrist runs from 0.46 to 1.18 in front of
+     the eye against a near plane of 0.5, so all but the last four hundredths of
+     it is perfectly visible - and it was being hidden anyway, because it had been
+     lumped in with the butt. That is the missing stock the player was seeing
+     through. Its rear cap moves back to a depth of 0.54, clear of the plane, and
+     it becomes its own object with its own test. Only the butt, which really does
+     sit behind your eye, still goes. */
+  const WR=new Geo();
+  WR.beam8([0,-0.118,-0.26],[0,-0.100,-0.88], 0.62*IN,0.72*IN, stock,stockL, 1.50,1.25);
   const BT=new Geo();
-  BT.beam8([0,-0.118,-0.16],[0,-0.100,-0.88], 0.62*IN,0.72*IN, stock,stockL, 1.50,1.25);
-  BT.beam8([0,-0.150,0.52],[0,-0.126,-0.20],  0.82*IN,0.74*IN, stockD,stock, 2.30,1.70);
+  BT.beam8([0,-0.150,0.52],[0,-0.126,-0.22],  0.82*IN,0.74*IN, stockD,stock, 2.30,1.70);
   BT.box(0,-0.150,0.532,1.70*IN,3.80*IN,0.24*IN,ironD);  /* the iron butt plate */
 
   /* ---- the lock, on the right side where a right-handed man's thumb is.
@@ -7110,8 +7155,9 @@ function buildGunModel(){
      trigger, no sights - because FL was still empty when it was snapshotted. */
   gunPiece=C.mesh(true,false);cam.add(gunPiece);
   gunPiece.add(FL.mesh(false,false));
+  gunWrist=WR.mesh(true,false);gunPiece.add(gunWrist);
+  gunWrist.add(MC.mesh(true,false));   /* the coil is wound round the wrist */
   gunRear=BT.mesh(true,false);gunPiece.add(gunRear);
-  gunRear.add(MC.mesh(true,false));
 
   /* ---- THE SERPENTINE, WHICH IS HOW A MATCHLOCK WORKS ----
      The S-arm that holds the burning match and swings it down into the pan. It was a
@@ -7417,10 +7463,12 @@ function gStep(k){
       playSfx("click",0.3);setTimeout(function(){GUN.hasWad=true;gStep("ram");},950);};
     $("gSkip").onclick=function(){GUN.hasWad=false;gStep("ram");toast("No wad \u2014 the ball will not stay put.");};
   } else if(k==="ram"){
-    ui.innerHTML='<div class="ggauge"><div class="band" style="left:42%;width:16%"></div>'+
+    /* the bar reads the STICK's depth in the bore now: hard right is hard home */
+    ui.innerHTML='<div class="ggauge"><div class="band" style="left:86%;width:14%"></div>'+
       '<div class="mark" id="gMark" style="left:0%"></div></div>'+
       '<button class="gact" id="gRam">Strike \u2014 4 left</button>';
     $("gRam").onclick=gRamStrike;
+    GUN.ramCycle=0;GUN.ramSeat=0;
   } else if(k==="prime"){
     ui.innerHTML=gGauge("gPrimeFill",P_LO,P_HI)+'<button class="gact" id="gPrime">Hold to prime the pan</button>';
     gHold($("gPrime"),function(){GUN.pourOn=true;playSfx("pour",0.12);},
@@ -7460,10 +7508,23 @@ function gWireBlow(){
     function(){stopSfx();});
 }
 function gRamStrike(){
-  const pos=(Math.sin(GUN.ramT*1.8)*0.5+0.5);
-  const good=(pos>0.42&&pos<0.58);
-  playSfx("ram",good?0.42:0.24);GUN.ramAnim=1;
-  GUN.ramQ+=good?1:0.25;GUN.ramHits++;
+  /* YOU ARE TIMING THE STICK NOW. It used to be an abstract marker sliding along
+     a bar on its own clock, while the scouring stick in front of you moved to a
+     different one - two things on screen, neither explaining the other, and the
+     one the player was told to watch was the one that was not the gun. The stick
+     keeps its own rhythm now and the bar mirrors it exactly, so watching the
+     piece and watching the bar are the same act.
+     Struck at the bottom of the swing, hard down against the ball, the blow
+     tells. Caught early or late it glances, and a glancing blow seats nothing. */
+  const depth=1-(GUN.ramAnim||0);          /* 1 is hard home against the ball */
+  const good=(depth>0.88), fair=(depth>0.70);
+  playSfx("ram",good?0.46:(fair?0.32:0.18));
+  if(good)camKick=0.016;                   /* you feel a blow that lands */
+  GUN.ramQ+=good?1:(fair?0.5:0.15);
+  GUN.ramHits++;
+  /* thrown back up, and the swing starts again from the top - so each strike is
+     its own stroke rather than a tap into a wave that was passing anyway */
+  GUN.ramCycle=0;
   if(GUN.ramHits>=4){GUN.ramQ/=4;gStep("prime");}
   else $("gRam").textContent="Strike \u2014 "+(4-GUN.ramHits)+" left";
 }
@@ -8021,66 +8082,82 @@ function gunSmoke(scale){
       {size:1.2*0.7*scale, col:0x7d7a70, op:0.80, life:5.5, grow:0.85, ease:0.7});
   }
 }
-/* ---- FITTING THE DRILL TO THE SCREEN IT IS TAUGHT ON ----
-   The working poses are solved against the whole frame. During Kendall's lesson
-   the instruction panel owns the bottom of it, and the solve knows nothing about
-   that: measured on a 560x340 window, the panel's top edge sat at 129 and the ram
-   stroke ran from 27 down to 154, so most of the one motion the lesson exists to
-   teach happened behind the panel.
+/* ---- WHERE THE PIECE SITS ON SCREEN, ON ANY SCREEN ----
+   The working poses are solved once, and they place the part the player is meant
+   to watch a fixed number of FEET from the eye and a fixed number of feet to one
+   side. Feet do not survive a change of window shape. The same pose that puts the
+   muzzle two thirds of the way across a wide desktop window puts it hard against
+   the edge of a phone held upright, because the horizontal field of view there is
+   a third as wide - and it was solved on a wide window. Reported from play as the
+   piece being off to one side while reloading.
 
-   So while the panel is up the piece is lifted by however much it takes to park
-   the part being taught in the clear band above it, and the ram stroke is scaled
-   to what is left. Both come from the panel's MEASURED top rather than a constant,
-   because a phone, a wide window and a hint that wraps to three lines all move it.
-   Recomputed only when the step, the window or the field of view changes. */
-const DFIT={key:"",lift:0,ram:0.72};
-function drillFit(tgtName){
+   So the target is a FRACTION OF THE FRAME now, in both axes, and the offset that
+   gets there is solved whenever the step, the window, the panel or the field of
+   view changes. Vertically it must also dodge the taught drill's instruction
+   panel, which owns the bottom of the screen while the lesson runs: measured on a
+   560x340 window its top edge sat at 129 and the ram stroke ran from 27 to 154,
+   so the whole of the motion the lesson exists to teach was behind it.
+
+   This replaces the hand-tuned walking offsets as well. One owner for where the
+   piece sits, and it is arithmetic rather than taste.
+
+   The sighted pose is NEVER touched. Its notch and bead are solved onto the
+   camera axis, and moving the piece by even a twentieth of a foot walks the
+   sights off the mark they are aimed at. */
+const DFIT={key:"",dx:0,dy:0,ram:0.72};
+function poseFit(tgtName,walk){
+  if(tgtName==="sight"||!cam||!gunPiece){
+    DFIT.key="none";DFIT.dx=0;DFIT.dy=0;DFIT.ram=0.72;return DFIT;
+  }
   const panel=$("gun");
-  const open=(GUN.active&&panel&&panel.classList.contains("on")&&cam&&gunPiece);
-  if(!open){DFIT.key="";DFIT.lift=0;DFIT.ram=0.72;return 0;}
-  const H=innerHeight||1;
-  const top=panel.getBoundingClientRect().top;
-  const key=tgtName+"|"+Math.round(top)+"|"+H+"|"+Math.round(cam.fov);
-  if(key===DFIT.key)return DFIT.lift;
-  DFIT.key=key;DFIT.lift=0;DFIT.ram=0.72;
-  /* NEVER the sighted pose. That one is solved so the notch and the bead sit on
-     the camera axis, and lifting the piece by even a twentieth of a foot walks
-     the sights off the mark they are aimed at. There is nothing to reveal in it
-     anyway - the panel is below the barrel, not over it. */
-  if(tgtName==="sight")return 0;
-  const P=G_POSE[tgtName]; if(!P)return 0;
+  const taught=!!(GUN.active&&panel&&panel.classList.contains("on"));
+  const W=innerWidth||1,H=innerHeight||1;
+  const top=taught?panel.getBoundingClientRect().top:H;
+  const key=tgtName+"|"+(walk?1:0)+"|"+Math.round(top)+"|"+W+"x"+H+"|"+Math.round(cam.fov);
+  if(key===DFIT.key)return DFIT;
+  DFIT.key=key;DFIT.dx=0;DFIT.dy=0;DFIT.ram=0.72;
+  const P=G_POSE[tgtName]; if(!P)return DFIT;
   const e=new THREE.Euler(P.r[0],P.r[1],P.r[2]);
   const base=new THREE.Vector3(P.p[0],P.p[1],P.p[2]);
   const tanH=Math.tan(cam.fov*Math.PI/360);
-  /* screen y of a gun-local point, and the frustum half-height where it sits */
+  /* where a gun-local point lands on screen, and the frustum half-size there */
   const seen=function(l){
     const v=new THREE.Vector3(l[0],l[1],l[2]).applyEuler(e).add(base);
     if(v.z>-0.2)return null;
     const q=v.clone().applyMatrix4(cam.projectionMatrix);
-    return {y:(-q.y*0.5+0.5)*H, half:(-v.z)*tanH};
+    return {x:(q.x*0.5+0.5)*W, y:(-q.y*0.5+0.5)*H,
+            halfW:(-v.z)*tanH*(cam.aspect||1), halfH:(-v.z)*tanH};
   };
   const watch=seen((tgtName==="prime")?G_PAN:G_BORE);
-  if(!watch)return 0;
-  const bandTop=H*0.14, bandBot=top-H*0.04;
-  if(bandBot-bandTop<H*0.06)return 0;         /* no room to work with; leave it */
-  /* charging and ramming both work UPWARD from the muzzle - the flask tips into
+  if(!watch)return DFIT;
+  const bandTop=H*0.14, bandBot=taught?(top-H*0.04):(H*0.70);
+  if(bandBot-bandTop<H*0.06)return DFIT;      /* no room to work with; leave it */
+  /* Charging and ramming both work UPWARD from the muzzle - the flask tips into
      it, the stick rises out of it - so the muzzle parks at the foot of the band
      and the motion runs up through it. Priming has nothing above it, so the pan
-     sits in the middle. */
-  const want=(tgtName==="prime")?(bandTop+bandBot)/2:bandBot;
-  DFIT.lift=(watch.y-want)*2*watch.half/H;
+     sits in the middle. Sideways, the work sits right of centre: it leaves the
+     way ahead clear while you walk, and it is where a right-handed man's hands
+     are. */
+  const wantX=W*(taught?0.62:0.68);
+  const wantY=(tgtName==="prime")?(bandTop+bandBot)/2:bandBot;
+  DFIT.dx=(wantX-watch.x)*2*watch.halfW/W;
+  DFIT.dy=(watch.y-wantY)*2*watch.halfH/H;
   if(tgtName==="ground"){
-    const home=seen([0,0,G_BORE[2]+3.40-3.58]), out=seen([0,0,G_BORE[2]+2.68-3.58]);
+    /* Sized against the SHALLOWEST end of stroke, RAM_HOME_MIN, because that is
+       where the head rides highest: the stroke sinks deeper as the ball seats, so
+       the first blow is the one that has to fit inside the frame. */
+    const home=seen([0,0,G_BORE[2]+RAM_HOME_MIN-3.58]),
+          out =seen([0,0,G_BORE[2]+RAM_HOME_MIN-0.72-3.58]);
     if(home&&out&&Math.abs(home.y-out.y)>1){
       const perFoot=Math.abs(home.y-out.y)/0.72;
-      /* Measured from where the head will REST once the lift is applied, not from
-         the foot of the band: the head sits well above the muzzle even when the
-         stick is driven fully home, so budgeting the whole band for the stroke
+      /* Measured from where the head will REST once the piece has been moved, not
+         from the foot of the band: the head sits well above the muzzle even with
+         the stick driven fully home, so budgeting the whole band for the stroke
          sent the top of it up behind the chapter line. */
-      DFIT.ram=Math.max(0.30,Math.min(0.72,(home.y-(watch.y-want)-bandTop)/perFoot));
+      DFIT.ram=Math.max(0.30,Math.min(0.72,(home.y-(watch.y-wantY)-bandTop)/perFoot));
     }
   }
-  return DFIT.lift;
+  return DFIT;
 }
 /* the drill, animated in the world so you can watch it happen */
 function updateDrill(dt){
@@ -8122,25 +8199,14 @@ function updateDrill(dt){
      instead - your hands are still visibly full, which is the whole point of the
      time sink; you can just also see where you are going. */
   const walk=(RELOAD.on&&!GUN.active);
-  /* Pulled aside LESS during the steps that have something to watch. Reported from
-     play: "I never saw the ramrod go up and down while in barrel" - and pushing the
-     whole piece into a corner to keep the view clear was working against exactly
-     that. Ball, wad and ram sit near enough to follow; powder, prime and carrying
-     her loaded get out of the way. */
-  const watch=(GUN.step==="ball"||GUN.step==="wad"||GUN.step==="ram");
-  /* Much smaller than they were, because the poses themselves now do this job.
-     Each one is solved to put the part you are meant to watch in the RIGHT half
-     of the frame, which already leaves the way ahead clear; the old offsets were
-     sized to rescue poses that put the barrel through the middle, and applied on
-     top of the new ones they shoved the ram stroke back off the bottom corner -
-     the exact fault they were introduced to fix. Ball, wad and ram get almost
-     nothing; charging and priming get a nudge down and right. */
-  /* Called unconditionally, used only when standing at the mark: it also RESETS
-     the ram stroke's length, and inside the ternary the walking branch skipped
-     the call, so an automatic reload after a taught drill inherited the drill's
-     shortened stroke and kept it. */
-  const lift=drillFit(tgtName);
-  const OFF=walk?(watch?[0,-0.10,0]:[0.18,-0.30,0]):[0,lift,0];
+  /* There are no hand-tuned offsets here any more. poseFit puts the part being
+     watched at a fraction of the frame, which is the job the old numbers were
+     doing by eye and getting wrong on any window but the one they were set on.
+     It is called unconditionally because it also RESETS the ram stroke's length -
+     tucked inside a ternary, the walking branch skipped the call and an automatic
+     reload after a taught drill inherited the drill's shortened stroke. */
+  const F=poseFit(tgtName,walk);
+  const OFF=[F.dx,F.dy,0];
   const ease=Math.min(1,dt*4.2);
   for(let i=0;i<3;i++){
     GUN.pose.p[i]+=((TGT.p[i]+OFF[i])-GUN.pose.p[i])*ease;
@@ -8184,10 +8250,15 @@ function updateDrill(dt){
        while the heel it stands for has swung round to -0.25 and straight through
        the plane. gunPiece is parented to the camera, so its local space IS camera
        space and this is one vector rotate. */
-    if(gunRear){
+    if(gunRear||gunWrist){
       if(!G_HEEL)G_HEEL=new THREE.Vector3();
-      G_HEEL.set(0,-0.15,0.52).applyEuler(gunPiece.rotation).add(gunPiece.position);
-      gunRear.visible=(G_HEEL.z<-0.62);
+      const depth=function(p){
+        G_HEEL.set(p[0],p[1],p[2]).applyEuler(gunPiece.rotation).add(gunPiece.position);
+        return -G_HEEL.z;                    /* how far in front of the eye it is */
+      };
+      const NP=cam.near;
+      if(gunRear)gunRear.visible=(depth(G_PT_HEEL)>NP+0.12);
+      if(gunWrist)gunWrist.visible=(depth(G_PT_WRIST)>NP+0.03);
     }
     /* Narrowing the view while sighted reads as focusing down the barrel, and
        holding the right button narrows it further - leaning in over the piece.
@@ -8253,37 +8324,44 @@ function updateDrill(dt){
        and put back afterwards, instead of materialising at the muzzle. */
     if(gunRamStow)gunRamStow.visible=!show;
     if(show){
-      /* THE STROKE, DURING THE AUTOMATIC RELOAD TOO. gRamStrike drove ramAnim on
-         each manual tap; the automatic sequence tapped nothing, so the stick sat
-         dead still in the bore - which is why the ramming was never seen to happen.
-         Four strokes across the ram stage, on a saw wave. */
+      /* THE STROKE. The automatic sequence beats out four of them across the ram
+         stage; in the taught drill the stick keeps its OWN rhythm and the player
+         times the blow to it, which is the whole of that minigame now.
+         ramAnim is 0 hard home and 1 fully drawn back, on a cosine, so the stick
+         dwells a moment at each end the way a swung thing does. */
       if(RELOAD.on&&!GUN.active){
         const st=RELOAD_STAGES[3];                       /* the ram stage */
         let base=0; for(let i=0;i<3;i++)base+=RELOAD_STAGES[i].f;
         const within=Math.max(0,Math.min(1,(RELOAD.t/RELOAD.dur-base)/st.f));
         const STROKES=4;
         const phase=(within*STROKES)%1;
-        GUN.ramAnim=1-phase;                             /* down, then drawn back */
-        /* one knock per stroke, at the bottom of each */
+        GUN.ramAnim=0.5+0.5*Math.cos(phase*Math.PI*2);
+        GUN.ramSeat=within;                              /* it goes in as it goes on */
         const strokeNo=Math.floor(within*STROKES);
-        if(GUN.ramHeard!==strokeNo&&phase>0.42&&phase<0.58){
+        if(GUN.ramHeard!==strokeNo&&GUN.ramAnim<0.10){
           GUN.ramHeard=strokeNo;playSfx("ram",0.34);
         }
+      } else if(GUN.step==="ram"){
+        GUN.ramCycle=(GUN.ramCycle||0)+dt/RAM_PERIOD;
+        GUN.ramAnim=0.5+0.5*Math.cos(GUN.ramCycle*Math.PI*2);
+        GUN.ramSeat=Math.min(1,(GUN.ramHits||0)/4);
+        /* the bar IS the stick: hard right is hard home, and the green is the
+           bottom of the swing. One value driving both, so they cannot disagree. */
+        const mk=$("gMark");
+        if(mk)mk.style.left=((1-GUN.ramAnim)*100).toFixed(1)+"%";
       } else {
-        GUN.ramAnim=Math.max(0,GUN.ramAnim-dt*3.2);
+        GUN.ramAnim=Math.max(0,GUN.ramAnim-dt*3.2);      /* the wad step */
       }
       /* On the bore axis, sliding down it. With the butt grounded the bore runs
          upright, so this reads as the stroke it actually is - the stick driven
          down the barrel and drawn back - rather than a stick waved at a gun.
-         `insert` is how far the TIP is down the bore, and 3.40 is home: tip at
-         the breech, head a couple of inches proud of the muzzle. Ten inches of
-         travel, which is a ramming stroke - you thump a ball home, you do not
-         withdraw the stick between blows. The old range never let the head clear
-         the muzzle at all, so there was nothing to see. Measured against the
-         grounded pose: the head runs 130 pixels down the frame and the top of the
-         stroke stays inside it, which a foot of travel did not. */
+         `insert` is how far the TIP is down the bore. Where the stroke ENDS moves
+         deeper as the ball seats; how far it is drawn back is fixed, and sized by
+         poseFit to what the frame can show. The old range never let the head clear
+         the muzzle at all, so there was nothing to see. */
       const T=DFIT.ram;
-      const insert=(3.40-T)+T*Math.cos(GUN.ramAnim*Math.PI*0.5);
+      const home=RAM_HOME_MIN+(RAM_HOME_MAX-RAM_HOME_MIN)*(GUN.ramSeat||0);
+      const insert=home-T*GUN.ramAnim;
       gunRammer.position.set(G_BORE[0],G_BORE[1],G_BORE[2]+insert);
       gunRammer.rotation.set(0,0,0);
     }
@@ -10052,7 +10130,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-0228-be33545";
+const BUILD="20260801-0256-8feaa50";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
