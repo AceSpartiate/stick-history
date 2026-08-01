@@ -7179,10 +7179,15 @@ function buildGunModel(){
      It lives on the REAR of the stock and goes with it - the burning end is up in
      the serpentine's jaws, which is the end that matters. */
   const MC=new Geo();
-  MC.beam8([-0.058,-0.030,-0.34],[-0.048,-0.014,-0.62], 0.30*IN,0.28*IN, cordD,cord);
-  MC.beam8([-0.048,-0.014,-0.62],[0.044,-0.010,-0.66],  0.28*IN,0.28*IN, cord,cord);
-  MC.beam8([0.044,-0.010,-0.66],[0.062,-0.024,-0.42],   0.28*IN,0.26*IN, cord,cordD);
-  MC.beam8([0.062,-0.024,-0.42],[0.070,0.020,-0.60],    0.26*IN,0.26*IN, cordD,cord);
+  /* HALVED. beam8's parameter is a RADIUS, so 0.30*IN was drawing sixty
+     hundredths of an inch of rope - two and a half times the real thing. Slow
+     match is a quarter to three eighths of an inch of loosely spun hemp; at 0.15
+     it is 0.30 across, which is the middle of that and now reads as cord beside a
+     1.48 in barrel instead of competing with it. */
+  MC.beam8([-0.058,-0.030,-0.34],[-0.048,-0.014,-0.62], 0.15*IN,0.14*IN, cordD,cord);
+  MC.beam8([-0.048,-0.014,-0.62],[0.044,-0.010,-0.66],  0.14*IN,0.14*IN, cord,cord);
+  MC.beam8([0.044,-0.010,-0.66],[0.062,-0.024,-0.42],   0.14*IN,0.13*IN, cord,cordD);
+  MC.beam8([0.062,-0.024,-0.42],[0.070,0.020,-0.60],    0.13*IN,0.13*IN, cordD,cord);
 
   /* ---- ASSEMBLE. Every Geo above is filled BEFORE any of them is snapshotted: a
      Geo is copied into its BufferGeometry by .mesh() and anything added afterwards
@@ -7215,7 +7220,7 @@ function buildGunModel(){
   Sp.beam8([0.020,0.176,-0.026],[0.026,0.240,-0.006], 0.12*IN,0.135*IN, ironL,iron);
   /* the burning end of the match, clamped in the jaws - so it swings WITH the arm
      instead of hanging in the air where the arm used to be */
-  Sp.beam8([0.032,0.052,0.076],[0.026,0.234,-0.004], 0.26*IN,0.24*IN, cordD,cord);
+  Sp.beam8([0.032,0.052,0.076],[0.026,0.234,-0.004], 0.14*IN,0.13*IN, cordD,cord);
   gunSerp=new THREE.Group();
   /* The pivot is placed so the coal's reach EQUALS the distance to the pan: 0.265
      back along the bore and 0.04 up is 0.268, which is exactly where the coal sits
@@ -7298,8 +7303,12 @@ function buildGunModel(){
   /* Slung in a groove in the underside of the forestock, which now sits at
      y -0.177, so the stick shows as a strip along the bottom of the piece
      rather than floating an inch clear of it. */
-  Rs.box(0,-0.172,-2.36,0.028,0.028,2.92,RGB(0x8a7048));      /* the stick, stowed */
-  Rs.box(0,-0.172,-0.94,0.046,0.046,0.09,RGB(0x6b5433));      /* its head */
+  /* THE SAME STICK AS THE ONE THAT COMES OUT OF IT. This was drawn at 0.34 in
+     and the working copy at 0.46, so the scouring stick changed thickness by a
+     third the moment the player drew it - and the two are on screen one after the
+     other, which is exactly when a mismatch shows. */
+  Rs.box(0,-0.172,-2.36,0.038,0.038,2.92,RGB(0x9c8154));      /* the stick, stowed */
+  Rs.box(0,-0.172,-0.94,0.080,0.080,0.11,RGB(0x6b5433));      /* its head */
   Rs.box(0,-0.166,-1.60,0.060,0.030,0.09,RGB(0x2b2b30));      /* the pipes holding it */
   Rs.box(0,-0.166,-3.10,0.060,0.030,0.09,RGB(0x2b2b30));
   gunRamStow=Rs.mesh(false,false);gunPiece.add(gunRamStow);
@@ -10173,7 +10182,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1113-288e9fc";
+const BUILD="20260801-1132-4ee4ccc";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
