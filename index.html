@@ -470,7 +470,7 @@
       <div id="vig"></div>
       <div id="labels"></div>
       <div id="hud">
-        <div class="chip"><span id="hudChapter">Ch. I — Main Deck</span><small id="hudObj"></small></div>
+        <div class="chip"><span id="hudChapter">Ch. I — Main Deck</span> <span id="hudDays" style="display:none;color:var(--gold-bright)"></span><small id="hudObj"></small></div>
         <div class="ink"><span class="dot"></span><span id="hudInk">0</span></div>
         <button id="hudVoice" title="Narration (M)">&#9835;</button>
         <button id="hudJump" title="Jump (space)">Jump</button>
@@ -802,6 +802,11 @@ const S={ink:0,unlocked:new Set(["none_cloak","none_torso","none_acc","none_head
   voicePref:{male:null,female:null,narrator:null},
   items:{},itemAt:{},incidents:[],shotAMan:false,heardKendall:false,reportedKendall:null,
   boxOpened:false,smithRecognised:false,chartSeen:{},
+  /* THE SURVEY. Seventeen historical days between landfall and choosing the site,
+     compressed to twelve. `found` is what you actually went and looked at, and
+     Phase 4 will only let you argue from it - never tasted the water at Jamestown,
+     cannot raise the brackishness. So this is not a score, it is the evidence. */
+  survey:{days:12,found:{},visited:{}},
   equip:{skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"none_head",build:"build_normal",face:"none",
     dye:{torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"}},
   codex:[],codexKeys:new Set(),insight:{},shipNote:false,chapterDone:false,flawless:{},met:{},
@@ -829,6 +834,7 @@ function saveBlob(){
     codex:S.codex, insight:S.insight, met:S.met, flawless:S.flawless, talkErr:S.talkErr,
     equip:S.equip, voicePref:S.voicePref,
     items:S.items, itemAt:S.itemAt, incidents:S.incidents, chartSeen:S.chartSeen,
+    survey:S.survey,
     shotAMan:!!S.shotAMan, killedAMan:!!S.killedAMan,
     boxOpened:!!S.boxOpened, smithRecognised:!!S.smithRecognised,
     heardKendall:!!S.heardKendall, reportedKendall:S.reportedKendall,
@@ -853,6 +859,7 @@ function applyBlob(d){
     if(d.voicePref)S.voicePref=d.voicePref;
     S.items=d.items||{};S.itemAt=d.itemAt||{};S.incidents=d.incidents||[];
     S.chartSeen=d.chartSeen||{};
+    S.survey=d.survey||{days:12,found:{},visited:{}};
     S.shotAMan=!!d.shotAMan;S.killedAMan=!!d.killedAMan;
     S.boxOpened=!!d.boxOpened;S.smithRecognised=!!d.smithRecognised;
     S.heardKendall=!!d.heardKendall;S.reportedKendall=d.reportedKendall||null;
@@ -900,6 +907,7 @@ function newRun(){
   S.items={};S.itemAt={};S.incidents=[];
   S.shotAMan=false;S.killedAMan=false;
   S.boxOpened=false;S.smithRecognised=false;
+  S.survey={days:12,found:{},visited:{}};
   S.heardKendall=false;S.reportedKendall=null;
   S.ambushFired=false;S.ambushShots=0;
   S.shipNote=false;S.chapterDone=false;S.firedGun=false;
@@ -4645,6 +4653,7 @@ function animate(){
         :best.action==="bell"?"Ring the bell"
         :best.action==="pickup"?"Take it up"
         :best.action==="chart"?"Look at the chart"
+        :best.action==="survey"?(found(best.data.site+"."+best.data.sv.k)?"Already noted":best.data.sv.verb)
         :best.action==="steal"?(S.shipNote?"Nothing left":"Take rations")
         :best.action==="reck"?"Read the papers"
         /* Named explicitly rather than inherited. A new action with no verb used
@@ -4679,6 +4688,13 @@ function animate(){
    world builder, not a hunt through the file. */
 function chapterOf(id){
   for(let i=0;i<CHAPTERS.length;i++)if(CHAPTERS[i].world===id)return CHAPTERS[i];
+  /* A SURVEY SITE IS STILL ITS CHAPTER. Point Comfort is not a chapter of its own
+     - it is somewhere you sail to during Chapter II - but everything that reads
+     the chapter (the HUD line, the guide, the pace, the objective list) resolves
+     by WORLD id, so arriving there emptied all of it. Sites fall back to the
+     chapter that owns them. */
+  const st=(typeof SITES!=="undefined")&&siteOf(id);
+  if(st&&st.chapter)return chapterOf(st.chapter);
   return null;
 }
 function chapterLabel(){
@@ -4716,6 +4732,8 @@ function updateGuide(){
   if(!g||!o)return;
   const c=chapterOf(CURRENT_WORLD);
   o.textContent=(c&&c.status)?c.status():"";
+  /* the same owner that keeps the chapter line right keeps the daylight right */
+  refreshSurveyHud();
   const goal=nextGoal();
   if(!goal||!goal.it){g.classList.remove("on");return;}
   const it=goal.it;
@@ -4988,6 +5006,7 @@ function doInteract(){
   else if(a==="bell"){ringBell();}
   else if(a==="pickup"){takeItem(activeSpot.data);}
   else if(a==="chart"){openChart();}
+  else if(a==="survey"){doSurvey(activeSpot.data);}
   else if(a==="reck"){
     if(chapterReady())openReckoning();
     else toast("The scrivener has only "+reckReady()+" of 5 questions he could fairly put to you. Learn more first.");}
@@ -9330,6 +9349,130 @@ function buildShoreParty(root){
    AFTER all of this, and it is the first good one. So these charts are drawn the
    way the period's were - confident at the coast, vague a few miles in, and blank
    where nobody had been. The blankness is the lesson. */
+/* ========== POINT COMFORT ==========
+   The first site you can sail to, and deliberately THIN. The build plan says to
+   prove world-switching with a place that costs nothing to lose before there is
+   content worth losing, and this is that place: the terrain function the cape
+   already uses, given a different profile, and three things to go and find out.
+
+   Historically it is where the fleet first anchored inside the capes on 30 April,
+   and the deep channel really does run close in - which is exactly the finding
+   that makes it a candidate and exactly why it is exposed. Both halves of that go
+   in the survey book, because the argument in Phase 4 needs both. */
+const PC={SEA:74,BEACH:26,FLAT:-20};
+function comfortGround(x,z){
+  let y;
+  if(z>PC.SEA)        y=-3.2-(z-PC.SEA)*0.05;    /* the channel, and it is deep */
+  else if(z>PC.BEACH) y=(PC.SEA-z)/(PC.SEA-PC.BEACH)*2.4-0.5;
+  else                y=1.9+Math.sin(x*0.013)*0.9+Math.cos(z*0.010)*0.7;
+  y+=Math.sin(x*0.024)*0.35+Math.cos(z*0.019)*0.30;
+  return y;
+}
+function comfortBlocked(x,z){
+  return Math.hypot(x,z)>430||comfortGround(x,z)<-0.6;
+}
+registerWorld("comfort",function(root){
+  scene.background=new THREE.Color(0x9dbccb);
+  scene.fog=new THREE.Fog(0xa9c3cd,260,1000);
+  WORLD.ground=comfortGround;WORLD.sea=0;WORLD.blocked=comfortBlocked;
+  const SPAN=900,N=4,CH_=SPAN/N,DIV=12;
+  const SAND=RGB(0xd9c9a2),SAND2=RGB(0xc2ad84),GRASS=RGB(0x7c8b5a),WET=RGB(0xa79471);
+  for(let cx=0;cx<N;cx++)for(let cz=0;cz<N;cz++){
+    const g=new Geo();
+    const x0=-SPAN/2+cx*CH_,z0=-SPAN/2+cz*CH_,st=CH_/DIV;
+    for(let i=0;i<DIV;i++)for(let j=0;j<DIV;j++){
+      const ax=x0+i*st,az=z0+j*st,bx=ax+st,bz=az+st;
+      const yA=comfortGround(ax,az),yB=comfortGround(bx,az),
+            yC=comfortGround(bx,bz),yD=comfortGround(ax,bz);
+      const mid=(az+bz)/2;
+      const col=(mid>PC.SEA-6)?WET:(mid>PC.BEACH)?SAND:(mid>PC.FLAT)?SAND2:GRASS;
+      /* wound a-d-c-b so the quads face UP, same as the cape */
+      g.quad([ax,yA,az],[ax,yD,bz],[bx,yC,bz],[bx,yB,az],col);
+    }
+    root.add(g.mesh(false,false));
+  }
+  buildSkyDome(root);
+  /* the sea */
+  const sea=new THREE.Mesh(new THREE.PlaneGeometry(1600,900),
+    new THREE.MeshLambertMaterial({color:lin(0x2f5d6b)}));
+  /* centred so its NEAR edge lands exactly on the waterline the ground function
+     uses, not twenty units short of it - at PC.SEA+430 a 900-deep plane started
+     at z 54 against a shore at 74, and laid a hard straight seam across the sand */
+  sea.rotation.x=-Math.PI/2;sea.position.set(0,-0.35,PC.SEA+450);root.add(sea);
+  /* a stand of pines back off the point, merged into one mesh like the cape's */
+  const T=new Geo();
+  for(let i=0;i<30;i++){
+    const tx=(srand(i*3.7)*2-1)*400, tz=-70-srand(i*5.3)*280;
+    const gy=comfortGround(tx,tz);
+    conifer(T,tx,gy,tz,36+srand(i*2.7)*30,i,[0.30,0.34,0.20]);
+  }
+  root.add(T.mesh(false,false));
+  /* WHERE YOU GO AND FIND OUT. One interactable per survey, each costing a day. */
+  const site=SITES.comfort;
+  const spots=[[0,52],[-46,4],[62,18]];
+  for(let i=0;i<site.surveys.length;i++){
+    const sv=site.surveys[i],sx=spots[i][0],sz=spots[i][1];
+    interactables.push({id:"sv_"+sv.k,label:sv.verb,x:sx,z:sz,
+      y:comfortGround(sx,sz),lvl:0,r:9,action:"survey",data:{site:"comfort",sv:sv}});
+  }
+  /* and the boat home */
+  interactables.push({id:"boat",label:"The Shallop",x:16,z:64,
+    y:comfortGround(16,64),lvl:0,r:11,action:"chart"});
+  /* ---- you, put ashore from the shallop ----
+     A world builds its own player; enterWorld nulls the old one out with the rest
+     of the world, so a builder that only repositions `player` arrives at an empty
+     beach. Caught the first time this world was entered. */
+  player=buildFigure(S.equip);
+  const px=10,pz=58;
+  player.position.set(px,comfortGround(px,pz),pz);
+  player.rotation.y=Math.PI;                  /* facing up the point, inland */
+  root.add(player);
+  playerParts=player.userData.parts;
+  dressCarried(player);
+  camYaw=0;camPitch=0.30;
+});
+
+/* ========== THE SITES ==========
+   ONE OWNER for a place's identity: its name, where it sits on the chart, the
+   world that builds it, and what going there can teach you. Phase 4's council
+   reads `found` off this, so a finding has to be a thing you WENT AND DID rather
+   than a fact the game handed you.
+
+   Historically the choice took seventeen days and four candidate sites, and the
+   English picked the worst of them. The design note is worth restating here
+   because it constrains everything downstream: a player who correctly reads
+   Jamestown Island as a deathtrap and is overruled anyway has learned something
+   truer than one who is rewarded for the right answer. So surveying well must not
+   guarantee winning the argument.
+
+   Kecoughtan is deliberately NOT in this table yet. It is a Powhatan town, the
+   most important site in the chapter, and the place where the game establishes
+   that these are hosts with their own interests before an arrow is ever fired.
+   Building it thin to prove a travel system would be the wrong first draft of it. */
+const SITES={
+  cape:{name:"Cape Henry",world:"ch2",home:true,
+    gloss:"The southern cape, where you came ashore."},
+  comfort:{name:"Point Comfort",world:"comfort",cost:1,chapter:"ch2",
+    gloss:"A low point inside the capes, where the deep channel runs close in.",
+    surveys:[
+      {k:"depth", verb:"Sound the depth", d:"Six fathom within a stone's throw of the shore. A ship of any burden could ride here."},
+      {k:"ground",verb:"Walk the ground", d:"Sand and low scrub, and no fresh water that you can find."},
+      {k:"sea",   verb:"Look to the sea", d:"You can see clean out of the bay. Which means anything coming in can see you."}
+    ]}
+};
+function siteOf(w){for(const k in SITES)if(SITES[k].world===w)return SITES[k];return null;}
+function surveyDays(){return (S.survey&&S.survey.days)||0;}
+function spendDay(n){
+  if(!S.survey)S.survey={days:12,found:{},visited:{}};
+  S.survey.days=Math.max(0,S.survey.days-(n||1));
+  saveGame();
+}
+function found(k){return !!(S.survey&&S.survey.found&&S.survey.found[k]);}
+function recordFinding(siteKey,sv){
+  if(!S.survey.found)S.survey.found={};
+  S.survey.found[siteKey+"."+sv.k]={site:siteKey,k:sv.k,verb:sv.verb,d:sv.d};
+  saveGame();
+}
 const CHARTS={
   ch1:{kick:"The Great Cabin \u00b7 a chart on the table",
     title:"Such Chart As We Have",
@@ -9338,6 +9481,13 @@ const CHARTS={
       "Note what this chart does not show. It is drawn from Spanish captures and from what was learned at Roanoke twenty years ago; "+
       "beyond a few miles of water it is guesswork and empty paper. No one aboard has seen the head of any river on it. "+
       "The first map worth the name will be drawn by the prisoner below decks, and not for another year."},
+  comfort:{kick:"Point Comfort \u00b7 the chart, held down with a stone",
+    title:"The Mouth of the Bay",
+    x:0.695,y:0.512,
+    gloss:"<b>You are here:</b> a low point inside the capes where the deep channel runs hard against the shore. "+
+      "The fleet anchored off it on the last day of April, and the men called it Point Comfort because after four "+
+      "months of open water it was a comfort to find good holding ground. It is the first place any ship coming "+
+      "into this bay must pass \u2014 which is the argument for it, and the argument against it."},
   ch2:{kick:"Cape Henry \u00b7 the Captain\u2019s chart, spread on a chest",
     title:"The Mouth of the Bay",
     x:0.72,y:0.552,
@@ -9419,13 +9569,79 @@ function drawChart(spec){
   g.strokeStyle="rgba(143,47,40,.45)";g.lineWidth=1.4;
   g.beginPath();g.arc(mx,my,r*2.1,0,Math.PI*2);g.stroke();
 }
+/* ---- going and finding out, which costs a day ---- */
+function doSurvey(d){
+  if(!d||!d.sv)return;
+  const key=d.site+"."+d.sv.k;
+  if(found(key)){toast("You have already noted that.");return;}
+  if(surveyDays()<1){toast("There is no daylight left for it.");return;}
+  spendDay(1);
+  recordFinding(d.site,d.sv);
+  playSfx("click",0.25);
+  toast(d.sv.d);
+  refreshSurveyHud();
+}
+/* ---- and travelling, which costs a day too ---- */
+function travelTo(key){
+  const site=SITES[key];
+  if(!site)return;
+  if(site.world===CURRENT_WORLD){toast("You are already here.");return;}
+  const cost=site.cost||0;
+  if(cost&&surveyDays()<cost){toast("Not enough daylight left to make the passage.");return;}
+  closeAllModals();setPaused(false);
+  /* A NEW SHORE IS A CLEAN SLATE. The green button kept the last world's prompt -
+     "Speak: John Capper", on an empty beach forty miles away - because nothing
+     clears it when the interactables it pointed at are disposed. And the piece
+     forces first person, so arriving still zoomed in put you inside your own head
+     on a beach with nothing to shoot. */
+  activeSpot=null;
+  $("action").classList.remove("on");$("prompt").classList.remove("on");
+  if(gunInHands())setGunCarried(false);
+  setZoom(28);
+  if(cost)spendDay(cost);
+  if(!S.survey.visited)S.survey.visited={};
+  S.survey.visited[key]=true;
+  enterWorld(site.world);
+  toast("You put in at "+site.name+".");
+  refreshSurveyHud();
+}
+/* the days left, on the chapter line, and only where the survey is running */
+function refreshSurveyHud(){
+  const e=$("hudDays");if(!e)return;
+  const on=!!siteOf(CURRENT_WORLD);
+  e.style.display=on?"inline":"none";
+  if(on)e.textContent="☀ "+surveyDays()+(surveyDays()===1?" day":" days");
+}
 function openChart(){
   const spec=CHARTS[CURRENT_WORLD];
   if(!spec){toast("There is no chart of this place.");return;}
   $("mapKick").textContent=spec.kick;
   $("mapTitle").textContent=spec.title;
-  $("mapGloss").innerHTML=spec.gloss;
+  /* THE CHART IS ALSO HOW YOU LEAVE. Daylight is the currency of this phase, so
+     the place you choose where to go is the same place that tells you how much of
+     it is left - you cannot pick a destination without seeing the cost. */
+  let g=spec.gloss;
+  if(siteOf(CURRENT_WORLD)){
+    let rows="";
+    for(const k in SITES){
+      const st=SITES[k];
+      const here=(st.world===CURRENT_WORLD);
+      const cost=st.cost||0;
+      rows+='<button class="btn wide mt chartGo" data-site="'+k+'"'+(here?" disabled":"")+'>'+
+            st.name+(here?" — you are here":(cost?" — "+cost+" day":""))+
+            '<small style="display:block;font-size:.72rem;opacity:.75">'+st.gloss+'</small></button>';
+    }
+    g+='<div style="margin-top:1em;border-top:1px solid var(--line);padding-top:.7em">'+
+       '<b>Daylight left: '+surveyDays()+'</b>'+
+       '<div style="font-style:italic;font-size:.85rem;margin:.3em 0 .5em">'+
+       'Seventeen days were spent choosing where to sit down. You have twelve, and there is more to look at than that.</div>'+
+       rows+'</div>';
+  }
+  $("mapGloss").innerHTML=g;
   openModal("mMap");
+  document.querySelectorAll("#mapGloss .chartGo").forEach(function(b){
+    b.onclick=function(){travelTo(b.dataset.site);};
+  });
   drawChart(spec);
   setPaused(true);
   /* recorded per world, so a chapter's objective list can ask whether the
@@ -10378,7 +10594,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1255-b87b24b";
+const BUILD="20260801-1312-a33155b";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
