@@ -9604,9 +9604,14 @@ SITE_TERRAIN.archers.dress=function(root,G){
   /* THE TIMBER. Sixty feet and straight - the thing the men who wanted this place
      wanted it FOR, standing where you land rather than described in a toast. */
   const D=new Geo();
-  for(let i=0;i<14;i++){
-    const x=(srand(i*7.3+90)*2-1)*150, z=-10-srand(i*4.1+90)*90;
-    conifer(D,x,G(x,z),z,72+srand(i*2.9+90)*22,i+90,[0.24,0.30,0.16]);
+  /* Close, and to the SIDES as much as ahead. Measured at the default camera: at
+     z -10 to -100 even the BASE of these trees sat above the top of the screen -
+     the same fault as the fleet, and for the same reason. Standing them either
+     side of the landing point puts them across the view instead of beyond it. */
+  for(let i=0;i<16;i++){
+    const side=(i%2?1:-1);
+    const x=side*(34+srand(i*7.3+90)*70), z=26-srand(i*4.1+90)*58;
+    conifer(D,x,G(x,z),z,58+srand(i*2.9+90)*18,i+90,[0.24,0.30,0.16]);
   }
   root.add(D.mesh(false,false));
 };
@@ -9614,8 +9619,11 @@ SITE_TERRAIN.james.dress=function(root,G){
   /* DEAD TREES STANDING IN WATER, and reeds. The brackish finding, visible. This is
      what a drowned wood looks like and it is why nobody had built here. */
   const D=new Geo(), dead=RGB(0x8a8271), deadD=RGB(0x635c4e), reed=RGB(0x7d7f4a);
+  /* Just off the near shore, not out in the river: at z 82-152 the whole stand
+     was above the frame. These stand where the bank gives way, which is also
+     where a player standing on it can see them. */
   for(let i=0;i<22;i++){
-    const x=(srand(i*5.7+300)*2-1)*230, z=82+srand(i*3.3+300)*70;
+    const x=(srand(i*5.7+300)*2-1)*150, z=68+srand(i*3.3+300)*26;
     const h=14+srand(i*8.1+300)*20;
     D.beam8([x,-1.4,z],[x,h,z], 0.95,0.45, deadD,dead);
     for(let b=0;b<2;b++){
@@ -9624,7 +9632,7 @@ SITE_TERRAIN.james.dress=function(root,G){
     }
   }
   for(let i=0;i<90;i++){
-    const x=(srand(i*2.9+500)*2-1)*300, z=62+srand(i*6.1+500)*26;
+    const x=(srand(i*2.9+500)*2-1)*200, z=56+srand(i*6.1+500)*22;
     D.box(x,G(x,z)+1.5,z,0.35,3.2,0.35,reed);
   }
   root.add(D.mesh(false,false));
@@ -10808,7 +10816,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1747-a4aaa00";
+const BUILD="20260801-1802-7882b24";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
