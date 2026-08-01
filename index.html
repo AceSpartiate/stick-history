@@ -1515,6 +1515,12 @@ function updateInk(){$("hudInk").textContent=S.ink;$("wbInk").textContent=S.ink;
      weary 😩  screwed-up eyes and an open mouth: the helmsman at hour six */
 const FACEDEF={
   keen:      {eyes:"squint", mouth:"flat",  brow:"raised"},
+  /* JOHN SMITH, from the Simon van de Passe engraving of 1616 - the only likeness
+     taken from life, on his own map of New England. What makes it him, and what
+     would make him recognisable to a class who have met it in a textbook, is not
+     the eyes: it is a big forked beard and a moustache turned up at the ends. He
+     wore "keen" like a dozen other men and there was nothing of him in it. */
+  smith:     {eyes:"squint", mouth:"flat",  brow:"raised", beard:"forked"},
   kind:      {eyes:"open",   mouth:"smile"},
   mild:      {eyes:"closed", mouth:"smile"},
   weary:     {eyes:"closed", mouth:"open",  brow:"angry"},
@@ -1551,6 +1557,8 @@ const FACES={
     desc:"Eyes closed, content. Rest was rare enough aboard to be worth wearing."},
   bookish:{name:"Bookish",face:"bookish",icon:"\uD83E\uDD13",buy:35,
     desc:"Spectacles, which almost nobody in this company owns. The Clerk keeps the charter and can read it."},
+  smith:{name:"The Admiral's Beard",face:"smith",icon:"\uD83E\uDDD4",buy:45,
+    desc:"A forked beard and a moustache turned up at the ends, after the 1616 engraving of Captain John Smith \u2014 the only likeness of him taken from life."},
   keen:{name:"Weighing It",face:"keen",icon:"\uD83E\uDD28",buy:35,
     desc:"One eye narrowed and a brow up. Captain Archer wanted the channel sounded before dark and said so."},
   shrewd:{name:"Shrewd",face:"shrewd",icon:"\uD83D\uDE0F",buy:40,
@@ -1599,6 +1607,20 @@ function addFace(B,extra,key){
   else if(E==="star"){starEye(-1);starEye(1);}
   else if(E==="squint"){f(0.082,0.03,-EX,EY,DARK);openEye(1);}
   else if(E==="wink"){closedEye(-1);openEye(1);}
+  /* THE BEARD. Flat boxes on the face plane like everything else here, so it is in
+     keeping - and set a shade proud of it so it reads as hair over a jaw rather
+     than paint on one. The fork and the upturned moustache are the two things that
+     engraving is remembered for. */
+  if(d.beard==="forked"){
+    const HAIR=RGB(0x33251a),HAIR2=RGB(0x241a12);
+    f(0.236,0.072,0,1.474,HAIR,0,0.010);            /* the jaw */
+    f(0.196,0.062,0,1.412,HAIR,0,0.010);
+    f(0.076,0.076,-0.050,1.352,HAIR2,0.14,0.010);   /* and it forks */
+    f(0.076,0.076, 0.050,1.352,HAIR2,-0.14,0.010);
+    f(0.128,0.032,0,1.596,HAIR,0,0.014);            /* the moustache */
+    f(0.064,0.028,-0.082,1.608,HAIR,0.60,0.014);    /* turned up, both ends */
+    f(0.064,0.028, 0.082,1.608,HAIR,-0.60,0.014);
+  }
   if(d.brow==="angry"){f(0.082,0.024,-EX,BR,DARK,-0.42);f(0.082,0.024,EX,BR,DARK,0.42);}
   else if(d.brow==="raised"){f(0.072,0.02,-EX,BR-0.012,DARK,0.06);f(0.072,0.02,EX,BR+0.026,DARK,0.30);}
   const arc=function(cx,cy,w,depth,n,down,col){
@@ -9448,7 +9470,7 @@ function sealedBox(){
     /* the prisoner, brought up under guard */
     {spawn:{id:"smith",eq:{skin:"english",palette:"lostcolony",cloak:"none_cloak",
        torso:"torso_buffcoat",accessory:"none_acc",head:"none_head",
-       build:"build_normal",face:"keen",
+       build:"build_normal",face:"smith",
        dye:{torso:"lostcolony",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"}},
       at:[px+9,gy,pz-7],face:Math.PI*0.85},
      shot:{of:["smith"],dist:8*K,height:5.2*K,lookH:4.4*K,tight:true},t:5.6,
@@ -10356,7 +10378,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1249-1a82bac";
+const BUILD="20260801-1255-b87b24b";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
