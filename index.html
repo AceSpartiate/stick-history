@@ -7173,6 +7173,15 @@ document.addEventListener("visibilitychange",function(){
    -4.30 - the old MUZ of -1.05 was the lock, which is why powder appeared to
    pour into the breech and the scouring stick appeared to beat the stock. */
 const G_BORE=[0,0,-4.30];        /* the muzzle */
+/* THE CALIBRE, and everything that has to pass through it. Kept as numbers rather
+   than left implicit in three unrelated places, because the ball was sized for
+   legibility, the barrel for accuracy, and nobody checked them against each other
+   until a player did. Anything that goes down this barrel is measured off G_CAL.
+   A caliver ran about seven tenths of an inch; the ball ran UNDER that, because a
+   barrel fouls after two shots and a tight ball cannot be rammed at all. That
+   windage is why the drill has a wad: without one the ball rolls back out. */
+const G_CAL=0.70;                /* inches: the bore */
+const G_BALL=G_CAL-0.04;         /* inches: under bore, for windage */
 /* Moved in with the pan when the whole piece came down to true scale: the old
    pan stood 1.2 in proud of the barrel axis because it was drawn at cartoon
    thickness, so priming powder fell an inch and a half above the dish. */
@@ -7508,11 +7517,18 @@ function buildGunModel(){
   Rs.box(0,-0.166,-1.60,0.060,0.030,0.09,RGB(0x2b2b30));      /* the pipes holding it */
   Rs.box(0,-0.166,-3.10,0.060,0.030,0.09,RGB(0x2b2b30));
   gunRamStow=Rs.mesh(false,false);gunPiece.add(gunRamStow);
-  /* An ounce of lead is 0.66 in across. Drawn a shade over at 0.75 in, because a
-     true-size ball at arm's length is four pixels and the whole point of it is
-     that the player SEES it go down the bore. */
-  const B=new Geo();
-  B.oct(0,0,-0.031,0.031,0.062,0.062,0.062,0.062,0.5,RGB(0x8f8f97),RGB(0xb9b9c2));
+  /* THE BALL HAS TO FIT DOWN THE BARREL, and it did not.
+     Reported from play. It was drawn at 0.744 across "because a true-size ball at
+     arm's length is four pixels and the point of it is being SEEN" - and the
+     barrel is 1.02 across the OUTSIDE at the muzzle, so with any wall a gunsmith
+     would recognise the bore is about 0.70 and a 0.744 ball will not enter it.
+     The lie bought visibility and cost the one relationship on this weapon that a
+     player can check by looking: the thing goes in the hole.
+     True size now, and derived rather than typed - see G_CAL. Made legible by
+     being brighter instead of bigger: cast lead is dull, but a ball fresh from the
+     mould is not, and it only has to read for the second it is falling. */
+  const B=new Geo(), bd=G_BALL*IN;
+  B.oct(0,0,-bd/2,bd/2,bd,bd,bd,bd,0.5,RGB(0xb4b4bd),RGB(0xdcdce4));
   gunBall=B.mesh(true,false);gunBall.visible=false;gunPiece.add(gunBall);
 }
 function openDrill(onHit){
@@ -10614,7 +10630,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1649-450e054";
+const BUILD="20260801-1701-9f77c6e";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
