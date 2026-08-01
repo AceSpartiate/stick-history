@@ -9489,7 +9489,21 @@ function sealedBox(){
    withdrew. The Powhatan men are not obstacles and are not shown as targets. */
 const AMBUSH={on:false,t:0,phase:0,shots:0,fired:false,hits:0,done:false};
 const DUSK={t:0,on:false};
-const AMBUSH_LEN=40;
+/* THE AMBUSH HAS TO OUTLAST A RELOAD, and by enough that finishing one is a
+   decision rather than a reflex. This was 40 against a reload of 38 - two
+   constants sitting two thousand lines apart, agreeing by coincidence - which left
+   a two-second window to fire. And since the reload became automatic it also
+   became exactly 38 seconds every time, so that window was deterministic: press R
+   within two seconds of the first arrow and you get a shot; hesitate and you spend
+   the whole attack loading for nothing, and are never told why.
+   Which teaches the wrong thing. The chapter's argument is that an honest matchlock
+   is nearly useless in a surprise attack, and that lands hardest when you get ONE
+   shot away at the very end, having stood there loading while men fell around you -
+   not when you are denied and left to guess. Eight seconds of grace makes it a
+   choice instead of a coin toss.
+   Derived from the reload rather than set beside it, so the two cannot drift apart
+   again the way they just did. */
+const AMBUSH_LEN=((ARMS.matchlock&&ARMS.matchlock.reload)||38)+8;
 /* the sky and the light at noon and at dusk, lerped between */
 /* `bg` is the fallback flat colour behind the dome, and is kept in step with the
    dome's horizon so any seam is invisible. `fog` follows the horizon too - that
@@ -9662,7 +9676,9 @@ function updateAmbush(dt){
       if(npcMeshes[i].npc&&npcMeshes[i].npc.id==="archer")collapseFigure(npcMeshes[i].mesh);
   });
   beat(3,26.0,function(){toast("Matthew Morton is down. They are still shooting.");camKick=0.05;});
-  beat(4,34.0,function(){toast("\u201cTo the boats. Now.\u201d");});
+  /* held to the last ten seconds, so the order to withdraw lands after a player
+     who committed to loading has had their one shot rather than before it */
+  beat(4,AMBUSH_LEN-10,function(){toast("\u201cTo the boats. Now.\u201d");});
   if(T>=AMBUSH_LEN)endAmbush();
 }
 function endAmbush(){
@@ -10321,7 +10337,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1231-0201a8f";
+const BUILD="20260801-1235-6ad75f8";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
