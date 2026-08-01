@@ -10299,7 +10299,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1207-6f9ab7b";
+const BUILD="20260801-1214-a037846";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
@@ -10371,8 +10371,14 @@ function benchSubject(kind){
     const g=gunPiece;if(g.parent)g.parent.remove(g);
     if(gunWrist)gunWrist.visible=true;
     if(gunRear)gunRear.visible=true;
-    /* stood on its heel beside him, which is how you judge a gun against a man */
-    g.rotation.set(-Math.PI/2,0,0);g.position.set(1.5,0,0);
+    /* Stood on its heel beside him, which is how you judge a gun against a man.
+       Muzzle UP: the piece is built along -z, so it wants +PI/2 about x. At -PI/2
+       it stood muzzle-down through the floor and the bench read 9.8 ft tall, which
+       is the bench catching its own first bug. */
+    /* and lifted 0.52, because the model's origin is at the BREECH, not the heel -
+       stood at y 0 the butt sank through the floor and the piece measured 79% of
+       the man instead of 88%, which would have read as the gun being too short. */
+    g.rotation.set(Math.PI/2,0,0);g.position.set(1.5,0.52,0);
     w.add(g);return w;
   }
   if(kind==="slung"){setItemState("matchlock","stowed");return buildFigure(S.equip);}
