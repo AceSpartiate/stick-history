@@ -542,8 +542,8 @@
   </div>
 
   <div class="modal" id="mLash">
-    <div class="parchment deckle sheet">
-      <div class="seal">judge</div>
+    <div class="parchment deckle sheet" data-read>
+      <div class="seal noRead">judge</div>
       <div class="kicker">The Boatswain's Reckoning</div>
       <h3 id="lashTitle"></h3>
       <div class="rk-count" id="lashCount"></div>
@@ -554,16 +554,19 @@
     </div>
   </div>
 
+  <!-- data-read: the muster roll is an assessment for 6th to 8th graders and had
+       no read-aloud at all. data-readopts on the options list, because they are
+       buttons and readableText skips buttons by default. -->
   <div class="modal" id="mReck">
-    <div class="parchment deckle sheet">
-      <div class="seal" id="reckSeal">records</div>
+    <div class="parchment deckle sheet" data-read>
+      <div class="seal noRead" id="reckSeal">records</div>
       <div class="kicker" id="reckKick"></div>
       <h3 id="reckTitle"></h3>
       <div class="rk-count" id="reckCount"></div>
       <div id="reckFrame" style="font-style:italic;line-height:1.5;margin-bottom:.8em"></div>
       <div class="stim" id="reckStim"></div>
       <div class="qtext" id="reckQ"></div>
-      <div id="reckOpts"></div>
+      <div id="reckOpts" data-readopts></div>
       <div class="center" style="font-size:.78rem;color:#6a5836;margin-top:.5em">Tap your answer</div>
     </div>
   </div>
@@ -5654,18 +5657,37 @@ function speak(text,kind,who,force){
    data-read="auto" also speaks it the moment the panel becomes visible. */
 function readableText(el){
   if(!el)return "";
+  /* BUTTONS ARE SKIPPED, AND THE ANSWERS ARE BUTTONS.
+     Skipping them is right for "Tap your answer", "Set it down", "Answer" - the
+     furniture of a panel, which nobody needs read to them. It was wrong for
+     exactly one thing, and it is the thing that matters most in this game: the
+     multiple-choice options on the muster roll are buttons, so a pupil using
+     read-aloud heard the question and then silence. The assessment was the one
+     place in the game that could not be read.
+     So a container can opt its buttons IN with data-readopts, and the flag
+     inherits down the walk. One attribute on the options list rather than a
+     change at every site that builds an option. */
   const parts=[];
-  (function walk(node){
+  (function walk(node,opts){
     for(let i=0;i<node.childNodes.length;i++){
       const c=node.childNodes[i];
       if(c.nodeType===3){const t=c.nodeValue.replace(/\s+/g," ").trim();if(t)parts.push(t);continue;}
       if(c.nodeType!==1)continue;
       const tag=c.tagName;
-      if(tag==="BUTTON"||tag==="SCRIPT"||tag==="STYLE"||tag==="CANVAS")continue;
       if(c.classList&&(c.classList.contains("sayBtn")||c.classList.contains("noRead")))continue;
-      walk(c);
+      const inOpts=opts||!!(c.dataset&&c.dataset.readopts!==undefined);
+      if(tag==="BUTTON"){
+        if(!inOpts)continue;
+        /* full stopped, so the voice pauses between one choice and the next
+           instead of running them together into a single sentence */
+        const t=(c.textContent||"").replace(/\s+/g," ").trim();
+        if(t)parts.push(/[.?!]$/.test(t)?t:t+".");
+        continue;
+      }
+      if(tag==="SCRIPT"||tag==="STYLE"||tag==="CANVAS")continue;
+      walk(c,inOpts);
     }
-  })(el);
+  })(el,false);
   return parts.join(" ").replace(/\s+([.,;:!?])/g,"$1");
 }
 function readPanel(el,force){
@@ -10299,7 +10321,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1214-a037846";
+const BUILD="20260801-1231-0201a8f";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
