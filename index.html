@@ -7381,7 +7381,12 @@ function buildGunModel(){
      behind; with the pose putting the bead on the camera axis, a shallow standing
      notch at the breech gives the player two things to line up. */
   FL.box(0,0.050,-4.24,0.26*IN,0.30*IN,0.42*IN,brassL);
-  FL.box(0,0.064,-1.02,0.44*IN,0.22*IN,0.38*IN,ironD);
+  /* SUNK INTO THE BARREL, not perched on it. At y 0.064 with a half-height of
+     0.009 the notch's underside sat at 0.055 and the barrel's octagonal surface at
+     that frame is 0.060 at the flats but LOWER at the corners it spans - so it
+     bridged the corners and showed daylight under itself from most angles. Dropped
+     until it is bedded in the metal, which is where a standing notch is filed. */
+  FL.box(0,0.050,-1.02,0.44*IN,0.30*IN,0.38*IN,ironD);
 
   /* ---- the match: six feet of saltpetred cord, coiled round the wrist with both
      ends free so a second can be lit from the first. A quarter of an inch thick.
@@ -10816,7 +10821,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1802-7882b24";
+const BUILD="20260801-1813-1971875";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
