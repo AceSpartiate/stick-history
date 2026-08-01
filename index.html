@@ -3089,22 +3089,41 @@ function setInput(m){
   updateControlText();
 }
 document.body.classList.toggle("kbm",INPUT==="kbm");
-window.addEventListener("pointerdown",function(e){
-  if(e.pointerType==="mouse")setInput("kbm");
-  else if(e.pointerType==="touch")setInput("touch");
-},{capture:true});
+/* A PHONE MUST NEVER END UP ON THE MOUSE CONTROL SET.
+   Until this class existed, INPUT only chose a word on a label and whether one
+   button was drawn, so a false positive cost nothing and the detection could
+   afford to be eager. It now decides whether the thumb stick, its zone and the
+   turn buttons are on screen AT ALL - and eager detection had two ways to fire
+   on a phone. Typing raises keydown from the ON-SCREEN keyboard, so entering the
+   admin code or a muster code took a player's movement controls away mid-game;
+   and several mobile browsers emit a synthetic mouse pointer event after a tap.
+   Either way the joystick and the turn buttons vanished and the look surface
+   grew over the whole screen, which does not read as "wrong control scheme", it
+   reads as the game being broken.
+   So switching TO the mouse set now needs the device to actually HAVE a mouse -
+   a fine pointer that hovers. Switching to touch needs no permission at all,
+   because a touch is proof of itself. Checked live rather than once, so plugging
+   a mouse into a tablet still works. */
+function canKbm(){
+  return !window.matchMedia||window.matchMedia("(hover:hover) and (pointer:fine)").matches;
+}
+function inputFrom(e){
+  if(e.pointerType==="touch"||e.pointerType==="pen")setInput("touch");
+  else if(e.pointerType==="mouse"&&canKbm())setInput("kbm");
+}
+window.addEventListener("pointerdown",inputFrom,{capture:true});
 /* Moving a mouse is a statement of intent as much as clicking one, and it comes
    first: without this a mouse user on a touchscreen laptop kept the thumb stick
    until they clicked something. Ignored while the pointer is locked, because
    then every frame of aiming would re-assert what is already true. */
 window.addEventListener("pointermove",function(e){
   if(AIM.on)return;
-  if(e.pointerType==="mouse")setInput("kbm");
-  else if(e.pointerType==="touch")setInput("touch");
+  inputFrom(e);
 },{capture:true,passive:true});
 window.addEventListener("keydown",function(e){
-  /* a real key, not a modifier tap from an on-screen keyboard */
-  if(e.key&&e.key.length>0)setInput("kbm");
+  /* a real key, from a real keyboard - see above: an on-screen one counts for
+     nothing here, and there is no way to tell them apart from the event */
+  if(e.key&&e.key.length>0&&canKbm())setInput("kbm");
 },{capture:true});
 
 /* ========== TAKING AIM: THE MOUSE BECOMES THE MUZZLE ==========
@@ -10033,7 +10052,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-0219-350c54b";
+const BUILD="20260801-0228-be33545";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
