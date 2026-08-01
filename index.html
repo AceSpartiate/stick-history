@@ -6981,9 +6981,9 @@ const G_PT_HEEL=[0,-0.150,0.52], G_PT_WRIST=[0,-0.118,-0.26];
    +Z, and +Z is backward, so the forward swing into the pan is NEGATIVE. Written
    the other way the arm stood over the muzzle and fired by flicking backward
    over the shooter's shoulder. Derived rather than guessed: the pivot sits at
-   gun-local z -0.685 and the pan dish at -0.95, so the arm's 0.268 reach must
-   turn through asin(0.265/0.268) to put the coal in the powder. */
-const SERP_REST=0.28, SERP_FIRE=-1.42;
+   gun-local (-0.085, -0.685) and the pan lip at (0.050, -0.95), so the arm's
+   0.297 reach must turn through asin(0.265/0.297) to put the coal in the powder. */
+const SERP_REST=0.30, SERP_FIRE=-1.10;
 /* Three poses, not two.
    load  - muzzle raised, so powder and ball go down it
    port  - held across the body, loaded but not presented
@@ -7188,8 +7188,18 @@ function buildGunModel(){
      mechanism half-buried in the tube it fires does not read as a mechanism, which
      is what "the firing mechanism scale seems off" was seeing. Its inner face now
      sits on the barrel, where a lock plate is screwed. */
-  FL.box(0.074,-0.006,-0.78,0.24*IN,1.40*IN,0.340,ironD);/* lock plate */
-  FL.box(0.076,0.026,-0.76,0.30*IN,0.55*IN,0.170,iron); /* its boss */
+  /* AND DOWN ONTO THE STOCK, which is where a lock plate lives. In both
+     reference photographs the plate is inlet into the WOOD, its top edge at the
+     underside of the barrel, and the pan is a separate piece on the BARREL above
+     it - the serpentine rises from the plate, past the barrel's flank, to reach
+     over the pan. This plate was centred on the barrel's own axis, so it
+     overlapped the lower half of the tube and the pan grew out of the middle of
+     it, which is why the whole mechanism read as one lump of the wrong size
+     rather than as a lock on a stock beside a pan on a barrel.
+     Also longer - 4.9 rather than 4.1 - and it tapers away aft, as they do. */
+  FL.box(0.074,-0.112,-0.78,0.24*IN,1.40*IN,0.410,ironD);/* lock plate */
+  FL.box(0.074,-0.112,-0.56,0.22*IN,0.80*IN,0.110,ironD);/* its tail, aft */
+  FL.box(0.076,-0.070,-0.80,0.30*IN,0.55*IN,0.190,iron); /* the sear boss */
   /* the pan, and its cover swung open ready to fire */
   FL.box(0.096,0.034,-0.95,0.80*IN,0.26*IN,0.90*IN,iron);
   FL.box(0.096,0.022,-0.95,0.62*IN,0.22*IN,0.70*IN,ironD);/* the pan's dish */
@@ -7249,18 +7259,27 @@ function buildGunModel(){
      a real serpentine clears the barrel and still drops its match into a pan set
      off to the side. */
   const Sp=new Geo();
-  Sp.beam8([0,0,0],            [0.008,0.086,0.032], 0.17*IN,0.145*IN, ironD,iron);
-  Sp.beam8([0.008,0.086,0.032],[0.020,0.176,-0.026], 0.145*IN,0.12*IN, iron,ironL);
-  Sp.beam8([0.020,0.176,-0.026],[0.026,0.240,-0.006], 0.12*IN,0.135*IN, ironL,iron);
+  /* REACH RECOMPUTED for the pivot's new home on the plate. From (-0.085) up to
+     the pan lip at 0.050 and 0.265 forward is 0.297 of travel, so that is the
+     arm's length and SERP_FIRE is asin(0.265/0.297) - a shallower swing than
+     before, because the arm now comes up from below the barrel rather than out of
+     it, which is what the photographs show.
+     And it is a STRAP, not a rod: broad in the plane it swings through and thin
+     across, the way a bent iron bar is. beam8 gives a round section, so it is
+     drawn at the strap's WIDTH and reads correctly from the side, which is the
+     only side the player ever sees it from. */
+  Sp.beam8([0,0,0],            [0.010,0.105,0.048], 0.26*IN,0.23*IN, ironD,iron);
+  Sp.beam8([0.010,0.105,0.048],[0.022,0.222,-0.034], 0.23*IN,0.20*IN, iron,ironL);
+  Sp.beam8([0.022,0.222,-0.034],[0.026,0.297,-0.008], 0.20*IN,0.22*IN, ironL,iron);
   /* the burning end of the match, clamped in the jaws - so it swings WITH the arm
      instead of hanging in the air where the arm used to be */
-  Sp.beam8([0.032,0.052,0.076],[0.026,0.234,-0.004], 0.14*IN,0.13*IN, cordD,cord);
+  Sp.beam8([0.030,0.108,0.062],[0.026,0.291,-0.006], 0.14*IN,0.13*IN, cordD,cord);
   gunSerp=new THREE.Group();
   /* The pivot is placed so the coal's reach EQUALS the distance to the pan: 0.265
      back along the bore and 0.04 up is 0.268, which is exactly where the coal sits
      in the arm's frame. Put it a quarter inch further forward and the match swings
      straight past the pan and buries itself in the barrel. */
-  gunSerp.position.set(0.080,0.010,-0.685);
+  gunSerp.position.set(0.080,-0.085,-0.685);
   gunSerp.add(Sp.mesh(true,false));
   /* The jaws: TWO of them, with the match gripped between. One box read as a lump
      on a stick and taught nothing; a pair reads as something clamped shut, which
@@ -7273,9 +7292,13 @@ function buildGunModel(){
      size, so the cord is the measure: plates 0.45 apart leave a 0.30 gap that
      grips it exactly, and the whole clamp comes to 0.60 deep. The screw is sized
      to actually span them, which at 0.62 against a 0.79 gap it did not. */
-  Jw.box(0.026,0.246,-0.025,0.35*IN,0.41*IN,0.15*IN,ironD);
-  Jw.box(0.026,0.246, 0.013,0.35*IN,0.41*IN,0.15*IN,ironD);
-  Jw.box(0.026,0.222,-0.006,0.34*IN,0.22*IN,0.72*IN,iron);   /* the screw through them */
+  Jw.box(0.026,0.303,-0.025,0.38*IN,0.44*IN,0.15*IN,ironD);
+  Jw.box(0.026,0.303, 0.013,0.38*IN,0.44*IN,0.15*IN,ironD);
+  /* THE SCREW, ACROSS the jaws with its head outboard, which is how it reads in
+     the photograph - a big round head standing off the right side of the cock. It
+     was drawn along the gun instead, hidden between the plates. */
+  Jw.box(0.026,0.297,-0.006,0.86*IN,0.20*IN,0.20*IN,iron);
+  Jw.box(0.062,0.297,-0.006,0.22*IN,0.44*IN,0.44*IN,ironL);  /* its head */
   gunSerp.add(Jw.mesh(false,false));
   gunPiece.add(gunSerp);
   gunSerp.rotation.x=SERP_REST;
@@ -7290,7 +7313,7 @@ function buildGunModel(){
      gradeRenderer still owns tone mapping for everything else. */
   gunCoal=new THREE.Mesh(boxGeom(0.026,0.026,0.026),
     new THREE.MeshBasicMaterial({color:lin(0xff7a1e),toneMapped:false}));
-  gunCoal.position.set(0.026,0.268,-0.004);gunSerp.add(gunCoal);
+  gunCoal.position.set(0.026,0.325,-0.004);gunSerp.add(gunCoal);
 
   /* Everything the hands do is parented to the PIECE, not the camera. Parented
      to the camera they stayed level while the gun tilted to load, so nothing
@@ -10226,7 +10249,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1151-7900616";
+const BUILD="20260801-1157-b2cee3e";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
