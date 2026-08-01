@@ -71,6 +71,10 @@
      where the wardrobe and notes buttons were both below the fold. */
   @media (max-height:560px){ #titleCanvas{height:120px} }
   @media (max-height:460px){ #titleCanvas{display:none} }
+  #stale{position:fixed;left:0;right:0;bottom:0;z-index:60;display:none;gap:.8em;
+    align-items:center;justify-content:center;flex-wrap:wrap;padding:.7em 1em;
+    background:var(--oxblood);color:var(--parch);font-size:.86rem;text-align:center}
+  #stale .btn{padding:.35em .9em;font-size:.86rem}
   body.aiming{cursor:none}
   #reticle{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;
     border-radius:50%;background:rgba(255,242,220,.5);box-shadow:0 0 0 1px rgba(0,0,0,.5);
@@ -597,6 +601,10 @@
       <button class="btn wide mt" id="resBtn">Continue</button>
     </div>
   </div>
+
+  <!-- Shown only when an update exists and the browser keeps serving the old copy.
+       Silence was the bug: a stale page looks exactly like a page with no changes. -->
+  <div id="stale"><b></b><button class="btn">Load it now</button></div>
 
   <div class="modal mid" id="mAdmin">
     <div class="parchment deckle sheet" style="max-width:320px">
@@ -3194,7 +3202,7 @@ function itemHeld(id){const st=itemState(id);return st==="stowed"||st==="carried
 
    Declared up here rather than beside the drill because refreshGunUI reads it and
    runs at top level; further down it would be in the temporal dead zone. */
-const RELOAD={on:false,t:0,dur:0,stage:-1};
+const RELOAD={on:false,t:0,dur:0,stage:-1,reprime:false};
 /* fractions of the whole, summing to 1. Ramming is the long part, which is true. */
 const RELOAD_STAGES=[
   {k:"powder",f:0.22},{k:"ball",f:0.10},{k:"wad",f:0.10},
@@ -3463,7 +3471,16 @@ function refreshGunUI(){
     const inh=gunInHands();
     let sub;
     if(!inh)sub="on your back";
-    else if(RELOAD.on)sub="loading…";
+    /* WHICH MOTION, not merely that one is happening. Forty seconds of "loading…"
+       tells a player nothing and teaches nothing, and the six motions ARE the
+       lesson of this chapter — so the button names the one under way and counts
+       it, and says plainly when she is only being re-primed. */
+    else if(RELOAD.on){
+      const i=Math.max(0,RELOAD.stage);
+      sub=RELOAD.reprime
+        ? (G_DOING[GUN.step]||"priming")+" · still charged"
+        : (G_DOING[GUN.step]||"loading")+" · "+(i+1)+" of "+RELOAD_STAGES.length;
+    }
     else if(!gunEarned())sub="not yet proved";
     else if(gunReady())sub=(GUN.glow<0.18)?"loaded · match cold":"loaded";
     else sub=(INPUT==="kbm")?"empty · press R":"empty · tap Load";
@@ -7088,6 +7105,9 @@ const G_LO=0.52,G_HI=0.74,P_LO=0.28,P_HI=0.50;
 const G_ORDER=["powder","ball","wad","ram","prime","ready"];
 const G_NAME={powder:"Charge the piece",ball:"Ball",wad:"Wad",ram:"Ram it home",
   prime:"Prime the pan",ready:"Present, and give fire"};
+/* the present participle of each motion, for the button while it runs itself */
+const G_DOING={powder:"charging",ball:"ball down her",wad:"wadding",
+  ram:"ramming home",prime:"priming",ready:"ready"};
 const G_HINT={
   powder:"Hold to pour from the flask. Stop inside the green \u2014 too little will not carry, too much may burst the barrel.",
   ball:"Drop the ball down the muzzle.",
@@ -7610,18 +7630,28 @@ function startReload(){
   if(gunReady()){toast("She is already loaded.");return;}
   buildGunModel();
   if(gunPiece)gunPiece.visible=true;
-  resetCharge();
+  /* IS THE CHARGE STILL DOWN HER? Then this is a re-prime, not a reload. A ball
+     and wad rammed home do not fall out because the pan failed, and making a
+     player stand through the whole drill again to answer a flash in the pan is the
+     game lying about the weapon. Six seconds against thirty-eight. */
+  RELOAD.reprime=(GUN.hasBall&&GUN.hasWad&&GUN.charge>=G_LO*0.5);
+  if(!RELOAD.reprime)resetCharge(); else GUN.prime=0;
   RELOAD.on=true;RELOAD.t=0;RELOAD.stage=-1;
   /* ARMS.reload has sat in the weapon table since it was written, read by nothing.
      This is what it was for: thirty-eight seconds for one ball. */
   RELOAD.dur=(ARMS[GUN.arm]&&ARMS[GUN.arm].reload)||38;
+  if(RELOAD.reprime)RELOAD.dur=Math.max(4,RELOAD.dur*0.16);
+  toast(RELOAD.reprime?"Still charged. Priming her again.":"Loading.");
   playSfx("click",0.2);
   refreshGunUI();
 }
 function cancelReload(){
   if(!RELOAD.on)return;
   RELOAD.on=false;RELOAD.stage=-1;GUN.pourOn=false;stopSfx();
-  resetCharge();                    /* an interrupted load is a wasted charge */
+  /* An interrupted LOAD is a wasted charge. An interrupted re-prime is not - the
+     ball is still down the barrel and nothing you did took it out. */
+  if(!RELOAD.reprime)resetCharge(); else GUN.prime=0;
+  RELOAD.reprime=false;
   if(gunFlask)gunFlask.visible=false;
   if(gunRammer)gunRammer.visible=false;
   if(gunStream)gunStream.visible=false;
@@ -7633,11 +7663,20 @@ function updateReload(dt){
   if(!gunInHands()){cancelReload();return;}
   RELOAD.t+=dt;
   const k=Math.min(1,RELOAD.t/RELOAD.dur);
-  /* which motion are we on */
-  let acc=0,idx=RELOAD_STAGES.length-1;
-  for(let i=0;i<RELOAD_STAGES.length;i++){
-    acc+=RELOAD_STAGES[i].f;
-    if(k<=acc){idx=i;break;}
+  /* which motion are we on. A RE-PRIME is only ever two of them: the pan, then
+     ready. Walking the full table at a sixth of the duration would have flashed
+     powder-ball-wad-ram past in four seconds and told the player she had been
+     completely reloaded, which is the opposite of what just happened. */
+  let idx;
+  if(RELOAD.reprime){
+    idx=(k<0.82)?RELOAD_STAGES.findIndex(function(x){return x.k==="prime";})
+                :RELOAD_STAGES.length-1;
+  } else {
+    let acc=0;idx=RELOAD_STAGES.length-1;
+    for(let i=0;i<RELOAD_STAGES.length;i++){
+      acc+=RELOAD_STAGES[i].f;
+      if(k<=acc){idx=i;break;}
+    }
   }
   if(idx!==RELOAD.stage){
     RELOAD.stage=idx;
@@ -7667,7 +7706,7 @@ function updateReload(dt){
   const f=$("gunFill");
   if(f)f.style.width=(k*100).toFixed(1)+"%";
   if(k>=1){
-    RELOAD.on=false;RELOAD.stage=-1;GUN.pourOn=false;stopSfx();
+    RELOAD.on=false;RELOAD.stage=-1;RELOAD.reprime=false;GUN.pourOn=false;stopSfx();
     if(gunFlask)gunFlask.visible=false;
     if(gunRammer)gunRammer.visible=false;
     if(gunStream)gunStream.visible=false;
@@ -7891,9 +7930,23 @@ function giveFire(){
      On a misfire the match comes down, touches, and nothing happens - which is the
      most eloquent thing this weapon does. */
   GUN.serpT=1;
+  /* A PAN THAT FAILS IS NOT A BARREL THAT EMPTIED. `keep` has been a parameter
+     here since this was written and was never once read, so every outcome sent the
+     player back to "charge the piece" - forty seconds to answer a fault that cost
+     a spoonful of priming.
+     The distinction is the weapon's own: powder, ball and wad are down the barrel
+     and stay there. If only the PAN failed - a flash, too little priming, a dead
+     match, a serpentine that did not catch - you re-prime and try her again. If
+     the CHARGE was at fault - no powder, no ball, no wad to hold it - there is
+     nothing down her and you start over. That is the difference between a bad
+     minute and a lost one, and the weapon already knew it. */
   function done(keep){
     GUN.glow=Math.max(0,GUN.glow-0.07);
-    setTimeout(function(){if(GUN.active){resetCharge();GUN.t0=performance.now();gStep("powder");}},900);
+    setTimeout(function(){
+      if(!GUN.active)return;
+      if(keep){GUN.spent=false;GUN.prime=0;GUN.t0=performance.now();gStep("prime");}
+      else{resetCharge();GUN.t0=performance.now();gStep("powder");}
+    },900);
   }
   if(GUN.charge<G_LO*0.5){
     playSfx("click",0.5);toast("Nothing \u2014 there is no powder in her.");done();return;
@@ -7906,14 +7959,14 @@ function giveFire(){
   if(GUN.hasBall&&!GUN.hasWad){
     playSfx("boom",0.28);gunSmoke(0.5);toast("A hollow report \u2014 the ball rolled out.");done();return;
   }
-  if(GUN.glow<0.18){playSfx("click",0.5);toast("Nothing. The match is dead.");done();return;}
+  if(GUN.glow<0.18){playSfx("click",0.5);toast("Nothing. The match is dead. Blow it up and prime her again.");done(true);return;}
   if(GUN.prime>P_HI*1.5&&Math.random()<0.75){
-    playSfx("fizz",0.45);gunSmoke(0.35);toast("A flash in the pan \u2014 all smoke, no shot.");done();return;
+    playSfx("fizz",0.45);gunSmoke(0.35);toast("A flash in the pan \u2014 all smoke, no shot. She is still charged; prime her again.");done(true);return;
   }
-  if(GUN.prime<P_LO*0.6){playSfx("click",0.5);toast("Nothing \u2014 too little powder in the pan.");done();return;}
+  if(GUN.prime<P_LO*0.6){playSfx("click",0.5);toast("Nothing \u2014 too little powder in the pan. Prime her again.");done(true);return;}
   const ARM=ARMS[GUN.arm];
   if(Math.random()<resolveMisfire(ARM,armState(ARM))){
-    playSfx("click",0.5);toast("Misfire. It did not catch.");done();return;
+    playSfx("click",0.5);toast("Misfire. It did not catch, but the charge is still down her.");done(true);return;
   }
   if(Math.random()<ARM.hangfire){
     playSfx("fizz",0.3);toast("Hang fire\u2026");
@@ -10821,7 +10874,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1813-1971875";
+const BUILD="20260801-1832-f53cfff";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
@@ -10831,7 +10884,26 @@ const BUILD="20260801-1813-1971875";
       if(!t)return;
       const latest=t.trim();
       if(!latest||latest===BUILD)return;
-      if(sessionStorage.getItem("sh.build")===latest)return;   /* already tried */
+      /* ALREADY TRIED AND STILL STALE. The loop guard is right - a reload loop is
+         far worse than an old page - but giving up SILENTLY is how a teacher spends
+         an evening refreshing and seeing the same gun. If we chased this build once
+         and are still not running it, the cache is winning and the player needs
+         telling, with something to press. */
+      if(sessionStorage.getItem("sh.build")===latest){
+        const n=document.getElementById("stale");
+        if(n){
+          n.style.display="flex";
+          n.querySelector("b").textContent="An update is ready, and your browser is serving an older copy.";
+          n.querySelector("button").onclick=function(){
+            sessionStorage.removeItem("sh.build");
+            const u2=new URL(location.href);
+            u2.searchParams.set("v",latest);
+            u2.searchParams.set("t",Date.now());   /* a key no cache can hold */
+            location.replace(u2.toString());
+          };
+        }
+        return;
+      }
       sessionStorage.setItem("sh.build",latest);
       const u=new URL(location.href);
       u.searchParams.set("v",latest);
