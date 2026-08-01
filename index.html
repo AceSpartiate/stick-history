@@ -2040,7 +2040,12 @@ function triOut4(G,a,b,c,ca,cb,cc,inside){
    28 triangles against beam's 12, and it keeps the property that mattered: it is
    all emitted into ONE shared Geo, so the whole shore party is still one draw
    call. */
-Geo.prototype.beam8=function(a,b,w0,w1,col0,col1){
+/* `flat0`/`flat1` (default 1) squash or stretch the section across one axis, so the
+   same primitive builds a round barrel AND a musket butt that is taller than it is
+   wide. For a beam running along z the frame comes out with u along x and v along
+   y, so `flat` is reliably the VERTICAL proportion - which is the one a gunstock
+   needs. */
+Geo.prototype.beam8=function(a,b,w0,w1,col0,col1,flat0,flat1){
   const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2];
   const L=Math.hypot(dx,dy,dz)||1;
   const d=[dx/L,dy/L,dz/L];
@@ -2050,19 +2055,21 @@ Geo.prototype.beam8=function(a,b,w0,w1,col0,col1){
   const v=[d[1]*u[2]-d[2]*u[1], d[2]*u[0]-d[0]*u[2], d[0]*u[1]-d[1]*u[0]];
   const c0=col0, c1=col1||col0;
   const N=8, r0=w0/2, r1=(w1===undefined?w0:w1)/2;
+  const f0=(flat0===undefined)?1:flat0;
+  const f1=(flat1===undefined)?f0:flat1;
   const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2];
-  const P=function(o,r,i){
+  const P=function(o,r,i,f){
     const ang=(i/N)*Math.PI*2+Math.PI/N;
-    const su=Math.cos(ang)*r, sv=Math.sin(ang)*r;
+    const su=Math.cos(ang)*r, sv=Math.sin(ang)*r*f;
     return [o[0]+u[0]*su+v[0]*sv, o[1]+u[1]*su+v[1]*sv, o[2]+u[2]*su+v[2]*sv];
   };
   for(let i=0;i<N;i++){
     const j=(i+1)%N;
-    quadOut4(this,P(a,r0,i),P(a,r0,j),P(b,r1,j),P(b,r1,i),c0,c0,c1,c1,mid);
+    quadOut4(this,P(a,r0,i,f0),P(a,r0,j,f0),P(b,r1,j,f1),P(b,r1,i,f1),c0,c0,c1,c1,mid);
   }
   for(let i=1;i<N-1;i++){
-    triOut4(this,P(a,r0,0),P(a,r0,i),P(a,r0,i+1),c0,c0,c0,mid);
-    triOut4(this,P(b,r1,0),P(b,r1,i),P(b,r1,i+1),c1,c1,c1,mid);
+    triOut4(this,P(a,r0,0,f0),P(a,r0,i,f0),P(a,r0,i+1,f0),c0,c0,c0,mid);
+    triOut4(this,P(b,r1,0,f1),P(b,r1,i,f1),P(b,r1,i+1,f1),c1,c1,c1,mid);
   }
 };
 /* ========== THE FORM PRIMITIVE ==========
@@ -2983,20 +2990,33 @@ const ITEMS={
     name:"Matchlock Caliver",
     weight:"about ten pounds",
     desc:"Four feet of barrel, a serpentine to hold the match, and a length of cord that must be kept alight. Slung, it is a weight across your back; in your hands it is forty seconds from empty to ready.",
+    /* THE SAME WEAPON, AT THE SAME SCALE. These two are the piece as the world
+       sees it - on your back and lying where you set it down - and both were
+       drawn two to three times too thick, exactly as the first-person model was.
+       A gun that is a slender thing in your hands and a club on your back is two
+       different guns.
+       The slung copy is built inside the figure, which is scaled by FIG_SCALE
+       3.24, so one foot is 0.309 of these units: a 4 ft 10 in caliver is 1.50 of
+       them end to end and its barrel is 0.032 across, not the 0.14 it had. The
+       grounded copy is in world units, where one unit already is one foot. */
     /* the piece slung muzzle-up across the back, with its strap over the chest */
     slung:function(G){
-      const iron=RGB(0x2b2b30),stock=RGB(0x4a3520),strap=RGB(0x6b4a2a),brass=RGB(0xa9822f);
-      G.beam([-0.17,0.62,-0.15],[0.20,1.78,-0.19],0.072,iron);      /* barrel */
-      G.beam([-0.17,0.62,-0.15],[-0.04,1.24,-0.175],0.112,stock);   /* stock */
-      G.beam([-0.05,1.20,-0.13],[0.02,1.34,-0.09],0.055,brass);     /* the lock */
-      G.beam([-0.18,1.50,-0.12],[0.19,0.82,0.12],0.048,strap);      /* the strap */
+      const iron=RGB(0x3c4048),stock=RGB(0x5b3f22),strap=RGB(0x6b4a2a),brass=RGB(0xa9822f);
+      G.beam([-0.102,0.815,-0.151],[0.230,1.870,-0.195],0.017,iron); /* barrel */
+      G.beam([-0.140,0.695,-0.146],[0.150,1.615,-0.185],0.026,stock);/* forestock */
+      G.beam([-0.220,0.440,-0.135],[-0.090,0.855,-0.153],0.040,stock);/* wrist, butt */
+      G.beam([-0.070,0.930,-0.140],[0.010,1.185,-0.151],0.021,iron); /* the lock */
+      G.beam([-0.020,1.040,-0.108],[0.020,1.170,-0.075],0.012,brass);/* serpentine */
+      G.beam([-0.18,1.50,-0.12],[0.19,0.82,0.12],0.026,strap);       /* the strap */
     },
     /* and lying on the ground where you set it down */
     ground:function(G){
-      const iron=RGB(0x2b2b30),stock=RGB(0x4a3520),brass=RGB(0xa9822f);
-      G.beam([0,0.10,-2.1],[0,0.10,1.4],0.22,iron);
-      G.beam([0,0.10,0.9],[0,0.16,2.3],0.36,stock);
-      G.beam([0.14,0.16,0.7],[0.14,0.26,1.0],0.16,brass);
+      const iron=RGB(0x3c4048),stock=RGB(0x5b3f22),brass=RGB(0xa9822f);
+      G.beam([0,0.09,-2.42],[0,0.09,1.16],0.053,iron);      /* barrel, 3 ft 7 in */
+      G.beam([0,0.07,-2.02],[0,0.08,1.26],0.072,stock);     /* forestock */
+      G.beam([0,0.08,1.10],[0,0.11,2.43],0.090,stock);      /* wrist and butt */
+      G.beam([0.056,0.09,0.86],[0.056,0.10,1.20],0.030,iron);/* the lock */
+      G.beam([0.060,0.13,1.02],[0.070,0.25,0.94],0.018,brass);/* the serpentine */
     }
   }
 };
@@ -6666,8 +6686,21 @@ const G_HINT={
   ready:"Drag to aim. Hold still and the sway settles. The match must be bright."
 };
 let TARGETS=[],gunPiece=null,gunFlask=null,gunRammer=null,gunStream=null,gunCoal=null;
-/* the stowed scouring stick, and the ball going down the bore - see buildGunModel */
-let gunRamStow=null,gunBall=null;
+/* the stowed scouring stick, the ball going down the bore, and the serpentine -
+   see buildGunModel */
+let gunRamStow=null,gunBall=null,gunSerp=null,gunRear=null;
+/* scratch for the heel-depth test in updateDrill; THREE is not loaded yet here */
+let G_HEEL=null;
+/* At rest the arm stands UP AND BACK over the wrist, the burning match a hand's
+   breadth from your cheek; pulling the trigger swings it FORWARD and DOWN until
+   the match meets the priming. These two angles ARE the mechanism.
+   Signs matter and were inverted at first: rotation about +X carries +Y toward
+   +Z, and +Z is backward, so the forward swing into the pan is NEGATIVE. Written
+   the other way the arm stood over the muzzle and fired by flicking backward
+   over the shooter's shoulder. Derived rather than guessed: the pivot sits at
+   gun-local z -0.685 and the pan dish at -0.95, so the arm's 0.268 reach must
+   turn through asin(0.265/0.268) to put the coal in the powder. */
+const SERP_REST=0.28, SERP_FIRE=-1.42;
 /* Three poses, not two.
    load  - muzzle raised, so powder and ball go down it
    port  - held across the body, loaded but not presented
@@ -6692,9 +6725,27 @@ let gunRamStow=null,gunBall=null;
    Both are now angled so the working end sits near the aim line and the whole
    stroke stays inside frame. The butt is still on the ground; the barrel is
    canted rather than vertical, which is how a musket was actually rammed. */
+/* AND THEN THE PIECE CAME DOWN TO TRUE SCALE AND BROKE ALL OF THAT AGAIN.
+   Every pose here was authored against a barrel three inches across. At the
+   honest inch and a quarter the same poses put the muzzle 4.75 feet from the eye
+   and FIVE PIXELS wide - so "watch the charge go down it" meant watching a hole
+   the size of a full stop, and the scouring stick, at a third of an inch, was two
+   pixels. The rescale had quietly undone the exact thing the poses were rewritten
+   to fix.
+   So each working pose is now solved rather than nudged: pick the part the player
+   is meant to WATCH, pick where on screen and how far from the eye it should sit,
+   and derive the gun's position from the rotation. Muzzle at about a foot and a
+   half for charging and ramming; the pan at about the same for priming.
+   Priming got its own stance out of this. It had been sharing `load`, and with
+   the barrel raised steeply enough to pour powder down it the pan swings round
+   BEHIND the shooter's head - the one step whose whole content is "put a little
+   powder in this small dish" was happening off-camera. */
 const G_POSE={
-  /* muzzle at +12 deg: you watch the charge go down it */
-  load:  {p:[0.30,-1.50,-1.20],r:[0.62,0.22,0.12]},
+  /* barrel steeply up, muzzle by your face: you watch the charge go down it */
+  load:  {p:[1.571,-3.343,0.444], r:[1.05,0.30,0.10]},
+  /* across the body, lock rolled uppermost, pan a foot and a half from the eye
+     and just right of centre - which is how a man primes and where he looks */
+  prime: {p:[0.636,-0.031,-0.681],r:[-0.10,0.45,0.85]},
   port:  {p:[0.30,-0.42,-0.55],r:[-0.03,0.04,0.06]},
   sight: {p:[0,-0.06,-0.30],   r:[0,0,0]},
   /* Butt grounded, barrel near upright, and set to one side so the muzzle sits
@@ -6704,8 +6755,8 @@ const G_POSE={
      1.50 the bore runs almost straight up, so local -z 4.30 puts the muzzle
      4.28 above the gun's origin, and an origin at y -4.55 lands the muzzle at
      -0.27 - a hand's breadth under level. */
-  /* muzzle at +4 deg, stroke spanning +1 to -23 deg - all of it on screen */
-  ground:{p:[0.55,-3.60,-2.60],r:[1.15,0.14,0.05]}
+  /* muzzle a foot and a half out, dead centre of frame, stroke arcing up into it */
+  ground:{p:[1.045,-4.212,-0.396],r:[1.32,0.16,0.05]}
 };
 const G_FOV={normal:56,sighted:43};
 
@@ -6743,38 +6794,213 @@ document.addEventListener("visibilitychange",function(){
    -4.30 - the old MUZ of -1.05 was the lock, which is why powder appeared to
    pour into the breech and the scouring stick appeared to beat the stock. */
 const G_BORE=[0,0,-4.30];        /* the muzzle */
-const G_PAN=[0.10,0.10,-0.95];   /* the priming pan, beside the lock */
+/* Moved in with the pan when the whole piece came down to true scale: the old
+   pan stood 1.2 in proud of the barrel axis because it was drawn at cartoon
+   thickness, so priming powder fell an inch and a half above the dish. */
+const G_PAN=[0.086,0.050,-0.95]; /* the priming pan, beside the lock */
 function buildGunModel(){
   if(gunPiece)return;
-  const P=new Geo(),iron=RGB(0x2b2b30),stock=RGB(0x4a3520),brass=RGB(0xa9822f);
-  P.box(0,0,-2.6,0.09,0.09,3.4,iron);
-  P.box(0,-0.05,-0.7,0.16,0.20,1.5,stock);
-  P.box(0,-0.16,0.15,0.14,0.34,0.5,stock);
-  P.box(0.07,0.02,-1.0,0.06,0.05,0.22,brass);
-  P.box(0.10,0.08,-0.88,0.04,0.16,0.05,iron);
-  P.box(0,0.06,-4.28,0.05,0.05,0.05,brass);          /* the foresight bead */
-  /* The match: several feet of loosely woven cord soaked in saltpetre, coiled
-     round the stock with both ends free so a second can be lit from the first.
-     Only the burning tip was ever modelled, glowing on nothing. */
-  const cord=RGB(0x6b6155);
-  P.box(-0.055,-0.02,-0.55,0.035,0.035,0.70,cord);
-  P.box(-0.055,-0.05,-0.20,0.035,0.075,0.035,cord);
-  P.box(0.02,-0.06,-0.30,0.10,0.035,0.035,cord);
-  P.box(0.075,-0.02,-0.62,0.035,0.035,0.30,cord);
-  gunPiece=P.mesh(false,false);cam.add(gunPiece);
-  gunCoal=new THREE.Mesh(boxGeom(0.05,0.05,0.05),new THREE.MeshBasicMaterial({color:lin(0xff7a1e)}));
-  gunCoal.position.set(0.10,0.17,-0.88);gunPiece.add(gunCoal);
+  /* ========== A MATCHLOCK CALIVER, c.1600 ==========
+     Reported from play: "the matchlock isn't nearly accurate looking enough. I can't
+     tell what's going on when I think about what my students know." Fair. It was ten
+     axis-aligned boxes with square cross-sections, in near-black, and at most angles
+     it read as a stack of dark blocks rather than a weapon.
+
+     The fix is not more boxes, it is the RIGHT PRIMITIVE for each part. A barrel and
+     a stock are round-ish tapering solids, and beam8 with a flat ratio builds those;
+     a lock plate and a butt plate genuinely ARE flat plates, and boxes are correct
+     for them. So the piece is two meshes: curved parts smooth-shaded so the octagonal
+     sections read as round, flat parts flat-shaded so their edges stay crisp. Two
+     draw calls for the weapon the whole chapter is about, out of six hundred.
+
+     Landmarks that other code depends on and must not move: the muzzle at G_BORE
+     z=-4.30, the pan at G_PAN, and the foresight bead the sight picture is built
+     around. */
+  /* ---- SCALE. This is the thing that was actually wrong. ----
+     The world is built at ONE UNIT = ONE FOOT: eye height is ground + 5.0, and
+     the twenty-yard mark stands at x+60. The piece measured 4.9 units from heel
+     to muzzle, which is a correct 4 ft 10 in caliver - but its barrel was 0.132
+     in RADIUS, so 0.26 of a foot, THREE INCHES across. A caliver barrel is an
+     inch and a bit across the flats. Every cross-section on the piece was two to
+     three times too thick, which is why it read as a stack of blocks: the
+     proportions were a cartoon even though the length was right. A real matchlock
+     is a slender thing.
+
+     Every dimension below is now in inches divided by twelve, and commented as
+     inches so it can be checked against a museum piece rather than against taste. */
+  const IN=1/12;
+  const C=new Geo();                                   /* curved: smooth-shaded */
+  const FL=new Geo();                                   /* flat: crisp edges */
+  const iron=RGB(0x41454e), ironD=RGB(0x2e3238), ironL=RGB(0x585d68);
+  const stock=RGB(0x6b4a28), stockD=RGB(0x4e3419), stockL=RGB(0x7d5931);
+  const brass=RGB(0xb08a34), brassL=RGB(0xd0a94a);
+  const cord=RGB(0x7a6f60), cordD=RGB(0x5c5347);
+
+  /* ---- the barrel: 3 ft 7 in, octagonal at the breech, tapering toward the muzzle.
+     1.25 in across the flats at the breech, 0.85 in at the muzzle. Blued steel
+     rather than near-black: the old 0x2b2b30 was so dark it had no shading left
+     to give, which is the other half of why the piece read flat. */
+  C.beam8([0,0,-0.72],[0,0,-1.62], 0.63*IN,0.58*IN, ironD,iron);
+  C.beam8([0,0,-1.62],[0,0,-3.00], 0.58*IN,0.50*IN, iron,ironL);
+  C.beam8([0,0,-3.00],[0,0,-4.30], 0.50*IN,0.43*IN, iron,ironL);
+  C.beam8([0,0,-4.26],[0,0,-4.33], 0.52*IN,0.50*IN, ironL,iron);   /* muzzle swell */
+  /* the breech reinforce, the heaviest inch of the barrel, where the plug screws in */
+  C.beam8([0,0,-0.70],[0,0,-0.94], 0.72*IN,0.64*IN, ironD,ironD);
+
+  /* ---- the stock: fore-end under the barrel, a wrist, and a club butt ----
+     `flat` is what makes this read as a gunstock rather than a stick: the fore-end
+     is deeper than wide, the butt nearly two and a half times as deep as it is
+     broad. The forestock runs almost to the muzzle and is pinned to the barrel,
+     which is how a matchlock was built. */
+  C.beam8([0,-0.098,-0.80],[0,-0.076,-3.90], 0.70*IN,0.46*IN, stock,stockD, 1.35,1.05);
+
+  /* ---- THE REAR OF THE STOCK, WHICH IS BEHIND YOUR EYE ----
+     Held sighted, the gun's origin sits 0.30 of a foot in front of the camera and
+     the near plane is at 0.5, so everything from the wrist backward is inside the
+     near plane. A solid that straddles the near plane has its front faces clipped
+     and its interior back-faces culled, so it renders as a hole - which is what
+     the great brown wedge across the middle of the sight picture was: the inside
+     of the butt-stock. Pushing the pose forward cannot fix it, because the butt
+     genuinely IS behind your eye when the piece is shouldered.
+     So the rear of the stock is its own group and simply is not drawn when
+     sighted, which is what every first-person viewmodel does and is also honest:
+     you cannot see your own shoulder. It is there in the loading and grounded
+     poses, where you are looking AT the piece rather than along it. */
+  const BT=new Geo();
+  BT.beam8([0,-0.118,-0.16],[0,-0.100,-0.88], 0.62*IN,0.72*IN, stock,stockL, 1.50,1.25);
+  BT.beam8([0,-0.150,0.52],[0,-0.126,-0.20],  0.82*IN,0.74*IN, stockD,stock, 2.30,1.70);
+  BT.box(0,-0.150,0.532,1.70*IN,3.80*IN,0.24*IN,ironD);  /* the iron butt plate */
+
+  /* ---- the lock, on the right side where a right-handed man's thumb is.
+     Plate 4 in long, 1.4 in tall, a quarter inch thick, standing just clear of
+     the stock's flank. The pan is at the plate's FRONT edge, hard against the
+     breech, because that is where the touch hole has to be; the serpentine pivots
+     three inches behind it, which is what sets the length of its arm. */
+  FL.box(0.056,-0.006,-0.78,0.24*IN,1.40*IN,0.340,ironD);/* lock plate */
+  FL.box(0.058,0.026,-0.76,0.30*IN,0.55*IN,0.170,iron); /* its boss */
+  /* the pan, and its cover swung open ready to fire */
+  FL.box(0.078,0.034,-0.95,0.80*IN,0.26*IN,0.90*IN,iron);
+  FL.box(0.078,0.022,-0.95,0.62*IN,0.22*IN,0.70*IN,ironD);/* the pan's dish */
+  FL.box(0.110,0.058,-0.95,0.16*IN,0.70*IN,0.84*IN,ironL,0.42);/* cover, tipped back */
+  FL.box(0.048,0.026,-0.95,0.70*IN,0.20*IN,0.26*IN,brass);/* the touch-hole boss */
+
+  /* ---- trigger and guard ---- */
+  FL.box(0,-0.166,-0.62,0.26*IN,0.16*IN,0.310,iron);     /* the guard bar */
+  FL.box(0,-0.140,-0.72,0.20*IN,0.62*IN,0.24*IN,ironL);  /* the trigger */
+  FL.box(0,-0.180,-0.47,0.26*IN,0.52*IN,0.22*IN,iron);   /* guard, rear foot */
+  FL.box(0,-0.180,-0.77,0.26*IN,0.52*IN,0.22*IN,iron);   /* guard, fore foot */
+
+  /* ---- sights. A caliver carried a brass bead at the muzzle and often nothing
+     behind; with the pose putting the bead on the camera axis, a shallow standing
+     notch at the breech gives the player two things to line up. */
+  FL.box(0,0.050,-4.24,0.26*IN,0.30*IN,0.42*IN,brassL);
+  FL.box(0,0.064,-1.02,0.44*IN,0.22*IN,0.38*IN,ironD);
+
+  /* ---- the match: six feet of saltpetred cord, coiled round the wrist with both
+     ends free so a second can be lit from the first. A quarter of an inch thick.
+     It lives on the REAR of the stock and goes with it - the burning end is up in
+     the serpentine's jaws, which is the end that matters. */
+  const MC=new Geo();
+  MC.beam8([-0.058,-0.030,-0.34],[-0.048,-0.014,-0.62], 0.30*IN,0.28*IN, cordD,cord);
+  MC.beam8([-0.048,-0.014,-0.62],[0.044,-0.010,-0.66],  0.28*IN,0.28*IN, cord,cord);
+  MC.beam8([0.044,-0.010,-0.66],[0.062,-0.024,-0.42],   0.28*IN,0.26*IN, cord,cordD);
+  MC.beam8([0.062,-0.024,-0.42],[0.070,0.020,-0.60],    0.26*IN,0.26*IN, cordD,cord);
+
+  /* ---- ASSEMBLE. Every Geo above is filled BEFORE any of them is snapshotted: a
+     Geo is copied into its BufferGeometry by .mesh() and anything added afterwards
+     vanishes silently. Building the piece top-to-bottom and meshing as it went
+     shipped a gun that was six tapered tubes and nothing else - no lock, no
+     trigger, no sights - because FL was still empty when it was snapshotted. */
+  gunPiece=C.mesh(true,false);cam.add(gunPiece);
+  gunPiece.add(FL.mesh(false,false));
+  gunRear=BT.mesh(true,false);gunPiece.add(gunRear);
+  gunRear.add(MC.mesh(true,false));
+
+  /* ---- THE SERPENTINE, WHICH IS HOW A MATCHLOCK WORKS ----
+     The S-arm that holds the burning match and swings it down into the pan. It was a
+     single 0.04-wide box before, indistinguishable from the lock behind it - so the
+     one part that explains the entire weapon was invisible.
+
+     Its own pivoting group, so pulling the trigger actually drops the match into the
+     powder. That is the mechanism, shown rather than described, and it fires on EVERY
+     trigger pull - including a misfire, where the arm falls, the match touches, and
+     nothing happens at all.
+
+     Built standing straight up in its own frame, so the two angles above are the
+     whole animation. It curves outboard by a quarter inch as it rises, which is how
+     a real serpentine clears the barrel and still drops its match into a pan set
+     off to the side. */
+  const Sp=new Geo();
+  Sp.beam8([0,0,0],            [0.008,0.086,0.032], 0.19*IN,0.16*IN, ironD,iron);
+  Sp.beam8([0.008,0.086,0.032],[0.020,0.176,-0.026], 0.16*IN,0.13*IN, iron,ironL);
+  Sp.beam8([0.020,0.176,-0.026],[0.026,0.240,-0.006], 0.13*IN,0.15*IN, ironL,iron);
+  /* the burning end of the match, clamped in the jaws - so it swings WITH the arm
+     instead of hanging in the air where the arm used to be */
+  Sp.beam8([0.032,0.052,0.076],[0.026,0.234,-0.004], 0.26*IN,0.24*IN, cordD,cord);
+  gunSerp=new THREE.Group();
+  /* The pivot is placed so the coal's reach EQUALS the distance to the pan: 0.265
+     back along the bore and 0.04 up is 0.268, which is exactly where the coal sits
+     in the arm's frame. Put it a quarter inch further forward and the match swings
+     straight past the pan and buries itself in the barrel. */
+  gunSerp.position.set(0.062,0.010,-0.685);
+  gunSerp.add(Sp.mesh(true,false));
+  /* The jaws: TWO of them, with the match gripped between. One box read as a lump
+     on a stick and taught nothing; a pair reads as something clamped shut, which
+     is the only reason the arm is shaped the way it is. */
+  const Jw=new Geo();
+  Jw.box(0.026,0.246,-0.038,0.40*IN,0.46*IN,0.16*IN,ironD);
+  Jw.box(0.026,0.246, 0.028,0.40*IN,0.46*IN,0.16*IN,ironD);
+  Jw.box(0.026,0.222,-0.006,0.34*IN,0.22*IN,0.62*IN,iron);   /* the screw through them */
+  gunSerp.add(Jw.mesh(false,false));
+  gunPiece.add(gunSerp);
+  gunSerp.rotation.x=SERP_REST;
+  /* THE COAL IS THE ONE THING ON THE PIECE THAT MUST NOT BE TONE MAPPED.
+     ACES exists to roll saturated highlights toward white, and a fully saturated
+     orange at full value is exactly what it rolls hardest: 0xff7a1e came out of
+     the pipe as pale cream, so the burning match - the single most load-bearing
+     detail on a matchlock, the thing that says whether she will go off at all -
+     looked like a chip of bone. `toneMapped:false` skips that one step, and with
+     lin() feeding it the encode on the way out returns the authored colour
+     exactly. This is a per-material opt-out, not a second renderer setting;
+     gradeRenderer still owns tone mapping for everything else. */
+  gunCoal=new THREE.Mesh(boxGeom(0.026,0.026,0.026),
+    new THREE.MeshBasicMaterial({color:lin(0xff7a1e),toneMapped:false}));
+  gunCoal.position.set(0.026,0.268,-0.004);gunSerp.add(gunCoal);
+
   /* Everything the hands do is parented to the PIECE, not the camera. Parented
      to the camera they stayed level while the gun tilted to load, so nothing
      ever lined up with the barrel. */
-  const F=new Geo();F.box(0,0,0,0.10,0.22,0.10,RGB(0x6b4a2a));F.box(0,0.14,0,0.05,0.08,0.05,RGB(0xa9822f));
-  gunFlask=F.mesh(false,false);gunFlask.visible=false;gunPiece.add(gunFlask);
+  /* The flask is held a foot and a third from the eye while you charge, so it is
+     the single largest thing on screen during that step and two stacked boxes will
+     not do - it filled a third of the frame as a plain brown slab. A flattened
+     pear of horn with brass mounts and a charger spout, five inches tall: the
+     shape a 1607 flask actually is, and one the eye reads instantly as "the thing
+     the powder comes out of". */
+  const horn=RGB(0x6b4a2a),hornL=RGB(0x81603a),brs=RGB(0xa9822f),brsL=RGB(0xc89a3c);
+  const F=new Geo();
+  F.oct(0,0,-0.17,-0.02, 0.15,0.065, 0.26,0.082, 0.32, horn,hornL, 0.72);
+  F.oct(0,0,-0.02, 0.09, 0.26,0.082, 0.19,0.072, 0.32, hornL,horn, 0.72);
+  F.oct(0,0, 0.09, 0.15, 0.19,0.072, 0.072,0.052, 0.40, horn,brs,  0.72);
+  F.oct(0,0, 0.15, 0.24, 0.052,0.048, 0.040,0.038, 0.45, brs,brsL, 0.80);
+  gunFlask=F.mesh(true,false);gunFlask.visible=false;gunPiece.add(gunFlask);
   /* the scouring stick: tip at local z=0, body running back toward the shooter,
-     so it can be slid straight down the bore instead of waved at it */
+     so it can be slid straight down the bore instead of waved at it. Round, like
+     a stick - a square-section rod was one more thing reading as a box. */
   const R=new Geo();
-  R.box(0,0,1.20,0.028,0.028,2.40,RGB(0x8a7048));
-  R.box(0,0,2.46,0.062,0.062,0.13,RGB(0x6b5433));
-  gunRammer=R.mesh(false,false);gunRammer.visible=false;gunPiece.add(gunRammer);
+  /* AND IT RUNS THE OTHER WAY NOW. It was built tip-at-zero with the body toward
+     +z, and +z is toward the BUTT - so positioning the tip at the muzzle sent the
+     whole stick down the bore and left the head somewhere near the breech. The
+     barrel is a solid, not a tube, so the entire stroke happened inside opaque
+     geometry: "I never saw the ramrod go up and down while in barrel" was exact.
+     Tip at zero, body out toward -z, and a stick 3 ft 6 in long against a 3 ft 7 in
+     barrel - which is why a real scouring stick is barrel-length. */
+  /* A shade thicker than the 0.34 in the stowed one is drawn at: measured, the
+     true diameter is five pixels at the distance the stroke happens, and this is
+     the one part of the drill the player is being asked to watch. The head is the
+     marker that actually reads. */
+  R.beam8([0,0,0],[0,0,-3.50], 0.23*IN,0.20*IN, RGB(0xa88c5e),RGB(0x9c8154));
+  R.beam8([0,0,-3.46],[0,0,-3.64], 0.48*IN,0.42*IN, RGB(0x6b5433),RGB(0x5a462a));
+  gunRammer=R.mesh(true,false);gunRammer.visible=false;gunPiece.add(gunRammer);
   const St=new Geo();St.box(0,0,0.14,0.016,0.016,0.30,RGB(0x2b2b30));
   gunStream=St.mesh(false,false);gunStream.visible=false;gunPiece.add(gunStream);
   /* ---- THE THINGS THAT WERE NEVER THERE TO SEE ----
@@ -6790,13 +7016,19 @@ function buildGunModel(){
      whenever the working stick is not, so the eye sees it leave and return.
      THE BALL: an ounce of lead, dropped down the muzzle and swallowed. */
   const Rs=new Geo();
-  Rs.box(0,-0.075,-2.45,0.026,0.026,3.10,RGB(0x8a7048));      /* the stick, stowed */
-  Rs.box(0,-0.075,-0.95,0.05,0.05,0.10,RGB(0x6b5433));        /* its head */
-  Rs.box(0,-0.062,-1.70,0.055,0.030,0.10,RGB(0x2b2b30));      /* the pipe holding it */
-  Rs.box(0,-0.062,-3.30,0.055,0.030,0.10,RGB(0x2b2b30));
+  /* Slung in a groove in the underside of the forestock, which now sits at
+     y -0.177, so the stick shows as a strip along the bottom of the piece
+     rather than floating an inch clear of it. */
+  Rs.box(0,-0.172,-2.36,0.028,0.028,2.92,RGB(0x8a7048));      /* the stick, stowed */
+  Rs.box(0,-0.172,-0.94,0.046,0.046,0.09,RGB(0x6b5433));      /* its head */
+  Rs.box(0,-0.166,-1.60,0.060,0.030,0.09,RGB(0x2b2b30));      /* the pipes holding it */
+  Rs.box(0,-0.166,-3.10,0.060,0.030,0.09,RGB(0x2b2b30));
   gunRamStow=Rs.mesh(false,false);gunPiece.add(gunRamStow);
+  /* An ounce of lead is 0.66 in across. Drawn a shade over at 0.75 in, because a
+     true-size ball at arm's length is four pixels and the whole point of it is
+     that the player SEES it go down the bore. */
   const B=new Geo();
-  B.oct(0,0,-0.045,0.045,0.09,0.09,0.09,0.09,0.5,RGB(0x8f8f97),RGB(0xb9b9c2));
+  B.oct(0,0,-0.031,0.031,0.062,0.062,0.062,0.062,0.5,RGB(0x8f8f97),RGB(0xb9b9c2));
   gunBall=B.mesh(true,false);gunBall.visible=false;gunPiece.add(gunBall);
 }
 function openDrill(onHit){
@@ -7080,6 +7312,10 @@ function giveFire(){
   const fb=$("gFire");if(fb)fb.disabled=true;
   const took=(performance.now()-GUN.t0)/1000;
   GUN.shots++;
+  /* The arm falls because the trigger was pulled, not because the shot succeeded.
+     On a misfire the match comes down, touches, and nothing happens - which is the
+     most eloquent thing this weapon does. */
+  GUN.serpT=1;
   function done(keep){
     GUN.glow=Math.max(0,GUN.glow-0.07);
     setTimeout(function(){if(GUN.active){resetCharge();GUN.t0=performance.now();gStep("powder");}},900);
@@ -7603,6 +7839,7 @@ function updateDrill(dt){
      The pose is now a live position and rotation eased toward a NAMED target, so
      any number of stances can be added without unpicking the maths. */
   const tgtName=(GUN.step==="ready")?"sight"
+               :(GUN.step==="prime")?"prime"
                :(GUN.step==="ram"||GUN.step==="wad"||GUN.step==="ball")?"ground"
                :"load";
   const TGT=G_POSE[tgtName];
@@ -7621,7 +7858,14 @@ function updateDrill(dt){
      that. Ball, wad and ram sit near enough to follow; powder, prime and carrying
      her loaded get out of the way. */
   const watch=(GUN.step==="ball"||GUN.step==="wad"||GUN.step==="ram");
-  const OFF=walk?(watch?[0.14,-0.30,0.14]:[0.30,-0.62,0.30]):[0,0,0];
+  /* Much smaller than they were, because the poses themselves now do this job.
+     Each one is solved to put the part you are meant to watch in the RIGHT half
+     of the frame, which already leaves the way ahead clear; the old offsets were
+     sized to rescue poses that put the barrel through the middle, and applied on
+     top of the new ones they shoved the ram stroke back off the bottom corner -
+     the exact fault they were introduced to fix. Ball, wad and ram get almost
+     nothing; charging and priming get a nudge down and right. */
+  const OFF=walk?(watch?[0,-0.10,0]:[0.18,-0.30,0]):[0,0,0];
   const ease=Math.min(1,dt*4.2);
   for(let i=0;i<3;i++){
     GUN.pose.p[i]+=((TGT.p[i]+OFF[i])-GUN.pose.p[i])*ease;
@@ -7642,6 +7886,23 @@ function updateDrill(dt){
     gunPiece.rotation.set(GUN.pose.r[0]+Math.sin(T*1.9)*sw*0.5,
                           GUN.pose.r[1]+Math.cos(T*1.5)*sw*0.6,
                           GUN.pose.r[2]);
+    /* THE REAR OF THE STOCK IS BEHIND YOUR EYE IN HALF OF THESE POSES, so it is
+       not drawn in them. A solid straddling the near plane has its front faces
+       clipped and its interior back-faces culled, so it renders as a HOLE - which
+       is what the great brown wedge across the middle of the sight picture was:
+       the inside of the butt-stock. Moving the pose cannot fix it, because the
+       butt genuinely IS behind your eye when the piece is shouldered.
+       Test the HEEL'S OWN DEPTH, not the gun origin's. A proxy on the origin was
+       right for sight, load and grounded and wrong for priming, where the piece
+       is held across the body: the origin sits at -0.68, safely past the test,
+       while the heel it stands for has swung round to -0.25 and straight through
+       the plane. gunPiece is parented to the camera, so its local space IS camera
+       space and this is one vector rotate. */
+    if(gunRear){
+      if(!G_HEEL)G_HEEL=new THREE.Vector3();
+      G_HEEL.set(0,-0.15,0.52).applyEuler(gunPiece.rotation).add(gunPiece.position);
+      gunRear.visible=(G_HEEL.z<-0.62);
+    }
     /* narrowing the view while sighted reads as focusing down the barrel */
     const fov=G_FOV.normal+(G_FOV.sighted-G_FOV.normal)*sighted;
     if(Math.abs(cam.fov-fov)>0.05){cam.fov=fov;cam.updateProjectionMatrix();}
@@ -7664,6 +7925,12 @@ function updateDrill(dt){
       else GUN.pitchNudge=0;
     }
   } else if(GUN.step==="ready"){GUN.pitchStep=null;}
+  if(gunSerp){
+    GUN.serpT=Math.max(0,(GUN.serpT||0)-dt*2.1);
+    /* out and back on one sine, so the fall is quick and the return unhurried */
+    const down=Math.sin(Math.min(1,GUN.serpT)*Math.PI);
+    gunSerp.rotation.x=SERP_REST+(SERP_FIRE-SERP_REST)*down;
+  }
   if(gunCoal){
     const g=GUN.glow,live=Math.max(0,(g-0.06)/0.94);
     gunCoal.material.color.setRGB(0.16+live*0.84,0.09+live*0.42,0.07+live*0.10);
@@ -7715,8 +7982,15 @@ function updateDrill(dt){
       }
       /* On the bore axis, sliding down it. With the butt grounded the bore runs
          upright, so this reads as the stroke it actually is - the stick driven
-         down the barrel and drawn back - rather than a stick waved at a gun. */
-      const insert=0.25+Math.sin(GUN.ramAnim*Math.PI)*1.75;
+         down the barrel and drawn back - rather than a stick waved at a gun.
+         `insert` is how far the TIP is down the bore, and 3.40 is home: tip at
+         the breech, head a couple of inches proud of the muzzle. Ten inches of
+         travel, which is a ramming stroke - you thump a ball home, you do not
+         withdraw the stick between blows. The old range never let the head clear
+         the muzzle at all, so there was nothing to see. Measured against the
+         grounded pose: the head runs 130 pixels down the frame and the top of the
+         stroke stays inside it, which a foot of travel did not. */
+      const insert=2.68+0.72*Math.cos(GUN.ramAnim*Math.PI*0.5);
       gunRammer.position.set(G_BORE[0],G_BORE[1],G_BORE[2]+insert);
       gunRammer.rotation.set(0,0,0);
     }
@@ -7731,7 +8005,10 @@ function updateDrill(dt){
       let k=0;
       if(RELOAD.on&&!GUN.active){
         let base=0; for(let i=0;i<1;i++)base+=RELOAD_STAGES[i].f;
-        k=Math.max(0,Math.min(1,(RELOAD.t/RELOAD.dur-base)/RELOAD_STAGES[1].f));
+        /* 1 MINUS the progress, to match the manual branch below. Written the
+           other way round the automatic reload played the drop BACKWARDS - the
+           ball climbed up out of the muzzle and hung in the air. */
+        k=1-Math.max(0,Math.min(1,(RELOAD.t/RELOAD.dur-base)/RELOAD_STAGES[1].f));
       } else {
         k=1-Math.max(0,Math.min(1,GUN.ballHold||0));
       }
@@ -9482,7 +9759,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260731-2027-db7fa3d";
+const BUILD="20260801-0137-16a9338";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
