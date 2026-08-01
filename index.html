@@ -3092,26 +3092,38 @@ function paintGunIcon(){
   const W=c.width,H=c.height;
   g.clearRect(0,0,W,H);
   const cold=(GUN.glow<0.18);
+  /* Laid out off the same measurements as the model, at about 17 pixels to the
+     foot: heel at the left, breech a foot and a quarter along, muzzle at 4 ft 10.
+     It used barely two thirds of the canvas and drew a stubby wedge; it now reads
+     as the same weapon the player is holding.
+     Line weights stay deliberately heavier than scale - an honest 1.25 in barrel
+     is under two pixels here, and this is drawn at half size on a phone. An icon
+     exaggerates on purpose; a model does not, which is the whole difference. */
   g.save();
-  g.translate(4,H*0.5);
-  /* barrel */
-  g.strokeStyle="#cfc6ae";g.lineWidth=3.4;g.lineCap="round";
-  g.beginPath();g.moveTo(4,-3);g.lineTo(58,-6);g.stroke();
-  /* stock, swelling to the butt */
-  g.fillStyle="#a9814e";
+  g.translate(3,H*0.60);
+  /* the stock: club butt, wrist, and a forestock stopping short of the muzzle */
+  g.fillStyle="#8a6134";
   g.beginPath();
-  g.moveTo(4,-1);g.lineTo(30,-3);g.lineTo(28,3);g.lineTo(2,8);g.lineTo(-2,3);
+  g.moveTo(0,-1);g.lineTo(3,-6);g.lineTo(20,-6);g.lineTo(66,-4);
+  g.lineTo(66,-1.5);g.lineTo(18,1);g.lineTo(2,6);
   g.closePath();g.fill();
-  /* lock and serpentine */
-  g.fillStyle="#d8b25a";g.fillRect(22,-6,7,4);
-  g.strokeStyle="#d8b25a";g.lineWidth=1.6;
-  g.beginPath();g.moveTo(26,-6);g.lineTo(29,-10);g.stroke();
+  /* the barrel, sitting on the stock and running out past it to the bead */
+  g.strokeStyle="#b9bcc4";g.lineWidth=3;g.lineCap="butt";
+  g.beginPath();g.moveTo(19,-7.5);g.lineTo(80,-9);g.stroke();
+  g.fillStyle="#d8b25a";g.fillRect(77.5,-12,2.5,3);       /* the foresight bead */
+  /* the lock plate */
+  g.fillStyle="#565b66";g.fillRect(19,-7,12,4.5);
+  /* THE SERPENTINE, which is the whole reason this is a matchlock and not a
+     stick - an S standing up off the lock with the match in its jaws */
+  g.strokeStyle="#565b66";g.lineWidth=2;g.lineJoin="round";g.lineCap="round";
+  g.beginPath();g.moveTo(25.5,-6);g.lineTo(27,-12);g.lineTo(23.5,-15.5);g.stroke();
   /* the burning match - the one part that says whether she will go off at all */
-  g.fillStyle=cold?"#4a3a2a":"#ff8a2e";
-  g.beginPath();g.arc(29.5,-10.5,cold?1.6:2.6,0,Math.PI*2);g.fill();
   if(!cold){
-    g.globalAlpha=0.35;g.beginPath();g.arc(29.5,-10.5,5,0,Math.PI*2);g.fill();g.globalAlpha=1;
+    g.fillStyle="#ff8a2e";g.globalAlpha=0.30;
+    g.beginPath();g.arc(23,-16.5,7,0,Math.PI*2);g.fill();g.globalAlpha=1;
   }
+  g.fillStyle=cold?"#4a3a2a":"#ffb04a";
+  g.beginPath();g.arc(23,-16.5,cold?1.8:3,0,Math.PI*2);g.fill();
   g.restore();
 }
 
@@ -9759,7 +9771,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-0137-16a9338";
+const BUILD="20260801-0140-1115848";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
