@@ -7084,7 +7084,7 @@ const G_BORE=[0,0,-4.30];        /* the muzzle */
 /* Moved in with the pan when the whole piece came down to true scale: the old
    pan stood 1.2 in proud of the barrel axis because it was drawn at cartoon
    thickness, so priming powder fell an inch and a half above the dish. */
-const G_PAN=[0.086,0.050,-0.95]; /* the priming pan, beside the lock */
+const G_PAN=[0.104,0.050,-0.95]; /* the priming pan, beside the lock */
 function buildGunModel(){
   if(gunPiece)return;
   /* ========== A MATCHLOCK CALIVER, c.1600 ==========
@@ -7181,13 +7181,20 @@ function buildGunModel(){
      the stock's flank. The pan is at the plate's FRONT edge, hard against the
      breech, because that is where the touch hole has to be; the serpentine pivots
      three inches behind it, which is what sets the length of its arm. */
-  FL.box(0.056,-0.006,-0.78,0.24*IN,1.40*IN,0.340,ironD);/* lock plate */
-  FL.box(0.058,0.026,-0.76,0.30*IN,0.55*IN,0.170,iron); /* its boss */
+  /* MOVED OUTBOARD 0.22 IN, because the barrel grew and the lock did not follow.
+     The barrel's surface at this frame is now 0.74 from the axis and the plate
+     spanned 0.55 to 0.79 - so two thirds of its thickness was inside the barrel,
+     and the pan, the cover and the serpentine's pivot were all sunk with it. A
+     mechanism half-buried in the tube it fires does not read as a mechanism, which
+     is what "the firing mechanism scale seems off" was seeing. Its inner face now
+     sits on the barrel, where a lock plate is screwed. */
+  FL.box(0.074,-0.006,-0.78,0.24*IN,1.40*IN,0.340,ironD);/* lock plate */
+  FL.box(0.076,0.026,-0.76,0.30*IN,0.55*IN,0.170,iron); /* its boss */
   /* the pan, and its cover swung open ready to fire */
-  FL.box(0.078,0.034,-0.95,0.80*IN,0.26*IN,0.90*IN,iron);
-  FL.box(0.078,0.022,-0.95,0.62*IN,0.22*IN,0.70*IN,ironD);/* the pan's dish */
-  FL.box(0.110,0.058,-0.95,0.16*IN,0.70*IN,0.84*IN,ironL,0.42);/* cover, tipped back */
-  FL.box(0.048,0.026,-0.95,0.70*IN,0.20*IN,0.26*IN,brass);/* the touch-hole boss */
+  FL.box(0.096,0.034,-0.95,0.80*IN,0.26*IN,0.90*IN,iron);
+  FL.box(0.096,0.022,-0.95,0.62*IN,0.22*IN,0.70*IN,ironD);/* the pan's dish */
+  FL.box(0.128,0.058,-0.95,0.16*IN,0.70*IN,0.84*IN,ironL,0.42);/* cover, tipped back */
+  FL.box(0.066,0.026,-0.95,0.70*IN,0.20*IN,0.26*IN,brass);/* the touch-hole boss */
 
   /* ---- trigger and guard ---- */
   FL.box(0,-0.166,-0.62,0.26*IN,0.16*IN,0.310,iron);     /* the guard bar */
@@ -7253,15 +7260,22 @@ function buildGunModel(){
      back along the bore and 0.04 up is 0.268, which is exactly where the coal sits
      in the arm's frame. Put it a quarter inch further forward and the match swings
      straight past the pan and buries itself in the barrel. */
-  gunSerp.position.set(0.062,0.010,-0.685);
+  gunSerp.position.set(0.080,0.010,-0.685);
   gunSerp.add(Sp.mesh(true,false));
   /* The jaws: TWO of them, with the match gripped between. One box read as a lump
      on a stick and taught nothing; a pair reads as something clamped shut, which
      is the only reason the arm is shaped the way it is. */
   const Jw=new Geo();
-  Jw.box(0.026,0.246,-0.038,0.35*IN,0.41*IN,0.15*IN,ironD);
-  Jw.box(0.026,0.246, 0.028,0.35*IN,0.41*IN,0.15*IN,ironD);
-  Jw.box(0.026,0.222,-0.006,0.34*IN,0.22*IN,0.62*IN,iron);   /* the screw through them */
+  /* THE CLAMP HAS TO GRIP THE MATCH. It held its two plates 0.79 apart, gaping
+     0.64 across, on a cord 0.30 thick - the match would have fallen straight
+     through, and a clamp nearly an inch deep front to back is what made the top of
+     the arm look like a fist. Sources are clear on the form and silent on the
+     size, so the cord is the measure: plates 0.45 apart leave a 0.30 gap that
+     grips it exactly, and the whole clamp comes to 0.60 deep. The screw is sized
+     to actually span them, which at 0.62 against a 0.79 gap it did not. */
+  Jw.box(0.026,0.246,-0.025,0.35*IN,0.41*IN,0.15*IN,ironD);
+  Jw.box(0.026,0.246, 0.013,0.35*IN,0.41*IN,0.15*IN,ironD);
+  Jw.box(0.026,0.222,-0.006,0.34*IN,0.22*IN,0.72*IN,iron);   /* the screw through them */
   gunSerp.add(Jw.mesh(false,false));
   gunPiece.add(gunSerp);
   gunSerp.rotation.x=SERP_REST;
@@ -10212,7 +10226,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1143-16ae3aa";
+const BUILD="20260801-1151-7900616";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
