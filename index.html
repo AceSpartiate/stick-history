@@ -55,6 +55,17 @@
   #benchOut{position:absolute;left:8px;bottom:8px;z-index:3;color:var(--parch);
     font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.68rem;line-height:1.5;
     white-space:pre;text-shadow:0 1px 2px #000;pointer-events:none}
+  /* ---- THE PRIMARY ACTION IS NEVER BELOW THE FOLD ----
+     Found by testing at 760x520, which is an ordinary laptop window: the chapter
+     intro overflowed by 95px and put "Step Aboard" at y 562, and the chapter
+     ending overflowed by 156 and put "Go Ashore - Chapter II" one pixel under the
+     edge. Both are the button that continues the game. A pupil who does not think
+     to scroll a page that does not look scrollable is simply stuck.
+     Sticky rather than shorter, because the prose is the content and cutting it to
+     fit a window is the wrong trade. */
+  .actbar{position:sticky;bottom:0;z-index:2;padding-top:.6em;margin-top:.4em;
+    background:linear-gradient(to bottom,rgba(23,19,12,0),var(--ink) 42%)}
+  .parchment .actbar{background:linear-gradient(to bottom,rgba(231,218,187,0),var(--parch) 42%)}
   body.aiming{cursor:none}
   #reticle{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;
     border-radius:50%;background:rgba(255,242,220,.5);box-shadow:0 0 0 1px rgba(0,0,0,.5);
@@ -460,7 +471,7 @@
       <p id="introBody"></p>
       <div class="obj"><b>Your task —</b> <span id="introObj"></span></div>
       <div class="ctrls" id="introCtrls"></div>
-      <button class="btn wide mt" id="btnEnter">Step Aboard</button>
+      <div class="actbar"><button class="btn wide" id="btnEnter">Step Aboard</button></div>
     </div>
   </section>
 
@@ -668,9 +679,11 @@
       <h2 id="endHead">The Crossing — Complete</h2>
       <div class="yr" id="endYr">Chapter I · to be continued</div>
       <div id="endBody" data-read="auto"></div>
-      <button class="btn wide mt" id="endNext" style="display:none">Go Ashore</button>
-      <button class="btn ghost wide mt" id="endWardrobe">Open Your Wardrobe</button>
-      <button class="btn ghost wide mt" id="endTitle">Main Menu</button>
+      <div class="actbar">
+        <button class="btn wide" id="endNext" style="display:none">Go Ashore</button>
+        <button class="btn ghost wide mt" id="endWardrobe">Open Your Wardrobe</button>
+        <button class="btn ghost wide mt" id="endTitle">Main Menu</button>
+      </div>
     </div>
   </section>
 
@@ -9618,10 +9631,24 @@ function doSurvey(d){
   refreshSurveyHud();
 }
 /* ---- and travelling, which costs a day too ---- */
+/* THE SURVEY DOES NOT BEGIN UNTIL THE CHAPTER HAS. Found by testing: the
+   Captain's Chart sits eight paces from where you land, and opening it let a
+   player sail to Point Comfort before Kendall's drill, before the ambush and
+   before the sealed box was read - skipping the whole argument of Phase 1, and
+   arriving at the survey without ever having been given the piece.
+   The CHART stays readable throughout, because knowing where you are is the point
+   of it and it teaches something on its own. Only the passage is barred, and it is
+   barred in fiction rather than by a grey button: nobody is rowing anywhere while
+   the Council is still sealed in a box on the beach. */
+function surveyOpen(){return !!S.boxOpened;}
 function travelTo(key){
   const site=SITES[key];
   if(!site)return;
   if(site.world===CURRENT_WORLD){toast("You are already here.");return;}
+  if(!surveyOpen()&&!site.home){
+    toast("Not yet. The box is still shut, and no boat leaves this beach before it is read.");
+    return;
+  }
   const cost=site.cost||0;
   if(cost&&surveyDays()<cost){toast("Not enough daylight left to make the passage.");return;}
   closeAllModals();setPaused(false);
@@ -9644,7 +9671,10 @@ function travelTo(key){
 /* the days left, on the chapter line, and only where the survey is running */
 function refreshSurveyHud(){
   const e=$("hudDays");if(!e)return;
-  const on=!!siteOf(CURRENT_WORLD);
+  /* Not before the survey exists to spend it on. It was showing "12 days" from the
+     moment you landed, through the drill and the ambush, which invites a player to
+     think the tutorial is costing them daylight. */
+  const on=!!siteOf(CURRENT_WORLD)&&surveyOpen();
   e.style.display=on?"inline":"none";
   if(on)e.textContent="☀ "+surveyDays()+(surveyDays()===1?" day":" days");
 }
@@ -10630,7 +10660,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1701-9f77c6e";
+const BUILD="20260801-1719-a14ca6d";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
