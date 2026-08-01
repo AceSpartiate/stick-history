@@ -9301,7 +9301,22 @@ function buildShoreParty(root){
   SHORE_TASKS.forEach(function(grp){
     const pose=TASK_POSE[grp.task]||"stand";
     for(let i=0;i<grp.names.length&&i<grp.at.length;i++){
-      const px=grp.at[i][0], pz=grp.at[i][1];
+      let px=grp.at[i][0], pz=grp.at[i][1];
+      /* NOBODY STANDS WHERE YOU CANNOT REACH THEM.
+         Reported from play: "there are people I can't talk to in chapter 2." Two
+         of the stores party were written at z 58 and 60, and the strand stops
+         being walkable at about 54 - capeBlocked refuses ground below 0.30 on the
+         grounds that you do not wade out - so William Rods and George Golding
+         stood in the surf, labelled and unreachable. Found by flood-filling the
+         cape and asking which interactables the fill could not touch, which is the
+         same way the ship's sealed aft third turned up.
+         Clamped at build time rather than by correcting the two numbers, because
+         the table is a pleasant place to write "put five men on the tide line" and
+         a terrible place to have to know where the tide line is this week. Anyone
+         unreachable walks up the beach until he is not, and the fix then covers
+         every group written afterwards as well as these five. */
+      let esc=0;
+      while(capeBlocked(px,pz)&&esc<30){pz-=2.5;esc++;}
       /* face the work: the shallop, the cross, the boats, or inland on guard */
       const face=(grp.task==="shallop")?Math.atan2(-46-px,44-pz)
                :(grp.task==="cross")?Math.atan2(28-px,-6-pz)
@@ -9413,11 +9428,16 @@ registerWorld("comfort",function(root){
   for(let i=0;i<site.surveys.length;i++){
     const sv=site.surveys[i],sx=spots[i][0],sz=spots[i][1];
     interactables.push({id:"sv_"+sv.k,label:sv.verb,x:sx,z:sz,
-      y:comfortGround(sx,sz),lvl:0,r:9,action:"survey",data:{site:"comfort",sv:sv}});
+      /* LVL.MAIN, not 0. The proximity scan skips any interactable whose lvl is
+         not the player's, enterWorld sets plevel to LVL.MAIN (2), and 0 is the
+         HOLD - so every survey on this site was filtered out and none of them
+         could be reached. Written the day before, caught by the same audit that
+         found the two men in the surf. A world with no decks still has a level. */
+      y:comfortGround(sx,sz),lvl:LVL.MAIN,r:9,action:"survey",data:{site:"comfort",sv:sv}});
   }
   /* and the boat home */
   interactables.push({id:"boat",label:"The Shallop",x:16,z:64,
-    y:comfortGround(16,64),lvl:0,r:11,action:"chart"});
+    y:comfortGround(16,64),lvl:LVL.MAIN,r:11,action:"chart"});
   /* ---- you, put ashore from the shallop ----
      A world builds its own player; enterWorld nulls the old one out with the rest
      of the world, so a builder that only repositions `player` arrives at an empty
@@ -10594,7 +10614,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1312-a33155b";
+const BUILD="20260801-1649-450e054";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
