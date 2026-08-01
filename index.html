@@ -7034,7 +7034,7 @@ const G_PT_HEEL=[0,-0.150,0.52], G_PT_WRIST=[0,-0.118,-0.26];
    over the shooter's shoulder. Derived rather than guessed: the pivot sits at
    gun-local (-0.085, -0.685) and the pan lip at (0.050, -0.95), so the arm's
    0.297 reach must turn through asin(0.265/0.297) to put the coal in the powder. */
-const SERP_REST=0.30, SERP_FIRE=-1.10;
+const SERP_REST=0.30, SERP_FIRE=-0.90;
 /* Three poses, not two.
    load  - muzzle raised, so powder and ball go down it
    port  - held across the body, loaded but not presented
@@ -7197,7 +7197,14 @@ function buildGunModel(){
      is deeper than wide, the butt nearly two and a half times as deep as it is
      broad. The forestock runs almost to the muzzle and is pinned to the barrel,
      which is how a matchlock was built. */
-  C.beam8([0,-0.104,-0.80],[0,-0.079,-3.90], 0.82*IN,0.54*IN, stock,stockD, 1.35,1.05);
+  /* WIDER, on the x axis. Reported from play, and it measures out: the wrist was
+     1.44 across against a barrel of 1.48, so the wood a man grips was narrower
+     than the tube it holds - which cannot be right for the part you close your
+     hand round, and made the whole stock read as a blade seen from the side.
+     Widths up by about a sixth and the `flat` ratios DOWN by the same, so the
+     depths stay where they were and only the width changes: forestock 1.90 across,
+     wrist 1.70, butt 2.20, and the butt still 4.3 deep at the heel. */
+  C.beam8([0,-0.104,-0.80],[0,-0.079,-3.90], 0.95*IN,0.62*IN, stock,stockD, 1.20,0.94);
 
   /* ---- THE REAR OF THE STOCK, WHICH IS BEHIND YOUR EYE ----
      Held sighted, the gun's origin sits 0.30 of a foot in front of the camera and
@@ -7222,10 +7229,10 @@ function buildGunModel(){
      it becomes its own object with its own test. Only the butt, which really does
      sit behind your eye, still goes. */
   const WR=new Geo();
-  WR.beam8([0,-0.124,-0.26],[0,-0.106,-0.88], 0.72*IN,0.84*IN, stock,stockL, 1.50,1.25);
+  WR.beam8([0,-0.124,-0.26],[0,-0.106,-0.88], 0.85*IN,0.98*IN, stock,stockL, 1.32,1.10);
   const BT=new Geo();
-  BT.beam8([0,-0.156,0.52],[0,-0.132,-0.22],  0.94*IN,0.86*IN, stockD,stock, 2.30,1.70);
-  BT.box(0,-0.156,0.532,1.94*IN,4.30*IN,0.26*IN,ironD);  /* the iron butt plate */
+  BT.beam8([0,-0.156,0.52],[0,-0.132,-0.22],  1.10*IN,1.00*IN, stockD,stock, 1.95,1.46);
+  BT.box(0,-0.156,0.532,2.26*IN,4.30*IN,0.26*IN,ironD);  /* the iron butt plate */
 
   /* ---- the lock, on the right side where a right-handed man's thumb is.
      Plate 4 in long, 1.4 in tall, a quarter inch thick, standing just clear of
@@ -7346,18 +7353,24 @@ function buildGunModel(){
      across, the way a bent iron bar is. beam8 gives a round section, so it is
      drawn at the strap's WIDTH and reads correctly from the side, which is the
      only side the player ever sees it from. */
-  Sp.beam8([0,0,0],            [0.010,0.105,0.048], 0.26*IN,0.23*IN, ironD,iron);
-  Sp.beam8([0.010,0.105,0.048],[0.022,0.222,-0.034], 0.23*IN,0.20*IN, iron,ironL);
-  Sp.beam8([0.022,0.222,-0.034],[0.026,0.297,-0.008], 0.20*IN,0.22*IN, ironL,iron);
+  Sp.beam8([0,0,0],            [0.008,0.078,0.036], 0.26*IN,0.23*IN, ironD,iron);
+  Sp.beam8([0.008,0.078,0.036],[0.018,0.163,-0.026], 0.23*IN,0.20*IN, iron,ironL);
+  Sp.beam8([0.018,0.163,-0.026],[0.024,0.217,-0.006], 0.20*IN,0.22*IN, ironL,iron);
   /* the burning end of the match, clamped in the jaws - so it swings WITH the arm
      instead of hanging in the air where the arm used to be */
-  Sp.beam8([0.030,0.108,0.062],[0.026,0.291,-0.006], 0.14*IN,0.13*IN, cordD,cord);
+  Sp.beam8([0.028,0.082,0.048],[0.024,0.211,-0.005], 0.14*IN,0.13*IN, cordD,cord);
   gunSerp=new THREE.Group();
   /* The pivot is placed so the coal's reach EQUALS the distance to the pan: 0.265
      back along the bore and 0.04 up is 0.268, which is exactly where the coal sits
      in the arm's frame. Put it a quarter inch further forward and the match swings
      straight past the pan and buries itself in the barrel. */
-  gunSerp.position.set(0.066,-0.085,-0.685);
+  /* THE PIVOT BELONGS AT THE MIDDLE OF ITS PLATE. It sat at -0.685, which is the
+     plate's REAR edge, so the arm had to span the whole plate to reach the pan and
+     came out 3.6 long with its match standing 1.65 above the barrel - reported from
+     play as the mechanism looking too tall, and it was. At the plate's centre the
+     reach is 2.6 and the match at rest sits 0.7 above the barrel, which is where
+     the photographs put it. */
+  gunSerp.position.set(0.066,-0.085,-0.780);
   gunSerp.add(Sp.mesh(true,false));
   /* The jaws: TWO of them, with the match gripped between. One box read as a lump
      on a stick and taught nothing; a pair reads as something clamped shut, which
@@ -7370,13 +7383,13 @@ function buildGunModel(){
      size, so the cord is the measure: plates 0.45 apart leave a 0.30 gap that
      grips it exactly, and the whole clamp comes to 0.60 deep. The screw is sized
      to actually span them, which at 0.62 against a 0.79 gap it did not. */
-  Jw.box(0.026,0.303,-0.025,0.38*IN,0.44*IN,0.15*IN,ironD);
-  Jw.box(0.026,0.303, 0.013,0.38*IN,0.44*IN,0.15*IN,ironD);
+  Jw.box(0.024,0.223,-0.025,0.38*IN,0.44*IN,0.15*IN,ironD);
+  Jw.box(0.024,0.223, 0.013,0.38*IN,0.44*IN,0.15*IN,ironD);
   /* THE SCREW, ACROSS the jaws with its head outboard, which is how it reads in
      the photograph - a big round head standing off the right side of the cock. It
      was drawn along the gun instead, hidden between the plates. */
-  Jw.box(0.026,0.297,-0.006,0.86*IN,0.20*IN,0.20*IN,iron);
-  Jw.box(0.062,0.297,-0.006,0.22*IN,0.44*IN,0.44*IN,ironL);  /* its head */
+  Jw.box(0.024,0.217,-0.006,0.86*IN,0.20*IN,0.20*IN,iron);
+  Jw.box(0.060,0.217,-0.006,0.22*IN,0.44*IN,0.44*IN,ironL);  /* its head */
   gunSerp.add(Jw.mesh(false,false));
   gunPiece.add(gunSerp);
   gunSerp.rotation.x=SERP_REST;
@@ -7391,7 +7404,7 @@ function buildGunModel(){
      gradeRenderer still owns tone mapping for everything else. */
   gunCoal=new THREE.Mesh(boxGeom(0.026,0.026,0.026),
     new THREE.MeshBasicMaterial({color:lin(0xff7a1e),toneMapped:false}));
-  gunCoal.position.set(0.026,0.325,-0.004);gunSerp.add(gunCoal);
+  gunCoal.position.set(0.024,0.245,-0.004);gunSerp.add(gunCoal);
 
   /* Everything the hands do is parented to the PIECE, not the camera. Parented
      to the camera they stayed level while the gun tilted to load, so nothing
@@ -10343,7 +10356,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1239-6cc643f";
+const BUILD="20260801-1249-1a82bac";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
