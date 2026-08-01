@@ -32,6 +32,22 @@
   body.wide .sheet{max-width:520px}
   body.wide #touchMove{width:38%;height:66%}
   body.wide #touchLook{width:62%}
+  /* ---- WHICH CONTROL SET IS ON SCREEN ----
+     A thumb stick and a pair of turn buttons are furniture in the way of a mouse;
+     a mouse is no use to a thumb. Owned by setInput and nothing else, and driven
+     by the input LAST ACTUALLY USED rather than by what the device can do, so a
+     touchscreen laptop gets whichever its owner just reached for and changes its
+     mind the moment they reach for the other. With the thumb zone gone the look
+     surface takes the whole viewport, so a click anywhere in the world is a click
+     in the world - it used to stop 38% from the left edge. */
+  body.kbm #touchMove,body.kbm #joy,body.kbm #camBtns{display:none}
+  body.kbm #touchLook{left:0;right:auto;width:100%}
+  /* ---- and the sights ---- */
+  body.aiming{cursor:none}
+  #reticle{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;
+    border-radius:50%;background:rgba(255,242,220,.5);box-shadow:0 0 0 1px rgba(0,0,0,.5);
+    z-index:5;display:none;pointer-events:none}
+  body.aiming #reticle{display:block}
   .screen{position:absolute;inset:0;display:none;flex-direction:column;overflow-y:auto}
   .screen.on{display:flex}
   h1,h2,h3{font-family:'IM Fell English SC',Georgia,serif;font-weight:400}
@@ -462,6 +478,7 @@
       </div>
       <div id="touchMove"></div>
       <div id="touchLook"></div>
+      <div id="reticle"></div>
       <div id="joy"><div class="knob" id="joyKnob"></div></div>
       <button id="menuBtn" title="Menu">☰</button>
       <div id="camBtns">
@@ -3063,17 +3080,147 @@ let INPUT=(("ontouchstart" in window)||(navigator.maxTouchPoints||0)>0)?"touch":
 function setInput(m){
   if(INPUT===m)return;
   INPUT=m;
+  /* setInput is also the single owner of WHICH CONTROL SET IS ON SCREEN. The
+     thumb stick, its zone and the turn buttons are hidden by CSS on this class,
+     and the look surface grows to the whole viewport. Anything that wants to
+     know "mouse or thumb" reads INPUT; nothing else touches those elements. */
+  document.body.classList.toggle("kbm",m==="kbm");
   refreshGunUI();
   updateControlText();
 }
+document.body.classList.toggle("kbm",INPUT==="kbm");
 window.addEventListener("pointerdown",function(e){
   if(e.pointerType==="mouse")setInput("kbm");
   else if(e.pointerType==="touch")setInput("touch");
 },{capture:true});
+/* Moving a mouse is a statement of intent as much as clicking one, and it comes
+   first: without this a mouse user on a touchscreen laptop kept the thumb stick
+   until they clicked something. Ignored while the pointer is locked, because
+   then every frame of aiming would re-assert what is already true. */
+window.addEventListener("pointermove",function(e){
+  if(AIM.on)return;
+  if(e.pointerType==="mouse")setInput("kbm");
+  else if(e.pointerType==="touch")setInput("touch");
+},{capture:true,passive:true});
 window.addEventListener("keydown",function(e){
   /* a real key, not a modifier tap from an on-screen keyboard */
   if(e.key&&e.key.length>0)setInput("kbm");
 },{capture:true});
+
+/* ========== TAKING AIM: THE MOUSE BECOMES THE MUZZLE ==========
+   Asked for: with the piece up and ready, the cursor goes and the aim IS where
+   the gun points; a tap of the left button fires; holding the right button leans
+   into the sights instead of raising a context menu.
+
+   Pointer lock is what makes that possible, and it comes with two rules the
+   design has to be built around. It can only be REQUESTED from a real user
+   gesture - so aiming is engaged by a click or by the G key, never by a state
+   change - and the browser can revoke it at any time, so `pointerlockchange` is
+   authoritative and this code follows it rather than assuming.
+
+   ONE OWNER, and it is `setAim`. Engagement is explicit and rare; ending is not
+   handled at any of the dozen places that could end it (firing, slinging, a
+   modal, the pause menu, a cutscene, walking into the taught drill) but by one
+   eligibility test run every frame. Anything that makes aiming inappropriate
+   makes `aimEligible` false, and the aim drops on its own.
+
+   Firing ends it, which is what was asked for and is also the chapter's whole
+   argument: the shot leaves you with an empty piece and your hands full, and
+   getting the cursor back in your face is a fair way to be told so. */
+const AIM={on:false,ads:0,adsWant:0,pending:0,denied:false};
+/* radians per pixel of mouse travel. 0.0021 puts a full turn at about three
+   thousand pixels, which is the middle of the range every shooter ships at;
+   leaning into the sights slows it by nearly half, because the view has narrowed
+   by about the same and a fixed rate would feel twitchy there. */
+const AIM_SENS=0.0021;
+function aimEligible(){
+  return INPUT==="kbm"&&gunInHands()&&gunEarned()&&gunReady()
+    &&!GUN.active&&!RELOAD.on&&!paused&&!anyModalOpen()
+    &&!(typeof CS!=="undefined"&&CS.active)&&!(typeof LESSON!=="undefined"&&LESSON.on)
+    &&screens.scene.classList.contains("on");
+}
+/* AIM.on MEANS THE POINTER IS ACTUALLY CAPTURED, not that we asked for it. The
+   distinction is the whole robustness of this: requestPointerLock can be refused,
+   and it can be refused SILENTLY - an embedded browser here granted nothing and
+   fired no error event at all. Keyed off the request, that leaves the game hiding
+   a cursor it does not own, with the mouse free to wander out of the window and
+   two separate handlers both treating the next click as a shot. So the request is
+   `pending`, `pointerlockchange` is what turns aiming on, and a refusal sets
+   `denied` and hands the controls back to plain drag-to-look for the session. */
+function setAim(on){
+  if(on){
+    if(AIM.on||AIM.pending||AIM.denied)return;
+    const vp=$("viewport");
+    AIM.pending=performance.now();
+    let p=null;
+    try{p=(vp&&vp.requestPointerLock)?vp.requestPointerLock():null;}catch(x){p=null;}
+    if(p&&p.catch)p.catch(aimRefused);
+  } else {
+    aimOff();
+    if(document.pointerLockElement&&document.exitPointerLock)document.exitPointerLock();
+  }
+}
+function aimOn(){
+  AIM.pending=0;
+  if(AIM.on)return;
+  AIM.on=true;
+  document.body.classList.add("aiming");
+  refreshGunUI();
+}
+function aimOff(){
+  AIM.pending=0;
+  if(!AIM.on)return;
+  AIM.on=false;AIM.adsWant=0;
+  document.body.classList.remove("aiming");
+  refreshGunUI();
+}
+function aimRefused(){
+  /* Once, quietly, and then never ask again: clicking would otherwise do nothing
+     at all on a browser that will not capture, and the piece could never be
+     fired. Falling back leaves exactly the controls that were there before. */
+  AIM.denied=true;aimOff();
+}
+/* the browser is the authority on whether the pointer is captured - Escape, a tab
+   switch and a full-screen change all drop it without asking */
+document.addEventListener("pointerlockchange",function(){
+  if(document.pointerLockElement===$("viewport"))aimOn();else aimOff();
+});
+document.addEventListener("pointerlockerror",aimRefused);
+/* RIGHT-CLICK IS A KEYBIND, NOT A MENU. It is the natural button for leaning
+   into the sights and the browser was swallowing it whole. Off everywhere in the
+   game, as asked - except over a text field, where a player may still want to
+   copy a muster code out. */
+window.addEventListener("contextmenu",function(e){
+  const t=e.target;
+  if(t&&(t.tagName==="TEXTAREA"||t.tagName==="INPUT"))return;
+  e.preventDefault();
+});
+window.addEventListener("mousemove",function(e){
+  if(!AIM.on)return;
+  const s=AIM_SENS*(1-AIM.ads*0.45);
+  camYaw-=(e.movementX||0)*s;
+  camPitch=Math.max(-0.42,Math.min(1.12,camPitch+(e.movementY||0)*s));
+  LOOK_AT=performance.now();     /* so the drill's camera nudge yields to you */
+});
+window.addEventListener("mousedown",function(e){
+  if(!AIM.on)return;
+  if(e.button===2){AIM.adsWant=1;e.preventDefault();return;}
+  if(e.button===0){tryFire();e.preventDefault();}
+});
+window.addEventListener("mouseup",function(e){if(e.button===2)AIM.adsWant=0;});
+/* eased in animate, so the lean is a movement rather than a jump */
+function updateAim(dt){
+  /* asked and heard nothing back: treat silence as a refusal */
+  if(AIM.pending&&performance.now()-AIM.pending>600)aimRefused();
+  if(AIM.on&&!aimEligible())setAim(false);
+  const want=AIM.on?AIM.adsWant:0;
+  AIM.ads+=(want-AIM.ads)*Math.min(1,dt*7.5);
+  const r=$("reticle");
+  /* the bead and the notch ARE the sights and they are already dead centre, so
+     the dot is a beginner's hint that gets out of the way the moment the player
+     leans in and uses the real ones */
+  if(r&&AIM.on)r.style.opacity=(1-AIM.ads).toFixed(2);
+}
 
 function gunHeld(){const st=itemState("matchlock");return st==="carried"||st==="stowed";}
 function gunInHands(){return itemState("matchlock")==="carried";}
@@ -3154,7 +3301,14 @@ function setGunCarried(on){
   refreshPlayer();refreshGunUI();
   toast(on?"In your hands.":"Slung across your back.");
 }
-function toggleGun(){setGunCarried(!gunInHands());}
+function toggleGun(){
+  const want=!gunInHands();
+  setGunCarried(want);
+  /* Coming up with her already loaded goes straight to the sights. This is only
+     ever called from the G key and from the bottom-middle button, both of them
+     real gestures, which is the one condition pointer lock insists on. */
+  if(want&&aimEligible())setAim(true);
+}
 
 /* ---- what the two controls should look like right now ---- */
 function refreshGunUI(){
@@ -4252,7 +4406,7 @@ function animate(){
     animT+=dt*(running?17:10);
   } else animT+=dt*1.4;
 
-  updateFx(dt);updateReload(dt);updateBlow(dt);updateDrill(dt);updateShadows();
+  updateFx(dt);updateAim(dt);updateReload(dt);updateBlow(dt);updateDrill(dt);updateShadows();
   /* IN HANDS MEANS SIGHTING DOWN IT. Held here rather than only set on pick-up, so
      the zoom buttons and the pinch cannot quietly pull the player back out to third
      person while a loaded piece is at their shoulder. */
@@ -4517,10 +4671,13 @@ function lookMove(e){
 }
 function lookEnd(e){if(e.pointerId===lookId)lookId=null;}
 /* ---- left mouse fires, but the same surface is also drag-to-look ----
-   #touchLook owns the right half of the viewport for turning the camera, so a naive
-   click-to-fire would discharge the piece every time the player looked around.
-   A press only counts as a shot if the mouse barely moved and was not held: under
-   six pixels and under a third of a second. Anything else was aiming.
+   #touchLook owns the look surface, so a naive click-to-fire would discharge the
+   piece every time the player looked around. A press only counts if the mouse
+   barely moved and was not held: under six pixels and under a third of a second.
+   Anything else was aiming.
+   This is the path taken when the pointer is NOT captured. Once it is, the mouse
+   events target the lock element instead and never reach this listener, which is
+   why firing while aimed is handled up with the rest of the aim code.
    Mouse only - on touch the FIRE button does this, because a tap on the look zone
    is how you turn round. */
 let clkX=0,clkY=0,clkT=0,clkOk=false;
@@ -4533,6 +4690,11 @@ tLook.addEventListener("pointerup",function(e){
   clkOk=false;
   if(Math.hypot(e.clientX-clkX,e.clientY-clkY)>6)return;   /* that was a look */
   if(performance.now()-clkT>330)return;                    /* that was a hold */
+  /* A CLICK WITH THE PIECE UP AND READY TAKES AIM RATHER THAN FIRING. It costs a
+     click to get to the shot, and it is worth it twice over: it is the gesture
+     the browser requires before it will hand over the cursor, and it means a
+     stray click in the world can never discharge the piece at a colonist. */
+  if(!AIM.on&&!AIM.denied&&aimEligible()){setAim(true);return;}
   tryFire();
 });
 tLook.addEventListener("pointerdown",lookStart);
@@ -6684,7 +6846,7 @@ function resolveMisfire(arm,st){
 }
 const GUN={arm:"matchlock",step:"powder",charge:0,prime:0,ramQ:0,ramHits:0,
   hasBall:false,hasWad:false,glow:0.6,active:false,t0:0,shots:0,hits:0,
-  onHit:null,pourOn:false,poseT:0,ramT:0,ramAnim:0,cont:null};
+  onHit:null,pourOn:false,poseT:0,sightT:0,ramT:0,ramAnim:0,cont:null};
 const G_LO=0.52,G_HI=0.74,P_LO=0.28,P_HI=0.50;
 const G_ORDER=["powder","ball","wad","ram","prime","ready"];
 const G_NAME={powder:"Charge the piece",ball:"Ball",wad:"Wad",ram:"Ram it home",
@@ -6770,7 +6932,11 @@ const G_POSE={
   /* muzzle a foot and a half out, dead centre of frame, stroke arcing up into it */
   ground:{p:[1.045,-4.212,-0.396],r:[1.32,0.16,0.05]}
 };
-const G_FOV={normal:56,sighted:43};
+/* `lean` is the right-button hold. 43 down to 31 is a shade over 1.4x, which is
+   about what shouldering a piece properly and putting your eye behind the sights
+   buys you - enough to pick a man out at forty yards, nowhere near a telescope,
+   which a caliver of 1607 emphatically did not have. */
+const G_FOV={normal:56,sighted:43,lean:31};
 
 /* The drill strip is rebuilt on every step, so gHold runs many times per load.
    A window listener per button would leak one listener per redraw; instead the
@@ -7250,10 +7416,22 @@ function gStep(k){
   }
   if(k!=="ready"){
     const b=document.createElement("button");
-    b.className="gact";b.id="gBlow";b.textContent="Blow the match";
-    ui.appendChild(b);gWireBlow();
+    b.className="gact small";b.id="gBlow";b.textContent="Blow the match";
+    /* ALONGSIDE the step's own action rather than stacked under it. Stacked, this
+       panel stood 199px tall in a 340px window - three fifths of the screen - and
+       the muzzle the lesson is asking the player to watch ended up behind it. */
+    let row=ui.querySelector(".grow");
+    if(!row){
+      row=document.createElement("div");row.className="grow";
+      const act=ui.querySelector(".gact");
+      if(act){act.classList.add("small");ui.insertBefore(row,act);row.appendChild(act);}
+      else ui.appendChild(row);
+    }
+    row.appendChild(b);gWireBlow();
   }
   gPaint();
+  /* the panel just changed height, so where the piece must be held changed with it */
+  DFIT.key="";
 }
 function gWireBlow(){
   const b=$("gBlow");if(!b||b.dataset.wired)return;
@@ -7824,6 +8002,67 @@ function gunSmoke(scale){
       {size:1.2*0.7*scale, col:0x7d7a70, op:0.80, life:5.5, grow:0.85, ease:0.7});
   }
 }
+/* ---- FITTING THE DRILL TO THE SCREEN IT IS TAUGHT ON ----
+   The working poses are solved against the whole frame. During Kendall's lesson
+   the instruction panel owns the bottom of it, and the solve knows nothing about
+   that: measured on a 560x340 window, the panel's top edge sat at 129 and the ram
+   stroke ran from 27 down to 154, so most of the one motion the lesson exists to
+   teach happened behind the panel.
+
+   So while the panel is up the piece is lifted by however much it takes to park
+   the part being taught in the clear band above it, and the ram stroke is scaled
+   to what is left. Both come from the panel's MEASURED top rather than a constant,
+   because a phone, a wide window and a hint that wraps to three lines all move it.
+   Recomputed only when the step, the window or the field of view changes. */
+const DFIT={key:"",lift:0,ram:0.72};
+function drillFit(tgtName){
+  const panel=$("gun");
+  const open=(GUN.active&&panel&&panel.classList.contains("on")&&cam&&gunPiece);
+  if(!open){DFIT.key="";DFIT.lift=0;DFIT.ram=0.72;return 0;}
+  const H=innerHeight||1;
+  const top=panel.getBoundingClientRect().top;
+  const key=tgtName+"|"+Math.round(top)+"|"+H+"|"+Math.round(cam.fov);
+  if(key===DFIT.key)return DFIT.lift;
+  DFIT.key=key;DFIT.lift=0;DFIT.ram=0.72;
+  /* NEVER the sighted pose. That one is solved so the notch and the bead sit on
+     the camera axis, and lifting the piece by even a twentieth of a foot walks
+     the sights off the mark they are aimed at. There is nothing to reveal in it
+     anyway - the panel is below the barrel, not over it. */
+  if(tgtName==="sight")return 0;
+  const P=G_POSE[tgtName]; if(!P)return 0;
+  const e=new THREE.Euler(P.r[0],P.r[1],P.r[2]);
+  const base=new THREE.Vector3(P.p[0],P.p[1],P.p[2]);
+  const tanH=Math.tan(cam.fov*Math.PI/360);
+  /* screen y of a gun-local point, and the frustum half-height where it sits */
+  const seen=function(l){
+    const v=new THREE.Vector3(l[0],l[1],l[2]).applyEuler(e).add(base);
+    if(v.z>-0.2)return null;
+    const q=v.clone().applyMatrix4(cam.projectionMatrix);
+    return {y:(-q.y*0.5+0.5)*H, half:(-v.z)*tanH};
+  };
+  const watch=seen((tgtName==="prime")?G_PAN:G_BORE);
+  if(!watch)return 0;
+  const bandTop=H*0.14, bandBot=top-H*0.04;
+  if(bandBot-bandTop<H*0.06)return 0;         /* no room to work with; leave it */
+  /* charging and ramming both work UPWARD from the muzzle - the flask tips into
+     it, the stick rises out of it - so the muzzle parks at the foot of the band
+     and the motion runs up through it. Priming has nothing above it, so the pan
+     sits in the middle. */
+  const want=(tgtName==="prime")?(bandTop+bandBot)/2:bandBot;
+  DFIT.lift=(watch.y-want)*2*watch.half/H;
+  if(tgtName==="ground"){
+    const home=seen([0,0,G_BORE[2]+3.40-3.58]), out=seen([0,0,G_BORE[2]+2.68-3.58]);
+    if(home&&out&&Math.abs(home.y-out.y)>1){
+      const perFoot=Math.abs(home.y-out.y)/0.72;
+      /* Measured from where the head will REST once the lift is applied, not from
+         the foot of the band: the head sits well above the muzzle even when the
+         stick is driven fully home, so budgeting the whole band for the stroke
+         sent the top of it up behind the chapter line. */
+      DFIT.ram=Math.max(0.30,Math.min(0.72,(home.y-(watch.y-want)-bandTop)/perFoot));
+    }
+  }
+  return DFIT.lift;
+}
 /* the drill, animated in the world so you can watch it happen */
 function updateDrill(dt){
   /* Also runs for the AUTOMATIC reload and while simply holding her sighted, so
@@ -7877,20 +8116,36 @@ function updateDrill(dt){
      top of the new ones they shoved the ram stroke back off the bottom corner -
      the exact fault they were introduced to fix. Ball, wad and ram get almost
      nothing; charging and priming get a nudge down and right. */
-  const OFF=walk?(watch?[0,-0.10,0]:[0.18,-0.30,0]):[0,0,0];
+  /* Called unconditionally, used only when standing at the mark: it also RESETS
+     the ram stroke's length, and inside the ternary the walking branch skipped
+     the call, so an automatic reload after a taught drill inherited the drill's
+     shortened stroke and kept it. */
+  const lift=drillFit(tgtName);
+  const OFF=walk?(watch?[0,-0.10,0]:[0.18,-0.30,0]):[0,lift,0];
   const ease=Math.min(1,dt*4.2);
   for(let i=0;i<3;i++){
     GUN.pose.p[i]+=((TGT.p[i]+OFF[i])-GUN.pose.p[i])*ease;
     GUN.pose.r[i]+=(TGT.r[i]-GUN.pose.r[i])*ease;
   }
-  /* how far into the sighted stance we are, for the sway and the field of view */
-  const sighted=Math.max(0,1-Math.abs(GUN.pose.p[1]-G_POSE.sight.p[1])/0.65);
+  /* HOW FAR INTO THE SIGHTED STANCE WE ARE - for the sway, the field of view, and
+     whether the flask and the powder stream are drawn at all.
+     This used to be inferred from the pose's HEIGHT: how near p[1] was to the
+     sight pose's p[1]. That is a coincidence dressed as a derivation, and the new
+     priming stance walked straight into it - held across the body, its origin
+     sits at -0.031 against the sight pose's -0.060, three hundredths of a foot
+     apart, so the game read priming as aiming. The flask and the stream are
+     suppressed while sighted, so the one step whose whole content is pouring
+     powder into a dish showed neither the powder nor the dish it came from.
+     Eased from the named target instead, at the same rate the pose itself moves,
+     so it means what it says whatever height a stance happens to sit at. */
+  GUN.sightT+=((tgtName==="sight"?1:0)-GUN.sightT)*ease;
+  const sighted=GUN.sightT;
   GUN.poseT=sighted;                     /* kept for anything still reading it */
   if(gunPiece){
     gunPiece.visible=true;
     /* the sway the hint promises: wide when you first present, settling as
        GUN.steady climbs, so "hold still and the sway settles" is visible */
-    const sw=(1-(GUN.steady||0))*0.020*sighted;
+    const sw=(1-(GUN.steady||0))*0.020*sighted*(1-AIM.ads*0.62);
     const T=performance.now()/1000;
     gunPiece.position.set(GUN.pose.p[0]+Math.sin(T*1.7)*sw,
                           GUN.pose.p[1]+Math.sin(T*2.3)*sw*0.7,
@@ -7915,8 +8170,14 @@ function updateDrill(dt){
       G_HEEL.set(0,-0.15,0.52).applyEuler(gunPiece.rotation).add(gunPiece.position);
       gunRear.visible=(G_HEEL.z<-0.62);
     }
-    /* narrowing the view while sighted reads as focusing down the barrel */
-    const fov=G_FOV.normal+(G_FOV.sighted-G_FOV.normal)*sighted;
+    /* Narrowing the view while sighted reads as focusing down the barrel, and
+       holding the right button narrows it further - leaning in over the piece.
+       Deliberately NOT a change of pose: the bead and the notch are already on
+       the camera axis, so moving the gun would push the sights off the mark it
+       is aimed at. Narrowing the view and steadying the sway is what leaning in
+       actually does, and it keeps the sights honest. */
+    const fov=G_FOV.normal+(G_FOV.sighted-G_FOV.normal)*sighted
+             +(G_FOV.lean-G_FOV.sighted)*AIM.ads*sighted;
     if(Math.abs(cam.fov-fov)>0.05){cam.fov=fov;cam.updateProjectionMatrix();}
   }
   const grounded=(tgtName==="ground");
@@ -8002,7 +8263,8 @@ function updateDrill(dt){
          the muzzle at all, so there was nothing to see. Measured against the
          grounded pose: the head runs 130 pixels down the frame and the top of the
          stroke stays inside it, which a foot of travel did not. */
-      const insert=2.68+0.72*Math.cos(GUN.ramAnim*Math.PI*0.5);
+      const T=DFIT.ram;
+      const insert=(3.40-T)+T*Math.cos(GUN.ramAnim*Math.PI*0.5);
       gunRammer.position.set(G_BORE[0],G_BORE[1],G_BORE[2]+insert);
       gunRammer.rotation.set(0,0,0);
     }
@@ -9771,7 +10033,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-0140-1115848";
+const BUILD="20260801-0219-350c54b";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
