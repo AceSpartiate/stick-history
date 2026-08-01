@@ -825,15 +825,19 @@ const S={ink:0,unlocked:new Set(["none_cloak","none_torso","none_acc","none_head
      argue from it - never tasted the water at Jamestown, cannot raise the
      brackishness. So this is not a score, it is the evidence.
 
-     THE BUDGET HAS TO BITE OR THE LESSON DOES NOT LAND. Three sites, three surveys
-     each, one day per survey and one per passage: seeing everything costs 9 + 3 =
-     12. At twelve days a careful player saw all of it, and "you cannot learn
-     everything in the time you have" is the entire point of the phase. At ten you
-     see at most seven of the nine, and which seven is a decision.
-     RE-TUNE WHEN A SITE IS ADDED. Kecoughtan will make it 12 surveys and 4
-     passages against 10, which is probably too tight; the number is meant to sit
-     just under what perfect play could reach. */
-  survey:{days:10,found:{},visited:{}},
+     EVERYTHING MUST BE REACHABLE BY PERFECT PLAY. This briefly sat below what an
+     optimal route costs, on the argument that "you cannot learn everything" is the
+     phase's lesson. That is the wrong trade for a classroom: a pupil who misses a
+     site has not learned about scarcity, they have simply not been taught part of
+     the history - and the muster roll can then ask them about something they were
+     never shown. Scarcity only teaches when failing is instructive; here it just
+     gates content.
+     So the budget is DERIVED from the sites, at exactly the cost of the optimal
+     route: one day per survey, one per outward passage. Perfect play sees all of
+     it with nothing to spare; a wandering route still costs you something, because
+     going back out to a site you have already left is another day. It cannot drift
+     when a site is added, which is the other reason not to type it. */
+  survey:{days:0,found:{},visited:{}},
   equip:{skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"none_head",build:"build_normal",face:"none",
     dye:{torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"}},
   codex:[],codexKeys:new Set(),insight:{},shipNote:false,chapterDone:false,flawless:{},met:{},
@@ -886,7 +890,7 @@ function applyBlob(d){
     if(d.voicePref)S.voicePref=d.voicePref;
     S.items=d.items||{};S.itemAt=d.itemAt||{};S.incidents=d.incidents||[];
     S.chartSeen=d.chartSeen||{};
-    S.survey=d.survey||{days:10,found:{},visited:{}};
+    S.survey=d.survey||{days:surveyBudget(),found:{},visited:{}};
     S.shotAMan=!!d.shotAMan;S.killedAMan=!!d.killedAMan;
     S.boxOpened=!!d.boxOpened;S.smithRecognised=!!d.smithRecognised;
     S.heardKendall=!!d.heardKendall;S.reportedKendall=d.reportedKendall||null;
@@ -934,7 +938,7 @@ function newRun(){
   S.items={};S.itemAt={};S.incidents=[];
   S.shotAMan=false;S.killedAMan=false;
   S.boxOpened=false;S.smithRecognised=false;
-  S.survey={days:10,found:{},visited:{}};
+  S.survey={days:surveyBudget(),found:{},visited:{}};
   S.heardKendall=false;S.reportedKendall=null;
   S.ambushFired=false;S.ambushShots=0;
   S.shipNote=false;S.chapterDone=false;S.firedGun=false;
@@ -9471,6 +9475,7 @@ function buildThinSite(root,key){
     root.add(g.mesh(false,false));
   }
   buildSkyDome(root);
+  if(T.dress)T.dress(root,G);
   const sea=new THREE.Mesh(new THREE.PlaneGeometry(1600,900),
     new THREE.MeshLambertMaterial({color:lin(T.water)}));
   sea.rotation.x=-Math.PI/2;sea.position.set(0,-0.35,T.sea+450);root.add(sea);
@@ -9519,6 +9524,7 @@ const SITES={
 
   comfort:{name:"Point Comfort",world:"comfort",cost:1,chapter:"ch2",
     gloss:"A low point inside the capes, where the deep channel runs close in.",
+    arrive:"The fleet is riding at anchor off the point, close enough to hail. Good holding ground, they say, and after four months of open water that is a comfort.",
     land:[10,58], spots:[[0,52],[-46,4],[62,18]],
     surveys:[
       {k:"depth", verb:"Sound the depth", d:"Six fathom within a stone's throw of the shore. A ship of any burden could ride here."},
@@ -9531,6 +9537,7 @@ const SITES={
      colony, which is the whole argument of Phase 4 in one site. */
   archers:{name:"Archer's Hope",world:"archers",cost:1,chapter:"ch2",
     gloss:"A creek off the north bank. Fine ground, and the men who saw it wanted it.",
+    arrive:"Timber standing sixty feet and straight as a mast, and the ground under it black. Half the company would settle here tomorrow.",
     land:[8,54], spots:[[-40,10],[34,-22],[24,46]],
     surveys:[
       {k:"ground",verb:"Walk the ground", d:"Deep loam, standing timber, and open ground a plough could take. The best land you have set foot on."},
@@ -9543,6 +9550,7 @@ const SITES={
      soften it into bad luck. */
   james:{name:"Jamestown Island",world:"james",cost:1,chapter:"ch2",
     gloss:"A low island up the river, joined to the bank by a neck of sand.",
+    arrive:"Dead trees standing in the shallows, and the smell of the marsh coming off it. The boat touches the bank without sounding — the water is that deep, right up to the roots.",
     land:[6,56], spots:[[-30,44],[44,6],[-8,-26]],
     surveys:[
       {k:"depth", verb:"Sound the depth", d:"Six fathom hard against the bank. You could moor a ship to the trees and step ashore off her deck."},
@@ -9559,13 +9567,82 @@ SITE_TERRAIN.archers={sea:70,shore:22,flat:-14,deep:-1.1,fall:0.012,rise:3.0,inl
 SITE_TERRAIN.james={sea:78,shore:34,flat:-8,deep:-3.6,fall:0.05,rise:1.5,inland:0.9,roll:0.5,
   sky:0x9fb6bd,fog:0xaebfc2,water:0x3c5348,near:0x9a9a6e,far:0x7f8a5c,back:0x6b7a4e,wet:0x8a8a68,
   trees:38,treeZ:-30,treeH:40,seed:47};
+/* ---- WHAT MAKES EACH ONE SOMEWHERE ----
+   A shore, some trees and three things to click is a menu with terrain on it. Each
+   site gets one landmark you can see from the landing point and nowhere else, and
+   in every case it is the thing the site is ABOUT - so the view and the finding
+   argue the same point. One merged mesh each. */
+SITE_TERRAIN.comfort.dress=function(root,G){
+  /* THE FLEET, riding at anchor off the point. They really did anchor here on the
+     last day of April, and it is the argument for the place standing in the water:
+     deep enough that ships of burden lie close in. */
+  const D=new Geo(), hull=RGB(0x4a3a26), hullD=RGB(0x33281a), sail=RGB(0xcfc3a4), mast=RGB(0x5a4728);
+  /* CLOSE ENOUGH TO HAIL, which is what the arrival line says and what the finding
+     means: the channel runs so near the shore that ships of burden lie right off
+     the point. At z 150-240 they were a smudge on the horizon and read as nothing;
+     at 95-150 they are the first thing you see when you turn round, and they ARE
+     the argument for this place. */
+  /* CLOSE, because the camera will not show anything else. Measured: the default
+     third-person view pitches down about twenty degrees, so the waterline at z 400
+     projects seventy-six pixels ABOVE the top of the screen - the distant horizon
+     is off-frame entirely and no far landmark on water can ever be seen from here.
+     Anchored out at 140-215 the fleet was invisible; at 96-150 it is the first
+     thing you see when you turn seaward, which is the point of it. Large in frame
+     is the correct answer when the frame cannot hold distance. */
+  [[-58,96,1.0],[26,120,0.92],[104,150,0.8]].forEach(function(sh){
+    const x=sh[0],z=sh[1],k=sh[2];
+    D.beam8([x-16*k,1.2,z],[x+16*k,2.4,z], 4.6*k,3.2*k, hullD,hull, 1.5,1.2);
+    D.box(x,5.0*k,z,26*k,2.0*k,7*k,hull);
+    for(let m=-1;m<=1;m++){
+      D.beam8([x+m*9*k,3,z],[x+m*9*k,34*k,z], 0.7*k,0.5*k, mast,mast);
+      D.box(x+m*9*k,24*k,z,1.2*k,9*k,5.5*k,sail);
+    }
+  });
+  root.add(D.mesh(false,false));
+};
+SITE_TERRAIN.archers.dress=function(root,G){
+  /* THE TIMBER. Sixty feet and straight - the thing the men who wanted this place
+     wanted it FOR, standing where you land rather than described in a toast. */
+  const D=new Geo();
+  for(let i=0;i<14;i++){
+    const x=(srand(i*7.3+90)*2-1)*150, z=-10-srand(i*4.1+90)*90;
+    conifer(D,x,G(x,z),z,72+srand(i*2.9+90)*22,i+90,[0.24,0.30,0.16]);
+  }
+  root.add(D.mesh(false,false));
+};
+SITE_TERRAIN.james.dress=function(root,G){
+  /* DEAD TREES STANDING IN WATER, and reeds. The brackish finding, visible. This is
+     what a drowned wood looks like and it is why nobody had built here. */
+  const D=new Geo(), dead=RGB(0x8a8271), deadD=RGB(0x635c4e), reed=RGB(0x7d7f4a);
+  for(let i=0;i<22;i++){
+    const x=(srand(i*5.7+300)*2-1)*230, z=82+srand(i*3.3+300)*70;
+    const h=14+srand(i*8.1+300)*20;
+    D.beam8([x,-1.4,z],[x,h,z], 0.95,0.45, deadD,dead);
+    for(let b=0;b<2;b++){
+      const a=srand(i*11+b*3+300)*6.283;
+      D.beam8([x,h*0.72,z],[x+Math.cos(a)*5.5,h*0.95,z+Math.sin(a)*5.5],0.4,0.2,dead,dead);
+    }
+  }
+  for(let i=0;i<90;i++){
+    const x=(srand(i*2.9+500)*2-1)*300, z=62+srand(i*6.1+500)*26;
+    D.box(x,G(x,z)+1.5,z,0.35,3.2,0.35,reed);
+  }
+  root.add(D.mesh(false,false));
+};
 registerWorld("comfort",function(root){buildThinSite(root,"comfort");});
 registerWorld("archers",function(root){buildThinSite(root,"archers");});
 registerWorld("james",  function(root){buildThinSite(root,"james");});
+/* one day per survey, one per outward passage: what an optimal route costs, which
+   is what the player is given */
+function surveyBudget(){
+  let n=0;
+  for(const k in SITES){const st=SITES[k];if(st.home)continue;n+=1+(st.surveys?st.surveys.length:0);}
+  return n;
+}
 function siteOf(w){for(const k in SITES)if(SITES[k].world===w)return SITES[k];return null;}
 function surveyDays(){return (S.survey&&S.survey.days)||0;}
 function spendDay(n){
-  if(!S.survey)S.survey={days:10,found:{},visited:{}};
+  if(!S.survey)S.survey={days:surveyBudget(),found:{},visited:{}};
   S.survey.days=Math.max(0,S.survey.days-(n||1));
   saveGame();
 }
@@ -9733,7 +9810,10 @@ function travelTo(key){
   if(!S.survey.visited)S.survey.visited={};
   S.survey.visited[key]=true;
   enterWorld(site.world);
-  toast("You put in at "+site.name+".");
+  /* ARRIVING SOMEWHERE SHOULD FEEL LIKE ARRIVING SOMEWHERE. "You put in at
+     Point Comfort" is a status message; these are the same sentence a person on
+     the boat would have said. */
+  toast(site.arrive||("You put in at "+site.name+"."));
   refreshSurveyHud();
 }
 /* the days left, on the chapter line, and only where the survey is running */
@@ -10728,7 +10808,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1733-417d1f2";
+const BUILD="20260801-1747-a4aaa00";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
