@@ -43,6 +43,18 @@
   body.kbm #touchMove,body.kbm #joy,body.kbm #camBtns{display:none}
   body.kbm #touchLook{left:0;right:auto;width:100%}
   /* ---- and the sights ---- */
+  /* ---- the model bench, ?bench only ---- */
+  #bench{background:#12100c}
+  #benchCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #benchBar{position:absolute;left:0;right:0;top:0;z-index:3;display:flex;flex-wrap:wrap;gap:10px;
+    padding:6px 8px;background:rgba(10,9,6,.72);font-size:.72rem}
+  #benchBar .bgrp{display:flex;gap:4px}
+  #benchBar button{padding:.25em .55em;border:1px solid rgba(224,218,187,.34);border-radius:3px;
+    background:rgba(255,255,255,.05);color:var(--parch);font-size:.72rem;font-family:inherit}
+  #benchBar button.on{background:var(--gold);color:#17130c;border-color:var(--gold-bright)}
+  #benchOut{position:absolute;left:8px;bottom:8px;z-index:3;color:var(--parch);
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.68rem;line-height:1.5;
+    white-space:pre;text-shadow:0 1px 2px #000;pointer-events:none}
   body.aiming{cursor:none}
   #reticle{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;
     border-radius:50%;background:rgba(255,242,220,.5);box-shadow:0 0 0 1px rgba(0,0,0,.5);
@@ -657,6 +669,23 @@
       <button class="btn ghost wide mt" id="endWardrobe">Open Your Wardrobe</button>
       <button class="btn ghost wide mt" id="endTitle">Main Menu</button>
     </div>
+  </section>
+
+  <!-- THE MODEL BENCH. Reached only at ?bench, and nothing below runs without it.
+       Built because five separate faults on the matchlock - a lock plate inside
+       the barrel, a trigger inside the stock, a grounded copy fifteen feet long -
+       were all found by arithmetic and none by looking, since looking meant
+       hand-placing a camera in the running game one guess at a time. It shows the
+       REAL objects, pulled out of the real builders, so it cannot drift from what
+       ships the way a separate viewer would. -->
+  <section id="bench" class="screen">
+    <canvas id="benchCanvas"></canvas>
+    <div id="benchBar">
+      <span class="bgrp" id="bSubj"></span>
+      <span class="bgrp" id="bView"></span>
+      <span class="bgrp"><button data-b="wire">Edges</button><button data-b="rule">Rule</button></span>
+    </div>
+    <div id="benchOut"></div>
   </section>
 
   <div id="cine">
@@ -10270,7 +10299,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1202-9e303cd";
+const BUILD="20260801-1207-6f9ab7b";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
@@ -10288,6 +10317,160 @@ const BUILD="20260801-1202-9e303cd";
     }).catch(function(){});
   }catch(e){}
 })();
+
+/* ========== THE MODEL BENCH ==========
+   ?bench and nothing else reaches any of this.
+
+   Five faults on the matchlock in as many passes - a lock plate two thirds inside
+   the barrel, a trigger and a whole trigger guard inside the stock, a grounded
+   copy fifteen feet long, a clamp gaping twice the cord it held - and every one
+   was found by arithmetic, none by looking. Looking meant hand-placing a camera
+   in the running game, one guess at a time, and it never once caught anything.
+
+   The rule this obeys: it shows the REAL objects, taken from the real builders.
+   A separate viewer with its own copy of the geometry would drift from what ships,
+   which is the same fault as the slung and grounded matchlocks drifting from the
+   one in your hands. There is exactly one matchlock in this project.
+
+   Drag to orbit, wheel to zoom, or take a named view. The rule is a six-foot post
+   in one-foot bands with a one-foot cube at its foot, so anything on the bench can
+   be read off against a known length instead of against taste. */
+const BENCH=/(^|[?&#])bench\b/i.test(location.search+location.hash);
+const BV={r:null,sc:null,cam:null,subj:null,yaw:0.9,pitch:0.22,dist:9,
+          rule:true,wire:false,name:"",box:new THREE.Vector3(),ctr:new THREE.Vector3()};
+const BENCH_VIEWS={
+  "3/4":[0.9,0.22],"side":[Math.PI/2,0],"other side":[-Math.PI/2,0],
+  "top":[Math.PI/2,1.45],"front":[0,0],"rear":[Math.PI,0],
+  "muzzle":[0.06,0.05],"under":[Math.PI/2,-1.30]};
+function benchRule(){
+  const G=new Geo();
+  /* a six-foot post in one-foot bands, and a one-foot cube at its foot */
+  for(let i=0;i<6;i++){
+    const c=(i%2)?RGB(0xd8cdb0):RGB(0x6a6152);
+    G.box(0,i+0.5,0,0.09,1,0.09,c);
+  }
+  G.box(0.72,0.5,0,1,1,1,RGB(0x3f7d70));
+  return G.mesh(false,false);
+}
+function benchSubject(kind){
+  /* every one of these comes out of the shipping builder, never a copy */
+  if(kind==="gun"){
+    gunPiece=null;buildGunModel();
+    const g=gunPiece;
+    if(g.parent)g.parent.remove(g);
+    g.position.set(0,0,0);g.rotation.set(0,0,0);g.visible=true;
+    if(gunWrist)gunWrist.visible=true;
+    if(gunRear)gunRear.visible=true;
+    if(gunRamStow)gunRamStow.visible=true;
+    return g;
+  }
+  if(kind==="gun+man"){
+    const w=new THREE.Group();
+    const f=buildFigure(S.equip);w.add(f);
+    gunPiece=null;buildGunModel();
+    const g=gunPiece;if(g.parent)g.parent.remove(g);
+    if(gunWrist)gunWrist.visible=true;
+    if(gunRear)gunRear.visible=true;
+    /* stood on its heel beside him, which is how you judge a gun against a man */
+    g.rotation.set(-Math.PI/2,0,0);g.position.set(1.5,0,0);
+    w.add(g);return w;
+  }
+  if(kind==="slung"){setItemState("matchlock","stowed");return buildFigure(S.equip);}
+  if(kind==="grounded"){
+    const G=new Geo();ITEMS.matchlock.ground(G);
+    const m=G.mesh(false,false);m.scale.setScalar(FIG_SCALE);return m;
+  }
+  return buildFigure(S.equip);
+}
+function benchShow(kind){
+  if(!BV.sc)return;
+  if(BV.subj){BV.sc.remove(BV.subj);}
+  BV.name=kind;
+  BV.subj=benchSubject(kind);
+  BV.sc.add(BV.subj);
+  BV.subj.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(BV.subj);
+  b.getSize(BV.box);b.getCenter(BV.ctr);
+  BV.dist=Math.max(BV.box.x,BV.box.y,BV.box.z)*1.5+1.2;
+  /* stand the rule off the subject's near side so it measures without covering */
+  if(BV.ruleMesh)BV.ruleMesh.position.set(b.min.x-1.4,b.min.y,BV.ctr.z);
+  benchPaintBar();
+}
+function benchPaintBar(){
+  const sj=$("bSubj"),vw=$("bView");
+  if(!sj||sj.dataset.built){benchMarkOn();return;}
+  ["gun","gun+man","slung","grounded","man"].forEach(function(k){
+    const b=document.createElement("button");b.textContent=k;b.dataset.subj=k;
+    b.onclick=function(){benchShow(k);};sj.appendChild(b);});
+  Object.keys(BENCH_VIEWS).forEach(function(k){
+    const b=document.createElement("button");b.textContent=k;b.dataset.view=k;
+    b.onclick=function(){BV.yaw=BENCH_VIEWS[k][0];BV.pitch=BENCH_VIEWS[k][1];benchMarkOn();};
+    vw.appendChild(b);});
+  document.querySelectorAll("#benchBar button[data-b]").forEach(function(b){
+    b.onclick=function(){
+      if(b.dataset.b==="rule"){BV.rule=!BV.rule;if(BV.ruleMesh)BV.ruleMesh.visible=BV.rule;}
+      else{BV.wire=!BV.wire;BV.sc.traverse(function(o){if(o.material&&o!==BV.ruleMesh)o.material.wireframe=BV.wire;});}
+      benchMarkOn();};});
+  sj.dataset.built="1";benchMarkOn();
+}
+function benchMarkOn(){
+  document.querySelectorAll("#benchBar button").forEach(function(b){
+    if(b.dataset.subj)b.classList.toggle("on",b.dataset.subj===BV.name);
+    if(b.dataset.b==="rule")b.classList.toggle("on",BV.rule);
+    if(b.dataset.b==="wire")b.classList.toggle("on",BV.wire);
+  });
+}
+function startBench(){
+  const c=$("benchCanvas");
+  BV.r=gradeRenderer(new THREE.WebGLRenderer({canvas:c,antialias:true}));
+  BV.sc=new THREE.Scene();BV.sc.background=new THREE.Color(0x12100c);
+  BV.cam=new THREE.PerspectiveCamera(34,1,0.05,400);
+  figureLights(BV.sc);
+  /* the world camera has to exist because buildGunModel parents to it */
+  if(!cam)cam=new THREE.PerspectiveCamera(56,1,0.5,900);
+  BV.ruleMesh=benchRule();BV.sc.add(BV.ruleMesh);
+  benchPaintBar();benchShow("gun");
+  let drag=null;
+  c.addEventListener("pointerdown",function(e){drag={x:e.clientX,y:e.clientY};c.setPointerCapture(e.pointerId);});
+  c.addEventListener("pointermove",function(e){
+    if(!drag)return;
+    BV.yaw-=(e.clientX-drag.x)*0.008;
+    BV.pitch=Math.max(-1.5,Math.min(1.5,BV.pitch+(e.clientY-drag.y)*0.006));
+    drag={x:e.clientX,y:e.clientY};});
+  ["pointerup","pointercancel"].forEach(function(v){c.addEventListener(v,function(){drag=null;});});
+  c.addEventListener("wheel",function(e){e.preventDefault();
+    BV.dist=Math.max(0.4,BV.dist*(e.deltaY>0?1.12:0.89));},{passive:false});
+  (function loop(){
+    requestAnimationFrame(loop);
+    const w=c.clientWidth||600,h=c.clientHeight||400;
+    if(c.width!==w||c.height!==h){BV.r.setSize(w,h,false);BV.cam.aspect=w/h;BV.cam.updateProjectionMatrix();}
+    const cp=Math.cos(BV.pitch);
+    BV.cam.position.set(BV.ctr.x+Math.sin(BV.yaw)*cp*BV.dist,
+                        BV.ctr.y+Math.sin(BV.pitch)*BV.dist,
+                        BV.ctr.z+Math.cos(BV.yaw)*cp*BV.dist);
+    BV.cam.lookAt(BV.ctr);
+    BV.r.render(BV.sc,BV.cam);
+    const o=$("benchOut");
+    if(o){const F=function(v){return v.toFixed(2);},I=function(v){return (v*12).toFixed(1);};
+      o.textContent=
+        BV.name+"\n"+
+        "size  "+F(BV.box.x)+" x "+F(BV.box.y)+" x "+F(BV.box.z)+" ft\n"+
+        "      "+I(BV.box.x)+" x "+I(BV.box.y)+" x "+I(BV.box.z)+" in\n"+
+        "yaw "+(BV.yaw*180/Math.PI).toFixed(0)+"\u00b0  pitch "+(BV.pitch*180/Math.PI).toFixed(0)+
+        "\u00b0  dist "+F(BV.dist)+" ft\n"+
+        "rule: 6 ft post in 1 ft bands, 1 ft cube";}
+  })();
+}
+if(BENCH){
+  const sec=$("bench");
+  screens.bench=sec;
+  Object.keys(screens).forEach(function(k){if(screens[k])screens[k].classList.remove("on");});
+  sec.classList.add("on");
+  try{startBench();}catch(e){
+    const o=$("benchOut");if(o)o.textContent="bench failed: "+e.message;
+    console.error(e);
+  }
+}
 </script>
 </body>
 </html>
