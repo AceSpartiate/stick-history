@@ -7248,9 +7248,15 @@ function buildGunModel(){
      it, which is why the whole mechanism read as one lump of the wrong size
      rather than as a lock on a stock beside a pan on a barrel.
      Also longer - 4.9 rather than 4.1 - and it tapers away aft, as they do. */
-  FL.box(0.074,-0.112,-0.78,0.24*IN,1.40*IN,0.410,ironD);/* lock plate */
-  FL.box(0.074,-0.112,-0.56,0.22*IN,0.80*IN,0.110,ironD);/* its tail, aft */
-  FL.box(0.076,-0.070,-0.80,0.30*IN,0.55*IN,0.190,iron); /* the sear boss */
+  /* AND INLET FLUSH, the last thing from the photographs. It stood 0.19 proud of
+     the wood, because it had been pushed outboard to escape the barrel back when
+     it sat on the barrel's centreline. Now that it lies below the barrel entirely
+     the barrel does not constrain it, so it comes back in until its face is level
+     with the stock, a bare 0.02 above - which is how a lock plate sits: let into
+     the wood, its surface just breaking the surface of it. */
+  FL.box(0.060,-0.112,-0.78,0.24*IN,1.40*IN,0.410,ironD);/* lock plate */
+  FL.box(0.060,-0.112,-0.56,0.22*IN,0.80*IN,0.110,ironD);/* its tail, aft */
+  FL.box(0.062,-0.070,-0.80,0.30*IN,0.55*IN,0.190,iron); /* the sear boss */
   /* the pan, and its cover swung open ready to fire */
   FL.box(0.096,0.034,-0.95,0.80*IN,0.26*IN,0.90*IN,iron);
   FL.box(0.096,0.022,-0.95,0.62*IN,0.22*IN,0.70*IN,ironD);/* the pan's dish */
@@ -7351,7 +7357,7 @@ function buildGunModel(){
      back along the bore and 0.04 up is 0.268, which is exactly where the coal sits
      in the arm's frame. Put it a quarter inch further forward and the match swings
      straight past the pan and buries itself in the barrel. */
-  gunSerp.position.set(0.080,-0.085,-0.685);
+  gunSerp.position.set(0.066,-0.085,-0.685);
   gunSerp.add(Sp.mesh(true,false));
   /* The jaws: TWO of them, with the match gripped between. One box read as a lump
      on a stick and taught nothing; a pair reads as something clamped shut, which
@@ -10337,7 +10343,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1235-6ad75f8";
+const BUILD="20260801-1239-6cc643f";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
