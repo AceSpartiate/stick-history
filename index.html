@@ -2524,7 +2524,11 @@ function buildBeakAndRig(root){
     const h=topY-SHIP.DECK_Y+2*K;
     const m=box(1.5*K,h,1.5*K,0x4e3a22);
     m.position.set(0,SHIP.DECK_Y-2*K+h/2,z);m.rotation.x=rake;root.add(m);
-    solid(0,z,1.1*K,1.1*K);
+    /* THE COLLIDER WAS HALF AGAIN THE MAST. The timber is 1.5K across, so 0.75K
+       of half-width, and this stood at 1.1K - and both masts step through the
+       middle of the aft passage, so that extra 0.35K a side came straight off the
+       two lanes a player has to thread. 0.82K is the mast plus its partners. */
+    solid(0,z,0.82*K,0.82*K);
     const topPlat=new THREE.Mesh(new THREE.CylinderGeometry(3.2*K,2.4*K,0.7*K,8),mat(0x46341f));
     topPlat.position.set(0,SHIP.DECK_Y+(topY-SHIP.DECK_Y)*0.62,z);root.add(topPlat);
     return topY;
@@ -3710,7 +3714,20 @@ function buildCabins(root){
 
   /* ---- aft: a clear passage, three cabins off it, the great cabin right aft ---- */
   const hAft=SHIP.CASTLE_Y-SHIP.DECK_Y;
-  const PASS=3.2*K;
+  /* THE AFT PASSAGE, and the single worst thing about walking round this ship.
+     Measured, deck by deck: the lane a player could actually stand in narrowed to
+     0.4K at frame 24 and 0.5K at frame 30 - half a unit of tolerance for a body
+     of radius 1.0, which is why getting aft to the scrivener's desk felt like
+     threading a needle and why a flood fill at a 0.6K grid could not find the
+     desk at all.
+     The cause was not the passage, which was a reasonable 3.2K half-width. It was
+     that BOTH MASTS step through the deck in the middle of it, so the corridor is
+     really two lanes either side of a tree, and 3.2K minus the mast minus the
+     player's own width left almost nothing. Widened to 4.1K, which the hull can
+     afford here - it leaves the side cabins 3.1K, still wider than the 2.6K berths
+     in them - and taken with the mast collider above it turns two 0.6K slots into
+     two lanes of about 1.8K. */
+  const PASS=4.1*K;
   bulkhead(root,17*K,halfBeam(17*K,y)-1.6*K,y,hAft,W,LVL.MAIN,PASS);
   bulkhead(root,30*K,halfBeam(30*K,y)-1.6*K,y,hAft,W,LVL.MAIN,PASS);
   longWall(root,-PASS,17.4*K,29.6*K,[[19.0*K,21.4*K],[25.0*K,27.4*K]],y,hAft,W2,LVL.MAIN);
@@ -3727,12 +3744,21 @@ function buildCabins(root){
     solid(cx,cz,1.5*K,2.4*K,LVL.MAIN);
     lamp(root,cx,y+6.4*K,cz,14);
   }
-  const gt=box(7*K,0.45*K,3.4*K,0x6b5433);gt.position.set(0,y+2.6*K,36*K);root.add(gt);
+  /* The great table was 7K across in a cabin whose half-beam here is 5.4K, so
+     with the player's own width it sealed the room end to end: the only way past
+     was a 0.4K slot against the port side. A captain's table you cannot walk
+     round is furniture in a corridor. Down to 5K, which still seats the council
+     and leaves better than two units of deck each side of it. */
+  /* And forward half a frame, to 35.4: at 36 its after edge plus the player's own
+     width still reached frame 38, where the hull has closed to 4.7 and the stern
+     lockers take the rest - a 0.2K slot each side. Moved forward it clears them. */
+  const GTZ=35.4*K;
+  const gt=box(5*K,0.45*K,3.0*K,0x6b5433);gt.position.set(0,y+2.6*K,GTZ);root.add(gt);
   for(let i=0;i<4;i++){
-    const lx=(i%2?1:-1)*3*K,lz=36*K+(i<2?-1.3*K:1.3*K);
+    const lx=(i%2?1:-1)*2.1*K,lz=GTZ+(i<2?-1.1*K:1.1*K);
     const lg=box(0.45*K,2.4*K,0.45*K,0x46341f);lg.position.set(lx,y+1.3*K,lz);root.add(lg);
   }
-  solid(0,36*K,3.6*K,1.9*K,LVL.MAIN);
+  solid(0,GTZ,2.5*K,1.5*K,LVL.MAIN);
   /* the great cabin: the only room aboard where anything is hung for its own sake */
   const GCW=new Geo();
   /* a portolan chart pinned to the after bulkhead, and a cross-staff on pegs */
@@ -6892,7 +6918,10 @@ const GUN={arm:"matchlock",step:"powder",charge:0,prime:0,ramQ:0,ramHits:0,
   onHit:null,pourOn:false,poseT:0,sightT:0,ramT:0,ramAnim:0,ramCycle:0,ramSeat:0,cont:null};
 /* One swing of the scouring stick. Short enough that four of them is a rhythm to
    be kept rather than four unrelated taps. */
-const RAM_PERIOD=1.05;
+/* Slowed from 1.05 after play: too hard. The swing is the clock the whole
+   minigame runs on, so lengthening it widens every window at once, and a
+   thirteen-year-old should be able to land four blows without a stopwatch. */
+const RAM_PERIOD=1.35;
 /* Where the tip ENDS its stroke: shallow while the ball is still near the muzzle,
    deeper as it is driven down. The stick visibly goes further in with every blow
    that lands, which is the ball seating, shown rather than scored in silence. */
@@ -7068,22 +7097,29 @@ function buildGunModel(){
   const cord=RGB(0x7a6f60), cordD=RGB(0x5c5347);
 
   /* ---- the barrel: 3 ft 7 in, octagonal at the breech, tapering toward the muzzle.
-     1.25 in across the flats at the breech, 0.85 in at the muzzle. Blued steel
+     1.48 in across the flats at the breech, 1.02 in at the muzzle. Blued steel
      rather than near-black: the old 0x2b2b30 was so dark it had no shading left
-     to give, which is the other half of why the piece read flat. */
-  C.beam8([0,0,-0.72],[0,0,-1.62], 0.63*IN,0.58*IN, ironD,iron);
-  C.beam8([0,0,-1.62],[0,0,-3.00], 0.58*IN,0.50*IN, iron,ironL);
-  C.beam8([0,0,-3.00],[0,0,-4.30], 0.50*IN,0.43*IN, iron,ironL);
-  C.beam8([0,0,-4.26],[0,0,-4.33], 0.52*IN,0.50*IN, ironL,iron);   /* muzzle swell */
+     to give, which is the other half of why the piece read flat.
+
+     UP FROM 1.25 AND 0.86 after play: "the gun might be too thin, especially
+     relative to the firing mechanism." Fair, and the correction went one notch
+     too far. Surviving calivers run 1.4 to 1.6 across the breech flats over a
+     bore of about two thirds of an inch - the wall is thick there because that is
+     where the charge goes off. 1.25 was the slender end of the range and it left
+     the barrel looking outmatched by its own lock. */
+  C.beam8([0,0,-0.72],[0,0,-1.62], 0.74*IN,0.68*IN, ironD,iron);
+  C.beam8([0,0,-1.62],[0,0,-3.00], 0.68*IN,0.59*IN, iron,ironL);
+  C.beam8([0,0,-3.00],[0,0,-4.30], 0.59*IN,0.51*IN, iron,ironL);
+  C.beam8([0,0,-4.26],[0,0,-4.33], 0.62*IN,0.59*IN, ironL,iron);   /* muzzle swell */
   /* the breech reinforce, the heaviest inch of the barrel, where the plug screws in */
-  C.beam8([0,0,-0.70],[0,0,-0.94], 0.72*IN,0.64*IN, ironD,ironD);
+  C.beam8([0,0,-0.70],[0,0,-0.94], 0.86*IN,0.77*IN, ironD,ironD);
 
   /* ---- the stock: fore-end under the barrel, a wrist, and a club butt ----
      `flat` is what makes this read as a gunstock rather than a stick: the fore-end
      is deeper than wide, the butt nearly two and a half times as deep as it is
      broad. The forestock runs almost to the muzzle and is pinned to the barrel,
      which is how a matchlock was built. */
-  C.beam8([0,-0.098,-0.80],[0,-0.076,-3.90], 0.70*IN,0.46*IN, stock,stockD, 1.35,1.05);
+  C.beam8([0,-0.104,-0.80],[0,-0.079,-3.90], 0.82*IN,0.54*IN, stock,stockD, 1.35,1.05);
 
   /* ---- THE REAR OF THE STOCK, WHICH IS BEHIND YOUR EYE ----
      Held sighted, the gun's origin sits 0.30 of a foot in front of the camera and
@@ -7108,10 +7144,10 @@ function buildGunModel(){
      it becomes its own object with its own test. Only the butt, which really does
      sit behind your eye, still goes. */
   const WR=new Geo();
-  WR.beam8([0,-0.118,-0.26],[0,-0.100,-0.88], 0.62*IN,0.72*IN, stock,stockL, 1.50,1.25);
+  WR.beam8([0,-0.124,-0.26],[0,-0.106,-0.88], 0.72*IN,0.84*IN, stock,stockL, 1.50,1.25);
   const BT=new Geo();
-  BT.beam8([0,-0.150,0.52],[0,-0.126,-0.22],  0.82*IN,0.74*IN, stockD,stock, 2.30,1.70);
-  BT.box(0,-0.150,0.532,1.70*IN,3.80*IN,0.24*IN,ironD);  /* the iron butt plate */
+  BT.beam8([0,-0.156,0.52],[0,-0.132,-0.22],  0.94*IN,0.86*IN, stockD,stock, 2.30,1.70);
+  BT.box(0,-0.156,0.532,1.94*IN,4.30*IN,0.26*IN,ironD);  /* the iron butt plate */
 
   /* ---- the lock, on the right side where a right-handed man's thumb is.
      Plate 4 in long, 1.4 in tall, a quarter inch thick, standing just clear of
@@ -7174,9 +7210,9 @@ function buildGunModel(){
      a real serpentine clears the barrel and still drops its match into a pan set
      off to the side. */
   const Sp=new Geo();
-  Sp.beam8([0,0,0],            [0.008,0.086,0.032], 0.19*IN,0.16*IN, ironD,iron);
-  Sp.beam8([0.008,0.086,0.032],[0.020,0.176,-0.026], 0.16*IN,0.13*IN, iron,ironL);
-  Sp.beam8([0.020,0.176,-0.026],[0.026,0.240,-0.006], 0.13*IN,0.15*IN, ironL,iron);
+  Sp.beam8([0,0,0],            [0.008,0.086,0.032], 0.17*IN,0.145*IN, ironD,iron);
+  Sp.beam8([0.008,0.086,0.032],[0.020,0.176,-0.026], 0.145*IN,0.12*IN, iron,ironL);
+  Sp.beam8([0.020,0.176,-0.026],[0.026,0.240,-0.006], 0.12*IN,0.135*IN, ironL,iron);
   /* the burning end of the match, clamped in the jaws - so it swings WITH the arm
      instead of hanging in the air where the arm used to be */
   Sp.beam8([0.032,0.052,0.076],[0.026,0.234,-0.004], 0.26*IN,0.24*IN, cordD,cord);
@@ -7191,8 +7227,8 @@ function buildGunModel(){
      on a stick and taught nothing; a pair reads as something clamped shut, which
      is the only reason the arm is shaped the way it is. */
   const Jw=new Geo();
-  Jw.box(0.026,0.246,-0.038,0.40*IN,0.46*IN,0.16*IN,ironD);
-  Jw.box(0.026,0.246, 0.028,0.40*IN,0.46*IN,0.16*IN,ironD);
+  Jw.box(0.026,0.246,-0.038,0.35*IN,0.41*IN,0.15*IN,ironD);
+  Jw.box(0.026,0.246, 0.028,0.35*IN,0.41*IN,0.15*IN,ironD);
   Jw.box(0.026,0.222,-0.006,0.34*IN,0.22*IN,0.62*IN,iron);   /* the screw through them */
   gunSerp.add(Jw.mesh(false,false));
   gunPiece.add(gunSerp);
@@ -7517,10 +7553,14 @@ function gRamStrike(){
      Struck at the bottom of the swing, hard down against the ball, the blow
      tells. Caught early or late it glances, and a glancing blow seats nothing. */
   const depth=1-(GUN.ramAnim||0);          /* 1 is hard home against the ball */
-  const good=(depth>0.88), fair=(depth>0.70);
+  /* Widened with the swing: good now spans about a third of a second and a half,
+     fair a little over half a second. A poor blow still costs, but 0.15 made a
+     scrappy load nearly unfireable, which punishes the wrong thing - the drill
+     is meant to teach that loading is SLOW, not that it is a reflex test. */
+  const good=(depth>0.82), fair=(depth>0.58);
   playSfx("ram",good?0.46:(fair?0.32:0.18));
   if(good)camKick=0.016;                   /* you feel a blow that lands */
-  GUN.ramQ+=good?1:(fair?0.5:0.15);
+  GUN.ramQ+=good?1:(fair?0.68:0.32);
   GUN.ramHits++;
   /* thrown back up, and the swing starts again from the top - so each strike is
      its own stroke rather than a tap into a wave that was passing anyway */
@@ -8297,7 +8337,10 @@ function updateDrill(dt){
   if(gunCoal){
     const g=GUN.glow,live=Math.max(0,(g-0.06)/0.94);
     gunCoal.material.color.setRGB(0.16+live*0.84,0.09+live*0.42,0.07+live*0.10);
-    gunCoal.scale.setScalar(0.35+live*1.15);
+    /* It swelled to half again its size at full glow, which put the brightest,
+       biggest thing on the piece up beside the shooter's cheek and made the lock
+       look heavy against the barrel. Still grows, less far. */
+    gunCoal.scale.setScalar(0.40+live*0.75);
   }
   if(gunFlask){
     /* powder goes down the muzzle; priming powder goes in the pan */
@@ -10130,7 +10173,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-0256-8feaa50";
+const BUILD="20260801-1113-288e9fc";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
