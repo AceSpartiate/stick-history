@@ -1620,7 +1620,20 @@ function addFace(B,extra,key){
 
 const MATS={};
 function mat(hex){if(!MATS[hex]){MATS[hex]=new THREE.MeshLambertMaterial({color:lin(hex)});SHARED.add(MATS[hex]);}return MATS[hex];}
-const FIG_SCALE=3.24;
+/* A FIGURE STOOD 6.08 FEET, and the world is built at one unit to the foot: the
+   twenty-yard mark is at x+60 and the camera's eye is 5.0 above the deck. So the
+   eye sat 1.08 below the crown, where on a real head it is nearer 0.4, and every
+   colonist in Virginia loomed a foot over the player. 6.08 is also wrong for 1607
+   - an English adult male then averaged about 5 ft 6 in.
+   At 2.916 the crown lands at 5.47, the eye at 5.0 sits 0.47 below it, and the
+   matchlock's 4.86 comes to 0.89 of a man's height against a true 0.88.
+   ANYTHING BUILT INSIDE A FIGURE IS IN THESE UNITS, not feet: one foot is
+   1/2.916 = 0.343. That catches ITEMS[].slung, ITEMS[].ground (groundMeshFor
+   scales it by FIG_SCALE too, which is how the grounded matchlock came to be
+   fifteen feet long) and crowdMan. */
+const FIG_SCALE=2.916;
+/* feet -> figure-local, for anything world-sized built inside a figure */
+const FIG_FT=1/FIG_SCALE;
 
 function buildFigureRaw(eq){
   /* One merged mesh for everything that does not move, plus four limb meshes.
@@ -3023,21 +3036,35 @@ const ITEMS={
     /* the piece slung muzzle-up across the back, with its strap over the chest */
     slung:function(G){
       const iron=RGB(0x3c4048),stock=RGB(0x5b3f22),strap=RGB(0x6b4a2a),brass=RGB(0xa9822f);
-      G.beam([-0.102,0.815,-0.151],[0.230,1.870,-0.195],0.017,iron); /* barrel */
-      G.beam([-0.140,0.695,-0.146],[0.150,1.615,-0.185],0.026,stock);/* forestock */
-      G.beam([-0.220,0.440,-0.135],[-0.090,0.855,-0.153],0.040,stock);/* wrist, butt */
-      G.beam([-0.070,0.930,-0.140],[0.010,1.185,-0.151],0.021,iron); /* the lock */
-      G.beam([-0.020,1.040,-0.108],[0.020,1.170,-0.075],0.012,brass);/* serpentine */
-      G.beam([-0.18,1.50,-0.12],[0.19,0.82,0.12],0.026,strap);       /* the strap */
+      /* Re-authored in FEET and converted, so it cannot drift from the piece in
+         your hands again: 4 ft 10 in heel to muzzle, a 1.48 in barrel, slung butt
+         at the hip and muzzle standing proud above the shoulder. */
+      const F=FIG_FT, r=function(inches){return inches/24*F;};   /* inches -> local radius */
+      const heel=[-0.82*F,1.16*F,-0.39*F], muz=[0.76*F,5.80*F,-0.59*F];
+      const at=function(t){return [heel[0]+(muz[0]-heel[0])*t,
+                                   heel[1]+(muz[1]-heel[1])*t,
+                                   heel[2]+(muz[2]-heel[2])*t];};
+      G.beam(at(0.26),at(1.00),r(1.48),iron);        /* barrel, 3 ft 7 in of it */
+      G.beam(at(0.16),at(0.80),r(2.10),stock);       /* forestock */
+      G.beam(at(0.00),at(0.28),r(3.10),stock);       /* wrist and butt */
+      G.beam(at(0.30),at(0.42),r(1.60),iron);        /* the lock */
+      G.beam(at(0.36),at(0.46),r(0.70),brass);       /* the serpentine */
+      G.beam([-0.62*F,4.62*F,-0.34*F],[0.66*F,2.52*F,0.36*F],r(1.75),strap);
     },
     /* and lying on the ground where you set it down */
     ground:function(G){
       const iron=RGB(0x3c4048),stock=RGB(0x5b3f22),brass=RGB(0xa9822f);
-      G.beam([0,0.09,-2.42],[0,0.09,1.16],0.053,iron);      /* barrel, 3 ft 7 in */
-      G.beam([0,0.07,-2.02],[0,0.08,1.26],0.072,stock);     /* forestock */
-      G.beam([0,0.08,1.10],[0,0.11,2.43],0.090,stock);      /* wrist and butt */
-      G.beam([0.056,0.09,0.86],[0.056,0.10,1.20],0.030,iron);/* the lock */
-      G.beam([0.060,0.13,1.02],[0.070,0.25,0.94],0.018,brass);/* the serpentine */
+      /* IT WAS FIFTEEN FEET LONG. Authored as though these were world units, and
+         groundMeshFor multiplies the whole mesh by FIG_SCALE - so the piece a
+         player sets down was three and a quarter times the one they were holding,
+         with a barrel four inches across. Same feet-and-inches now. */
+      const F=FIG_FT, r=function(inches){return inches/24*F;};
+      const y=0.20*F;                                 /* lying on its side */
+      G.beam([0,y,-2.89*F],[0,y,0.72*F],r(1.48),iron);      /* barrel */
+      G.beam([0,y,-2.40*F],[0,y,0.86*F],r(2.10),stock);     /* forestock */
+      G.beam([0,y,0.72*F],[0,y,1.93*F],r(3.10),stock);      /* wrist and butt */
+      G.beam([0.10*F,y,0.30*F],[0.10*F,y,0.72*F],r(1.60),iron);
+      G.beam([0.11*F,y+0.10*F,0.44*F],[0.13*F,y+0.22*F,0.36*F],r(0.70),brass);
     }
   }
 };
@@ -4535,7 +4562,7 @@ function animate(){
     if(d<it.r&&d<bd){bd=d;best=it;}
     if(!doLabels)continue;
     if(d>60*K){if(it.el.style.display!=="none")it.el.style.display="none";continue;}
-    const v=new THREE.Vector3(it.x,(it.y||SHIP.DECK_Y)+(it.action==="reck"?6:8.5),it.z).project(cam);
+    const v=new THREE.Vector3(it.x,(it.y||SHIP.DECK_Y)+(it.action==="reck"?6:7.7),it.z).project(cam);
     if(v.z<1&&Math.abs(v.x)<1.4){
       it.el.style.display="block";
       it.el.style.left=((v.x*0.5+0.5)*rect.width)+"px";
@@ -7835,7 +7862,10 @@ function livePeople(){
        near 5.7. The old sphere sat at 3.4 with a radius of 1.7 - centred on the
        waist - so a level shot from an eye height of 5.0 grazed its top edge and
        usually missed. Chest height, and wide enough to take a head shot. */
-    out.push({x:p.x,y:p.y+4.2,z:p.z,r:2.4,
+    /* Chest height and shoulder width on the NEW figure: it stood 6.08 and now
+       stands 5.47, so a sphere at 4.2 with a radius of 2.4 sat above the shoulders
+       and a level shot passed under the chest. */
+    out.push({x:p.x,y:p.y+3.78,z:p.z,r:2.16,
       name:(e.npc&&e.npc.name)||"a man",id:(e.npc&&e.npc.id)||"man"});
   }
   /* and the merged shore party, who have positions but no meshes */
@@ -9118,7 +9148,7 @@ function buildShoreParty(root){
          unshootable - these men left npcMeshes and stopped existing as far as
          the ball was concerned. They need no mesh to be hit, only a position. */
       const nm=grp.names[i], nid="crowd_"+nm.replace(/\s+/g,"_");
-      CROWD_HITS.push({x:px,y:gy+4.2,z:pz,r:2.4,
+      CROWD_HITS.push({x:px,y:gy+3.78,z:pz,r:2.16,
         name:nm,id:nid,crowd:true,stooped:(pose!=="stand")});
       /* Every man ashore can be spoken to. Most have a line about the work,
          which is what a man on a beach would give you. Interactables are plain
@@ -10182,7 +10212,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1132-4ee4ccc";
+const BUILD="20260801-1143-16ae3aa";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
