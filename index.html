@@ -7206,11 +7206,23 @@ function buildGunModel(){
   FL.box(0.128,0.058,-0.95,0.16*IN,0.70*IN,0.84*IN,ironL,0.42);/* cover, tipped back */
   FL.box(0.066,0.026,-0.95,0.70*IN,0.20*IN,0.26*IN,brass);/* the touch-hole boss */
 
-  /* ---- trigger and guard ---- */
-  FL.box(0,-0.166,-0.62,0.26*IN,0.16*IN,0.310,iron);     /* the guard bar */
-  FL.box(0,-0.140,-0.72,0.20*IN,0.62*IN,0.24*IN,ironL);  /* the trigger */
-  FL.box(0,-0.180,-0.47,0.26*IN,0.52*IN,0.22*IN,iron);   /* guard, rear foot */
-  FL.box(0,-0.180,-0.77,0.26*IN,0.52*IN,0.22*IN,iron);   /* guard, fore foot */
+  /* ---- TRIGGER AND GUARD, WHICH WERE BOTH INSIDE THE STOCK ----
+     Measured: the wrist's underside at this frame is -0.199, and the guard bar sat
+     at -0.166, the trigger at -0.140 and both guard feet at -0.180. Every one of
+     them was above the wood they hang from, so the trigger has never once been
+     visible - the same fault as the lock plate, and found the same way, by asking
+     where a part sits rather than how big it is.
+     Rebuilt to the photographs: a long slender lever curving down and back, inside
+     a thin bow that sweeps from the stock forward of it round to the stock behind.
+     Round bar rather than boxes, because that is what a bent iron rod is. */
+  C.beam8([0,-0.196,-0.86],[0,-0.252,-0.82], 0.14*IN,0.13*IN, iron,iron);   /* bow, fore foot */
+  C.beam8([0,-0.252,-0.82],[0,-0.312,-0.735],0.13*IN,0.13*IN, iron,ironL);
+  C.beam8([0,-0.312,-0.735],[0,-0.320,-0.615],0.13*IN,0.13*IN, ironL,ironL);/* the sweep */
+  C.beam8([0,-0.320,-0.615],[0,-0.262,-0.515],0.13*IN,0.13*IN, ironL,iron);
+  C.beam8([0,-0.262,-0.515],[0,-0.196,-0.482],0.13*IN,0.14*IN, iron,iron);  /* bow, rear foot */
+  /* the lever itself, hanging into the bow and curling aft */
+  C.beam8([0,-0.170,-0.792],[0,-0.243,-0.770], 0.12*IN,0.11*IN, ironL,ironL);
+  C.beam8([0,-0.243,-0.770],[0,-0.286,-0.722], 0.11*IN,0.10*IN, ironL,iron);
 
   /* ---- sights. A caliver carried a brass bead at the muzzle and often nothing
      behind; with the pose putting the bead on the camera axis, a shallow standing
@@ -7232,6 +7244,15 @@ function buildGunModel(){
   MC.beam8([-0.048,-0.014,-0.62],[0.044,-0.010,-0.66],  0.14*IN,0.14*IN, cord,cord);
   MC.beam8([0.044,-0.010,-0.66],[0.062,-0.024,-0.42],   0.14*IN,0.13*IN, cord,cordD);
   MC.beam8([0.062,-0.024,-0.42],[0.070,0.020,-0.60],    0.13*IN,0.13*IN, cordD,cord);
+  /* AND THE FREE END HANGS. Six feet of it is coiled round the wrist and the rest
+     dangles in a bight with both ends loose, which is the single most recognisable
+     thing about a matchlock in the photographs and was simply missing - the cord
+     went round the wrist and stopped. It swings below the trigger guard, where a
+     man's left hand would keep it clear of his own powder. */
+  MC.beam8([-0.058,-0.030,-0.34],[-0.074,-0.130,-0.30], 0.13*IN,0.13*IN, cordD,cord);
+  MC.beam8([-0.074,-0.130,-0.30],[-0.066,-0.268,-0.22], 0.13*IN,0.12*IN, cord,cordD);
+  MC.beam8([-0.066,-0.268,-0.22],[-0.030,-0.300,-0.12], 0.12*IN,0.12*IN, cordD,cord);
+  MC.beam8([-0.030,-0.300,-0.12],[0.004,-0.232,-0.09],  0.12*IN,0.12*IN, cord,cordD);
 
   /* ---- ASSEMBLE. Every Geo above is filled BEFORE any of them is snapshotted: a
      Geo is copied into its BufferGeometry by .mesh() and anything added afterwards
@@ -10249,7 +10270,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1157-b2cee3e";
+const BUILD="20260801-1202-9e303cd";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
