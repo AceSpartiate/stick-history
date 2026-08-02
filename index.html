@@ -4322,6 +4322,21 @@ function enterWorld(id){
   fxRoot=new THREE.Group();worldRoot.add(fxRoot);
   makePools();
   CURRENT_WORLD=id;
+  /* ---- THE WEATHER TERM WAS DEAD ----
+     `CONDITIONS` is commented "set per scene: rain, a long fight, a thin
+     cartridge box", and nothing in the file ever assigned any of it. weather
+     carries a driver weight of 0.30 in ARMS.matchlock - equal-largest with the
+     match itself - so half of the misfire model's intended range has never
+     existed. Set per world, and reset here so a value can never leak from one
+     scene into the next.
+     Values are inference and marked so in REFERENCES.md. Below decks is still
+     air and a dry ship: nothing. An exposed cape in April with the wind off the
+     water is a real hazard to a burning match, and the drill already teaches
+     that - so a modest 0.12, which moves the matchlock's misfire chance from
+     0.12 to 0.156 with a good match. Deliberately NOT raised for the ambush:
+     that scene is tuned hard already and this is not the place to find out. */
+  CONDITIONS.weather=WEATHER[id]||0;
+  CONDITIONS.fouling=0;CONDITIONS.supply=0;
   LIT=0;                    /* the light budget is per world, not per session */
   plevel=LVL.MAIN;
   WORLD.ground=function(x,z){return deckHeight(x,z);};
@@ -7198,6 +7213,10 @@ const ARMS={
 };
 /* world conditions, set per scene: rain, a long fight, a thin cartridge box */
 const CONDITIONS={weather:0,fouling:0,supply:0};
+/* How much the sky is against you, per world. Read once by enterWorld. Inferred,
+   not evidenced: the ship's hold is still air, and every outdoor scene here is an
+   open shore in April with wind coming off the water. */
+const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10};
 function armState(arm){
   return {
     /* a match above 0.7 takes no penalty at all - good play is rewarded in
@@ -7284,6 +7303,12 @@ const PAN_LAG=0.055;                     /* pan -> charge, through the touch hol
    bore. One constant, read by BOTH the animation and the timer that ends the
    step, because they were two numbers and only one of them existed. */
 const G_DROP_MS=950;
+/* The flask's charger spout, taken from the model: its last section runs to
+   y 0.24 in the flask's own frame, and that is where powder leaves it. Named
+   here so the stream and the flask cannot drift apart. */
+const FLASK_SPOUT=0.24;
+/* the powder stream's built length, before it is stretched to fit the gap */
+const STREAM_LEN=0.30;
 /* How far a single shot's smoke may get from the man who fired it. Powder smoke
    from one piece puffs out a few yards, hangs, and drifts on the wind - it does
    not travel. Measured before this cap: 90 feet and still going at five seconds. */
@@ -7836,7 +7861,14 @@ function buildGunModel(){
   R.beam8([0,0,0],[0,0,-3.50], 0.46*IN*AF,0.42*IN*AF, RGB(0xa88c5e),RGB(0x9c8154));
   R.beam8([0,0,-3.46],[0,0,-3.64], 0.96*IN*AF,0.84*IN*AF, RGB(0x6b5433),RGB(0x5a462a));
   gunRammer=R.mesh(true,false);gunRammer.visible=false;gunPiece.add(gunRammer);
-  const St=new Geo();St.box(0,0,0.14,0.016,0.016,0.30,RGB(0x2b2b30));
+  /* The powder stream, built along Y and centred on its own origin so it can be
+     stretched and aimed between two points at run time. It used to be a rod laid
+     along z and parked at the muzzle plus a tenth in BOTH y and z - which put it
+     an inch above the barrel's top surface and an inch BEHIND the mouth, running
+     back toward the breech. It was a dark stick lying on the barrel; it never
+     touched the muzzle it was pouring into, and during priming it never touched
+     the pan either. */
+  const St=new Geo();St.box(0,0,0,0.016,STREAM_LEN,0.016,RGB(0x2b2b30));
   gunStream=St.mesh(false,false);gunStream.visible=false;gunPiece.add(gunStream);
   /* ---- THE THINGS THAT WERE NEVER THERE TO SEE ----
      Reported from play: "I never saw a ramrod get removed, I never saw a ball be
@@ -8252,8 +8284,27 @@ function giveFire(){
       else{resetCharge();GUN.t0=performance.now();gStep("powder");}
     },900);
   }
+  /* ---- NOTHING HAPPENS UNTIL THE MATCH GETS THERE ----
+     Pulling the trigger drops the serpentine; the coal reaches the priming
+     SERP_TOUCH later. Every outcome below used to fire its sound and its toast
+     on the trigger's own tick - so the player was told "the match is dead" a
+     quarter of a second before the match came down and failed to light
+     anything. Same fault the main discharge had, and the same cure: wait for
+     the cause. `pan` is a failure at the priming; `bang` is the charge itself
+     going off, which is one touch-hole further along. */
+  function pan(fn){
+    const world=CURRENT_WORLD;
+    setTimeout(function(){if(CURRENT_WORLD!==world)return;fn();},SERP_TOUCH*1000);
+  }
+  function bang(fn){
+    const world=CURRENT_WORLD;
+    setTimeout(function(){if(CURRENT_WORLD!==world)return;panFlash();
+      setTimeout(function(){if(CURRENT_WORLD!==world)return;fn();},PAN_LAG*1000);
+    },SERP_TOUCH*1000);
+  }
   if(GUN.charge<G_LO*0.5){
-    playSfx("click",0.5);toast("Nothing \u2014 there is no powder in her.");done();return;
+    pan(function(){playSfx("click",0.5);toast("Nothing \u2014 there is no powder in her.");});
+    done();return;
   }
   /* ---- AND SHE CAN BURST, WHICH THE GAME HAS BEEN PROMISING ALL ALONG ----
      The hint on the charging step says "too much may burst the barrel" and
@@ -8266,9 +8317,11 @@ function giveFire(){
      takes a further two and a half seconds of holding the pour with the gauge
      hard against its stop - nobody reaches it by accident. */
   if(GUN.charge>=1.05){
-    playSfx("boom",0.62);gunSmoke(1.35);
-    knock={vx:0,vz:0,t:0};camKick=0.10;
-    toast("She burst at the breech \u2014 far too much powder. Your hand is numb and the piece is fouled open. Charge her again, and watch the green.");
+    bang(function(){
+      playSfx("boom",0.62);gunSmoke(1.35);
+      knock={vx:0,vz:0,t:0};camKick=0.10;
+      toast("She burst at the breech \u2014 far too much powder. Your hand is numb and the piece is fouled open. Charge her again, and watch the green.");
+    });
     S.corrections=(S.corrections||0)+1;
     /* Cleared HERE and not left to done(), whose reset only runs inside the taught
        drill. Outside it the recovery is startReload(), which decides between a
@@ -8278,27 +8331,62 @@ function giveFire(){
     resetCharge();
     done();return;                 /* vented: there is nothing down her now */
   }
+  /* Both of these BURN THE CHARGE, so both empty her - the same fault as the
+     successful shot, and for the same reason: done() only resets inside the
+     taught drill. A blank that leaves a full charge down the barrel would be
+     re-primed in six seconds and fired again, for ever. */
   if(!GUN.hasBall){
     /* powder and no ball is a blank: loud, and it sends nothing */
-    playSfx("boom",0.42);gunSmoke(0.8);knock={vx:0,vz:0,t:0};camKick=0.03;
-    toast("A loud report, and nothing sent \u2014 there was no ball down her.");done();return;
+    bang(function(){
+      playSfx("boom",0.42);gunSmoke(0.8);knock={vx:0,vz:0,t:0};camKick=0.03;
+      toast("A loud report, and nothing sent \u2014 there was no ball down her.");});
+    resetCharge();done();return;
   }
   if(GUN.hasBall&&!GUN.hasWad){
-    playSfx("boom",0.28);gunSmoke(0.5);toast("A hollow report \u2014 the ball rolled out.");done();return;
+    bang(function(){
+      playSfx("boom",0.28);gunSmoke(0.5);
+      toast("A hollow report \u2014 the ball rolled out.");});
+    resetCharge();done();return;
   }
-  if(GUN.glow<0.18){playSfx("click",0.5);toast("Nothing. The match is dead. Blow it up and prime her again.");done(true);return;}
+  if(GUN.glow<0.18){
+    pan(function(){playSfx("click",0.5);
+      toast("Nothing. The match is dead. Blow it up and prime her again.");});
+    done(true);return;}
   if(GUN.prime>P_HI*1.5&&Math.random()<0.75){
-    playSfx("fizz",0.45);gunSmoke(0.35);toast("A flash in the pan \u2014 all smoke, no shot. She is still charged; prime her again.");done(true);return;
+    /* ---- A FLASH IN THE PAN FLASHES IN THE PAN ----
+       This called gunSmoke(), which throws a cloud out of the MUZZLE - the one
+       thing that by definition did not happen. panFlash() existed and was called
+       from exactly one place, the successful discharge, so the outcome named
+       after a pan flash was the only one in the game that never showed one. */
+    pan(function(){playSfx("fizz",0.45);panFlash();
+      toast("A flash in the pan \u2014 all smoke, no shot. She is still charged; prime her again.");});
+    done(true);return;
   }
-  if(GUN.prime<P_LO*0.6){playSfx("click",0.5);toast("Nothing \u2014 too little powder in the pan. Prime her again.");done(true);return;}
+  if(GUN.prime<P_LO*0.6){
+    pan(function(){playSfx("click",0.5);
+      toast("Nothing \u2014 too little powder in the pan. Prime her again.");});
+    done(true);return;}
   const ARM=ARMS[GUN.arm];
   if(Math.random()<resolveMisfire(ARM,armState(ARM))){
-    playSfx("click",0.5);toast("Misfire. It did not catch, but the charge is still down her.");done(true);return;
+    pan(function(){playSfx("click",0.5);
+      toast("Misfire. It did not catch, but the charge is still down her.");});
+    done(true);return;
   }
   if(Math.random()<ARM.hangfire){
-    playSfx("fizz",0.3);toast("Hang fire\u2026");
-    setTimeout(function(){discharge(true);done();},380+Math.random()*420);
-    return;
+    /* A HANG FIRE IS THE PAN CATCHING AND THE CHARGE BEING SLOW, which means
+       the flash comes at the normal time and only the bang is late. The old
+       code toasted "Hang fire" on the trigger tick - before the match had even
+       reached the pan - and then called discharge(), which now schedules its
+       OWN pan flash, so the piece would have flashed twice with the arm already
+       back up between them. Flash once, here, then fire straight from ignite. */
+    const world=CURRENT_WORLD;
+    if(AMBUSH.on){AMBUSH.fired=true;AMBUSH.shots++;}
+    pan(function(){playSfx("fizz",0.3);panFlash();toast("Hang fire\u2026");});
+    setTimeout(function(){
+      if(CURRENT_WORLD!==world||!gunPiece)return;
+      ignite(true);resetCharge();
+    },SERP_TOUCH*1000+380+Math.random()*420);
+    done();return;
   }
   discharge(false);done();
 }
@@ -8672,6 +8760,22 @@ function discharge(hung){
     setTimeout(function(){
       if(CURRENT_WORLD!==world||!gunPiece)return;
       ignite(hung);
+      /* ---- AND SHE IS EMPTY NOW, WHICH NOBODY EVER SAID ----
+         The ball, the wad and the powder have all just left the barrel, and
+         nothing in the file recorded that. done() resets the piece, but its
+         body is gated on GUN.active - true only inside Kendall's taught drill -
+         so from the moment the lesson ends and the automatic reload takes over,
+         every shot left hasBall, hasWad and a full charge standing.
+         startReload() then asks the right question, "is the charge still down
+         her?", and got the wrong answer: it read every reload as a RE-PRIME.
+         Measured: 6.08 seconds against the 38 that ARMS.matchlock.reload has
+         carried since it was written. The forty-second load IS this chapter's
+         argument - CHAPTER_2_DESIGN calls it the thesis - and it had quietly
+         become six. AMBUSH_LEN is 46, derived as reload+8, so the ambush was
+         tuned against a reload that was not happening either.
+         Emptied AFTER ignite, never before: the spread reads GUN.charge and
+         GUN.ramQ to work out where the ball goes. */
+      resetCharge();
     },PAN_LAG*1000);
   },SERP_TOUCH*1000);
 }
@@ -8683,8 +8787,23 @@ function ignite(hung){
   const spread=A.spread+(1-GUN.ramQ)*0.030+chargeErr*0.05+(hung?0.05:0)+(1-(GUN.steady||0))*0.02;
   const o=cam.getWorldPosition(new THREE.Vector3());
   const d=cam.getWorldDirection(new THREE.Vector3());
-  d.x+=(Math.random()-0.5)*spread*2;
-  d.y+=(Math.random()-0.5)*spread*2-chargeErr*0.03;
+  /* ---- SCATTER ACROSS THE SHOT, NOT ACROSS THE WORLD ----
+     This was `d.x += rand; d.y += rand;` - world axes. Nudging d.x when you are
+     already firing along +X only makes the vector longer, and normalize() throws
+     that away, so it produced NO horizontal error whatever in that direction.
+     The Cape Henry range runs along +X. It is the only place in the game the
+     player shoots at a mark. Measured at forty yards with the group's own
+     maths: 0.00 ft of horizontal spread against 3.52 ft vertical, so every ball
+     was dead centre sideways and the shooter had a perfect windage machine.
+     Firing along +Z the same code gave a proper round 3.46 x 3.47 group.
+     That a smoothbore cannot pick out one man past forty yards IS this chapter's
+     argument, and on the one range built to teach it the error was zero.
+     Offset in the AIM's own frame now, so the group is the same wherever you
+     face. Reused vectors: this runs on every shot. */
+  SPR_R.crossVectors(d,(Math.abs(d.y)>0.9)?SPR_X:SPR_UP).normalize();
+  SPR_U.crossVectors(SPR_R,d).normalize();
+  d.addScaledVector(SPR_R,(Math.random()-0.5)*spread*2);
+  d.addScaledVector(SPR_U,(Math.random()-0.5)*spread*2-chargeErr*0.03);
   d.normalize();
   /* Whoever is nearest along the line stops the ball - a man standing in front
      of the butt is hit by it, not ignored in favour of the butt behind him. */
@@ -8760,6 +8879,14 @@ function ignite(hung){
   }
 }
 const FX_V=new THREE.Vector3(),FX_O=new THREE.Vector3();
+/* the aim's own right/up basis, for scattering a shot across the line of fire
+   rather than across the world's axes */
+const SPR_R=new THREE.Vector3(),SPR_U=new THREE.Vector3();
+const SPR_UP=new THREE.Vector3(0,1,0),SPR_X=new THREE.Vector3(1,0,0);
+/* the falling powder: reused endpoints, and the two constants that let the
+   stream be stretched between the flask's spout and whatever it is pouring into */
+const STR_A=new THREE.Vector3(),STR_B=new THREE.Vector3(),STR_D=new THREE.Vector3();
+const STR_Y=new THREE.Vector3(0,1,0);
 function gunSmoke(scale){
   /* reused vectors: this runs on every shot, and allocating here is how the
      per-frame paths quietly become garbage generators */
@@ -9026,10 +9153,24 @@ function updateDrill(dt){
     }
   }
   if(gunStream){
-    gunStream.visible=GUN.pourOn&&sighted<0.5;
+    gunStream.visible=GUN.pourOn&&sighted<0.5&&!!gunFlask;
     if(gunStream.visible){
+      /* ---- FROM THE SPOUT TO THE HOLE, and derived from both ----
+         The spout's position is taken from the flask's OWN transform, so tipping
+         the flask further or moving it carries the powder with it and the two
+         can never come apart. The target is the muzzle when charging and the pan
+         when priming - the same two landmarks the flask is aimed at. */
       const at=(GUN.step==="prime")?G_PAN:G_BORE;
-      gunStream.position.set(at[0],at[1]+0.10,at[2]+0.10);
+      STR_A.set(0,FLASK_SPOUT,0).applyEuler(gunFlask.rotation).add(gunFlask.position);
+      STR_B.set(at[0],at[1],at[2]);
+      STR_D.subVectors(STR_B,STR_A);
+      const len=STR_D.length();
+      if(len>1e-4){
+        STR_D.multiplyScalar(1/len);
+        gunStream.position.copy(STR_A).addScaledVector(STR_D,len*0.5);
+        gunStream.quaternion.setFromUnitVectors(STR_Y,STR_D);
+        gunStream.scale.set(1,len/STREAM_LEN,1);
+      }
     }
   }
   if(gunRammer){
@@ -10914,10 +11055,22 @@ registerWorld("ch2",function(root){
   P.box(mx+0.5,eyeY+5.2,mz,0.8,0.8,11,frame);
   P.box(mx+0.5,eyeY,mz-5.5,0.8,10.6,0.8,frame);
   P.box(mx+0.5,eyeY,mz+5.5,0.8,10.6,0.8,frame);
-  P.box(mx-0.5,eyeY,mz,0.2,5.2,5.2,white);
+  const WHITE=5.2;                 /* the white mark, ACROSS */
+  P.box(mx-0.5,eyeY,mz,0.2,WHITE,WHITE,white);
   P.box(mx-0.6,eyeY,mz,0.2,2.2,2.2,red);
   solid(mx,mz,1.4,5.5,LVL.MAIN);
-  TARGETS.push({x:mx-0.6,y:eyeY,z:mz,r:5.2});
+  /* ---- HALF. THE FALLOFF THE COMMENT ABOVE CALLS "THE LESSON" WAS NOT HAPPENING.
+     This read `r:5.2` - the white mark's FULL WIDTH used as a RADIUS, so the butt
+     was twice as easy to hit as it looks. And because the stump at twenty yards
+     carries r 2.6 at sixty feet while this carried 5.2 at a hundred and twenty,
+     the two marks subtended EXACTLY the same angle from the firing mark:
+     2.6/60 = 5.2/120 = 0.0433. Two ranges, identical difficulty, and the whole
+     argument that a smoothbore falls off with distance quietly cancelled out.
+     Derived from the white mark now, so the hit radius is what the player can
+     see. It also repairs "In the mark": that test is off < r*0.42, which at 2.6
+     is 1.09 and the red centre's own radius is 1.1 - they agree. At 5.2 the game
+     called it a centre hit two feet outside the red. */
+  TARGETS.push({x:mx-0.6,y:eyeY,z:mz,r:WHITE/2});
 
   root.add(P.mesh(false,false));
 
@@ -11546,7 +11699,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260802-1156-5ab00c2";
+const BUILD="20260802-1642-8da1a16";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
