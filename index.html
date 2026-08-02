@@ -9271,7 +9271,16 @@ function capeColour(x,z,y,n){
   if(y<0.2)            return RGB(0x8f8560);          /* wet strand */
   if(z>CAPE.BEACH-4)   return (n%3)?RGB(0xc6b489):RGB(0xbca87c);
   if(z>CAPE.WOOD)      return (n%3)?RGB(0x9ba066):RGB(0x8d9459);   /* marram */
-  return (n%3)?RGB(0x4d5c31):RGB(0x445227);
+  /* ---- UNDER A PINE WOOD THE FLOOR IS NEEDLES, NOT LAWN ----
+     This was a mid olive green, so standing among the trunks you were standing
+     on a golf course - which is half of why the wood read as ornaments set out
+     on grass rather than as woods. A loblolly stand drops a deep rust-brown mat
+     of needles and shades out almost everything trying to grow in it; what green
+     there is comes in patches where the canopy breaks. Deeper in means less
+     light and less green, so the litter takes over with distance from the dune. */
+  const deep=Math.max(0,Math.min(1,(CAPE.WOOD-z)/150));
+  const litterA=mixHex(0x5c5c33,0x6b5636,deep), litterB=mixHex(0x4e5230,0x584627,deep);
+  return (n%3)?RGB(litterA):RGB(litterB);
 }
 /* ========== GROUND, PER VERTEX ==========
    The terrain was one flat colour per quad, alternating between two tones on a
@@ -9682,6 +9691,68 @@ function conifer(G,x,gy,z,h,seed,groundCol){
       const ap=[cx+lean*hk, yk+hk, cz+lean*hk*0.6];
       G.tri3(p1,p0,ap, dark,dark,lit);
     }
+  }
+}
+/* ========== THE SAME TREE, FOR LESS ==========
+   `conifer` costs SIXTY triangles - eight of them a baked ground shadow, ten a
+   five-sided trunk, and forty-two six ragged skirts. It is a good tree and worth
+   every triangle at twenty feet. At three hundred it is forty-two triangles of
+   raggedness nobody can resolve, and it was the reason the wood was thin: a
+   hundred and fifty of them cost nine thousand triangles and left fifty-two feet
+   between trunks, so the "pine woods the arrows came out of" was a scatter of
+   isolated firs on a lawn with sky in every gap.
+   Two cheaper ranks. Together with the full tree they let the wood go from 150
+   trees to about 840 for FEWER triangles than it spends now.
+
+   The failure mode to watch for is not poly count, it is SAMENESS: a hundred
+   identical cones read worse than fifty varied ones. So both of these keep the
+   per-tree jitter - height, girth, lean, hue, and the rotational offset that
+   stops a cone looking turned on a lathe - and only drop resolution. */
+function treeMid(G,x,gy,z,h,seed){
+  /* 12 triangles: a three-sided trunk and two stacked three-sided crowns */
+  const r=function(k){return srand(seed*13.17+k*7.31);};
+  const needle=RGB(mixHex(0x1b3322,0x35512f,r(2)));
+  const bark=RGB(mixHex(0x4a3524,0x33241a,r(5)));
+  const lean=(r(3)-0.5)*0.055, tR=0.9+r(4)*0.5;
+  const bx=x+lean*h, bz=z+lean*h*0.6, topY=gy+h*0.52;
+  const foot=shadeRGB(bark,0.62), head=shadeRGB(bark,1.06);
+  for(let i=0;i<3;i++){
+    const a0=i/3*Math.PI*2, a1=(i+1)/3*Math.PI*2;
+    G.quad4([x+Math.cos(a1)*tR,gy-0.4,z+Math.sin(a1)*tR],
+            [x+Math.cos(a0)*tR,gy-0.4,z+Math.sin(a0)*tR],
+            [bx+Math.cos(a0)*tR*0.34,topY,bz+Math.sin(a0)*tR*0.34],
+            [bx+Math.cos(a1)*tR*0.34,topY,bz+Math.sin(a1)*tR*0.34],
+            foot,foot,head,head);
+  }
+  for(let k=0;k<2;k++){
+    const t=k, yk=gy+h*(0.44+t*0.30), rk=h*0.235*(1-t*0.46)*(0.9+r(10+k)*0.24);
+    const hk=h*(0.34-t*0.08), off=r(20+k)*Math.PI*2;
+    const cx=x+lean*(yk-gy), cz=z+lean*(yk-gy)*0.6;
+    const dark=shadeRGB(needle,0.52+t*0.10), lit=shadeRGB(needle,1.0+t*0.10);
+    for(let i=0;i<3;i++){
+      const a0=off+i/3*Math.PI*2, a1=off+(i+1)/3*Math.PI*2;
+      const w0=0.86+srand(seed*3.7+k*11+i)*0.30, w1=0.86+srand(seed*3.7+k*11+i+1)*0.30;
+      G.tri3([cx+Math.cos(a1)*rk*w1,yk,cz+Math.sin(a1)*rk*w1],
+             [cx+Math.cos(a0)*rk*w0,yk,cz+Math.sin(a0)*rk*w0],
+             [cx+lean*hk,yk+hk,cz+lean*hk*0.6], dark,dark,lit);
+    }
+  }
+}
+function treeFar(G,x,gy,z,h,seed){
+  /* 4 triangles: one ragged cone, no trunk, standing straight out of the ground.
+     Past two hundred feet the trunk is under a foot wide on screen and the fog
+     has taken most of the contrast anyway - what survives is the SILHOUETTE and
+     the fact that there are hundreds of them. */
+  const r=function(k){return srand(seed*13.17+k*7.31);};
+  const needle=RGB(mixHex(0x22392a,0x33492e,r(2)));
+  const dark=shadeRGB(needle,0.58), lit=shadeRGB(needle,1.04);
+  const rk=h*0.20*(0.85+r(6)*0.34), off=r(7)*Math.PI*2, base=gy+h*0.16;
+  for(let i=0;i<4;i++){
+    const a0=off+i/4*Math.PI*2, a1=off+(i+1)/4*Math.PI*2;
+    const w0=0.82+srand(seed*3.1+i)*0.36, w1=0.82+srand(seed*3.1+i+1)*0.36;
+    G.tri3([x+Math.cos(a1)*rk*w1,base,z+Math.sin(a1)*rk*w1],
+           [x+Math.cos(a0)*rk*w0,base,z+Math.sin(a0)*rk*w0],
+           [x,gy+h,z], dark,dark,lit);
   }
 }
 /* low ragged scrub on the dune - the same taper, squashed */
@@ -10954,6 +11025,35 @@ registerWorld("ch2",function(root){
     root.add(g.mesh(false,false));
   }
 
+  /* ---- AND THE LAND DOES NOT STOP AT THE EDGE OF THE DETAILED PATCH ----
+     Reported from play: "it looks like we're on an island". It did, and it was:
+     the fine terrain is a 980 ft square and the sea plane under everything is
+     2400, so past the patch you saw open water in every direction including
+     inland. Cape Henry is the seaward corner of a peninsula - there is water
+     north and east and solid Virginia running away south and west.
+     capeGround() is a pure function of x and z, defined everywhere, and it
+     already returns land inland and sea bed offshore. So the fix is not new
+     terrain, it is MORE OF THE SAME TERRAIN, coarse: one 130 ft cell where the
+     played area has one every 19 ft. 608 triangles buys a horizon.
+     It starts INSIDE the fine patch at 430 and sits a fifth of a foot lower, so
+     the two overlap rather than meeting. Meeting would leave T-junction cracks
+     along the seam - the coarse edge is a straight line across 130 ft of ground
+     the fine mesh curves over - and a hairline of sea showing through the beach
+     is worse than a step nobody can see at 430 feet through fog. */
+  (function(){
+    const OUT=1250, STEP=130, DROP=0.2, IN=430;
+    const g=new Geo();
+    for(let x=-OUT;x<OUT;x+=STEP)for(let z=-OUT;z<OUT;z+=STEP){
+      if(x>=-IN&&x+STEP<=IN&&z>=-IN&&z+STEP<=IN)continue;   /* the fine patch owns it */
+      const bx=x+STEP, bz=z+STEP;
+      const yA=capeGround(x,z)-DROP,  yB=capeGround(bx,z)-DROP;
+      const yC=capeGround(bx,bz)-DROP,yD=capeGround(x,bz)-DROP;
+      g.quad4([x,yA,z],[x,yD,bz],[bx,yC,bz],[bx,yB,z],
+        capeVert(x,z,yA),capeVert(x,bz,yD),capeVert(bx,bz,yC),capeVert(bx,z,yB));
+    }
+    root.add(g.mesh(false,false));
+  })();
+
   /* ---- the sea, and the surf breaking on the strand ---- */
   const sea=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),mat(0x3f6472));
   sea.rotation.x=-Math.PI/2;sea.position.set(0,0,0);root.add(sea);
@@ -10968,23 +11068,99 @@ registerWorld("ch2",function(root){
   }
   root.add(W.mesh(false,false));
 
-  /* ---- the pine woods the arrows came out of ---- */
+  /* ---- THE PINE WOODS THE ARROWS COME OUT OF, AND THIS TIME A WOOD ----
+     Reported from play: "that island is bare." It was. A hundred and fifty trees
+     were scattered over nine hundred feet by four hundred and fifty - 2,700
+     square feet each, FIFTY-TWO FEET between trunks - so from anywhere on the
+     strand you saw sky through every gap and the wood read as ornaments on a
+     lawn. A loblolly stand runs eight to fifteen feet between trunks.
+     Three ranks, because the player stands on the beach and the far wood is only
+     ever a silhouette:
+        front  z -14 .. -78    the wall the ambush comes out of, seen close
+        mid    z -78 .. -300   still resolvable, half the detail
+        far    z -300 .. -900  silhouette only, four triangles each
+     Trees CLUMP - they seed off their parents and they crowd the light - so the
+     placement is clustered rather than uniform. Uniform random is what makes a
+     procedural wood look like an orchard, and it is also what leaves the big
+     empty holes you can see straight through. */
   const T=new Geo();
-  for(let i=0;i<150;i++){
-    const x=-SPAN/2+40+Math.random()*(SPAN-80);
-    const z=-SPAN/2+30+Math.random()*(CAPE.TREE+SPAN/2);
-    const gy=capeGround(x,z);
-    if(gy<1)continue;
-    /* One unit is one foot here, so the old 17-33 were saplings. Cape Henry was
-       loblolly and it stood 60-90 feet - which also gives the ambush the wall of
-       dark the scene is written around. */
-    conifer(T,x,gy,z,44+srand(i*2.7)*34,i,capeVert(x,z,gy));
+  let treeN=0;
+  function clump(cx,cz,rad,n,place){
+    for(let i=0;i<n;i++){
+      const a=srand(treeN*1.7+i*3.3)*Math.PI*2;
+      const d=Math.sqrt(srand(treeN*2.9+i*5.1))*rad;
+      const x=cx+Math.cos(a)*d, z=cz+Math.sin(a)*d;
+      const gy=capeGround(x,z);
+      if(gy<1.4)continue;                       /* not on the wet strand */
+      place(x,gy,z,treeN++);
+    }
   }
-  /* scrub along the dune - low, ragged, and tapered rather than cubic */
-  for(let i=0;i<80;i++){
-    const x=-SPAN/2+Math.random()*SPAN, z=CAPE.WOOD-6+Math.random()*26;
+  /* the front rank: dense, and every fifth one a full tree so the wall has
+     detail where the player can actually resolve it */
+  for(let c=0;c<64;c++){
+    const cx=-SPAN/2+30+srand(c*4.1)*(SPAN-60);
+    const cz=-14-srand(c*6.7)*64;
+    clump(cx,cz,17,6,function(x,gy,z,n){
+      const h=46+srand(n*2.7)*36;
+      if(n%3===0)conifer(T,x,gy,z,h,n,capeVert(x,z,gy));
+      else treeMid(T,x,gy,z,h,n);
+    });
+  }
+  /* the mid wood */
+  for(let c=0;c<86;c++){
+    const cx=-SPAN/2-60+srand(c*3.3+91)*(SPAN+120);
+    const cz=-78-srand(c*5.9+13)*222;
+    clump(cx,cz,26,6,function(x,gy,z,n){
+      const h=44+srand(n*2.1)*34;
+      /* one in six carries full detail, so the mid wood is not a uniform rank */
+      if(n%6===0)conifer(T,x,gy,z,h,n,capeVert(x,z,gy));
+      else treeMid(T,x,gy,z,h,n);
+    });
+  }
+  /* and the far mass, which is what puts a horizon behind the wood instead of
+     the pale empty ground the extended terrain would otherwise show */
+  for(let c=0;c<120;c++){
+    const cx=-1150+srand(c*7.7+201)*2300;
+    const cz=-300-srand(c*2.3+57)*640;
+    clump(cx,cz,64,8,function(x,gy,z,n){
+      treeFar(T,x,gy,z,42+srand(n*1.9)*38,n);
+    });
+  }
+  /* scrub along the dune - low, ragged, and tapered rather than cubic. More of
+     it, and in the gaps between the front rank's trunks, which is where a real
+     dune edge is thickest and where the eye looks for a way through. */
+  for(let i=0;i<240;i++){
+    const x=-SPAN/2+srand(i*1.3+7)*SPAN, z=CAPE.WOOD+6-srand(i*2.1+3)*40;
     const gy=capeGround(x,z);
-    scrub(T,x,gy,z,2.2+Math.random()*2.2,1.4+Math.random()*1.1,i);
+    if(gy<1.0)continue;
+    scrub(T,x,gy,z,2.0+srand(i*3.7)*2.6,1.2+srand(i*4.9)*1.4,i);
+  }
+  /* ---- AND SOMETHING ON THE FLOOR OF THE WOOD ----
+     Six triangles each, and without them the ground between the trunks is a
+     clean sheet you can see a hundred yards across - which is the other half of
+     "bare". Greenbrier and yaupon come up wherever the canopy breaks, so these
+     cluster in the gaps rather than spreading evenly. */
+  for(let i=0;i<300;i++){
+    const x=-SPAN/2-40+srand(i*5.3+31)*(SPAN+80);
+    const z=CAPE.WOOD-4-srand(i*1.7+11)*280;
+    const gy=capeGround(x,z);
+    if(gy<1.2)continue;
+    /* narrower than they are tall, or they read as little green tents pitched on
+       the litter rather than as brush */
+    scrub(T,x,gy,z,1.1+srand(i*2.3)*1.5,1.6+srand(i*6.1)*2.6,i+900);
+  }
+  /* deadfall: a wood this old drops trunks, and a fallen one lying across the
+     litter is the single clearest signal that a floor is a forest floor */
+  for(let i=0;i<26;i++){
+    const x=-SPAN/2+30+srand(i*3.9+61)*(SPAN-60);
+    const z=CAPE.WOOD-8-srand(i*7.1+17)*190;
+    const gy=capeGround(x,z);
+    if(gy<1.4)continue;
+    const a=srand(i*2.7+5)*Math.PI, L=14+srand(i*4.3)*22, r=1.0+srand(i*5.7)*0.7;
+    const bark=RGB(mixHex(0x4a3524,0x33241a,srand(i*8.1)));
+    T.beam8([x-Math.cos(a)*L/2,gy+r*0.7,z-Math.sin(a)*L/2],
+            [x+Math.cos(a)*L/2,gy+r*0.6,z+Math.sin(a)*L/2],
+            r*2,r*1.5, shadeRGB(bark,0.72),shadeRGB(bark,1.02));
   }
   root.add(T.mesh(true,false));
 
@@ -11423,6 +11599,13 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"2 August 1607 · latest",
+   head:"Cape Henry is not an island, and the woods are woods",
+   lines:[
+     "The land no longer stops in a square with sea on every side. Virginia runs away inland to the horizon, the way a cape works.",
+     "The pine woods are a wood now. There were fifty-two feet between trunks and you could see sky through every gap; there are five times as many trees and they stand in clumps, so the treeline is the wall of dark the ambush needs.",
+     "The forest floor is needle litter instead of lawn, with brush, fallen trunks and undergrowth on it."
+   ]},
+  {when:"2 August 1607",
    head:"Loading her costs what it should, and the far mark is hard again",
    lines:[
      "Firing now empties the piece. It did not, so every reload after Captain Kendall's lesson took six seconds instead of the full forty — which is the one thing this chapter is about.",
@@ -11710,7 +11893,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260802-1644-b71e29a";
+const BUILD="20260802-1723-f41091b";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
