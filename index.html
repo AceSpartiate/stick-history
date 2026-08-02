@@ -456,6 +456,28 @@
     background:rgba(23,19,12,.7);border:1px solid rgba(224,218,187,.4);border-radius:16px;
     color:var(--parch);font-family:'IM Fell English SC',serif;font-size:.82rem;padding:.35em .9em}
   #cineFade{position:absolute;inset:0;background:#070805;opacity:0;pointer-events:none}
+  /* THE OPENING BORROWS THE SCENE SCREEN, so the whole game HUD comes with it -
+     the menu button, the walk hint, the thumb zones, the objective arrow. Caught
+     on the first frame that rendered: a planet in space with "pinch to zoom" over
+     it. Hidden as a set rather than one at a time, so a HUD element added later
+     cannot quietly reappear here. */
+  body.opening #hud, body.opening #hint, body.opening #guide,
+  body.opening #action, body.opening #touchMove, body.opening #touchLook,
+  body.opening #menuBtn, body.opening #gunBar, body.opening #gPanel{
+    display:none !important}
+  /* The title, over the anchorage. Above the fade so it can hold while the
+     picture goes to black under it, which is the whole point of a title card. */
+  #openTitle{position:absolute;inset:0;z-index:3;display:none;flex-direction:column;
+    align-items:center;justify-content:flex-start;padding-top:20%;
+    text-align:center;pointer-events:none;
+    opacity:0;transition:opacity 1.4s ease;text-shadow:0 3px 22px rgba(0,0,0,.85)}
+  #openTitle.on{display:flex;opacity:1}
+  #openTitle .ot1{font-family:'IM Fell English SC',serif;color:#f0e6c8;
+    font-size:clamp(2.1rem,9vw,4.2rem);letter-spacing:.06em;line-height:1}
+  #openTitle .ot2{font-family:'IM Fell English',serif;color:#c8b98d;font-style:italic;
+    font-size:clamp(1.1rem,4.4vw,2rem);margin-top:.15em}
+  #openTitle .ot3{font-family:'IM Fell English SC',serif;color:rgba(231,218,187,.72);
+    font-size:clamp(.72rem,2.6vw,1rem);letter-spacing:.16em;margin-top:1.1em}
   #err{position:absolute;inset:0;display:none;place-items:center;padding:30px;text-align:center;color:var(--parch);z-index:99;background:var(--ink)}
 </style>
 </head>
@@ -749,6 +771,11 @@
     <div id="cineSub"></div>
     <button id="cineSkip">Skip &#9656;</button>
     <div id="cineFade"></div>
+    <div id="openTitle">
+      <div class="ot1">Stick History</div>
+      <div class="ot2">Jamestown</div>
+      <div class="ot3">Chapter I &middot; The Crossing</div>
+    </div>
   </div>
 
   <div id="err"><div><h2>Could not load the 3D engine</h2><p>The file <b>three.min.js</b> should sit in the same folder as this page. If you were sent a single file on its own, ask for the whole folder — or open the online version, which always has it.</p></div></div>
@@ -7057,7 +7084,12 @@ $("btnBegin").onclick=function(){
      curious tester typing the code could never start the game normally again;
      the only way back was erasing their progress. Begin begins. The chapter
      picker has its own button. */
-  openIntro("ch1");
+  /* THE OPENING RUNS ON A NEW GAME AND ONLY ON A NEW GAME. Continue does not
+     get it - somebody resuming their afternoon does not want forty seconds of
+     planet - and neither does the chapter picker, which is a jump-to tool.
+     It ends on black and hands straight to the chapter card, so the card's task
+     list is still the last thing read before the player steps aboard. */
+  playOpening(function(){openIntro("ch1");});
 };
 $("btnContinue").onclick=function(){
   const d=loadedSave();
@@ -9249,6 +9281,413 @@ function updateDrill(dt){
   gPaint();
 }
 
+/* ========== THE OPENING ==========
+   Asked for in these words: "fade out from black to see the earth in space. we
+   start out with our camera hovering over england. we see a ship sailing across
+   the ocean towards the new world. camera races past it and zooms towards where
+   we find our three ships at anchor. a title screen appears and then fades to
+   black. game then begins as normal."
+
+   THE SCALE PROBLEM AND WHERE THE CUT GOES. The Earth is twenty-one million feet
+   across and this game is one unit to the foot, so a continuous fall from orbit
+   to a masthead is seven orders of magnitude - no single scene holds it. So
+   there are two sets at two scales and ONE cut between them, hidden in a white
+   flash of cloud at the moment the camera enters the weather. Everything after
+   that cut is one continuous move, which is the part the teacher actually
+   described: past the ships and on to the anchorage.
+
+   This cannot use playCutscene. That wants a world, a player and a camera that
+   all exist already, and at the title screen none of them do - so this runs its
+   own scene, its own camera and its own frame loop, borrowing only the renderer
+   and the letterbox overlay.
+
+   AND THE SHIPS ARE THREE, not one. The sketch says "a ship sailing across the
+   ocean", but they crossed in company and a class watching this should see that,
+   so the shot puts the Susan Constant in the foreground with her consorts astern
+   - which reads as "a ship" and is true. */
+const OPEN={on:false,raf:0,t:0,shot:-1,sc:null,cam:null,onDone:null,done:false};
+let OPEN_FOG=null;
+/* one degree of latitude and longitude onto a sphere of radius r */
+function llv(lat,lon,r){
+  const p=(90-lat)*Math.PI/180, t=(lon+180)*Math.PI/180;
+  return new THREE.Vector3(-r*Math.sin(p)*Math.cos(t), r*Math.cos(p), r*Math.sin(p)*Math.sin(t));
+}
+/* ---- THE COASTLINE, AS BLOBS ----
+   No textures anywhere in this project, so the continents are a list of circles
+   on the globe: {lat, lon, angular radius in degrees, kind}. A vertex is land if
+   it falls inside any of them. Crude, and at this distance completely legible -
+   what a twelve-year-old has to recognise is Britain, the Atlantic, and the
+   notch of the Chesapeake, and those get the blobs they need.
+   g green  s sand  i ice */
+const GLOBE_LAND=[
+  /* THE BRITISH ISLES, and they have to read as ISLANDS - the camera stops over
+     them and a Britain fused to France is the one mistake a class will catch.
+     Every blob here was checked against its neighbours: London to France is
+     5.6 degrees of great circle against radii summing to 5.0, so the Channel
+     survives; Wales to Ireland is 3.0 against 2.8, so the Irish Sea does too.
+     Small radii, and more of them, is what buys that. */
+  [51.6,-0.4,1.4,"g"],[52.6,0.9,1.2,"g"],[53.0,-1.8,1.9,"g"],[54.6,-2.4,1.7,"g"],
+  [56.8,-4.2,2.2,"g"],[58.2,-4.6,1.5,"g"],
+  [50.8,-3.4,1.3,"g"],[50.2,-4.9,1.2,"g"],[52.4,-3.7,1.2,"g"],
+  [53.3,-8.4,1.8,"g"],[54.7,-6.8,1.1,"g"],
+  /* western Europe - France pushed south and shrunk so the Channel is water */
+  [46.3,2.6,3.6,"g"],[39.8,-4.2,4.6,"g"],[42.6,-8.2,1.6,"g"],[52.3,7.5,2.6,"g"],
+  [43.0,12.0,3.2,"g"],[50.5,16.0,6.0,"g"],[54.0,26.0,8.0,"g"],
+  [62.0,14.0,7.5,"g"],[67.5,21.0,6.0,"g"],[64.5,-19.0,2.4,"i"],
+  /* Africa: the Sahara is the band that makes the continent readable */
+  [32.0,-6.0,5.2,"s"],[28.0,10.0,11.0,"s"],[22.0,22.0,11.0,"s"],[16.0,2.0,8.0,"s"],
+  [10.0,-6.0,6.0,"g"],[7.0,-11.0,4.0,"g"],[4.0,20.0,9.5,"g"],[-2.0,26.0,9.0,"g"],
+  [-14.0,26.0,11.0,"g"],[-27.0,24.0,8.5,"g"],[10.0,40.0,7.0,"s"],
+  /* Greenland and the north-west approaches */
+  [72.0,-40.0,11.5,"i"],[62.0,-45.0,5.0,"i"],
+  [55.0,-64.0,8.0,"g"],[48.5,-56.0,3.2,"g"],[51.0,-76.0,9.0,"g"],
+  /* the coast they were sailing for */
+  [43.5,-71.0,4.2,"g"],[38.5,-78.5,4.2,"g"],[33.0,-81.0,3.6,"g"],
+  [28.5,-82.0,3.0,"g"],[30.5,-92.0,6.0,"g"],
+  [42.0,-96.0,10.0,"g"],[46.0,-112.0,10.0,"g"],[35.0,-108.0,8.0,"s"],
+  /* the Indies, which is the way they actually went */
+  [21.6,-79.0,2.6,"g"],[19.0,-71.0,1.9,"g"],[18.2,-66.5,1.1,"g"],[15.0,-61.2,1.0,"g"],
+  /* South America */
+  [7.0,-64.0,6.5,"g"],[-3.0,-60.0,9.0,"g"],[-8.0,-40.0,8.0,"g"],[-14.0,-50.0,9.5,"g"],
+  [-26.0,-58.0,9.0,"g"],[-36.0,-64.0,6.5,"g"],[-45.0,-70.0,5.0,"g"]
+];
+function globeKind(lat,lon){
+  for(let i=0;i<GLOBE_LAND.length;i++){
+    const b=GLOBE_LAND[i];
+    /* great-circle angle, in degrees */
+    const a1=lat*Math.PI/180, a2=b[0]*Math.PI/180, dl=(lon-b[1])*Math.PI/180;
+    const c=Math.sin(a1)*Math.sin(a2)+Math.cos(a1)*Math.cos(a2)*Math.cos(dl);
+    if(Math.acos(Math.max(-1,Math.min(1,c)))*180/Math.PI<b[2])return b[3];
+  }
+  return null;
+}
+const GLOBE_R=1000;
+function buildGlobe(root){
+  /* AT 96 x 64 A CELL IS 2.8 DEGREES OF LATITUDE - three hundred kilometres -
+     and Britain is three cells tall, so no arrangement of blobs could ever have
+     made it look like Britain. The camera stops over England, so the mesh has to
+     be able to draw England. At 200 x 120 a cell is 1.5 degrees and the island
+     is seven cells long, which is coarse and legible - the right trade for a
+     game drawn in flat colour. 48,000 triangles, once, for a cutscene. */
+  const SEG=200, RING=120;
+  const g=new Geo();
+  const sea=0x16406b, seaDeep=0x0e2c4d, grn=0x40602f, grnDry=0x5c6b33,
+        sand=0xa48a55, ice=0xdde8ef;
+  function col(lat,lon){
+    const k=globeKind(lat,lon);
+    if(k==="i")return RGB(ice);
+    if(k==="s")return RGB(mixHex(sand,grnDry,0.5+0.5*Math.sin(lat*0.7+lon*0.4)*0.5));
+    if(k==="g")return RGB(mixHex(grn,grnDry,0.5+0.5*Math.sin(lat*0.9+lon*0.6)));
+    /* the sea is not one blue: it deepens away from the shelf */
+    return RGB(mixHex(sea,seaDeep,0.5+0.5*Math.sin(lat*0.31+lon*0.23)));
+  }
+  for(let i=0;i<RING;i++){
+    const la0=90-i*(180/RING), la1=90-(i+1)*(180/RING);
+    for(let j=0;j<SEG;j++){
+      const lo0=-180+j*(360/SEG), lo1=-180+(j+1)*(360/SEG);
+      const A=llv(la0,lo0,GLOBE_R),B=llv(la0,lo1,GLOBE_R);
+      const C=llv(la1,lo1,GLOBE_R),D=llv(la1,lo0,GLOBE_R);
+      g.quad4([A.x,A.y,A.z],[D.x,D.y,D.z],[C.x,C.y,C.z],[B.x,B.y,B.z],
+        col(la0,lo0),col(la1,lo0),col(la1,lo1),col(la0,lo1));
+    }
+  }
+  const earth=g.mesh(true,false);root.add(earth);
+  /* the limb: a shell turned inside out, so the planet carries a rim of air.
+     One transparent sphere, drawn back-face only, is the whole of the trick. */
+  const air=new THREE.Mesh(new THREE.SphereGeometry(GLOBE_R*1.035,48,32),
+    new THREE.MeshBasicMaterial({color:lin(0x74a8dd),side:THREE.BackSide,
+      transparent:true,opacity:0.30,depthWrite:false}));
+  root.add(air);
+  return earth;
+}
+function buildStars(root){
+  const N=900, pos=new Float32Array(N*3), col=new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    /* evenly over the sphere, not clustered at the poles */
+    const u=srand(i*1.7)*2-1, th=srand(i*3.1)*Math.PI*2, s=Math.sqrt(1-u*u), R=14000;
+    pos[i*3]=Math.cos(th)*s*R; pos[i*3+1]=u*R; pos[i*3+2]=Math.sin(th)*s*R;
+    const b=0.55+srand(i*5.3)*0.45;
+    col[i*3]=b;col[i*3+1]=b;col[i*3+2]=b*(0.92+srand(i*7.9)*0.12);
+  }
+  const bg=new THREE.BufferGeometry();
+  bg.setAttribute("position",new THREE.BufferAttribute(pos,3));
+  bg.setAttribute("color",new THREE.BufferAttribute(col,3));
+  /* no map, so no asset - a PointsMaterial with vertexColors is a dot each */
+  root.add(new THREE.Points(bg,new THREE.PointsMaterial({size:2.2,
+    sizeAttenuation:false,vertexColors:true})));
+}
+/* ---- THE SECOND SET: open water, and then the bay ----
+   Built at the game's own scale, one unit to the foot, so the ships are the
+   ships and not models of them. The crossing group sits at the origin and the
+   anchorage three thousand feet up-scene; the camera never has both in frame, so
+   six hulls cost nothing in confusion and save a great deal in bookkeeping over
+   trying to sail one group into the other. */
+function buildOpenSea(root){
+  const sky=0x9fb4bd;
+  const sea=new THREE.Mesh(new THREE.PlaneGeometry(30000,30000),mat(0x33586a));
+  sea.rotation.x=-Math.PI/2;root.add(sea);
+  /* swell, thinning with distance so the eye reads depth off the water alone */
+  /* Swell, and it has to be nearly the colour of the water. Drawn at 0.6 high in
+     two tones a long way off the sea's own, four hundred slabs read as pack ice
+     rather than as a running sea - caught on the first frame. Flatter, smaller
+     and only just lighter than what they float on. */
+  const W=new Geo(),a=RGB(0x3a6072),b=RGB(0x2f5364),f=RGB(0xc9d8d6);
+  for(let i=0;i<420;i++){
+    const x=-4200+srand(i*1.3)*8400, z=-4600+srand(i*2.7)*6200;
+    W.box(x,0.30,z,34+srand(i*3.9)*70,0.5,20+srand(i*5.1)*38,(i%2)?a:b);
+  }
+  /* THE CAPES. Twelve miles of bay mouth is sixty-three thousand feet and would
+     read as open sea, so the mouth is compressed to what the eye needs: two low
+     green headlands with a pale strand at the foot, far enough apart to be a
+     mouth and close enough to be one picture. Cape Henry to starboard, Cape
+     Charles to port, which is how they came in. */
+  function cape(cx,side){
+    const G=new Geo();
+    for(let i=0;i<26;i++){
+      const z=-3050-i*140, w=520+srand(i*2.1)*260;
+      const h=26+srand(i*3.3)*30;
+      G.box(cx+side*w*0.5,h*0.5,z,w,h,150,
+        RGB(mixHex(0x3f5730,0x54683a,srand(i*4.7))));
+      G.box(cx-side*40,3.0,z,150,6,150,RGB(0xbca87c));   /* the strand */
+    }
+    /* a fringe of wood along the top, so the headland is not a bare ramp */
+    for(let i=0;i<70;i++){
+      const z=-3050-srand(i*1.9)*3400, w=srand(i*5.3)*760;
+      treeFar(G,cx+side*(90+w),24+srand(i*6.1)*22,z,54+srand(i*2.3)*40,i);
+    }
+    root.add(G.mesh(true,false));
+  }
+  cape(-1500,-1); cape(1500,1);
+  root.add(W.mesh(false,false));
+  return sky;
+}
+function buildOpeningShips(root){
+  /* buildConsort adds to worldRoot||scene and pushes to CONSORTS; take the mesh
+     it hands back and re-parent it, then put CONSORTS back as it was. */
+  const keep=CONSORTS.length;
+  function ship(scale,x,z,yaw,crew,variant){
+    const g=buildConsort(scale,x,z,yaw,crew,variant);
+    root.add(g);                      /* re-parenting detaches it from the scene */
+    return g;
+  }
+  const out={sailing:[],anchored:[]};
+  /* SAIL_SET has sat in the rig builder since it was written, with a comment
+     saying it is "a switch for a chapter that is actually under way". This is
+     that chapter. Without it the squadron crosses the Atlantic under bare poles,
+     which is what the first render showed and is not a thing a ship does. */
+  const wasSet=SAIL_SET;
+  SAIL_SET=true;
+  /* the crossing, in company and line astern - she did not cross alone */
+  out.sailing.push(ship(1.00,   0,    0, Math.PI, 4,"susan"));
+  out.sailing.push(ship(0.76,-135,  255, Math.PI, 3,"godspeed"));
+  out.sailing.push(ship(0.43,  88,  430, Math.PI, 2,"discovery"));
+  /* and at anchor inside the capes, canvas furled, heads to the tide */
+  SAIL_SET=false;
+  /* Close together, because the frame that has to hold all three is a PHONE
+     held upright: 52 degrees vertical at a 0.85 aspect is only 45 across, and at
+     the spacing these were first laid out on both consorts fell outside it. */
+  out.anchored.push(ship(1.00,  -60,-3250, Math.PI*0.86, 3,"susan"));
+  out.anchored.push(ship(0.76,  190,-3380, Math.PI*0.94, 2,"godspeed"));
+  out.anchored.push(ship(0.43, -230,-3360, Math.PI*0.79, 2,"discovery"));
+  SAIL_SET=wasSet;
+  CONSORTS.length=keep;               /* they are not this world's consorts */
+  return out;
+}
+/* ---- THE SHOT LIST ----
+   Each shot: seconds, camera from, camera to, look-at from, look-at to, the line
+   spoken over it, and which set it belongs to. Positions in the SPACE set are in
+   globe units (the Earth is 1000); positions in the SEA set are in feet. */
+const OPEN_SHOTS=[
+  {set:"space",t:6.0,
+   from:[2900,1500,3400],to:[2050,1050,2400],look:[0,0,0],look2:[0,0,0],
+   say:"In the winter of 1606, three small ships dropped down the Thames for a coast most Englishmen could not have found on a map."},
+  {set:"space",t:6.5,
+   fromLL:[51.5,-0.6,3.2],toLL:[52.6,-3.2,1.30],lookLL:[53.4,-2.6,1.0],
+   say:"A hundred and four men and boys sailed. They were four months and more at sea, and they did not sail west."},
+  /* MEASURED, not guessed. The Susan Constant's bounding box is 145 long by 144
+     tall about a centre at y 57, so to fill three fifths of a 52-degree frame the
+     camera wants to be about 260 feet off her and pointed at that centre - not at
+     the waterline, which is what left her a smudge at the bottom of the picture. */
+  {set:"sea",t:6.5,
+   from:[330,124,700],to:[248,96,384],look:[-16,57,215],look2:[-8,57,120],
+   say:"South first, by the Canaries and the Indies, and then north along a strange coast until the water shoaled."},
+  {set:"sea",t:5.0,
+   /* the look target used to jump 2,500 feet ahead during this shot, so the
+      camera "raced past" ships that were ninety degrees off the lens and never
+      appeared. It tracks them past the beam and only then releases forward. */
+   from:[252,98,392],to:[84,60,-640],look:[0,57,110],look2:[0,52,-620],
+   say:"Land was descried at four this morning."},
+  {set:"sea",t:8.0,
+   from:[84,60,-640],to:[-40,150,-2380],look:[0,52,-620],look2:[-40,60,-3290],
+   say:"The ships are standing into the Chesapeake, between two capes that had no English names yesterday, while the gentlemen argue over where they will plant the fort."},
+  {set:"sea",t:6.0,title:true,
+   from:[-40,150,-2380],to:[-70,172,-2560],look:[-40,60,-3290],look2:[-45,58,-3300],
+   say:"Below deck, in the dark and the stink, men still trade the old rumours."}
+];
+function openingSay(line){
+  const el=$("cineSub");
+  if(!el)return;
+  el.textContent=line||"";
+  el.classList.toggle("on",!!line);
+  if(line)speak(line);
+}
+function endOpening(){
+  if(!OPEN.on)return;
+  OPEN.on=false;
+  if(OPEN.raf)cancelAnimationFrame(OPEN.raf);
+  OPEN.raf=0;
+  document.body.classList.remove("opening");
+  $("cine").classList.remove("on");
+  $("cineSub").classList.remove("on");
+  $("openTitle").classList.remove("on");
+  $("cineSkip").onclick=null;
+  hushVoice();
+  /* let the world's own screen keep the black until it has something to show */
+  $("cineFade").style.transition="none";$("cineFade").style.opacity="0";
+  if(OPEN.sc){disposeTree(OPEN.sc);OPEN.sc=null;}
+  OPEN.cam=null;
+  const cb=OPEN.onDone;OPEN.onDone=null;
+  if(cb){try{cb();}catch(e){if(window.console)console.error("opening onDone:",e);}}
+}
+/* everything the opening built, given back - it is a whole second scene and
+   leaving it resident would double the page's geometry for the whole session */
+function disposeTree(root){
+  root.traverse(function(o){
+    if(o.geometry&&!SHARED.has(o.geometry))o.geometry.dispose();
+    const m=o.material;
+    if(m&&!SHARED.has(m)){
+      if(Array.isArray(m))m.forEach(function(x){if(!SHARED.has(x))x.dispose();});
+      else m.dispose();
+    }
+  });
+}
+function playOpening(onDone){
+  if(OPEN.on){if(onDone)onDone();return;}
+  initRenderer();                       /* the game's own scene is untouched */
+  show("scene");
+  document.body.classList.add("opening");   /* and the HUD stays out of space */
+  OPEN.on=true;OPEN.onDone=onDone||null;OPEN.t=0;OPEN.shot=-1;
+  const sc=new THREE.Scene();
+  sc.background=new THREE.Color(0x05070c);
+  if(!OPEN_FOG)OPEN_FOG=new THREE.Fog(0x9fb4bd,500,3100);
+  const c=new THREE.PerspectiveCamera(52,1,0.5,40000);
+  OPEN.sc=sc;OPEN.cam=c;
+  /* space */
+  const space=new THREE.Group();sc.add(space);
+  buildStars(space);buildGlobe(space);
+  space.add(new THREE.AmbientLight(lin(0x8899aa),0.55));
+  const sun=new THREE.DirectionalLight(lin(0xfff0d8),1.15);
+  sun.position.copy(llv(18,28,4000));space.add(sun);
+  /* sea */
+  const seaSet=new THREE.Group();seaSet.visible=false;sc.add(seaSet);
+  buildOpenSea(seaSet);buildOpeningShips(seaSet);
+  seaSet.add(new THREE.HemisphereLight(lin(0xc9d8de),lin(0x3a4a52),0.62));
+  const sun2=new THREE.DirectionalLight(lin(0xffe6bd),0.90);
+  sun2.position.set(600,1500,400);seaSet.add(sun2);
+  const fill2=new THREE.DirectionalLight(lin(0xa9c2d2),0.24);
+  fill2.position.set(-700,400,-550);seaSet.add(fill2);
+
+  $("cine").classList.add("on");
+  $("cineSkip").style.display="";
+  $("cineSkip").onclick=function(){endOpening();};
+  const fade=$("cineFade");
+  fade.style.transition="none";fade.style.opacity="1";
+  /* one frame at full black, then let it lift */
+  requestAnimationFrame(function(){
+    fade.style.transition="opacity 2.2s ease";fade.style.opacity="0";
+  });
+
+  const V=new THREE.Vector3(),L=new THREE.Vector3();
+  let last=performance.now();
+  function shotAt(s,k){
+    /* a shot is either given plain xyz or as lat/lon/altitude on the globe */
+    if(s.fromLL){
+      const a=llv(s.fromLL[0],s.fromLL[1],GLOBE_R*s.fromLL[2]);
+      const b=llv(s.toLL[0],s.toLL[1],GLOBE_R*s.toLL[2]);
+      V.lerpVectors(a,b,k);
+      const g=llv(s.lookLL[0],s.lookLL[1],GLOBE_R*s.lookLL[2]);
+      L.copy(g);
+    } else {
+      V.set(s.from[0]+(s.to[0]-s.from[0])*k,
+            s.from[1]+(s.to[1]-s.from[1])*k,
+            s.from[2]+(s.to[2]-s.from[2])*k);
+      const l1=s.look,l2=s.look2||s.look;
+      L.set(l1[0]+(l2[0]-l1[0])*k,l1[1]+(l2[1]-l1[1])*k,l1[2]+(l2[2]-l1[2])*k);
+    }
+  }
+  function frame(){
+    if(!OPEN.on)return;
+    OPEN.raf=requestAnimationFrame(frame);
+    const now=performance.now(), dt=Math.min(0.05,(now-last)/1000);last=now;
+    /* the canvas can change shape mid-cutscene on a phone being turned */
+    const r=$("viewport").getBoundingClientRect();
+    if(r.width>2&&r.height>2){
+      renderer.setSize(r.width,r.height,false);
+      const asp=r.width/r.height;
+      if(c.aspect!==asp){c.aspect=asp;c.updateProjectionMatrix();}
+    }
+    /* ---- THE HOLD, WHICH USED TO BE A HUNDRED EXCEPTIONS ----
+       Once the last shot ends the title has to sit on screen while the picture
+       goes to black under it. The advance below ran anyway, `OPEN_SHOTS[6]` is
+       undefined, and every frame of that hold threw on `s.t` - ninety-seven of
+       them - which meant the render at the bottom never ran either. It LOOKED
+       right, because a canvas keeps its last frame and the fade is CSS on top,
+       so a bug that stopped the renderer dead was invisible. Held explicitly
+       now: last framing, still rendering, no advance. */
+    if(OPEN.done){
+      shotAt(OPEN_SHOTS[OPEN_SHOTS.length-1],1);
+      c.position.copy(V);c.lookAt(L);
+      renderer.render(sc,c);
+      return;
+    }
+    OPEN.t+=dt;
+    /* advance the shot */
+    let s=OPEN_SHOTS[OPEN.shot];
+    if(OPEN.shot<0||OPEN.t>=s.t){
+      if(OPEN.shot>=0)OPEN.t-=s.t;
+      OPEN.shot++;
+      if(OPEN.shot>=OPEN_SHOTS.length){
+        OPEN.done=true;
+        fade.style.transition="opacity 1.6s ease";fade.style.opacity="1";
+        $("cineSub").classList.remove("on");
+        setTimeout(endOpening,1700);
+        renderer.render(sc,c);
+        return;
+      }
+      s=OPEN_SHOTS[OPEN.shot];
+      const inSpace=(s.set==="space");
+      space.visible=inSpace;seaSet.visible=!inSpace;
+      sc.background.set(inSpace?0x05070c:0x9fb4bd);
+      /* HAZE, and it is doing real work. Without it the capes - three thousand
+         feet up-scene, and there is no curvature on a flat sea - were in frame
+         during the mid-ocean shot, so the crossing was played within sight of
+         the landfall. Fogged, they are invisible at four thousand feet and rise
+         out of the murk as the camera runs in, which is what making a landfall
+         actually looks like. Space gets no fog or the stars would grey out. */
+      sc.fog=inSpace?null:OPEN_FOG;
+      openingSay(s.say);
+      /* THE CUT, and the only one. Entering the weather is a white flash: a
+         hard cut from a black sky to a bright one reads as a mistake, and two
+         tenths of a second of cloud reads as falling through it. */
+      if(!inSpace&&OPEN.shot>0&&OPEN_SHOTS[OPEN.shot-1].set==="space"){
+        fade.style.background="#dfe6ea";
+        fade.style.transition="none";fade.style.opacity="1";
+        requestAnimationFrame(function(){
+          fade.style.transition="opacity 1.1s ease";fade.style.opacity="0";
+          setTimeout(function(){fade.style.background="#070805";},1200);
+        });
+      }
+      if(s.title)$("openTitle").classList.add("on");
+    }
+    shotAt(s,Math.min(1,OPEN.t/s.t));
+    c.position.copy(V);c.lookAt(L);
+    /* the globe turns, slowly, because a still planet looks like a poster */
+    if(s.set==="space")space.rotation.y+=dt*0.012;
+    renderer.render(sc,c);
+  }
+  OPEN.done=false;
+  OPEN.raf=requestAnimationFrame(frame);
+}
 /* ========== CHAPTER II \u00b7 CAPE HENRY ==========
    26 April 1607. A low sandy cape at the mouth of the Chesapeake: wet strand,
    a dune ridge behind it, then the pine woods the arrows came out of.
@@ -11599,6 +12038,13 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"2 August 1607 · latest",
+   head:"A proper opening",
+   lines:[
+     "Beginning a new voyage now opens on the Earth from space, closes on England, crosses the Atlantic with the three ships in company, and finds them at anchor inside the capes before the title card.",
+     "The chapter's opening is read aloud over it, and there is a Skip button for the second time through.",
+     "Continuing a saved run goes straight back to the game, as before."
+   ]},
+  {when:"2 August 1607",
    head:"Cape Henry is not an island, and the woods are woods",
    lines:[
      "The land no longer stops in a square with sea on every side. Virginia runs away inland to the horizon, the way a cape works.",
@@ -11893,7 +12339,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260802-1723-f41091b";
+const BUILD="20260802-2206-1f60911";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
