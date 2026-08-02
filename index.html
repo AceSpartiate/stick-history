@@ -233,6 +233,21 @@
     border:1px solid rgba(143,47,40,.45);background:rgba(40,22,18,.42);
     color:rgba(226,186,178,.85)}
   #btnWipe:active{background:rgba(143,47,40,.5)}
+  /* Bottom LEFT, mirroring Reset Progress on the right, and deliberately quieter
+     than it: this one is safe to press. */
+  #btnNotes{position:absolute;left:14px;bottom:14px;z-index:20;
+    padding:.42em .8em;border-radius:8px;font-family:'IM Fell English SC',serif;
+    font-size:.72rem;letter-spacing:.03em;cursor:pointer;
+    border:1px solid rgba(176,141,62,.38);background:rgba(24,20,14,.42);
+    color:rgba(231,218,187,.72)}
+  #btnNotes:active{background:rgba(176,141,62,.28)}
+  .pnote{margin:0 0 1.05em}
+  .pnote h4{margin:0 0 .18em;font-family:'IM Fell English SC',serif;font-size:.95rem;
+    letter-spacing:.02em;color:var(--gold)}
+  .pnote .when{font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;
+    opacity:.55;margin:0 0 .35em}
+  .pnote ul{margin:.1em 0 0;padding-left:1.05em}
+  .pnote li{margin:.16em 0;font-size:.86rem;line-height:1.4}
   #hudVoice{flex:none;width:30px;height:30px;border-radius:7px;font-size:.9rem;line-height:1;
     border:1px solid rgba(224,218,187,.3);background:rgba(24,20,14,.42);
     color:rgba(231,218,187,.85);pointer-events:auto;cursor:pointer}
@@ -449,6 +464,7 @@
 
   <section id="title" class="screen on">
     <button id="btnWipe" title="Erase the kept run">Reset Progress</button>
+    <button id="btnNotes" title="What has changed lately">Patch Notes</button>
     <div id="layout">
       <span class="laylab">Playing on a</span>
       <button class="lay on" id="layPhone">Phone</button>
@@ -465,6 +481,7 @@
         <button class="btn wide" id="btnContinue" style="display:none">Continue</button>
         <button class="btn wide" id="btnBegin">Begin the Voyage</button>
         <button class="btn ghost wide" id="btnWardrobe1">Wardrobe</button>
+        <button class="btn ghost wide" id="btnChapters" style="display:none">Chapters</button>
         <button class="btn ghost wide" id="btnCodex1">Historian's Notes</button>
         <button class="btn ghost wide" id="btnAdmin" style="display:none;opacity:.6;font-size:.9rem">Admin</button>
       </div>
@@ -618,6 +635,15 @@
       <div id="adminMsg" style="min-height:1.4em;text-align:center;font-style:italic;font-size:.9rem;color:var(--oxblood);margin-top:.4em"></div>
       <button class="btn wide mt" id="adminGo">Unlock</button>
       <button class="btn ghost wide mt" id="adminCancel">Back</button>
+    </div>
+  </div>
+
+  <div class="modal mid" id="mNotes">
+    <div class="parchment deckle sheet" style="max-width:430px">
+      <div class="kicker">What has changed</div>
+      <h3>Patch Notes</h3>
+      <div id="notesList"></div>
+      <button class="btn ghost wide mt" id="notesClose">Back</button>
     </div>
   </div>
 
@@ -849,6 +875,10 @@ const S={ink:0,unlocked:new Set(["none_cloak","none_torso","none_acc","none_head
   equip:{skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"none_head",build:"build_normal",face:"none",
     dye:{torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"}},
   codex:[],codexKeys:new Set(),insight:{},shipNote:false,chapterDone:false,flawless:{},met:{},
+  /* CHAPTERS ARE CHECKPOINTS. Every chapter the player has entered stays open to
+     them for good, so finishing one can never strand them and a class can be sent
+     back to a particular afternoon without replaying the voyage. */
+  reached:{ch1:true},
   corrections:0,reckTries:0,firedGun:false,faces:new Set(),admin:false,talkErr:{}};
 
 /* ========== SAVE AND RESUME ==========
@@ -880,6 +910,9 @@ function saveBlob(){
     ambushFired:!!S.ambushFired, ambushShots:S.ambushShots||0,
     ambushDone:(typeof AMBUSH!=="undefined")?!!AMBUSH.done:false,
     shipNote:!!S.shipNote, chapterDone:!!S.chapterDone, firedGun:!!S.firedGun,
+    /* every chapter the player has ever set foot in, so none of them can be
+       stranded behind a chapter they already finished */
+    reached:S.reached,
     admin:!!S.admin
   };
 }
@@ -904,6 +937,14 @@ function applyBlob(d){
     S.heardKendall=!!d.heardKendall;S.reportedKendall=d.reportedKendall||null;
     S.ambushFired=!!d.ambushFired;S.ambushShots=d.ambushShots||0;
     S.shipNote=!!d.shipNote;S.chapterDone=!!d.chapterDone;S.firedGun=!!d.firedGun;
+    /* An older save has no `reached`. Rather than lock such a player out of the
+       chapter picker, infer it: they have at least reached the chapter they were
+       saved in, and anyone who finished Chapter I has reached Chapter II. */
+    S.reached=d.reached||{};
+    const cw=chapterOf(d.world||"ch1");
+    if(cw)S.reached[cw.world]=true;
+    if(d.chapterDone)S.reached["ch2"]=true;
+    S.reached["ch1"]=true;
     S.admin=!!d.admin;
     if(typeof AMBUSH!=="undefined")AMBUSH.done=!!d.ambushDone;
     SAVED_WORLD=d.world||"ch1";
@@ -950,6 +991,7 @@ function newRun(){
   S.heardKendall=false;S.reportedKendall=null;
   S.ambushFired=false;S.ambushShots=0;
   S.shipNote=false;S.chapterDone=false;S.firedGun=false;
+  S.reached={ch1:true};
   S.corrections=0;S.reckTries=0;S.chartSeen={};
   if(typeof AMBUSH!=="undefined")AMBUSH.done=false;
 }
@@ -1528,7 +1570,7 @@ function show(id){
      showing whatever was true when the page opened. Finish Chapter I, step into
      the wardrobe to spend your Ink, come back: the title screen said there was
      nothing to continue, because at page load there had not been. */
-  if(id==="title")refreshContinue();
+  if(id==="title"){refreshContinue();refreshChapters();}
   /* wire any new readers, then speak this screen if it asks to be spoken */
   attachReaders(screens[id]);
   const auto=screens[id]&&screens[id].querySelector('[data-read="auto"]');
@@ -4875,7 +4917,7 @@ function refreshPlayer(){
 /* ========== CONTROLS ==========
    Left half of the screen is a floating stick; right half turns the view.
    Keyboard: WASD to move, Q/E or drag to turn, Space/E to act, Esc to back out. */
-const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters"];
+const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes"];
 function anyModalOpen(){for(let i=0;i<MODALS.length;i++)if($(MODALS[i]).classList.contains("on"))return true;return false;}
 function closeAllModals(){for(let i=0;i<MODALS.length;i++)$(MODALS[i]).classList.remove("on");if(steal)steal.running=false;}
 
@@ -6984,7 +7026,7 @@ $("dlgSay").onclick=function(e){e.stopPropagation();sayAgain();};
 $("pauseTitle").onclick=function(){
   /* Continue was only evaluated once at boot, so a player who saved and then
      returned to the title in the same session saw no way back in. */
-  saveGame();goHome();refreshContinue();
+  saveGame();goHome();refreshContinue();refreshChapters();
 };
 $("btnBegin").onclick=function(){
   /* Beginning afresh discards a kept run, so say so rather than silently
@@ -7025,11 +7067,11 @@ function refreshContinue(){
   const b=$("btnContinue");
   if(b)b.style.display=hasSave()?"block":"none";
 }
-refreshContinue();
+refreshContinue();refreshChapters();
 $("btnWipe").onclick=function(){
   if(!hasSave()){toast("There is nothing kept to erase.");return;}
   if(!confirm("Erase the kept run? Ink, unlocks, insights and everything recorded against your name will be lost. This cannot be undone."))return;
-  clearSave();refreshContinue();toast("Progress erased.");
+  clearSave();refreshContinue();refreshChapters();toast("Progress erased.");
 };
 /* ---- the muster code panel ---- */
 $("pauseCode").onclick=function(){
@@ -7082,6 +7124,11 @@ function openIntro(worldId){
   show("intro");
 }
 function beginWorld(worldId){
+  /* Setting foot in a chapter opens it for good. Recorded on the CHAPTER's own
+     world id, not on worldId, so arriving at a survey site does not quietly
+     invent a chapter that was never played. */
+  const ch=chapterOf(worldId);
+  if(ch&&ch.world){S.reached=S.reached||{};S.reached[ch.world]=true;}
   show("scene");closeAllModals();setPaused(false);
   if(!renderer){initRenderer();enterWorld(worldId);resize();startLoop();}
   else{ if(CURRENT_WORLD!==worldId)enterWorld(worldId); resize(); }
@@ -10942,26 +10989,118 @@ function tryAdmin(){
     $("adminCode").value="";
   }
 }
+/* ---- CHAPTERS ARE CHECKPOINTS ----
+   This picker was admin-only, so a player who finished Chapter I and moved on had
+   no way back to it, and a teacher could not put a class straight into the
+   afternoon at Cape Henry without playing the voyage again. Any chapter the
+   player has entered stays open to them for good.
+   One list, two modes. Admin sees and may enter everything that is built; a
+   player sees the same list with the chapters ahead of them named but shut, so
+   the shape of the whole story is visible from the first screen - which is worth
+   more in a classroom than the surprise is. */
+function chapterReached(c){
+  return !!(S.admin||(c&&c.world&&S.reached&&S.reached[c.world]));
+}
+/* TRY/CATCH, NOT `typeof`. refreshChapters() runs once during script load, from
+   the same line that primes the Continue button, and `const CHAPTERS` is declared
+   four thousand lines further down - so at that moment it is in the temporal dead
+   zone. `typeof CHAPTERS==="undefined"` looks like the guard for that and IS NOT:
+   typeof only swallows genuinely undeclared names, and on a let/const in the TDZ
+   it throws like any other read. Written that way it took the whole rest of the
+   file down with it - no CHAPTERS, no SERJEANT, no ambush, and every button below
+   the failure point silently unbound. The page still drew, which is what made it
+   worth catching here rather than trusting the guard to be obvious. */
+function anyChapterToReturnTo(){
+  let list;
+  try{ list=CHAPTERS; }catch(e){ return false; }
+  if(!list)return false;
+  let n=0;
+  list.forEach(function(c){if(c.ready&&chapterReached(c))n++;});
+  return n>1;
+}
 function openChapters(){
   const host=$("chapList");host.innerHTML="";
+  const kick=document.querySelector("#mChapters .kicker");
+  if(kick)kick.textContent=S.admin?"Admin":"Your voyage so far";
   CHAPTERS.forEach(function(c,i){
+    const open=c.ready&&chapterReached(c);
     const b=document.createElement("button");
-    b.className="chap"+(c.ready?"":" soon");
+    b.className="chap"+(open?"":" soon");
     b.innerHTML="<b>Chapter "+c.n+" \u2014 "+c.t+"</b><small>"+c.d+
-      (c.ready?"":" \u00b7 not yet built")+"</small>";
-    /* Every chapter now starts the same way a player would start it - through
-       its own intro card - rather than the picker having a second, shorter path
-       into the world that skipped the date, the place and the task. */
-    if(c.ready){b.onclick=function(){
+      (!c.ready?" \u00b7 not yet built":(open?"":" \u00b7 not yet reached"))+"</small>";
+    /* Every chapter starts the same way a player would start it - through its own
+       intro card - rather than the picker having a second, shorter path into the
+       world that skipped the date, the place and the task. */
+    if(open){b.onclick=function(){
       $("mChapters").classList.remove("on");
       openIntro(c.world);
     };}
-    else b.onclick=function(){toastMenu("Chapter "+c.n+" is still on the drawing board.");};
+    else if(!c.ready)b.onclick=function(){toastMenu("Chapter "+c.n+" is still on the drawing board.");};
+    else b.onclick=function(){toastMenu("You have not reached Chapter "+c.n+" yet.");};
     host.appendChild(b);
   });
   $("mChapters").classList.add("on");
 }
 function toastMenu(m){$("adminMsg").textContent=m;}
+
+/* ========== PATCH NOTES ==========
+   Summarised for a player, not a changelog for me. Each entry says what is
+   DIFFERENT NOW in words a twelve-year-old or a teacher can act on - "the bell no
+   longer freezes you" - and never names a function or a variable. Newest first;
+   keep it to the last handful of releases and let older ones fall off, because a
+   list nobody finishes is a list nobody reads.
+   Add to the TOP of this array. The build stamp below it is generated. */
+const PATCH_NOTES=[
+  {when:"2 August 1607 · latest",
+   head:"The camp, the chart, and three things that stopped you dead",
+   lines:[
+     "Ringing the bell no longer leaves you unable to move.",
+     "Conversations you are required to have now start when you press the button. The prompt could name one man and speak to another, and bystanders on the strand could shoulder Captain Kendall out of the way.",
+     "Chapters are checkpoints. Any chapter you have reached stays open from the title screen, so finishing one can never strand you.",
+     "The captain's chart at Cape Henry is under a tent you can see and walk to, instead of an invisible spot on the sand.",
+     "More to see and do around the landing camp, and the men on the strand have work in their hands."
+   ]},
+  {when:"2 August 1607",
+   head:"The matchlock fires in the right order",
+   lines:[
+     "The match now falls into the pan BEFORE the pan flashes and the piece goes off, which is how the weapon actually works.",
+     "You can see the ball drop down the muzzle during the drill. It used to hang in the air and disappear.",
+     "The serpentine no longer forgets to fall when you fire, and no longer falls by itself the next time you pick her up.",
+     "Powder smoke stays where a shot's smoke should. It used to stream up to ninety feet across the beach depending on which way you faced.",
+     "Overcharging her can now burst the barrel, as Captain Kendall keeps warning you it will."
+   ]},
+  {when:"1 August 1607",
+   head:"The piece itself, rebuilt to size",
+   lines:[
+     "Every rounded part of the matchlock was drawn at half its proper size. The barrel, the stock, the wrist, the butt, the trigger guard, the match cord and the scouring stick are all their true thickness now.",
+     "That fixed the gaps: the barrel sat clear of the stock, the lock touched nothing, the pan hung off the side and both sights hovered over the metal.",
+     "The ball is smaller than the bore it goes down, which it was not.",
+     "The sights, the notch and your eye now line up on one line."
+   ]},
+  {when:"31 July 1607",
+   head:"Aiming, and the ground beyond the fort",
+   lines:[
+     "Raise the piece and the mouse locks to your aim. Left button fires, hold the right to lean in over the sights.",
+     "One set of controls for a keyboard and mouse, another for a touchscreen — never both at once.",
+     "New ground to survey beyond Cape Henry: Point Comfort, Archer's Hope and the island itself.",
+     "A misfire no longer costs you the whole load. If only the pan failed, you prime her again."
+   ]}
+];
+function openNotes(){
+  const host=$("notesList");host.innerHTML="";
+  PATCH_NOTES.forEach(function(p){
+    const d=document.createElement("div");d.className="pnote";
+    let li="";p.lines.forEach(function(l){li+="<li>"+l+"</li>";});
+    d.innerHTML='<div class="when">'+p.when+"</div><h4>"+p.head+"</h4><ul>"+li+"</ul>";
+    host.appendChild(d);
+  });
+  const stamp=document.createElement("div");
+  stamp.style.cssText="font-size:.68rem;opacity:.45;letter-spacing:.04em;margin-top:.2em";
+  stamp.textContent="Build "+(typeof BUILD!=="undefined"?BUILD:"unknown");
+  host.appendChild(stamp);
+  $("mNotes").classList.add("on");
+  const sh=document.querySelector("#mNotes .sheet");if(sh)sh.scrollTop=0;
+}
 /* ========== "IT DOESN'T READ ALOUD" IS USUALLY NOT THE GAME ==========
    A link tapped inside Messenger, Instagram, Facebook or Gmail does not open the
    phone's browser - it opens a WebView inside that app. Android WebView has no
@@ -10999,6 +11138,15 @@ warnInAppBrowser();
 if(/(^|[?&#])admin\b/i.test(location.search+location.hash)){
   const ab=$("btnAdmin");
   if(ab)ab.style.display="inline-flex";
+}
+$("btnNotes").onclick=openNotes;
+$("notesClose").onclick=function(){$("mNotes").classList.remove("on");};
+$("btnChapters").onclick=function(){toastMenu("");openChapters();};
+/* The Chapters button only exists once there is somewhere to go back TO. On a
+   first run it would be a button that opens a list with one enterable item. */
+function refreshChapters(){
+  const b=$("btnChapters");
+  if(b)b.style.display=anyChapterToReturnTo()?"block":"none";
 }
 $("btnAdmin").onclick=openAdmin;
 $("adminGo").onclick=tryAdmin;
@@ -11160,7 +11308,7 @@ function paintTitleFig(){
     if(d)applyBlob(d);
   }catch(e){}
 })();
-refreshContinue();
+refreshContinue();refreshChapters();
 paintTitleFig();
 
 updateInk();
@@ -11180,7 +11328,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260802-1133-5ff3d6c";
+const BUILD="20260802-1143-6c66756";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

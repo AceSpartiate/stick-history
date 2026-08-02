@@ -188,5 +188,35 @@ if re.search(r'<img\b', s): tex.append("<img>")
 if re.search(r'url\(\s*["\']?(?!data:)', s): tex.append("css url()")
 ok("still texture-free") if not tex else bad("assets introduced: %s" % tex)
 
+print("\n9. No `typeof X` guard on a const/let declared later")
+# `typeof` only swallows GENUINELY UNDECLARED names. On a let/const that has not
+# been reached yet - the temporal dead zone - it throws like any other read. So
+# `if(typeof CHAPTERS==="undefined")return false;` written above the declaration
+# is not a guard, it is a fatal error - and because the page still renders it is
+# nearly invisible: every statement after it is skipped, so every handler bound
+# below the failure point is silently null. Cost a real debugging round.
+# Use `try{ x=CHAPTERS; }catch(e){ ... }` instead.
+decl = {}
+for mm in re.finditer(r'^\s*(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=', js, re.M):
+    decl.setdefault(mm.group(1), mm.start())
+tdz = set()
+for mm in re.finditer(r'typeof\s+([A-Za-z_$][\w$]*)', js):
+    n = mm.group(1)
+    if n in decl and mm.start() < decl[n]:
+        tdz.add((n, js.count("\n", 0, mm.start()) + 1))
+# Whether each of these is FATAL depends on when the surrounding code RUNS, which
+# this tool cannot know: inside a function called long after load, `typeof X` is
+# fine. So this is a note, not a failure - and the reliable detector is the
+# runtime probe in CLAUDE.md, which asks the loaded page whether the script
+# actually reached its own last line.
+if tdz:
+    print("  note  %d `typeof` reads of a const/let declared later in the file." % len(tdz))
+    print("        Safe only if that code runs AFTER the declaration is reached.")
+    print("        Fatal at load time - and the page still renders, so it hides.")
+    for n, ln in sorted(tdz)[:8]:
+        print("          %-16s ~script line %d" % (n, ln))
+else:
+    ok("no typeof-before-declaration guards")
+
 print("\n" + ("PASS" if not fail else "FAILED %d check(s)" % len(fail)))
 sys.exit(0 if not fail else 1)
