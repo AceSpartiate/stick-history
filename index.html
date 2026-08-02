@@ -2039,6 +2039,9 @@ function updateJump(dt){
 }
 let npcMeshes=[],interactables=[],colliders=[],CANNONS=[],CONSORTS=[],bellMesh=null;
 let paused=false,moveVec={x:0,y:0},animT=0,activeSpot=null,running=false,guideT=0,labelTick=0;
+/* what the action button currently READS, so the prompt can be refreshed whenever
+   it goes stale rather than only when the selected spot happens to change */
+let PROMPT_HTML="";
 let BG=false;
 function solid(x,z,hw,hd,lvl){if(BG)return;colliders.push({x:x,z:z,hw:hw,hd:hd,lvl:(lvl===undefined?LVL.MAIN:lvl)});}
 
@@ -4658,7 +4661,7 @@ function animate(){
     cam.position.z+=(Math.random()-0.5)*a*22;
   }
 
-  let best=null,bd=1e9;
+  let best=null,bd=1e9,bestPri=9;
   labelTick++;
   const doLabels=(labelTick%2===0);
   const rect=doLabels?$("viewport").getBoundingClientRect():null;
@@ -4669,7 +4672,18 @@ function animate(){
       continue;
     }
     const d=Math.hypot(it.x-px,it.z-pz);
-    if(d<it.r&&d<bd){bd=d;best=it;}
+    /* ---- A MAN WITH SOMETHING TO TELL YOU OUTRANKS A MAN MAKING SMALL TALK ----
+       Selection was purely nearest-centre, and the strand crowd carry a NINE foot
+       reach against Captain Kendall's eight. Measured: Samuell Collier stands 3.6
+       feet from Kendall's own marker, so walking up to the man who teaches you the
+       drill selects a bystander instead, and the Speak button gives you his one
+       liner. Reported as "there are people I can't talk to in chapter 2" and again
+       as mandatory conversations that will not start.
+       Idle crowd chatter is flavour; everything else is content the chapter needs
+       the player to reach. So idle loses to any real interactable in range, and
+       only ties are settled on distance. */
+    const pri=(it.action==="idle")?1:0;
+    if(d<it.r&&(pri<bestPri||(pri===bestPri&&d<bd))){bd=d;best=it;bestPri=pri;}
     if(!doLabels)continue;
     if(d>60*K){if(it.el.style.display!=="none")it.el.style.display="none";continue;}
     const v=new THREE.Vector3(it.x,(it.y||SHIP.DECK_Y)+(it.action==="reck"?6:7.7),it.z).project(cam);
@@ -4689,11 +4703,26 @@ function animate(){
       else sub.textContent="";
     } else it.el.style.display="none";
   }
-  if(best!==activeSpot){
-    activeSpot=best;
+  /* ---- THE PROMPT IS DRIVEN BY WHAT IT SAYS, NOT BY WHEN THE SPOT CHANGED ----
+     This whole block used to be gated on `best!==activeSpot`, and it assigned
+     activeSpot on its FIRST line while only drawing the label if the game was not
+     paused. So a spot that changed while a modal was up - which is every chapter
+     intro, every document, every conversation you step away from - updated the
+     selection and not the label, and from then on best===activeSpot so nothing
+     ever refreshed it again.
+     Measured standing in front of Captain Kendall: activeSpot "kendall", button
+     reading "Speak: John Capper". The player presses the button under the name
+     they can see and the game talks to somebody else - or, when the label was
+     never turned on at all, there is no button in front of the one man the
+     chapter requires them to speak to.
+     Keyed on the rendered CONTENT now. If what the button ought to say differs
+     from what it does say, it is rewritten; otherwise it is left alone, so this
+     still costs one string compare a frame. */
+  activeSpot=best;
+  {
     const p=$("action");
-    if(best&&!paused){
-      p.classList.add("on");
+    const show=(best&&!paused);
+    if(show){
       const verb=best.action==="talk"||best.action==="idle"?"Speak"
         :best.action==="ladder"?((best.data.dir==="down"?"Down to ":"Up to ")+LVL_NAME[best.data.toLvl])
         :best.action==="cannon"?(S.firedGun?"Gun secured":"Fire the cannon")
@@ -4708,8 +4737,13 @@ function animate(){
            to fall through to "Read the papers", which hid the mistake; now it
            reads "Use" and is obviously unfinished. */
         :"Use";
-      p.innerHTML='<span class="key">F</span>'+verb+"<small>"+best.label+"</small>";
-    } else p.classList.remove("on");
+      const html='<span class="key">F</span>'+verb+"<small>"+best.label+"</small>";
+      if(PROMPT_HTML!==html){PROMPT_HTML=html;p.innerHTML=html;}
+      if(!p.classList.contains("on"))p.classList.add("on");
+    } else {
+      if(PROMPT_HTML!==""){PROMPT_HTML="";}
+      if(p.classList.contains("on"))p.classList.remove("on");
+    }
   }
   /* The guide is a DOM write and a little trigonometry, so it does not want to
      run every frame - but it does have to run. Every eighth frame is about
@@ -6010,7 +6044,13 @@ function endCutscene(){
   $("cine").classList.remove("on");$("cineSub").classList.remove("on");
   $("cineFade").style.transition="opacity .45s linear";$("cineFade").style.opacity="0";
   const cb=CS.onDone;CS.onDone=null;
-  if(cb)cb();
+  /* GUARDED, because everything below this line is what gives the player back
+     control of the game. A cutscene's completion callback is author-written
+     content - it awards insight, opens panels, moves the story on - and one of
+     them threw for months on a name that was never declared, which froze the
+     player at the belfry with no way out but a reload. A broken reward is a bug;
+     a broken reward that also confiscates the controls is a lost save. */
+  if(cb){try{cb();}catch(e){if(window.console)console.error("cutscene onDone:",e);}}
   /* playCutscene pauses the world and endCutscene never released it - every
      other cutscene got away with that because each ends by opening a result
      panel whose Continue button unpauses. The bell just toasts, so it left the
@@ -6106,6 +6146,10 @@ function spawnPuff(pool,x,y,z,vx,vy,vz,o){
   smoke.push({m:m,pool:pool,t:0,vx:vx,vy:vy,vz:vz,base:size,
     life:((o.life===undefined)?2.7:o.life)*GFX.fx, op:op,
     grow:(o.grow===undefined)?1.5:o.grow, delay:o.delay||0,
+    /* {x,y,z,r}: never get further than r feet from that point. Only the muzzle
+       cloud sets one - the shot's air trail is deliberately laid all the way out
+       to the mark and capping it would cut the teaching aid in half. */
+    cap:o.cap||null,
     ease:(o.ease===undefined)?1:o.ease});
   return m;
 }
@@ -6143,7 +6187,32 @@ function updateFx(dt){
     if(age<0)continue;
     if(!p.m.visible)p.m.visible=true;
     p.m.position.x+=p.vx*dt;p.m.position.y+=p.vy*dt;p.m.position.z+=p.vz*dt;
-    p.vx*=0.965;p.vy*=0.985;
+    /* ---- DRAG, ON ALL THREE AXES AND PER SECOND ----
+       This was `p.vx*=0.965; p.vy*=0.985;` - and p.vz was never touched at all.
+       So a puff kept its whole forward speed for its whole life, and because the
+       muzzle velocity is split between x and z by which way the shooter happens
+       to be facing, HOW FAR THE SMOKE WENT DEPENDED ON WHICH WAY YOU LOOKED.
+       Measured firing north: the cloud reached 90 feet at five seconds and was
+       still accelerating away. Facing east it stayed put.
+       It was also applied per FRAME, so the same shot drifted twice as far on a
+       thirty-hertz Chromebook as on a sixty-hertz laptop. Both are per second
+       now, and both match what the old numbers did at 60fps, so the look of a
+       shot on a good machine is unchanged. */
+    const drag=Math.pow(0.118,dt), rise=Math.pow(0.404,dt);
+    p.vx*=drag;p.vy*=rise;p.vz*=drag;
+    /* and a hard ceiling on how far one shot's smoke may get from the man who
+       fired it, so no combination of framerate, heading and wind can ever put
+       the cloud out in the middle of the range again */
+    if(p.cap){
+      const c=p.cap;
+      const ax=p.m.position.x-c.x, ay=p.m.position.y-c.y, az=p.m.position.z-c.z;
+      const far=Math.hypot(ax,ay,az);
+      if(far>c.r){
+        const s=c.r/far;
+        p.m.position.set(c.x+ax*s,c.y+ay*s,c.z+az*s);
+        p.vx=p.vy=p.vz=0;
+      }
+    }
     p.m.scale.setScalar(p.base*(1+age*p.grow));
     const k=Math.max(0,1-age/p.life);
     p.m.material.opacity=p.op*Math.pow(k,p.ease);
@@ -6219,6 +6288,16 @@ function slingLesson(){
    the hour is. */
 let BELL_SWING=0;
 let BELL_TOKEN=0;
+/* THIS WAS NEVER DECLARED. `ringBell`'s completion callback read it, threw a
+   ReferenceError before it could reach the end of endCutscene, and so
+   `setPaused(false)` never ran - reported from play as "when I ring the bell in
+   chapter 1, I can't move afterwards". The unpause a few lines below in
+   endCutscene was added to fix that exact freeze once already; it was correct,
+   and a second fault upstream of it put the freeze straight back. Both are fixed
+   now: the constant exists, and a throwing callback can no longer strand the
+   player either. */
+const BELL_INSIGHT={g:"known",b:"A Ship's Day Is Counted in Bells",
+  s:"Nobody aboard owned a clock that would keep time in a seaway, so time was kept with a half-hour sandglass and a bell. Each time the glass was turned the ship's boy struck the bell once more than the last - one stroke after the first half hour, two after the second, on to eight, and then the watch changed and the count began again. Eight bells is not eight o'clock. It is the end of a four-hour watch, and it is why a sailor asked how many bells had gone rather than what the hour was."};
 function ringBell(){
   if(BELL_SWING>0||CS.active)return;      /* one ringing at a time */
   const strikes=8;                        /* eight bells ends the forenoon watch */
@@ -7090,7 +7169,8 @@ function resolveMisfire(arm,st){
 }
 const GUN={arm:"matchlock",step:"powder",charge:0,prime:0,ramQ:0,ramHits:0,
   hasBall:false,hasWad:false,glow:0.6,active:false,t0:0,shots:0,hits:0,
-  onHit:null,pourOn:false,poseT:0,sightT:0,ramT:0,ramAnim:0,ramCycle:0,ramSeat:0,cont:null};
+  onHit:null,pourOn:false,poseT:0,sightT:0,ramT:0,ramAnim:0,ramCycle:0,ramSeat:0,cont:null,
+  serpT:0,ballHold:0,ballT0:0};
 /* One swing of the scouring stick. Short enough that four of them is a rhythm to
    be kept rather than four unrelated taps. */
 /* Slowed from 1.05 after play: too hard. The swing is the clock the whole
@@ -7139,6 +7219,28 @@ const G_PT_HEEL=[0,-0.150,0.52], G_PT_WRIST=[0,-0.118,-0.26];
    other is -0.93 rather than -0.90. Small, but it is the difference between the
    match landing IN the priming and landing just short of the pan's rear lip. */
 const SERP_REST=0.30, SERP_FIRE=-0.93;
+/* ---- LOCK TIME, WHICH THIS WEAPON WAS PLAYING BACKWARDS ----
+   Pulling the trigger does not fire a matchlock. It releases the serpentine, and
+   the burning match then has to TRAVEL to the pan; the priming catches, and only
+   then does the flame reach through the touch hole to the charge. Every effect
+   used to be spawned on the same tick as the trigger, so - measured off the
+   animation - the pan flashed 0.24 of a second BEFORE the match arrived in it,
+   and the bang came before its own cause on the one animation that explains how
+   this weapon works.
+   SERP_RATE is how fast the arm swings; the fall peaks at serpT 0.5, so the
+   moment the coal is in the powder is half of that. Derived, so re-tuning the
+   swing carries the flash and the report along with it. */
+const SERP_RATE=2.1;                     /* the arm's fall and return, per second */
+const SERP_TOUCH=0.5/SERP_RATE;          /* trigger -> match in the pan */
+const PAN_LAG=0.055;                     /* pan -> charge, through the touch hole */
+/* How long the ball takes to fall from a hand's breadth above the muzzle into the
+   bore. One constant, read by BOTH the animation and the timer that ends the
+   step, because they were two numbers and only one of them existed. */
+const G_DROP_MS=950;
+/* How far a single shot's smoke may get from the man who fired it. Powder smoke
+   from one piece puffs out a few yards, hangs, and drifts on the wind - it does
+   not travel. Measured before this cap: 90 feet and still going at five seconds. */
+const SMOKE_CAP_FT=50;
 /* Three poses, not two.
    load  - muzzle raised, so powder and ball go down it
    port  - held across the body, loaded but not presented
@@ -7931,8 +8033,20 @@ function gStep(k){
       function(){GUN.pourOn=false;stopSfx();gStep("ball");});
   } else if(k==="ball"){
     ui.innerHTML='<button class="gact" id="gBall">Drop the ball</button>';
+    /* THE BALL NOW ACTUALLY FALLS. `GUN.ballHold` drives the drop in updateDrill
+       and was read there in exactly one place and assigned in NONE - it was
+       permanently undefined, so the ball hung a hand's breadth above the muzzle
+       for the whole step and then blinked out of existence when the step ended.
+       Reported once as "I never saw a ball be physically dropped down into the
+       barrel", answered with a ball that was drawn but never moved, and it is
+       the AUTOMATIC reload - the one a player only reaches after the lesson -
+       that has been animating it correctly all along. Stamped from the same
+       G_DROP_MS the step's own timer uses, so the fall cannot finish early or
+       late. */
+    GUN.ballHold=0;GUN.ballT0=0;
     $("gBall").onclick=function(){const b=this;if(b.disabled)return;b.disabled=true;b.textContent="\u2026";
-      playSfx("click",0.3);setTimeout(function(){GUN.hasBall=true;gStep("wad");},950);};
+      playSfx("click",0.3);GUN.ballT0=performance.now();
+      setTimeout(function(){GUN.hasBall=true;gStep("wad");},G_DROP_MS);};
   } else if(k==="wad"){
     ui.innerHTML='<div class="grow"><button class="gact small" id="gWad">Ram in the wad</button>'+
       '<button class="gact small danger" id="gSkip">Skip it</button></div>';
@@ -8037,6 +8151,12 @@ function gPaint(){
 
 
 /* ---- giving fire, and where the ball actually goes ---- */
+/* AND NOR WAS THIS ONE. Same fault, same session, different scene: serjeantHit
+   is the moment the drill exists for - the ball is in the mark and the piece is
+   yours - and it threw on its first line, so the insight was never awarded and
+   `slingLesson()` at the end of the function never ran. */
+const PROVED_INSIGHT={g:"known",b:"What the Piece Could Actually Do",
+  s:"A matchlock caliver would drive a ball through armour at a hundred paces, which is why every company carried them. What it would not do is pick out one particular man at that distance: it is a smoothbore firing a ball deliberately cast under its own bore, and past forty yards or so it is a guess. That is why soldiers were drilled to fire together rather than to aim. And it took the better part of a minute to load again. Reach was never this weapon's problem at Jamestown. The minute was."};
 function serjeantHit(inner,dist){
   if(S.insight["Proved the Piece"])return;
   S.insight["Proved the Piece"]=true;S.ink+=12;
@@ -8087,6 +8207,29 @@ function giveFire(){
   }
   if(GUN.charge<G_LO*0.5){
     playSfx("click",0.5);toast("Nothing \u2014 there is no powder in her.");done();return;
+  }
+  /* ---- AND SHE CAN BURST, WHICH THE GAME HAS BEEN PROMISING ALL ALONG ----
+     The hint on the charging step says "too much may burst the barrel" and
+     Kendall says it again when he hands her over - "a man who says he knows and
+     does not will burst a barrel and take my hand with it". Neither was true:
+     the only cost of emptying the whole flask down her was a slightly wider
+     group, through chargeErr in the spread. A warning the game never enforces
+     teaches a student that the warning was decoration.
+     Only well past the green. The band closes at 0.74 and this wants 1.05, which
+     takes a further two and a half seconds of holding the pour with the gauge
+     hard against its stop - nobody reaches it by accident. */
+  if(GUN.charge>=1.05){
+    playSfx("boom",0.62);gunSmoke(1.35);
+    knock={vx:0,vz:0,t:0};camKick=0.10;
+    toast("She burst at the breech \u2014 far too much powder. Your hand is numb and the piece is fouled open. Charge her again, and watch the green.");
+    S.corrections=(S.corrections||0)+1;
+    /* Cleared HERE and not left to done(), whose reset only runs inside the taught
+       drill. Outside it the recovery is startReload(), which decides between a
+       six-second re-prime and the full thirty-eight by asking whether ball, wad
+       and charge are still down her - and after a burst they are emphatically
+       not. Left to done() a burst barrel healed itself in six seconds. */
+    resetCharge();
+    done();return;                 /* vented: there is nothing down her now */
   }
   if(!GUN.hasBall){
     /* powder and no ball is a blank: loud, and it sends nothing */
@@ -8468,9 +8611,24 @@ function shotAMan(who,off,radius){
     }
   });
 }
+/* The trigger releases the arm; the arm carries the coal to the pan; the pan
+   catches; the flame goes through the touch hole and THEN she fires. Every one of
+   those used to happen on the same tick, so the pan lit a quarter of a second
+   before the match got to it. The bookkeeping stays immediate - the ambush counts
+   the shot the moment it is taken - and only the ignition waits. */
 function discharge(hung){
   if(AMBUSH.on){AMBUSH.fired=true;AMBUSH.shots++;}
-  panFlash();                     /* the pan, then the muzzle */
+  const world=CURRENT_WORLD;      /* nothing may fire into a world that has ended */
+  setTimeout(function(){
+    if(CURRENT_WORLD!==world||!gunPiece)return;
+    panFlash();                   /* the coal is IN the priming now, not before */
+    setTimeout(function(){
+      if(CURRENT_WORLD!==world||!gunPiece)return;
+      ignite(hung);
+    },PAN_LAG*1000);
+  },SERP_TOUCH*1000);
+}
+function ignite(hung){
   playSfx("boom",0.5);gunSmoke(1);
   knock={vx:0,vz:0,t:0};camKick=0.05;
   const A=ARMS[GUN.arm];
@@ -8577,7 +8735,8 @@ function gunSmoke(scale){
       /* Longer-lived than before - it used to snap out after under two seconds,
          which is nothing like powder smoke - but thrown harder sideways so it
          drifts out of the sight line rather than parking in it. */
-      {size:1.2*0.7*scale, col:0x7d7a70, op:0.80, life:5.5, grow:0.85, ease:0.7});
+      {size:1.2*0.7*scale, col:0x7d7a70, op:0.80, life:5.5, grow:0.85, ease:0.7,
+       cap:{x:o.x,y:o.y,z:o.z,r:SMOKE_CAP_FT}});
   }
 }
 /* ---- WHERE THE PIECE SITS ON SCREEN, ON ANY SCREEN ----
@@ -8662,6 +8821,21 @@ function updateDrill(dt){
   /* Also runs for the AUTOMATIC reload and while simply holding her sighted, so
      the flask, stream, scouring stick and coal animate the same way they always
      did. Automatic was never meant to mean invisible. */
+  /* ---- THE ARM FALLS BEFORE ANYTHING ELSE, AND WHATEVER ELSE HAPPENS ----
+     This block used to sit below the guard on the next line, and the guard is
+     false the moment the piece leaves your hands. Firing at a man triggers a
+     cutscene that slings her - so on exactly the shot the whole chapter is built
+     around, the serpentine never fell at all. Worse, `serpT` was left standing at
+     1 with nothing to decay it, so the swing was BANKED: the cock dropped into
+     the pan of an unloaded gun the instant the player next picked her up, for no
+     reason they could see. Measured both.
+     It costs nothing to run this on a hidden model, and it is the one animation
+     that must never be skipped. */
+  if(gunSerp){
+    GUN.serpT=Math.max(0,(GUN.serpT||0)-dt*SERP_RATE);
+    /* out and back on one sine, so the fall is quick and the return unhurried */
+    gunSerp.rotation.x=SERP_REST+(SERP_FIRE-SERP_REST)*Math.sin(Math.min(1,GUN.serpT)*Math.PI);
+  }
   if(!GUN.active&&!RELOAD.on&&!gunInHands())return;
   /* A real slow match is saltpetred cord that smoulders for HOURS - inches an
      hour. 0.018 a second burned it out in under a minute, which was tuned for the
@@ -8786,12 +8960,6 @@ function updateDrill(dt){
       else GUN.pitchNudge=0;
     }
   } else if(GUN.step==="ready"){GUN.pitchStep=null;}
-  if(gunSerp){
-    GUN.serpT=Math.max(0,(GUN.serpT||0)-dt*2.1);
-    /* out and back on one sine, so the fall is quick and the return unhurried */
-    const down=Math.sin(Math.min(1,GUN.serpT)*Math.PI);
-    gunSerp.rotation.x=SERP_REST+(SERP_FIRE-SERP_REST)*down;
-  }
   if(gunCoal){
     const g=GUN.glow,live=Math.max(0,(g-0.06)/0.94);
     gunCoal.material.color.setRGB(0.16+live*0.84,0.09+live*0.42,0.07+live*0.10);
@@ -8882,6 +9050,7 @@ function updateDrill(dt){
            ball climbed up out of the muzzle and hung in the air. */
         k=1-Math.max(0,Math.min(1,(RELOAD.t/RELOAD.dur-base)/RELOAD_STAGES[1].f));
       } else {
+        if(GUN.ballT0)GUN.ballHold=Math.min(1,(performance.now()-GUN.ballT0)/G_DROP_MS);
         k=1-Math.max(0,Math.min(1,GUN.ballHold||0));
       }
       /* from a hand's breadth above the muzzle, down into it and out of sight */
@@ -11011,7 +11180,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260802-0008-9f667ac";
+const BUILD="20260802-1133-5ff3d6c";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
