@@ -7134,7 +7134,11 @@ const G_PT_HEEL=[0,-0.150,0.52], G_PT_WRIST=[0,-0.118,-0.26];
    over the shooter's shoulder. Derived rather than guessed: the pivot sits at
    gun-local (-0.085, -0.685) and the pan lip at (0.050, -0.95), so the arm's
    0.297 reach must turn through asin(0.265/0.297) to put the coal in the powder. */
-const SERP_REST=0.30, SERP_FIRE=-0.90;
+/* RE-SOLVED with the pan at bore height. The coal sits 0.210 from the pivot, the
+   pan is 0.170 forward of it and 0.123 above it, so the angle that puts one on the
+   other is -0.93 rather than -0.90. Small, but it is the difference between the
+   match landing IN the priming and landing just short of the pan's rear lip. */
+const SERP_REST=0.30, SERP_FIRE=-0.93;
 /* Three poses, not two.
    load  - muzzle raised, so powder and ball go down it
    port  - held across the body, loaded but not presented
@@ -7181,7 +7185,13 @@ const G_POSE={
      and just right of centre - which is how a man primes and where he looks */
   prime: {p:[0.636,-0.031,-0.681],r:[-0.10,0.45,0.85]},
   port:  {p:[0.30,-0.42,-0.55],r:[-0.03,0.04,0.06]},
-  sight: {p:[0,-0.06,-0.30],   r:[0,0,0]},
+  /* -0.0808 is the sight LINE, not a taste. The rear notch's top edge stands 0.97
+     in above the bore on a breech 0.72 in tall, and the fore blade is built to
+     reach that same line from a muzzle only 0.51 in tall - so dropping the piece
+     by exactly that much is what puts the notch, the bead and the camera axis on
+     one line. Bending the sights to meet the camera instead is what kept giving
+     the rear notch nothing to stand on. */
+  sight: {p:[0,-0.0808,-0.30], r:[0,0,0]},
   /* Butt grounded, barrel near upright, and set to one side so the muzzle sits
      just below the eye line where the stroke can be watched. Ramming a musket
      was done exactly this way - you do not hold ten pounds of iron out in front
@@ -7244,7 +7254,10 @@ const G_BALL=G_CAL-0.04;         /* inches: under bore, for windage */
 /* Moved in with the pan when the whole piece came down to true scale: the old
    pan stood 1.2 in proud of the barrel axis because it was drawn at cartoon
    thickness, so priming powder fell an inch and a half above the dish. */
-const G_PAN=[0.104,0.050,-0.95]; /* the priming pan, beside the lock */
+/* DOWN TO BORE HEIGHT with the pan itself - the touch hole is drilled through the
+   barrel wall into the charge, so the pan's floor is level with the bore's axis,
+   which is zero. It used to be up at 0.050, above the top of the barrel. */
+const G_PAN=[0.090,0.018,-0.95]; /* the priming pan, beside the lock */
 function buildGunModel(){
   if(gunPiece)return;
   /* ========== A MATCHLOCK CALIVER, c.1600 ==========
@@ -7276,6 +7289,32 @@ function buildGunModel(){
      Every dimension below is now in inches divided by twelve, and commented as
      inches so it can be checked against a museum piece rather than against taste. */
   const IN=1/12;
+  /* ---- AND beam8's SIZE ARGUMENT IS A DIAMETER, NOT A RADIUS ----
+     This is the fault under almost every complaint ever made about this weapon.
+     `Geo.prototype.beam8` opens with `r0 = w0/2`, so what you hand it is the width
+     ACROSS THE CORNERS of the octagon and the flats sit at 0.9239 of that. Every
+     comment below read it as a radius. So every rounded part of the piece - barrel,
+     forestock, wrist, butt, trigger guard, match cord, serpentine, scouring stick -
+     was built at HALF its documented size, while every part built with `box` (the
+     lock plate, the pan, the sights, the butt plate) was built true. Measured: a
+     barrel 0.68 across the breech flats carrying a lock drawn for one of 1.48.
+     That single confusion is the whole of what a player kept seeing and I kept
+     mis-diagnosing one part at a time:
+       - the barrel floating 0.40 clear of the stock down its whole length
+       - the lock touching nothing at all, 0.54 off the barrel
+       - the pan hanging 0.44 off the barrel it primes
+       - the trigger guard swinging 0.57 below the wood it bolts to
+       - both sights hovering over metal that had shrunk out from under them
+       - a butt plate 2.26 wide capping a butt 1.02 wide
+       - a BORE of 0.70 inside a muzzle 0.55 across - the ball could not have gone
+         down a barrel narrower than itself
+       - a scouring stick that doubled in thickness the moment it was drawn, 0.21
+         in the hand against 0.46 in its pipes
+     Museum figures for an octagon barrel are quoted ACROSS THE FLATS, so the
+     conversion happens once, here, and every beam dimension below is now the real
+     across-the-flats measurement in inches - directly checkable against a
+     catalogue record, which was the entire point of writing them in inches. */
+  const AF=1/0.9239;        /* across the flats -> beam8's across-the-corners */
   const C=new Geo();                                   /* curved: smooth-shaded */
   const FL=new Geo();                                   /* flat: crisp edges */
   const iron=RGB(0x41454e), ironD=RGB(0x2e3238), ironL=RGB(0x585d68);
@@ -7294,12 +7333,15 @@ function buildGunModel(){
      bore of about two thirds of an inch - the wall is thick there because that is
      where the charge goes off. 1.25 was the slender end of the range and it left
      the barrel looking outmatched by its own lock. */
-  C.beam8([0,0,-0.72],[0,0,-1.62], 0.74*IN,0.68*IN, ironD,iron);
-  C.beam8([0,0,-1.62],[0,0,-3.00], 0.68*IN,0.59*IN, iron,ironL);
-  C.beam8([0,0,-3.00],[0,0,-4.30], 0.59*IN,0.51*IN, iron,ironL);
-  C.beam8([0,0,-4.26],[0,0,-4.33], 0.62*IN,0.59*IN, ironL,iron);   /* muzzle swell */
+  C.beam8([0,0,-0.72],[0,0,-1.62], 1.48*IN*AF,1.36*IN*AF, ironD,iron);
+  C.beam8([0,0,-1.62],[0,0,-3.00], 1.36*IN*AF,1.18*IN*AF, iron,ironL);
+  C.beam8([0,0,-3.00],[0,0,-4.30], 1.18*IN*AF,1.02*IN*AF, iron,ironL);
+  C.beam8([0,0,-4.26],[0,0,-4.33], 1.24*IN*AF,1.18*IN*AF, ironL,iron); /* muzzle swell */
   /* the breech reinforce, the heaviest inch of the barrel, where the plug screws in */
-  C.beam8([0,0,-0.70],[0,0,-0.94], 0.86*IN,0.77*IN, ironD,ironD);
+  C.beam8([0,0,-0.70],[0,0,-0.94], 1.72*IN*AF,1.54*IN*AF, ironD,ironD);
+  /* The wall now works out as a gunsmith would cut it: 1.02 across the flats at
+     the muzzle over a 0.70 bore is 0.16 of iron each side. Before this line was
+     corrected the same arithmetic gave a NEGATIVE wall. */
 
   /* ---- the stock: fore-end under the barrel, a wrist, and a club butt ----
      `flat` is what makes this read as a gunstock rather than a stick: the fore-end
@@ -7313,7 +7355,16 @@ function buildGunModel(){
      Widths up by about a sixth and the `flat` ratios DOWN by the same, so the
      depths stay where they were and only the width changes: forestock 1.90 across,
      wrist 1.70, butt 2.20, and the butt still 4.3 deep at the heel. */
-  C.beam8([0,-0.104,-0.80],[0,-0.079,-3.90], 0.95*IN,0.62*IN, stock,stockD, 1.20,0.94);
+  /* AND THE BARREL IS BEDDED IN IT, which it was not: the wood's top edge sat
+     0.40 BELOW the underside of the barrel for the stock's whole length, so the
+     two largest parts of the weapon were not touching anywhere. The heights below
+     are no longer typed - each end is the barrel's underside at that station,
+     raised by a fixed 0.40 of bedding, so the channel follows the barrel's taper
+     the way a stocker's gouge does and the two cannot come apart again. */
+  const BED=0.40*IN;                       /* how deep the barrel lies in the wood */
+  const fsA=-(0.7347*IN)+BED-(2.28*IN/2);  /* breech end: barrel 1.48 af, stock 2.28 deep */
+  const fsB=-(0.5346*IN)+BED-(1.24*0.94*IN/2);      /* fore end: barrel 1.07 af */
+  C.beam8([0,fsA,-0.80],[0,fsB,-3.90], 1.90*IN*AF,1.24*IN*AF, stock,stockD, 1.20,0.94);
 
   /* ---- THE REAR OF THE STOCK, WHICH IS BEHIND YOUR EYE ----
      Held sighted, the gun's origin sits 0.30 of a foot in front of the camera and
@@ -7338,9 +7389,16 @@ function buildGunModel(){
      it becomes its own object with its own test. Only the butt, which really does
      sit behind your eye, still goes. */
   const WR=new Geo();
-  WR.beam8([0,-0.124,-0.26],[0,-0.106,-0.88], 0.85*IN,0.98*IN, stock,stockL, 1.32,1.10);
+  WR.beam8([0,-0.124,-0.26],[0,-0.118,-0.88], 1.70*IN*AF,1.96*IN*AF, stock,stockL, 1.32,1.10);
   const BT=new Geo();
-  BT.beam8([0,-0.156,0.52],[0,-0.132,-0.22],  1.10*IN,1.00*IN, stockD,stock, 1.95,1.46);
+  /* THE BUTT NOW REACHES THE WRIST. It stopped at z -0.22 and the wrist began at
+     -0.26, so there was half an inch of nothing across the stock exactly where a
+     hand closes on it - a hole, not a seam, and it went unseen because each piece
+     was touching something ELSE and so never showed up as adrift. It runs on to
+     -0.30 and overlaps. The wrist cannot be extended aft instead: its rear cap is
+     already at a depth of 0.54 against a near plane of 0.50, and this is the part
+     that must stay drawn while sighted. */
+  BT.beam8([0,-0.156,0.52],[0,-0.129,-0.30],  2.20*IN*AF,1.90*IN*AF, stockD,stock, 1.95,1.46);
   BT.box(0,-0.156,0.532,2.26*IN,4.30*IN,0.26*IN,ironD);  /* the iron butt plate */
 
   /* ---- the lock, on the right side where a right-handed man's thumb is.
@@ -7370,14 +7428,31 @@ function buildGunModel(){
      the barrel does not constrain it, so it comes back in until its face is level
      with the stock, a bare 0.02 above - which is how a lock plate sits: let into
      the wood, its surface just breaking the surface of it. */
-  FL.box(0.060,-0.112,-0.78,0.24*IN,1.40*IN,0.410,ironD);/* lock plate */
-  FL.box(0.060,-0.112,-0.56,0.22*IN,0.80*IN,0.110,ironD);/* its tail, aft */
-  FL.box(0.062,-0.070,-0.80,0.30*IN,0.55*IN,0.190,iron); /* the sear boss */
-  /* the pan, and its cover swung open ready to fire */
-  FL.box(0.096,0.034,-0.95,0.80*IN,0.26*IN,0.90*IN,iron);
-  FL.box(0.096,0.022,-0.95,0.62*IN,0.22*IN,0.70*IN,ironD);/* the pan's dish */
-  FL.box(0.128,0.058,-0.95,0.16*IN,0.70*IN,0.84*IN,ironL,0.42);/* cover, tipped back */
-  FL.box(0.066,0.026,-0.95,0.70*IN,0.20*IN,0.26*IN,brass);/* the touch-hole boss */
+  /* AND NOW THE STOCK IS ITS TRUE WIDTH, THE PLATE SITS IN IT PROPERLY. It had
+     been shuffled outboard twice to escape parts that were themselves half-size,
+     and ended up touching nothing whatever - 0.54 from the barrel, 0.20 from the
+     wood. The wrist is 1.92 across at this station, so its flank is at 0.080; the
+     plate straddles that line, 0.19 buried and 0.07 proud, which is how a lock is
+     let in. Derived from the flank, not typed, so widening the stock again moves
+     the lock with it. */
+  const flank=(1.70+((0.78-0.26)/0.62)*0.26)*IN/2;     /* the wrist's side at z -0.78 */
+  const lockX=flank+0.07*IN;                            /* the plate's outer face */
+  FL.box(lockX-0.13*IN,-0.112,-0.78,0.26*IN,1.40*IN,0.410,ironD);/* lock plate */
+  FL.box(lockX-0.15*IN,-0.112,-0.56,0.24*IN,0.80*IN,0.110,ironD);/* its tail, aft */
+  FL.box(lockX-0.02*IN,-0.070,-0.80,0.30*IN,0.55*IN,0.190,iron); /* the sear boss */
+  /* ---- THE PAN, WHICH BELONGS AT BORE HEIGHT ----
+     It sat at y 0.034, above the top of a barrel that was then only 0.34 in
+     radius, so it hung in the air off the shoulder of the tube it primes. A pan is
+     a shelf on the barrel's FLANK whose floor is level with the bore, because the
+     touch hole is drilled straight through the wall into the powder charge - so
+     its height is the bore's height, which is the barrel's axis, which is zero.
+     The barrel is 1.45 across the flats here, so its flank stands at 0.0604 and
+     the pan is hung on that rather than on a remembered number. */
+  const brl=0.7247*IN;                     /* the barrel's flank at z -0.95 */
+  FL.box(brl+0.28*IN,0.011,-0.95,0.80*IN,0.26*IN,0.90*IN,iron);
+  FL.box(brl+0.33*IN,0.006,-0.95,0.62*IN,0.22*IN,0.70*IN,ironD);/* the pan's dish */
+  FL.box(brl+0.45*IN,0.040,-0.925,0.16*IN,0.70*IN,0.84*IN,ironL,0.42);/* cover, tipped back */
+  FL.box(brl+0.02*IN,0.011,-0.95,0.70*IN,0.20*IN,0.26*IN,brass);/* the touch-hole boss */
 
   /* ---- TRIGGER AND GUARD, WHICH WERE BOTH INSIDE THE STOCK ----
      Measured: the wrist's underside at this frame is -0.199, and the guard bar sat
@@ -7388,49 +7463,82 @@ function buildGunModel(){
      Rebuilt to the photographs: a long slender lever curving down and back, inside
      a thin bow that sweeps from the stock forward of it round to the stock behind.
      Round bar rather than boxes, because that is what a bent iron rod is. */
-  C.beam8([0,-0.196,-0.86],[0,-0.252,-0.82], 0.14*IN,0.13*IN, iron,iron);   /* bow, fore foot */
-  C.beam8([0,-0.252,-0.82],[0,-0.312,-0.735],0.13*IN,0.13*IN, iron,ironL);
-  C.beam8([0,-0.312,-0.735],[0,-0.320,-0.615],0.13*IN,0.13*IN, ironL,ironL);/* the sweep */
-  C.beam8([0,-0.320,-0.615],[0,-0.262,-0.515],0.13*IN,0.13*IN, ironL,iron);
-  C.beam8([0,-0.262,-0.515],[0,-0.196,-0.482],0.13*IN,0.14*IN, iron,iron);  /* bow, rear foot */
+  /* The feet stay where they are and the bar doubles to its true quarter inch. It
+     was the WOOD that had moved away from them, not the guard that hung too low:
+     the stock's underside is at -0.216 here, and both feet at -0.196 are bedded in
+     it, as they always were meant to be. */
+  C.beam8([0,-0.196,-0.86],[0,-0.252,-0.82], 0.28*IN*AF,0.26*IN*AF, iron,iron);/* bow, fore foot */
+  C.beam8([0,-0.252,-0.82],[0,-0.312,-0.735],0.26*IN*AF,0.26*IN*AF, iron,ironL);
+  C.beam8([0,-0.312,-0.735],[0,-0.320,-0.615],0.26*IN*AF,0.26*IN*AF, ironL,ironL);/* the sweep */
+  C.beam8([0,-0.320,-0.615],[0,-0.262,-0.515],0.26*IN*AF,0.26*IN*AF, ironL,iron);
+  C.beam8([0,-0.262,-0.515],[0,-0.196,-0.482],0.26*IN*AF,0.28*IN*AF, iron,iron);/* bow, rear foot */
   /* the lever itself, hanging into the bow and curling aft */
-  C.beam8([0,-0.170,-0.792],[0,-0.243,-0.770], 0.12*IN,0.11*IN, ironL,ironL);
-  C.beam8([0,-0.243,-0.770],[0,-0.286,-0.722], 0.11*IN,0.10*IN, ironL,iron);
+  C.beam8([0,-0.170,-0.792],[0,-0.243,-0.770], 0.24*IN*AF,0.22*IN*AF, ironL,ironL);
+  C.beam8([0,-0.243,-0.770],[0,-0.286,-0.722], 0.22*IN*AF,0.20*IN*AF, ironL,iron);
 
   /* ---- sights. A caliver carried a brass bead at the muzzle and often nothing
      behind; with the pose putting the bead on the camera axis, a shallow standing
      notch at the breech gives the player two things to line up. */
-  FL.box(0,0.050,-4.24,0.26*IN,0.30*IN,0.42*IN,brassL);
+  /* BOTH SIGHTS ARE NOW SOLVED FROM THE BARREL AND FROM EACH OTHER, because a
+     tapered barrel makes this a two-ended problem and eyeballing either end alone
+     is what left one hovering 0.28 and the other 0.14 clear of the metal.
+     The barrel stands 0.72 above its axis at the breech and 0.51 at the muzzle, so
+     a sight line parallel to the bore REQUIRES a taller blade in front - which is
+     what a real fore-sight is, and why they are blades and not beads. Fix the rear
+     notch on the breech, take its top as the line, and give the front blade
+     whatever height reaches that line from the muzzle. Then aim the pose at the
+     line rather than bending the sights up to meet the camera. */
+  const rSit=0.72*IN-0.05*IN;            /* the breech's top, less a little bedding */
+  const SIGHT=rSit+0.30*IN;              /* the line: the rear notch's top edge */
+  const fSit=0.5137*IN-0.05*IN;          /* the barrel's top under the fore blade */
+  FL.box(0,(fSit+SIGHT)/2,-4.24,0.26*IN,SIGHT-fSit,0.42*IN,brassL);
   /* SUNK INTO THE BARREL, not perched on it. At y 0.064 with a half-height of
      0.009 the notch's underside sat at 0.055 and the barrel's octagonal surface at
      that frame is 0.060 at the flats but LOWER at the corners it spans - so it
      bridged the corners and showed daylight under itself from most angles. Dropped
      until it is bedded in the metal, which is where a standing notch is filed. */
-  FL.box(0,0.050,-1.02,0.44*IN,0.30*IN,0.38*IN,ironD);
+  FL.box(0,SIGHT-0.15*IN,-1.02,0.44*IN,0.30*IN,0.38*IN,ironD);
 
   /* ---- the match: six feet of saltpetred cord, coiled round the wrist with both
      ends free so a second can be lit from the first. A quarter of an inch thick.
      It lives on the REAR of the stock and goes with it - the burning end is up in
      the serpentine's jaws, which is the end that matters. */
   const MC=new Geo();
-  /* HALVED. beam8's parameter is a RADIUS, so 0.30*IN was drawing sixty
-     hundredths of an inch of rope - two and a half times the real thing. Slow
-     match is a quarter to three eighths of an inch of loosely spun hemp; at 0.15
-     it is 0.30 across, which is the middle of that and now reads as cord beside a
-     1.48 in barrel instead of competing with it. */
-  MC.beam8([-0.058,-0.030,-0.34],[-0.048,-0.014,-0.62], 0.15*IN,0.14*IN, cordD,cord);
-  MC.beam8([-0.048,-0.014,-0.62],[0.044,-0.010,-0.66],  0.14*IN,0.14*IN, cord,cord);
-  MC.beam8([0.044,-0.010,-0.66],[0.062,-0.024,-0.42],   0.14*IN,0.13*IN, cord,cordD);
-  MC.beam8([0.062,-0.024,-0.42],[0.070,0.020,-0.60],    0.13*IN,0.13*IN, cordD,cord);
+  /* HALVED, THEN HALVED AGAIN BY MISTAKE. The note here used to say beam8's
+     parameter was a radius and so cut the cord from 0.30 to 0.15 - but the
+     parameter is a diameter, so the "fix" took a correct quarter-inch match down
+     to an eighth. It is 0.30 across again, which is the middle of the quarter-to-
+     three-eighths that slow match is always described as.
+     AND IT IS WOUND ROUND THE WRIST NOW, not laid along the top of it. It was four
+     short beams sitting near the upper edge of a stock that was itself half-size,
+     so the cord floated 0.72 clear of the wood it is supposed to be wrapped
+     around. A coil is a helix; drawing one as a helix means it grips the wrist by
+     construction and cannot drift off it again when the stock next changes. */
+  const CORD=0.30*IN;
+  const TURNS=2, SEG=8;
+  for(let s=0;s<TURNS*SEG;s++){
+    const pt=function(k){
+      const t=k/(TURNS*SEG), z=-0.34-0.30*t, ang=t*TURNS*Math.PI*2+0.6;
+      const u=(-z-0.26)/0.62;                 /* how far along the wrist we are */
+      const hw=(1.70+u*0.26)*IN/2, hd=hw*1.21;/* the wrist's own half-section */
+      return [Math.sin(ang)*(hw+CORD*0.45),
+              (-0.124+u*0.006)+Math.cos(ang)*(hd+CORD*0.45), z];
+    };
+    MC.beam8(pt(s),pt(s+1), CORD*AF,CORD*AF, (s&1)?cord:cordD,(s&1)?cordD:cord);
+  }
   /* AND THE FREE END HANGS. Six feet of it is coiled round the wrist and the rest
      dangles in a bight with both ends loose, which is the single most recognisable
      thing about a matchlock in the photographs and was simply missing - the cord
      went round the wrist and stopped. It swings below the trigger guard, where a
      man's left hand would keep it clear of his own powder. */
-  MC.beam8([-0.058,-0.030,-0.34],[-0.074,-0.130,-0.30], 0.13*IN,0.13*IN, cordD,cord);
-  MC.beam8([-0.074,-0.130,-0.30],[-0.066,-0.268,-0.22], 0.13*IN,0.12*IN, cord,cordD);
-  MC.beam8([-0.066,-0.268,-0.22],[-0.030,-0.300,-0.12], 0.12*IN,0.12*IN, cordD,cord);
-  MC.beam8([-0.030,-0.300,-0.12],[0.004,-0.232,-0.09],  0.12*IN,0.12*IN, cord,cordD);
+  /* It leaves from the UNDERSIDE of the coil, which is the only place a free end
+     can hang from, and it stays forward of z -0.34: anything nearer than that is
+     inside the near plane when the piece is shouldered, and a solid that straddles
+     the near plane renders as a hole rather than as rope. */
+  MC.beam8([-0.048,-0.205,-0.415],[-0.068,-0.310,-0.395], CORD*AF,CORD*AF, cordD,cord);
+  MC.beam8([-0.068,-0.310,-0.395],[-0.058,-0.430,-0.345], CORD*AF,0.28*IN*AF, cord,cordD);
+  MC.beam8([-0.058,-0.430,-0.345],[-0.020,-0.468,-0.400], 0.28*IN*AF,0.28*IN*AF, cordD,cord);
+  MC.beam8([-0.020,-0.468,-0.400],[0.012,-0.398,-0.470],  0.28*IN*AF,0.26*IN*AF, cord,cordD);
 
   /* ---- ASSEMBLE. Every Geo above is filled BEFORE any of them is snapshotted: a
      Geo is copied into its BufferGeometry by .mesh() and anything added afterwards
@@ -7467,12 +7575,25 @@ function buildGunModel(){
      across, the way a bent iron bar is. beam8 gives a round section, so it is
      drawn at the strap's WIDTH and reads correctly from the side, which is the
      only side the player ever sees it from. */
-  Sp.beam8([0,0,0],            [0.008,0.078,0.036], 0.26*IN,0.23*IN, ironD,iron);
-  Sp.beam8([0.008,0.078,0.036],[0.018,0.163,-0.026], 0.23*IN,0.20*IN, iron,ironL);
-  Sp.beam8([0.018,0.163,-0.026],[0.024,0.217,-0.006], 0.20*IN,0.22*IN, ironL,iron);
+  /* RE-SOLVED, because the pan came down to bore height. The pivot sits on the
+     lock plate at y -0.106 and the pan's powder is now at y +0.017 and z -0.95, so
+     the reach is hypot(0.123, 0.170) = 0.210 - two and a half inches, which is
+     what the sources give for a serpentine and a quarter inch shorter than the arm
+     drawn for a pan that was floating too high. Every y below is the old shape
+     scaled by that ratio, so the curve is unchanged and only the reach moves.
+     And the strap is its true width: 0.45 across, not 0.24. */
+  const SPY=0.856;                 /* 0.210 of reach over the 0.245 drawn before */
+  Sp.beam8([0,0,0],                  [0.008,0.078*SPY,0.036], 0.45*IN*AF,0.42*IN*AF, ironD,iron);
+  Sp.beam8([0.008,0.078*SPY,0.036],  [0.018,0.163*SPY,-0.026],0.42*IN*AF,0.38*IN*AF, iron,ironL);
+  Sp.beam8([0.018,0.163*SPY,-0.026], [0.024,0.217*SPY,-0.006],0.38*IN*AF,0.40*IN*AF, ironL,iron);
   /* the burning end of the match, clamped in the jaws - so it swings WITH the arm
-     instead of hanging in the air where the arm used to be */
-  Sp.beam8([0.028,0.082,0.048],[0.024,0.211,-0.005], 0.14*IN,0.13*IN, cordD,cord);
+     instead of hanging in the air where the arm used to be. Same 0.30 cord as the
+     coil round the wrist: it is one length of match, and it was drawn at 0.13 here
+     against 0.30 there, which is why the jaws appeared to be gripping nothing. */
+  /* 0.32 at the clamped end against a 0.30 gap, so the jaws bite into it. Drawn
+     dead equal it measured 0.01 short of both plates - a clamp holding nothing by
+     a hundredth of an inch, which is the whole weapon's failure mode in miniature. */
+  Sp.beam8([0.028,0.082*SPY,0.048],[0.024,0.211*SPY,-0.005], 0.30*IN*AF,0.32*IN*AF, cordD,cord);
   gunSerp=new THREE.Group();
   /* The pivot is placed so the coal's reach EQUALS the distance to the pan: 0.265
      back along the bore and 0.04 up is 0.268, which is exactly where the coal sits
@@ -7484,7 +7605,7 @@ function buildGunModel(){
      play as the mechanism looking too tall, and it was. At the plate's centre the
      reach is 2.6 and the match at rest sits 0.7 above the barrel, which is where
      the photographs put it. */
-  gunSerp.position.set(0.066,-0.085,-0.780);
+  gunSerp.position.set(lockX-0.10*IN,-0.106,-0.780);
   gunSerp.add(Sp.mesh(true,false));
   /* The jaws: TWO of them, with the match gripped between. One box read as a lump
      on a stick and taught nothing; a pair reads as something clamped shut, which
@@ -7497,13 +7618,20 @@ function buildGunModel(){
      size, so the cord is the measure: plates 0.45 apart leave a 0.30 gap that
      grips it exactly, and the whole clamp comes to 0.60 deep. The screw is sized
      to actually span them, which at 0.62 against a 0.79 gap it did not. */
-  Jw.box(0.024,0.223,-0.025,0.38*IN,0.44*IN,0.15*IN,ironD);
-  Jw.box(0.024,0.223, 0.013,0.38*IN,0.44*IN,0.15*IN,ironD);
+  /* AND THEY CLAMP ACROSS THE GUN, NOT ALONG IT. The two plates were separated
+     fore-and-aft while the screw meant to draw them together ran left-and-right,
+     so the screw passed between the plates without touching either and the whole
+     clamp was three pieces floating in company. Separated on x now, with the screw
+     on x through both of them and its head standing off the right side of the
+     cock, which is how it reads in the photograph. Gap 0.30, the width of the
+     match, so it grips exactly. */
+  Jw.box(0.024-0.225*IN,0.223*SPY,-0.006,0.15*IN,0.44*IN,0.38*IN,ironD);
+  Jw.box(0.024+0.225*IN,0.223*SPY,-0.006,0.15*IN,0.44*IN,0.38*IN,ironD);
   /* THE SCREW, ACROSS the jaws with its head outboard, which is how it reads in
      the photograph - a big round head standing off the right side of the cock. It
      was drawn along the gun instead, hidden between the plates. */
-  Jw.box(0.024,0.217,-0.006,0.86*IN,0.20*IN,0.20*IN,iron);
-  Jw.box(0.060,0.217,-0.006,0.22*IN,0.44*IN,0.44*IN,ironL);  /* its head */
+  Jw.box(0.024,0.217*SPY,-0.006,0.78*IN,0.20*IN,0.20*IN,iron);
+  Jw.box(0.024+0.44*IN,0.217*SPY,-0.006,0.22*IN,0.44*IN,0.44*IN,ironL);  /* its head */
   gunSerp.add(Jw.mesh(false,false));
   gunPiece.add(gunSerp);
   gunSerp.rotation.x=SERP_REST;
@@ -7518,7 +7646,7 @@ function buildGunModel(){
      gradeRenderer still owns tone mapping for everything else. */
   gunCoal=new THREE.Mesh(boxGeom(0.026,0.026,0.026),
     new THREE.MeshBasicMaterial({color:lin(0xff7a1e),toneMapped:false}));
-  gunCoal.position.set(0.024,0.245,-0.004);gunSerp.add(gunCoal);
+  gunCoal.position.set(0.024,0.245*SPY,-0.004);gunSerp.add(gunCoal);
 
   /* Everything the hands do is parented to the PIECE, not the camera. Parented
      to the camera they stayed level while the gun tilted to load, so nothing
@@ -7551,8 +7679,13 @@ function buildGunModel(){
      true diameter is five pixels at the distance the stroke happens, and this is
      the one part of the drill the player is being asked to watch. The head is the
      marker that actually reads. */
-  R.beam8([0,0,0],[0,0,-3.50], 0.23*IN,0.20*IN, RGB(0xa88c5e),RGB(0x9c8154));
-  R.beam8([0,0,-3.46],[0,0,-3.64], 0.48*IN,0.42*IN, RGB(0x6b5433),RGB(0x5a462a));
+  /* AND IT IS THE SAME STICK AS THE STOWED ONE AT LAST. The note below says the
+     two were matched; they were not - this one is a beam and that one a box, so
+     this one came out at 0.21 against its 0.46 and the stick visibly doubled in
+     thickness the moment the player drew it, which is precisely when a mismatch is
+     on screen. 0.46 both, and it still has 0.12 of clearance in a 0.70 bore. */
+  R.beam8([0,0,0],[0,0,-3.50], 0.46*IN*AF,0.42*IN*AF, RGB(0xa88c5e),RGB(0x9c8154));
+  R.beam8([0,0,-3.46],[0,0,-3.64], 0.96*IN*AF,0.84*IN*AF, RGB(0x6b5433),RGB(0x5a462a));
   gunRammer=R.mesh(true,false);gunRammer.visible=false;gunPiece.add(gunRammer);
   const St=new Geo();St.box(0,0,0.14,0.016,0.016,0.30,RGB(0x2b2b30));
   gunStream=St.mesh(false,false);gunStream.visible=false;gunPiece.add(gunStream);
@@ -7576,10 +7709,14 @@ function buildGunModel(){
      and the working copy at 0.46, so the scouring stick changed thickness by a
      third the moment the player drew it - and the two are on screen one after the
      other, which is exactly when a mismatch shows. */
-  Rs.box(0,-0.172,-2.36,0.038,0.038,2.92,RGB(0x9c8154));      /* the stick, stowed */
-  Rs.box(0,-0.172,-0.94,0.080,0.080,0.11,RGB(0x6b5433));      /* its head */
-  Rs.box(0,-0.166,-1.60,0.060,0.030,0.09,RGB(0x2b2b30));      /* the pipes holding it */
-  Rs.box(0,-0.166,-3.10,0.060,0.030,0.09,RGB(0x2b2b30));
+  /* AND IT FOLLOWS THE STOCK'S SLOPE. It was a level box under a forestock whose
+     underside climbs from -0.214 at the breech to -0.111 at the muzzle, so the
+     stick was buried at one end and hanging in the air at the other. A beam can
+     slope, and it takes its two ends from the wood above it. */
+  Rs.beam8([0,-0.196,-0.90],[0,-0.128,-3.82], 0.46*IN*AF,0.46*IN*AF, RGB(0x9c8154),RGB(0x9c8154));
+  Rs.box(0,-0.195,-0.94,0.080,0.080,0.11,RGB(0x6b5433));      /* its head */
+  Rs.box(0,-0.180,-1.60,0.060,0.030,0.09,RGB(0x2b2b30));      /* the pipes holding it */
+  Rs.box(0,-0.145,-3.10,0.060,0.030,0.09,RGB(0x2b2b30));
   gunRamStow=Rs.mesh(false,false);gunPiece.add(gunRamStow);
   /* THE BALL HAS TO FIT DOWN THE BARREL, and it did not.
      Reported from play. It was drawn at 0.744 across "because a true-size ball at
@@ -10874,7 +11011,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260801-1832-f53cfff";
+const BUILD="20260802-0008-9f667ac";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
