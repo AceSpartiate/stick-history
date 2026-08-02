@@ -9221,6 +9221,174 @@ function quadOut(G,a,b,c,d,col,inside){
   if(nx*wx+ny*wy+nz*wz<0)G.quad(a,d,c,b,col);
   else G.quad(a,b,c,d,col);
 }
+/* ========== THE LANDING CAMP AT CAPE HENRY ==========
+   Everything here goes into the caller's Geo, so the whole camp is part of the
+   one static mesh the strand already pays for - no new draw calls.
+
+   EVIDENCE. Dimensions for the wedge tent are the English soldier's ridge tent:
+   7 ft square on the ground, 6 ft to the ridge, on a "goal post" frame of two
+   uprights and a ridge pole. That form is documented from a 1530 depiction
+   through the New Model Army's 1645 contracts to the Army list of 1801 -
+   essentially unchanged for 270 years, which is what makes it safe to use for
+   1607. NOT a bell tent: round tents existed in 1607, but they were kings'
+   pavilions (the Field of the Cloth of Gold), and the military bell tent is a
+   century later. Canvas is flax or hemp linen - the 1645 contract names
+   "lockram" - over poles of "firre", so the poles are pale softwood and not the
+   dark oak of the ship. Common soldiers' tents show NO guy ropes in period
+   illustration; this one has them because it is an officer's.
+   INFERRED. Pole diameters (no source found gives a cross-section, the same gap
+   as the matchlock's lock plate). And pitching on sand: dry sand will not hold a
+   nine-inch pin, so the skirts are weighted with ballast stones and cask ends and
+   heaped sand instead of pegged - standard seamanship, not a documented 1607
+   practice. Recorded as inference in REFERENCES.md. */
+const TENT_CANVAS=0xcbbe9e;      /* weathered but serviceable linen, off-white */
+const TENT_SKIRT=0xb3a687;       /* the sand-splashed foot of it */
+const TENT_SHADE=0x9c8f72;       /* the underside, in its own shadow */
+const TENT_FIR=0xa08a5e;         /* fresh-shaved fir spars, paler than ship oak */
+const TENT_LINE=0xc2ae7c;        /* untarred hemp - pale straw, not tarred black */
+function campPole(G,x0,y0,z0,x1,y1,z1,thickIn){
+  /* beam8 halves its size argument, so an inch figure converts once, here */
+  const w=(thickIn/12)/0.9239;
+  G.beam8([x0,y0,z0],[x1,y1,z1],w,w*0.92,RGB(TENT_FIR),RGB(TENT_FIR));
+}
+function buildCamp(G,cx,cz){
+  const gy=function(x,z){return capeGround(x,z);};
+  const canvas=RGB(TENT_CANVAS), skirt=RGB(TENT_SKIRT), shade=RGB(TENT_SHADE);
+  const oak=RGB(0x6b5433), iron=RGB(0x3f434a), rope=RGB(TENT_LINE);
+
+  /* ---- 1. THE FLY: an old sail slung on a line, open to the front ----
+     Ridge high at the back against the dune wind, falling forward to two shorter
+     poles, so the whole working surface under it is lit and visible from the
+     beach. This is the thing the player walks toward. */
+  const FW=9.0, BZ=cz-3.2, FZ=cz+3.4;          /* width, back edge, front edge */
+  const BH=7.1, FH=6.1;                        /* back ridge, front eave */
+  const xl=cx-FW/2, xr=cx+FW/2;
+  const by=gy(cx,BZ), fy=gy(cx,FZ);
+  const B1=[xl,by+BH,BZ], B2=[xr,by+BH,BZ];
+  const F1=[xl,fy+FH,FZ], F2=[xr,fy+FH,FZ];
+  /* the canvas, sagging a little between its corners because rope stretches */
+  const MB=[cx,by+BH-0.22,BZ], MF=[cx,fy+FH-0.30,FZ];
+  G.quad4(B1,MB,MF,F1, canvas,canvas,canvas,canvas);
+  G.quad4(MB,B2,F2,MF, canvas,canvas,canvas,canvas);
+  /* And again, wound the other way, so it is not invisible from underneath -
+     which is exactly where the player stands to read the chart. DROPPED an eighth
+     of an inch: two quads in the same plane with opposite winding z-fight, and the
+     canvas would flicker between lit and shaded as the camera moved. Cloth has a
+     thickness, so giving it one is honest as well as necessary. */
+  const T=0.01;
+  const b1=[B1[0],B1[1]-T,B1[2]], b2=[B2[0],B2[1]-T,B2[2]];
+  const f1=[F1[0],F1[1]-T,F1[2]], f2=[F2[0],F2[1]-T,F2[2]];
+  const mb=[MB[0],MB[1]-T,MB[2]], mf=[MF[0],MF[1]-T,MF[2]];
+  G.quad4(f1,mf,mb,b1, shade,shade,shade,shade);
+  G.quad4(mf,f2,b2,mb, shade,shade,shade,shade);
+  /* the four poles it hangs on, footed in scrapes in the sand */
+  campPole(G,xl,by,BZ,xl,by+BH,BZ,2.4);
+  campPole(G,xr,by,BZ,xr,by+BH,BZ,2.4);
+  campPole(G,xl,fy,FZ,xl,fy+FH,FZ,2.1);
+  campPole(G,xr,fy,FZ,xr,fy+FH,FZ,2.1);
+  campPole(G,xl,by+BH,BZ,xr,by+BH,BZ,1.9);      /* the ridge line itself */
+  /* guys running back to the sand, and the stones holding the skirt down */
+  campPole(G,xl,by+BH,BZ,xl-2.6,by,BZ-2.2,0.7);
+  campPole(G,xr,by+BH,BZ,xr+2.6,by,BZ-2.2,0.7);
+  for(let i=0;i<5;i++){
+    const t=i/4, sx=xl+FW*t, sz=BZ-0.5;
+    G.oct(sx,sz,gy(sx,sz),gy(sx,sz)+0.5, 1.5,1.2, 1.1,0.9, 0.4,
+      RGB(0x8a8266),RGB(0x9a9276),0.8);         /* ballast stones off the shallop */
+  }
+
+  /* ---- 2. WHAT IS UNDER IT: the chart, on a sea chest ---- */
+  const chz=cz+2.6, chy=gy(cx,chz);
+  G.box(cx,chy+0.95,chz, 4.2,1.9,2.4, oak);            /* the chest */
+  G.box(cx,chy+1.95,chz, 4.3,0.30,2.5, RGB(0x7d6440)); /* its lid */
+  G.box(cx,chy+1.95,chz-1.22, 4.35,0.42,0.16, iron);   /* iron banding */
+  G.box(cx,chy+1.95,chz+1.22, 4.35,0.42,0.16, iron);
+  G.box(cx-1.9,chy+0.95,chz, 0.18,1.7,2.3, iron);
+  G.box(cx+1.9,chy+0.95,chz, 0.18,1.7,2.3, iron);
+  /* the chart itself, spread on the lid and weighted at two corners */
+  G.box(cx,chy+2.13,chz, 3.1,0.06,1.8, RGB(0xe4d9b6));
+  G.box(cx-1.2,chy+2.22,chz-0.6, 0.5,0.22,0.5, RGB(0x8a8266));
+  G.box(cx+1.3,chy+2.22,chz+0.5, 0.45,0.20,0.45, RGB(0x8a8266));
+  /* dividers and an inkhorn, so it reads as a chart being WORKED on */
+  G.beam8([cx+0.4,chy+2.20,chz-0.7],[cx+1.0,chy+2.20,chz-0.2],0.10,0.09,iron,iron);
+  G.box(cx-1.35,chy+2.30,chz+0.62, 0.34,0.52,0.34, RGB(0x2b2b30));
+  solid(cx,chz,2.4,1.4,LVL.MAIN);
+
+  /* ---- 3. THE WEDGE TENT: 7 ft square, 6 ft to the ridge, closed ----
+     Standing off to one side and shut, so the open fly reads unmistakably as the
+     working shelter and this as somebody's quarters. */
+  const tx=cx-14, tz=cz-2, ty=gy(tx,tz);
+  const H=6.0, HW=3.5, HL=3.5;
+  const RA=[tx-HL,ty+H,tz], RB=[tx+HL,ty+H,tz];
+  const LA=[tx-HL,ty,tz-HW], LB=[tx+HL,ty,tz-HW];
+  const RA2=[tx-HL,ty,tz+HW], RB2=[tx+HL,ty,tz+HW];
+  G.quad4(RA,RB,LB,LA, canvas,canvas,skirt,skirt);      /* the two slopes */
+  G.quad4(RB,RA,RA2,RB2, canvas,canvas,skirt,skirt);
+  G.tri3(RA,LA,RA2, canvas,skirt,skirt);                /* and the gable ends */
+  G.tri3(RB,RB2,LB, canvas,skirt,skirt);
+  campPole(G,tx-HL,ty,tz,tx-HL,ty+H,tz,2.4);            /* the goal-post frame */
+  campPole(G,tx+HL,ty,tz,tx+HL,ty+H,tz,2.4);
+  campPole(G,tx-HL,ty+H,tz,tx+HL,ty+H,tz,2.0);
+  solid(tx,tz,3.6,3.6,LVL.MAIN);
+
+  /* ---- 4. THE REST OF IT: stores landed while the light holds ---- */
+  function cask(x,z,r,h){
+    const y=gy(x,z);
+    G.oct(x,z,y,y+h, r*2,r*2, r*1.75,r*1.75, 0.35, RGB(0x6f5836),RGB(0x7d6440),0.85);
+    G.oct(x,z,y+h*0.30,y+h*0.42, r*2.1,r*2.1, r*2.1,r*2.1, 0.3, iron,iron,0.9);
+    G.oct(x,z,y+h*0.70,y+h*0.82, r*2.0,r*2.0, r*2.0,r*2.0, 0.3, iron,iron,0.9);
+    solid(x,z,r*1.6,r*1.6,LVL.MAIN);
+  }
+  cask(cx+7.5,cz+1.5,1.15,3.0);          /* victuals, stacked off the wet sand */
+  cask(cx+9.6,cz+0.2,1.15,3.0);
+  cask(cx+8.4,cz+3.4,1.05,2.7);
+  cask(tx-4.5,tz+3.0,1.15,3.0);
+  /* a second chest, open, with the tools out of it */
+  const bx=cx-6.5,bz=cz+4.2,byy=gy(bx,bz);
+  G.box(bx,byy+0.8,bz, 3.4,1.6,2.0, oak);
+  G.box(bx,byy+1.70,bz-1.05, 3.4,0.24,0.5, RGB(0x7d6440),0.5);   /* lid thrown back */
+  /* ---- 5. THE FIRE, which is what says people are living here ---- */
+  const fx=cx-7.0, fz=cz-4.6, fyy=gy(fx,fz);
+  for(let i=0;i<8;i++){
+    const a=i/8*Math.PI*2;
+    G.box(fx+Math.sin(a)*1.7,fyy+0.22,fz+Math.cos(a)*1.7, 0.9,0.45,0.9,
+      RGB(0x8a8266));                                   /* the ring of stones */
+  }
+  for(let i=0;i<5;i++){
+    const a=i/5*Math.PI*2+0.4;
+    G.beam8([fx+Math.sin(a)*1.2,fyy+0.05,fz+Math.cos(a)*1.2],
+            [fx-Math.sin(a)*0.3,fyy+0.75,fz-Math.cos(a)*0.3],
+            0.30,0.24, RGB(0x3a2c1a),RGB(0x241a10));    /* burnt ends inward */
+  }
+  /* the tripod and the pot hanging in it */
+  campPole(G,fx-1.9,fyy,fz-1.1,fx,fyy+4.2,fz,1.6);
+  campPole(G,fx+1.9,fyy,fz-1.1,fx,fyy+4.2,fz,1.6);
+  campPole(G,fx,fyy,fz+2.1,fx,fyy+4.2,fz,1.6);
+  G.oct(fx,fz,fyy+2.3,fyy+3.3, 1.9,1.9, 2.2,2.2, 0.45, iron,RGB(0x53585f),0.85);
+  G.beam8([fx,fyy+3.3,fz],[fx,fyy+4.05,fz],0.09,0.09,iron,iron);
+  solid(fx,fz,1.6,1.6,LVL.MAIN);
+
+  /* ---- 6. A STAND OF ARMS, which is why everyone is here ----
+     Pieces stood together on their butts and leaned in to a cone, muzzles up and
+     out of the sand, exactly as a guard would leave them while the drill runs. */
+  const ax=cx+4.0, az=cz-5.4, ay=gy(ax,az);
+  for(let i=0;i<4;i++){
+    const a=i/4*Math.PI*2+0.5;
+    G.beam8([ax+Math.sin(a)*1.5,ay,az+Math.cos(a)*1.5],
+            [ax+Math.sin(a)*0.28,ay+4.7,az+Math.cos(a)*0.28],
+            0.13,0.10, RGB(0x5a4326),RGB(0x41454e));
+  }
+  G.beam8([ax-0.9,ay+3.1,az],[ax+0.9,ay+3.1,az],0.09,0.09,rope,rope);
+  solid(ax,az,1.3,1.3,LVL.MAIN);
+
+  /* ---- 7. A COIL OF CORDAGE AND A SPARE SPAR, off the shallop ---- */
+  /* off to the side: coiled where it was, it sat square in the mouth of the fly
+     and the player walked into it on the way to the chart */
+  const rx=cx+6.2, rz=cz+4.6, ry=gy(rx,rz);
+  for(let i=0;i<3;i++)
+    G.oct(rx,rz,ry+i*0.26,ry+0.26+i*0.26, 2.6-i*0.30,2.6-i*0.30,
+      2.5-i*0.30,2.5-i*0.30, 0.45, rope,RGB(0xa8956a),0.85);
+  campPole(G,cx-12.5,gy(cx-12.5,cz+6),cz+6, cx-4.5,gy(cx-4.5,cz+6.6)+0.6,cz+6.6, 3.0);
+}
 function buildShallop(G,ox,oy,oz,yaw,list){
   const PLANK=RGB(0x7a6242), TAR=RGB(0x4a3a26), RAIL=RGB(0x5b4830),
         THWART=RGB(0x8a7048), SPAR=RGB(0x9a8055), OAR=RGB(0x8f7a52),
@@ -9624,9 +9792,24 @@ const SHORE_TASKS=[
   /* the cross, and the men who set it up */
   {task:"cross", names:["John Herd","William Garret","Edward Brinto"],
    kind:"trade", at:[[24,-8],[32,-6],[28,-12]]},
-  /* a guard, because they were attacked here that night */
-  {task:"guard", names:["Robert Behethland","Nathaniell Powell","Edward Brookes","William Bruster","Kellam Throgmorton","George Walker"],
-   kind:"soldier", at:[[-4,-6],[10,-10],[-18,-2],[40,6],[-34,4],[52,20]]},
+  /* a guard, because they were attacked here that night.
+     EDWARD BROOKES WAS REMOVED FROM THIS LIST. He is on the Company's roll and it
+     is an easy mistake, but he never reached Virginia: Percy buries him at Mona in
+     the West Indies on the way over - "we lost none but one Edward Brookes
+     Gentleman, whose fat melted within him by the great heate and drought of the
+     Countrey." The fleet left Mona around 9 April and this beach is the 26th, so
+     he had been dead nineteen days. His line about the match blowing out was too
+     good to lose and now belongs to Nathaniell Powell, who was there.
+     Every other name in SHORE_TASKS was audited against the roll on 2 August 2026
+     and checks out. */
+  {task:"guard", names:["Robert Behethland","Nathaniell Powell","William Bruster","Kellam Throgmorton","George Walker"],
+   kind:"soldier", at:[[-4,-6],[10,-10],[40,6],[-34,4],[52,20]]},
+  /* ---- THE CAMP, which now exists and ought to have somebody in it ----
+     Three men the roll names and the game had never shown. A barber-surgeon, a
+     sailer who is generally read as the expedition's fisherman, and the fourth
+     boy - the roll marks exactly four and the game only had three. */
+  {task:"camp", names:["Thomas Couper","Jonas Profit","James Brumfield"],
+   kind:"labour", at:[[-4.5,26.5],[-1.5,22.5],[-13.5,18.5]]},
   /* gentlemen, a third of the company, mostly watching other men work */
   {task:"idle", names:["Dru Pickhouse","Ellis Kingston","Thomas Studley","Jeremy Alicock","Richard Crofts","Thomas Webbe","Francis Snarsbrough","Robert Ford"],
    kind:"gent", at:[[-26,52],[-16,56],[36,30],[46,18],[54,30],[-8,58],[18,56],[30,50]]},
@@ -9634,7 +9817,9 @@ const SHORE_TASKS=[
   {task:"stores", names:["John Laydon","William Rods","Henry Tavin","George Golding","John Dods"],
    kind:"labour", at:[[-64,54],[-58,58],[-70,50],[-66,60],[-72,56]]},
   /* the surgeon, who will have work before the night is out */
-  {task:"surgeon", names:["Thomas Wotton"], kind:"gent", at:[[6,30]]},
+  /* moved under the fly: a chest of instruments belongs in the shade, not on open
+     sand, and it gives the camp a reason to be a camp */
+  {task:"surgeon", names:["Thomas Wotton"], kind:"gent", at:[[-11.5,25.5]]},
   /* the drum, and the boys */
   {task:"drum", names:["Nicholas Skot"], kind:"labour", at:[[18,10]]},   /* was 4.5 from Newport: labels collided */
   {task:"boys", names:["Samuell Collier","Nathaniel Peacock","Richard Mutton"],
@@ -9657,8 +9842,19 @@ const SHORE_SAYS={
   "William Garret":["\u201cThere is no lime on this coast that I have found. No lime, no mortar, no chimney worth the name.\u201d"],
   "Edward Brinto":["\u201cI am a mason with nothing to cut. They brought me three thousand miles to dig postholes.\u201d"],
   "Robert Behethland":["\u201cKeep your eyes on the trees, not the water. Nothing is coming out of the water.\u201d"],
-  "Nathaniell Powell":["\u201cI have counted us. Thirty ashore and seventy still afloat, and the light going.\u201d"],
-  "Edward Brookes":["\u201cMy match has been out twice already in this wind. A guard with a dead match is a man with a stick.\u201d"],
+  /* Powell keeps his own line and inherits Edward Brookes's. Brookes is on the
+     Company's roll but died at Mona in the West Indies on the way over, nineteen
+     days before this beach, so he could not have been standing here to say it -
+     and the line was too good to lose. */
+  "Nathaniell Powell":["\u201cI have counted us. Thirty ashore and seventy still afloat, and the light going.\u201d",
+    "\u201cMy match has been out twice already in this wind. A guard with a dead match is a man with a stick.\u201d"],
+  /* ---- the three at the camp, all named on the roll and none shown before ---- */
+  "Thomas Couper":["\u201cBarber, they have me down as. That means I shave you, I bleed you, and I draw the tooth when it comes to it.\u201d",
+    "\u201cThere is a second chirurgian aboard and neither of us has unpacked. I would as soon it stayed that way.\u201d"],
+  "Jonas Profit":["\u201cSailer on the roll, fisherman in fact. There is more in that water than in all this sand, if they will let me get at it.\u201d",
+    "\u201cSturgeon, they say, as long as your arm. We shall see whether the bay agrees with them.\u201d"],
+  "James Brumfield":["\u201cI fetch. That is the whole of it \u2014 I fetch for whoever shouts loudest, and they all shout.\u201d",
+    "\u201cThere are four of us boys. Samuell means to learn the country. I mean to learn where the food is kept.\u201d"],
   "William Bruster":["\u201cThey say the Spanish have a fort somewhere south of here. That is who we were told to fear.\u201d"],
   "Kellam Throgmorton":["\u201cFour months at sea to stand in sand and watch a treeline. I had imagined it differently.\u201d"],
   "George Walker":["\u201cIf anything comes out of that wood, do not run down the beach. Run to the boats.\u201d"],
@@ -10671,8 +10867,30 @@ registerWorld("ch2",function(root){
     P.box(cx2+Math.sin(a)*2.4,cy2+0.35,cz2+Math.cos(a)*2.4,1.5,0.7,1.5,RGB(0x8a8266));
   }
   solid(cx2,cz2,1.4,1.4,LVL.MAIN);
+  /* ---- THE LANDING CAMP ----
+     Reported from play: "the map is buried - I would assume it should be in a
+     tent?" It was worse than buried; it was an invisible hotspot on open sand,
+     with no object at all to walk toward, and it is the travel hub for the whole
+     chapter.
+     THE RESEARCH ARGUES AGAINST A CLOSED TENT, and it argues for something
+     better. Percy's day-by-day account of Cape Henry mentions the landing, the
+     shallop and the cross and says nothing about tents; the party was attacked on
+     the evening of the 26th "when wee were going abroad" - going back aboard the
+     ships - so nobody slept ashore. What IS documented, in Smith's own words
+     about the first weeks in Virginia, is this: "Wee did hang an awning (which is
+     an old saile) to three or foure trees to shadow us from the sunne... in foule
+     weather we shifted into an old rotten tent."
+     So the working shelter of these actual men in this actual place was A SAIL
+     SLUNG ON A LINE, not a pitched tent - and it also happens to solve the
+     problem, where a closed tent would only move the invisible hotspot indoors.
+     An open fly shows the chest and the chart on it from right across the beach.
+     The closed wedge tent stands beside it as an officer's quarters, because
+     tents in this period were the preserve of officers, which is exactly why the
+     captain's chart lives under the captain's canvas. */
+  buildCamp(P,-8,22);
+  const chartX=-8, chartZ=24.6;
   interactables.push({id:"capechart",label:"The Captain's Chart",
-    x:CAPE_MARK.x+8,z:CAPE_MARK.z-9,y:capeGround(CAPE_MARK.x+8,CAPE_MARK.z-9),
+    x:chartX,z:chartZ,y:capeGround(chartX,chartZ),
     lvl:LVL.MAIN,r:7,action:"chart",data:null});
   interactables.push({id:"cross",label:"The Cross at Cape Henry",x:cx2,z:cz2+4.5,
     y:cy2,lvl:LVL.MAIN,r:7,action:"doc",data:CAPE_DOC});
@@ -11328,7 +11546,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260802-1143-6c66756";
+const BUILD="20260802-1156-5ab00c2";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
