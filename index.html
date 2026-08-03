@@ -2532,16 +2532,23 @@ function buildDecks(root){
      the scupper stains, all in the vertex colours at no run-time cost. */
   planks(root,SHIP.Z_BOW+2*K,SHIP.Z_STERN-K,SHIP.DECK_Y,0.7*K,0x8a6f45,0x7a6039,
     weatherDeck());
-  /* ---- bulwarks and rails, merged into one mesh ----
-     THE INBOARD FACE IS THE ONE THE PLAYER LOOKS AT ALL CHAPTER, and it was the
-     same value as the face nobody ever sees, because box() takes one colour for
-     all six faces. An unpainted face sheltered from the weather stays lighter
-     than the one taking the sea, so the inboard side is warmer and lighter -
-     which also separates the bulwark from the deck it stands on, and gives the
-     new waterway something to sit against. Zero extra triangles: the same box,
-     drawn as its own quads so the faces can differ. */
-  const bw=new Geo(),cW=RGB(0x4e3a22),cR=RGB(0x6b5433);
-  const cIn=RGB(0x5f4a2c), cCap=RGB(0x765c39);
+  /* ---- bulwarks and rails ----
+     THE SHIP IS PAINTED, AND I HAD HER BARE. The chapter is explicitly aboard a
+     RECONSTRUCTION of the Susan Constant - the title screen says so - and that
+     vessel exists, at Jamestown Settlement, built in 1990 from research Brian
+     Lavery published as "The Colonial Merchantman Susan Constant 1605". She is
+     painted, and brightly: inboard bulwarks in a pale cream-buff with a RED cap
+     rail; outboard, buff topsides, red-brown wales and a blue-grey upper band.
+     Her consort Godspeed carries a red-and-cream chequer on her upper works.
+     A uniformly dark brown bulwark was the second-largest visual gap on this ship
+     after the chessboard, and it is the cheapest to close - the inboard face is
+     the surface the player looks at for the whole chapter.
+     The first pass here gave that face its own colour and got the direction right
+     for the wrong reason: I reasoned about how bare oak weathers when the answer
+     was that she is not bare. Painted now, from the vessel rather than from
+     inference about timber. */
+  const bw=new Geo(),cW=RGB(0x8a7a5c),cR=RGB(0x8f3a2c);
+  const cIn=RGB(0xd8c9a4), cCap=RGB(0x7a2f24);
   for(let z=SHIP.Z_BOW+K;z<SHIP.Z_STERN;z+=3*K){
     const hbw=halfBeam(z,SHIP.DECK_Y);
     if(hbw<1.6*K)continue;
@@ -2551,15 +2558,17 @@ function buildDecks(root){
       const xo=sg*(hbw+0.35*K), xi=sg*(hbw-0.35*K);
       /* outboard face, in the weather */
       bw.quad([xo,y0,zA],[xo,y0,zB],[xo,y1,zB],[xo,y1,zA],cW);
-      /* inboard face, sheltered - and it darkens toward the deck, because the
-         angle between a bulwark and a deck never gets full sky */
+      /* the painted inboard face, darkening toward the deck because the angle
+         between a bulwark and a deck never gets full sky. Pale paint is what
+         makes this work: it takes the contact shading visibly, where dark brown
+         swallowed it. */
       bw.quad4([xi,y0,zB],[xi,y0,zA],[xi,y1,zA],[xi,y1,zB],
-        shadeRGB(cIn,0.72),shadeRGB(cIn,0.72),cIn,cIn);
+        shadeRGB(cIn,0.70),shadeRGB(cIn,0.70),cIn,cIn);
       /* the top of the timbering, under the rail */
-      bw.quad([xo,y1,zA],[xo,y1,zB],[xi,y1,zB],[xi,y1,zA],shadeRGB(cIn,1.06));
+      bw.quad([xo,y1,zA],[xo,y1,zB],[xi,y1,zB],[xi,y1,zA],shadeRGB(cIn,0.88));
+      /* THE RED CAP RAIL, which is the strongest single colour aboard her and
+         the thing that stops the whole waist reading as one brown mass */
       bw.box(sg*hbw,SHIP.DECK_Y+3.4*K,z,0.95*K,0.45*K,3.1*K,cR);
-      /* a capping strip on the inboard edge of the rail, so the rail reads as a
-         piece of timber laid ON the bulwark rather than as part of it */
       bw.box(xi-sg*0.06*K,SHIP.DECK_Y+3.4*K,z,0.16*K,0.47*K,3.1*K,cCap);
     }
   }
@@ -2949,12 +2958,22 @@ function buildFittings(root){
    Darker toward the hull sides, because a lamp hangs on the centreline, and
    darker again into the ends, because that is where it does not reach. The point
    lights then read as pools rather than as a tint on an already-lit room. */
+/* A per-vertex multiplicative field. `fn` may return a NUMBER, which scales all
+   three channels, or an [r,g,b] TRIPLE, which scales them separately - and the
+   triple is what makes hue-shifted wear possible.
+   That matters more than it sounds. Oak weathers two different ways for two
+   different reasons: sun breaks down the lignin and rain leaches the tannins, so
+   EXPOSED oak goes grey, while oak under an overhang keeps its brown and collects
+   soot and grease on top of it. Shading the sheltered deck with a scalar makes it
+   a dimmer version of the same grey, which is exactly the thing that reads as a
+   dark patch of paint rather than as shelter. */
 Geo.prototype.shade=function(fn){
   const p=this.p, c=this.c;
   for(let i=0;i<c.length;i+=3){
     const m=fn(p[i],p[i+1],p[i+2]);
     if(m===1)continue;
-    c[i]*=m;c[i+1]*=m;c[i+2]*=m;
+    if(typeof m==="number"){c[i]*=m;c[i+1]*=m;c[i+2]*=m;}
+    else{c[i]*=m[0];c[i+1]*=m[1];c[i+2]*=m[2];}
   }
   return this;
 };
@@ -3018,23 +3037,42 @@ function weatherDeck(){
        eaves are - reuse ITS breakpoints so the shadow lands under the actual
        overhang instead of near it. */
     const f=-24*K, a=14*K, ramp=3.2*K;
-    if(z<f)      m*=0.60+0.40*Math.max(0,Math.min(1,(z-(f-ramp))/ramp));
-    else if(z>a) m*=0.60+0.40*Math.max(0,Math.min(1,((a+ramp)-z)/ramp));
+    let shel=0;                     /* 0 in the open waist, 1 fully under a deck */
+    if(z<f)      shel=1-Math.max(0,Math.min(1,(z-(f-ramp))/ramp));
+    else if(z>a) shel=1-Math.max(0,Math.min(1,((a+ramp)-z)/ramp));
+    m*=1-0.40*shel;
     /* contact darkening where the deck runs into the bulwark: a real deck is
        never as bright in the angle as it is out in the middle, and this is what
        gives the waterway something to sit against */
     const hb=Math.max(1,halfBeam(z,y));
     const edge=Math.max(0,1-(hb-Math.abs(x))/(2.6*K));
     m*=1-0.26*edge*edge;
-    /* scrubbed pale where the watch actually walks - bare deck holystoned daily
-       goes LIGHTER, so this is a positive term, and it follows the waist */
+    /* ---- THE TRAFFIC LANE GOES DARKER, NOT PALER, AND I HAD THIS BACKWARDS ----
+       I wrote this as a positive term on the reasoning that a scrubbed deck goes
+       light. It does - but HOLYSTONING IS EIGHTEENTH CENTURY. It becomes standard
+       Royal Navy practice generations later, peaking when St Vincent orders decks
+       done morning and evening in 1796; the famous pale cream deck is Napoleonic
+       and about two hundred years late for 1607. A 1607 merchantman's deck is
+       trodden, greasy and tarred over, so the path a watch walks is the DARKEST
+       part of it, not the palest. */
     const lane=Math.max(0,1-Math.abs(Math.abs(x)-3.4*K)/(2.8*K));
-    if(z>f&&z<a)m*=1+0.075*lane;
+    m*=1-0.06*lane;
     /* and a stain at each scupper, where the water goes over the side */
     for(let i=0;i<GUN_Z.length;i++){
       const q=Math.hypot((Math.abs(x)-hb+1.1*K)/(1.5*K),(z-GUN_Z[i])/(2.0*K));
       if(q<1)m*=1-0.14*(1-q);
     }
+    /* ---- AND SHELTER IS A CHANGE OF COLOUR, NOT JUST OF VALUE ----
+       Oak weathers grey for two reasons that both need the sky: sun breaks down
+       the lignin, rain washes the products and the tannins out. Under a deck
+       neither happens, so sheltered oak KEEPS ITS BROWN - and collects soot and
+       galley grease on top of it. Shading it with a scalar gives a dimmer version
+       of the same grey, which reads as a patch of dark paint. So the shelter term
+       returns a triple: it holds the red, takes the green down a little and the
+       blue down hardest, which walks the colour from weathered grey toward the
+       warm brown the sheltered deck actually is. */
+    if(shel>0.01)
+      return [m*(1+0.10*shel), m*(1-0.02*shel), m*(1-0.20*shel)];
     return m;
   };
 }
@@ -3072,9 +3110,30 @@ function weatherDeck(){
 function planks(root,z0,z1,y,inset,col1,col2,shadeFn){
   const g=new Geo();
   const PW=0.92*K;            /* 11 in of oak */
-  const SEAM=0.085*K;         /* the pitch line between two of them */
+  /* ---- THE SEAM IS DELIBERATELY FOUR TIMES TOO WIDE, AND THAT IS A DEBT ----
+     A payed deck seam is about a QUARTER of an inch at the surface - 2.4% of a
+     ten-inch plank. At this pitch that would be 0.03 world units, and a line that
+     thin cannot survive: it lands well under a pixel at any distance and crawls
+     and flickers as the camera walks. Measured against the lowest quality tier,
+     0.15 units is the floor at which a deck seam still resolves at a hundred feet.
+     So it is drawn at 0.11*K = 0.15 units, four times life size, knowingly.
+     METHOD rule 7: a legibility exaggeration is a debt and has to sit beside the
+     true value where it can be seen. SEAM_TRUE is the true value; if this ever
+     renders at a resolution where 0.03 holds up, use it. */
+  const SEAM_TRUE=0.021*K;    /* a quarter of an inch, which is what it really is */
+  const SEAM=0.11*K;          /* what it takes to not shimmer */
   const BUTT=22*K;            /* a plank runs about 22 ft before it is butted */
-  const MARG=1.25*K;          /* the margin plank, following the side */
+  /* MARGIN PLANK renamed and reframed: what is documented for 1607 is the
+     WATERWAY, and Mainwaring gives it in period English - "that small piece or
+     ledge of timber which lies fore and aft on all the ship's decks close by the
+     sides, which is to keep the water from running down there". The Yarmouth's
+     were "six inches in the chine in thickness, and fourteen inches broad", cut to
+     an L-section to lead water to the scuppers. Fourteen inches is what this is.
+     What I must NOT claim is nibbing - seating tapered plank ends into a step cut
+     in a margin strake. That is regularly documented for the nineteenth century
+     and unclear even for the eighteenth; Sutherland's 1710 ship still has deck
+     planks simply butting a waterway. So the planks butt it, and there is no nib. */
+  const MARG=1.17*K;          /* fourteen inches broad, per the Yarmouth */
   const STEP=2.3*K;           /* half the old band, so the side curve is smooth */
   const base=mixHex(col1,col2,0.5);
   const seamC=RGB(shadeHex(base,0.28));         /* pitch, not shadow */
@@ -3129,7 +3188,8 @@ function planks(root,z0,z1,y,inset,col1,col2,shadeFn){
                [hbb,y,zb+SEAM*0.5],[-hbb,y,zb+SEAM*0.5],seamC);
       }
     }
-    /* the margin plank, both sides, following the curve of the side */
+    /* the WATERWAY, both sides, following the curve of the side - the planks
+       simply butt it, because nibbing is not evidenced for 1607 */
     for(let sg=-1;sg<=1;sg+=2){
       g.quad([sg*f0,y,z],[sg*hb0,y,z],[sg*hb1,y,zn],[sg*f1,y,zn],margC);
       /* and the waterway: a low fillet where the deck meets the bulwark, which
@@ -12244,7 +12304,8 @@ const PATCH_NOTES=[
      "A margin plank follows the curve of the ship's side, and a waterway runs along the foot of the bulwark.",
      "The main deck now has shade on it. It is darker under the forecastle and the half deck, darker in the angle where it meets the bulwark, and scrubbed paler amidships where the watch walks.",
      "Below decks there is now something actually lit rather than only shaded: a pool of lamplight on the deck under each lantern, and a slab of daylight coming in at each gunport.",
-     "The inboard face of the bulwark — the one you look at all chapter — is no longer the same colour as the face nobody sees.",
+     "She is painted, as the real reconstruction at Jamestown Settlement is: the inboard bulwarks in pale cream-buff with a red cap rail, instead of the same dark brown as everything else.",
+     "The deck under the forecastle and half deck is warmer as well as darker, because oak only goes grey where the sun and rain can reach it.",
      "Every deck beam is bracketed to the ship's side with a hanging knee, the way a wooden hull is actually held together."
    ]},
   {when:"2 August 1607",
@@ -12549,7 +12610,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260803-0301-ee559e1";
+const BUILD="20260803-1039-cbdf26a";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
