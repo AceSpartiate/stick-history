@@ -4599,6 +4599,53 @@ function buildLadders(root){
 /* ========== THE JAMES RIVER ========== */
 /* The bank, the marsh, the treeline and the swell never move, so they are all
    merged into a few vertex-coloured meshes rather than several hundred boxes. */
+/* ========== THE MOUTH OF THE CHESAPEAKE, 26 APRIL 1607 ==========
+   Reported from play: "the shoreline in chapter 1 looks like 2 sparse islands on
+   either side. it doesnt look like a continent." Both halves of that are right, and
+   the second is the cause of the first.
+
+   This function laid two ribbons of bank 650 feet apart, marsh at their feet, and
+   sixty-odd separate tree boxes scattered along each. That is the James River - and
+   Chapter I is the MORNING of 26 April 1607, inside the Virginia capes. Percy:
+   "about foure a clocke in the morning, wee descried the Land of Virginia." They
+   have not found the James yet; it is three weeks away, and the chapter header in
+   CHAPTERS says so. What lay round them was Cape Henry close to starboard, the
+   Eastern Shore twelve miles off to port, and the Atlantic astern.
+
+   WHY IT READ AS ISLANDS, measured rather than guessed:
+     - a man's eye on the main deck is 20.5 ft up, so water inside the 900 ft far
+       plane only reaches 1.30 degrees BELOW the eye line. That is the apparent
+       horizon - not the true one, which is five miles out and far past the clip.
+     - the top of the old bank, 325 ft out, sat 2.63 degrees below the eye. That is
+       1.33 degrees UNDER the horizon, and land under the horizon has sea behind it
+       and above it, which is what a raft is.
+     - so the only thing breaking the skyline anywhere was the scattered tree boxes.
+       Sweeping all 360 bearings found SEVENTEEN separate arcs of land with sixteen
+       arcs of open water between them, and at 46 per cent of bearings there was no
+       drawn geometry at the skyline at all.
+
+   A coast must do three things a row of boxes cannot: stand ABOVE the apparent
+   horizon, run CONTINUOUS in bearing, and have DEPTH behind its front edge. So the
+   shore is swept as a ribbon in BEARING now instead of assembled out of boxes -
+   consecutive steps share an edge, so a gap is not expressible - in four ranks that
+   recede and haze off into the fog colour.
+
+   THE COMPRESSION, stated because it is a lie: Cape Henry from a real anchorage was
+   a mile and more off, and the bay mouth is twelve miles across. Both are far
+   outside a 900 ft far plane. The near shore is drawn at 560-710 ft and wraps 180
+   degrees, which is the same bargain the opening cutscene's cape() already strikes
+   and says out loud - twelve miles "would read as open sea, so the mouth is
+   compressed to what the eye needs". The Eastern Shore keeps its DISTANCE instead of
+   its scale: it sits at the edge of the world, low and nearly all haze, because from
+   a twenty-foot eye at twelve miles the tops of its timber are all that clears. */
+const BAY_HAZE=0xbec4bb;             /* the fog colour: what all distance tends to */
+/* smooth value noise, deterministic, so the same coast is drawn every time. Two
+   frequencies laid over each other: bights and points in the shore itself, and
+   individual stands of timber along the top of it. */
+function coastNoise(u,ph){
+  const i=Math.floor(u), f=u-i, s=f*f*(3-2*f);
+  return srand(i+ph)*(1-s)+srand(i+1+ph)*s;
+}
 function buildRiver(root){
   const shape=new THREE.Shape();
   shape.moveTo(-1300,-1300);shape.lineTo(1300,-1300);shape.lineTo(1300,1300);
@@ -4612,11 +4659,15 @@ function buildRiver(root){
   hole.moveTo(pts[0][0],pts[0][1]);
   for(let i=1;i<pts.length;i++)hole.lineTo(pts[i][0],pts[i][1]);
   hole.closePath();shape.holes.push(hole);
-  const water=new THREE.Mesh(new THREE.ShapeGeometry(shape),mat(0x3d5346));
+  /* bay water at dawn, not a green river: the same blue-grey the opening cutscene
+     leaves the player looking at, so the chapter opens in the water it ended on.
+     It also has to be distinguishable from the shore, and green water against a
+     green wood was part of why the two would not separate. */
+  const water=new THREE.Mesh(new THREE.ShapeGeometry(shape),mat(0x3a5560));
   water.rotation.x=-Math.PI/2;water.position.y=0;root.add(water);
 
   const swell=new Geo(), landG=new Geo(), woodG=new Geo();
-  const cA=RGB(0x466050),cB=RGB(0x35493d);
+  const cA=RGB(0x46656e),cB=RGB(0x35525c);
   for(let i=0;i<44;i++){
     const a=Math.random()*Math.PI*2,r=95+Math.random()*300;
     const w=16+Math.random()*22;
@@ -4624,27 +4675,129 @@ function buildRiver(root){
   }
   root.add(swell.mesh(false,false));
 
-  const cLand=RGB(0x4d5a30), cMarsh=RGB(0x6d6c3c), cFar=RGB(0x33482a);
-  const cTrunk=RGB(0x43331f), cLeaf=[RGB(0x2f4a22),RGB(0x3a5a29),RGB(0x27401d)];
-  for(let sd=-1;sd<=1;sd+=2){
-    const bx=sd*250;
-    for(let z=-820;z<820;z+=58){
-      const jit=(Math.random()*26-13);
-      landG.box(bx+sd*75+jit,2,z,150,7,60,cLand);
-      landG.box(bx-sd*6+jit*0.4,0.9,z,26,2.2,60,cMarsh);
+  /* ---- CAPE HENRY, CLOSE TO STARBOARD, AS THEY CAME IN ----
+     Swept in bearing, so consecutive steps SHARE AN EDGE. That is the whole fix: a
+     ring of separate boxes can have a gap between two of them and a swept ribbon
+     cannot. DoubleSide, because a ribbon has no inside and I am not going to bet a
+     coastline on getting a winding right - see the starboard bulwark. */
+  /* 125 degrees, not 180. The first cut wrapped the shore round 185 degrees of the
+     compass and closed 81 per cent of the horizon with land, which does not read as
+     a cape - it reads as a cove, or as the river this is replacing. A cape has land
+     on ONE hand and sea everywhere else, and the fix for fragmentation was never
+     more coverage: it was CONTINUITY. */
+  const A0=25*Math.PI/180, A1=150*Math.PI/180, STEP=150;
+  /* THE ENDS HAVE TO RUN AWAY, not stop. A swept ribbon that simply terminates
+     leaves a vertical cut standing in open water, which is an island's edge - the
+     very read being fixed. So the last sixth at each end swings out toward the far
+     plane, where the fog is seven tenths of the way to white, and takes its head
+     down with it. That is what a headland does: it recedes and the haze eats it. */
+  const runOut=function(t){
+    const e=Math.min(t,1-t)/0.17;              /* 0 at the arc's ends, 1 by a sixth in */
+    return (e>=1)?0:(1-e)*(1-e)*290;
+  };
+  const fade  =function(t){
+    const e=Math.min(t,1-t)/0.09;
+    return (e>=1)?1:0.42+0.58*e;               /* and the head comes down a little */
+  };
+  const rAt   =function(t){return Math.min(880,600+coastNoise(t*3.1,11)*160+runOut(t));};
+  const duneAt=function(t){return (11+coastNoise(t*5.3,29)*15)*fade(t);};
+  const treeAt=function(t){return duneAt(t)+(26+coastNoise(t*7.9,53)*34
+                                               +coastNoise(t*23.0,71)*13)*fade(t);};
+  const cStrand=RGB(0xbca87c);                     /* the pale strand at the foot */
+  const cDuneL=RGB(0x5c5f39), cDuneH=RGB(0x6f6a45);
+  const cWoodL=RGB(0x24391d), cWoodH=RGB(0x39562a);
+  let pv=null;
+  for(let i=0;i<=STEP;i++){
+    const t=i/STEP, a=A0+(A1-A0)*t, r=rAt(t);
+    const p={x:Math.sin(a)*r,z:Math.cos(a)*r,du:duneAt(t),tr:treeAt(t)};
+    if(pv){
+      /* sand taking the water */
+      landG.quad([pv.x,0,pv.z],[p.x,0,p.z],[p.x,2.4,p.z],[pv.x,2.4,pv.z],cStrand);
+      /* the dune behind it, lit toward its top */
+      landG.quad4([pv.x,2.4,pv.z],[p.x,2.4,p.z],[p.x,p.du,p.z],[pv.x,pv.du,pv.z],
+        cDuneL,cDuneL,cDuneH,cDuneH);
+      /* and the timber: ONE continuous mass with a ragged head */
+      landG.quad4([pv.x,pv.du,pv.z],[p.x,p.du,p.z],[p.x,p.tr,p.z],[pv.x,pv.tr,pv.z],
+        cWoodL,cWoodL,cWoodH,cWoodH);
     }
-    for(let i=0;i<62;i++){
-      const z=-820+Math.random()*1640;
-      const x=bx+sd*(14+Math.random()*150);
-      const h=14+Math.random()*20;
-      woodG.box(x,4+h/2,z,2.2,h,2.2,cTrunk);
-      const cw=11+Math.random()*9;
-      woodG.box(x,4+h+3,z,cw,10+Math.random()*6,cw,cLeaf[Math.floor(Math.random()*3)]);
+    pv=p;
+  }
+  /* two more ranks of wood behind it, farther off and hazier. They show through
+     wherever the front rank dips, and that is what makes a wood read as DEEP rather
+     than as one painted flat standing on the water. */
+  for(let k=1;k<=2;k++){
+    const push=55*k, haze=0.20+0.19*k;
+    const cl=RGB(mixHex(0x24391d,BAY_HAZE,haze));
+    const ch=RGB(mixHex(0x39562a,BAY_HAZE,haze+0.11));
+    let q=null;
+    for(let i=0;i<=STEP;i++){
+      const t=i/STEP, a=A0+(A1-A0)*t, r=Math.min(870,rAt(t)+push);
+      const b=duneAt(t)*0.7;
+      const p={x:Math.sin(a)*r,z:Math.cos(a)*r,b:b,
+        tp:b+24+coastNoise(t*6.7,101*k)*34+coastNoise(t*19.0,151*k)*11};
+      if(q)landG.quad4([q.x,q.b,q.z],[p.x,p.b,p.z],[p.x,p.tp,p.z],[q.x,q.tp,q.z],
+        cl,cl,ch,ch);
+      q=p;
     }
   }
-  for(let i=0;i<26;i++)landG.box(-560+i*45,5,-880,60,16+Math.random()*12,50,cFar);
-  root.add(landG.mesh(false,false));
-  root.add(woodG.mesh(false,false));
+  /* the ground BEHIND the front rank, out to the edge of the world. Insurance: from
+     the quarterdeck, or with the chase camera up high, the eye can clear the tree
+     line, and what it must find there is more country - not the sea again. */
+  const cInland=RGB(mixHex(0x3f4c2c,BAY_HAZE,0.34));
+  let fl=null;
+  for(let i=0;i<=STEP;i++){
+    const t=i/STEP, a=A0+(A1-A0)*t, s=Math.sin(a), c=Math.cos(a);
+    const y=duneAt(t)*0.8, r=rAt(t);
+    const p={ax:s*r,az:c*r,bx:s*885,bz:c*885,y:y};
+    if(fl)landG.quad([fl.ax,fl.y,fl.az],[p.ax,p.y,p.az],[p.bx,p.y,p.bz],
+      [fl.bx,fl.y,fl.bz],cInland);
+    fl=p;
+  }
+  /* crowns broken out along the crest, so the head of the wood is a line of trees
+     and not a cut edge. treeFar is this file's own distant tree - four triangles,
+     no trunk, all silhouette, on the grounds that "past two hundred feet ... what
+     survives is the SILHOUETTE and the fact that there are hundreds of them".
+     Straddling the ribbon's top edge: the short ones vanish into the mass, the tall
+     ones break it. */
+  for(let i=0;i<240;i++){
+    const t=srand(i*1.37), a=A0+(A1-A0)*t, r=rAt(t)-12;
+    treeFar(woodG,Math.sin(a)*r,duneAt(t),Math.cos(a)*r,
+      (treeAt(t)-duneAt(t))*(0.78+srand(i*3.07)*0.52),i);
+  }
+  /* ---- AND THE EASTERN SHORE, TWELVE MILES OFF TO PORT ----
+     Worked out rather than eyeballed, and the answer is uncomfortable. From a
+     twenty-foot eye the sea horizon is 5.54 miles, so the far shore stands 6.46
+     miles beyond it, and the curve of the earth hides 28 feet of a 70-foot pine.
+     The 42 feet that clear subtend 0.038 of a degree - a THIRD OF ONE PIXEL on a
+     phone. The Eastern Shore, truthfully drawn, is not there at all.
+
+     It is drawn anyway, about twenty times its true height, because the one thing
+     this chapter has to teach is that they came in between two capes, and a player
+     who can see only one cape has not been taught it. So this is an exaggeration on
+     purpose, and it is kept to the least that survives: a hairline at the very edge
+     of the far plane, two thirds of the way to the fog colour before the fog even
+     reaches it. Cape Henry keeps its distance compressed and its scale honest; this
+     keeps its distance honest and its scale compressed. Opposite lies, each chosen
+     for what it lets the player see.
+
+     It was lower still on the first cut - and the sweep found it BROKEN into three
+     arcs, because a band 0.33 degrees tall cannot stay continuous. Being too honest
+     about a thing that is invisible reintroduced the exact fault being fixed. */
+  const FA0=255*Math.PI/180, FA1=345*Math.PI/180;
+  const cFarL=RGB(mixHex(0x3b4f34,BAY_HAZE,0.52)),
+        cFarH=RGB(mixHex(0x44583a,BAY_HAZE,0.66));
+  let fs=null;
+  for(let i=0;i<=90;i++){
+    const t=i/90, a=FA0+(FA1-FA0)*t;
+    const p={x:Math.sin(a)*868,z:Math.cos(a)*868,
+      h:(9+coastNoise(t*8.3,211)*11+coastNoise(t*27.0,233)*4)
+         *(Math.min(1,Math.min(t,1-t)/0.12*0.75+0.25)) };
+    if(fs)landG.quad4([fs.x,0,fs.z],[p.x,0,p.z],[p.x,p.h,p.z],[fs.x,fs.h,fs.z],
+      cFarL,cFarL,cFarH,cFarH);
+    fs=p;
+  }
+  root.add(landG.mesh(true,true));
+  root.add(woodG.mesh(true,true));
 }
 
 /* ========== PAINTED LETTERING ==========
@@ -4721,9 +4874,9 @@ function buildConsort(scale,x,z,yaw,crewCount,variant){
 }
 function buildConsorts(){
   CONSORTS.length=0;
-  /* The channel runs to about |x| = 231 before the marsh starts (buildRiver
-     lays marsh at |x| 231-257 and bank from 250 out). The Discovery was moored
-     at x = 265 - on the mud. Both are now well inside the water. */
+  /* Both consorts lie well inside the shore, which now begins at 560 ft. The old
+     note here measured them against a river channel and a marsh at |x| 231-257;
+     there is no river and no marsh - see buildRiver. */
   /* Godspeed: 88 ft to the Susan Constant's 116, so about three-quarters */
   buildConsort(0.76,-168,140,0.10,5,"godspeed");
   /* Discovery: the 20-ton pinnace, well under half the length */
@@ -7183,7 +7336,7 @@ function overboardCutscene(){
     }},
     {move:{id:"player",to:[rail+14,-7,pz+3]},t:2.2,
      shot:{of:["player"],dist:16,height:6,lookH:1},
-     narrate:"The river closed over him, and the ships worked on upstream without him."},
+     narrate:"The bay closed over him, and the ships stood on in without him."},
     {fade:"out",t:1.6}
   ]};
 }
@@ -12451,7 +12604,7 @@ const CHAPTERS=[
    },
    end:{head:"The Crossing \u2014 Complete", yr:"Chapter I \u00b7 the same morning, 26 April 1607",
      nextWorld:"ch2", nextLabel:"Go Ashore \u2014 Chapter II",
-     body:"<p>The river narrows ahead. Roanoke's warning sits behind you, the Company's arithmetic understood, and its hidden tally seen with your own eyes.</p>"+
+     body:"<p>The bay opens west ahead of you. Roanoke's warning sits behind you, the Company's arithmetic understood, and its hidden tally seen with your own eyes.</p>"+
        "<p>The boats are going down. Thirty men are to be put ashore on the southern cape this afternoon \u2014 the same day you first saw this country \u2014 to set up a cross and prove the pieces before dark. The sealed box is still shut.</p>"+
        "<p class='note'>Your figure now wears what you earned: the weathered traveller's cloak and the muted grey of the Lost Colony. Spend your Ink in the Wardrobe, then go ashore.</p>"}},
 
@@ -12593,6 +12746,16 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"3 August 1607 · latest",
+   head:"That was not a shoreline, and it was not even the right water",
+   lines:[
+     "The shore was two ribbons of bank six hundred and fifty feet apart with sixty scattered tree-boxes on each, and open water beyond them in every direction — so it read exactly as it was: two thin islands with sea behind them.",
+     "The reason is worth stating, because it is measurable. Your eye on the main deck is twenty and a half feet above the water, and the sea only reaches one and a third degrees below your eye line before the world ends. The top of that old bank sat two and two-thirds degrees below your eye — UNDER the horizon. Land under the horizon has sea behind it and above it, which is what a raft is. The only thing breaking the skyline anywhere was the scattered trees. Sweeping all three hundred and sixty bearings found seventeen separate patches of land with sixteen stretches of open water between them.",
+     "It was also the wrong place. That was the James River, and Chapter I is the morning of 26 April 1607, inside the Virginia capes — Percy: “about foure a clocke in the morning, wee descried the Land of Virginia.” They had not found the James yet. It was three weeks off.",
+     "So it is the mouth of the Chesapeake now. Cape Henry stands close to starboard as one unbroken coast — a strand, a dune, and a wood in three ranks that recede and haze off — with its ends running away into the distance rather than stopping dead. The Eastern Shore is a hairline twelve miles off to port. Open sea astern and westward, because that is what was there. The water is bay water now instead of river green.",
+     "Two lines of text still had you on a river and now do not: the end of the chapter, and what is said if a man goes over the side.",
+     "The whole shore costs fewer triangles than the two islands did."
+   ]},
+  {when:"3 August 1607",
    head:"The ship has a sheer, and half her paintwork was inside out",
    lines:[
      "Every long line on the ship used to sit at exactly one height — the wales, the painted bands, the top of the bulwark, all dead level from bow to stern. That is the single thing that makes a wooden ship look like a wooden ship, and she did not have it. She curves now: the lines dip amidships and sweep up about two and a half feet forward and three and a half feet aft, and the bulwark and its red cap rail rise with them, so standing in the waist the rail lifts away from you at both ends.",
@@ -12922,7 +13085,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260803-1655-a006ca7";
+const BUILD="20260803-2138-de3bb4b";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
