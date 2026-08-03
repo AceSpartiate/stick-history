@@ -3107,6 +3107,27 @@ function weatherDeck(){
      - a MARGIN PLANK follows the ship's side, taking the curve so the straight
        planks do not have to, and a WATERWAY sits inboard of the bulwark.
    `shadeFn` still works, so the below-decks bake is unchanged. */
+/* ---- WOULD THIS COLLIDER BURY A LADDER LANDING? ----
+   `blocked()` inflates every collider by a one-unit body radius, so a box whose
+   edge merely reaches a landing point still traps the player standing on it - and
+   a player who arrives inside a collider cannot walk out of it, because every
+   direction is blocked. That is a soft-lock, and it is invisible from the code:
+   the chest and the ladder are eight hundred lines apart and neither knows the
+   other exists.
+   LADDERS is the one owner of where a player arrives. Ask it. PAD is the body
+   radius plus enough room to actually step off the rungs. */
+function clearOfLadders(x,z,halfW,halfD,lvl){
+  const PAD=1.9;
+  for(let i=0;i<LADDERS.length;i++){
+    const L=LADDERS[i];
+    for(let e=0;e<2;e++){
+      const p=e?L.b:L.a;
+      if(p.lvl!==lvl)continue;
+      if(Math.abs(p.x-x)<halfW+PAD&&Math.abs(p.z-z)<halfD+PAD)return false;
+    }
+  }
+  return true;
+}
 function planks(root,z0,z1,y,inset,col1,col2,shadeFn){
   const g=new Geo();
   const PW=0.92*K;            /* 11 in of oak */
@@ -3475,9 +3496,20 @@ function buildTweenLevel(root){
       solid(px,z,0.6*K,3.0*K,LVL.TWEEN);
     }
   }
-  /* the cargo they slept among - and there is more of it now, because it is what
-     the bunks were standing on top of */
+  /* ---- the cargo they slept among ----
+     AND IT MUST NOT LAND ON A LADDER. Reported from play: "when moving from the
+     main deck to the tween deck, i get stuck and cannot move." My own regression,
+     from last change: tightening the chest spacing from 8 to 6.2 ship-feet put a
+     chest at z 0.6, whose collider reaches z 3.38, and the Main Hatch sets the
+     player down at z 3.0. With the one-unit body radius blocked() uses, the
+     landing point was INSIDE the chest. Probing every landing in LADDERS found
+     the Fore Scuttle was buried too, and worse - two units to get clear.
+     So this is no longer a spacing to be hand-tuned until it happens to miss.
+     `clearOfLadders` asks LADDERS itself, which is the one owner of where a player
+     arrives, and a chest that would bury a landing simply is not placed. Any
+     ladder moved later carries its exclusion with it. */
   for(let z=-18*K;z<20*K;z+=6.2*K){
+    if(!clearOfLadders(0,z,1.4*K,1.9*K,LVL.TWEEN))continue;
     const s=0.85+srand(z*0.31)*0.4;
     BG2.box(0,y+0.9*K*s,z,2.4*K,1.8*K*s,3.4*K,cChest);
     solid(0,z,1.4*K,1.9*K,LVL.TWEEN);
@@ -12452,7 +12484,13 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    list nobody finishes is a list nobody reads.
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
-  {when:"2 August 1607 · latest",
+  {when:"3 August 1607 · latest",
+   head:"Fixed: getting stuck coming down to the 'tween deck",
+   lines:[
+     "Going down the main hatch could leave you unable to move. A cargo chest I added yesterday sat right where the ladder sets you down, and once you are inside a crate every direction is blocked. The fore scuttle was buried the same way.",
+     "Cargo now refuses to be placed on a ladder landing at all, so this cannot come back if anything moves later."
+   ]},
+  {when:"2 August 1607",
    head:"The deck is a deck, and the ship has light in it",
    lines:[
      "The ship's decks were drawn as a checkerboard of six-foot squares. They are laid planks now — eleven inches wide, running fore and aft, with pitched seams between them and the butt joints shifted so they never line up, the way a real deck is laid.",
@@ -12768,7 +12806,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260803-1110-1163ad1";
+const BUILD="20260803-1616-7e877ef";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
