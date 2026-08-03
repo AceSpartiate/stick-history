@@ -2952,23 +2952,114 @@ function belowDecks(lampZs,base,deckY,lampY){
 }
 
 /* ========== INTERIOR HELPERS ========== */
+/* ========== A DECK, AND NOT A CHESSBOARD ==========
+   Reported from play: "the deck looks like a cheap chessboard." It was one,
+   exactly and by construction. The old colour rule was
+
+       const col = ((i + Math.round(z/(4.6*K))) % 2 === 0) ? c1 : c2;
+
+   - `i` across the beam XORed with the band along the ship, which is the
+   definition of a checkerboard - and the cells were 4.6 ship-feet long by 2.1
+   wide, so they were floor tiles rather than planks. Printed as a map it was
+   eighteen rows of `.#.#.#.#`.
+
+   WHAT THE EYE ACTUALLY USES to read "plank": one long uninterrupted edge in a
+   single direction, a narrow dark seam beside it, and only slight difference
+   between one plank and its neighbour. Alternation is the thing to avoid; it is
+   the signal for tile. So:
+
+     - planks run FORE AND AFT at CONSTANT width, 11 inches, which is what oak
+       deck planking of the period runs at. They no longer taper with the hull -
+       real planking does not, which is the whole reason a margin plank exists.
+     - each is coloured from a hash of its own index, plus or minus six per cent,
+       so neighbours differ slightly and nothing alternates.
+     - between them a seam of about an inch, in near-black: caulked with oakum and
+       payed with pitch, and pitch is much darker than any oak.
+     - BUTT JOINTS every 22 feet, because a plank is a tree and not a ribbon, and
+       the butts are SHIFTED plank to plank so they never line up. That shift is
+       the single most recognisable thing about a real laid deck.
+     - a MARGIN PLANK follows the ship's side, taking the curve so the straight
+       planks do not have to, and a WATERWAY sits inboard of the bulwark.
+   `shadeFn` still works, so the below-decks bake is unchanged. */
 function planks(root,z0,z1,y,inset,col1,col2,shadeFn){
-  const g=new Geo(),c1=RGB(col1),c2=RGB(col2);
-  for(let z=z0;z<z1;z+=4.6*K){
-    const zn=Math.min(z+4.6*K,z1);
+  const g=new Geo();
+  const PW=0.92*K;            /* 11 in of oak */
+  const SEAM=0.085*K;         /* the pitch line between two of them */
+  const BUTT=22*K;            /* a plank runs about 22 ft before it is butted */
+  const MARG=1.25*K;          /* the margin plank, following the side */
+  const STEP=2.3*K;           /* half the old band, so the side curve is smooth */
+  const base=mixHex(col1,col2,0.5);
+  const seamC=RGB(shadeHex(base,0.28));         /* pitch, not shadow */
+  const margC=RGB(shadeHex(base,0.86));
+  const wayC =RGB(shadeHex(base,0.72));
+  const zMid=(z0+z1)/2, zSpan=Math.max(1,(z1-z0)/2);
+  for(let z=z0;z<z1;z+=STEP){
+    const zn=Math.min(z+STEP,z1);
     const hb0=halfBeam(z,y)-inset, hb1=halfBeam(zn,y)-inset;
     if(hb0<1||hb1<1)continue;
-    const n=Math.max(2,Math.round((hb0*2)/(2.2*K)));
-    for(let i=0;i<n;i++){
-      const t0=i/n,t1=(i+1)/n;
-      const x00=-hb0+2*hb0*t0, x01=-hb0+2*hb0*t1;
-      const x10=-hb1+2*hb1*t0, x11=-hb1+2*hb1*t1;
-      const col=((i+Math.round(z/(4.6*K)))%2===0)?c1:c2;
-      g.quad([x00,y,z],[x01,y,z],[x11,y,zn],[x10,y,zn],col);
+    /* The field of straight planks stops short of the side; the margin fills it.
+       DOWN IN THE HOLD the half-beam gets small, and a margin wider than the deck
+       would give a negative field - inverted quads and a backwards loop. So the
+       margin is never more than a third of the half-beam, which is also true of a
+       real ship: the margin plank does not grow as the deck narrows. */
+    const mg=Math.min(MARG,hb0*0.34,hb1*0.34);
+    const f0=hb0-mg, f1=hb1-mg;
+    if(f0<0.4*K||f1<0.4*K)continue;
+    const nOut=Math.floor(Math.max(f0,f1)/PW);
+    for(let p=-nOut-1;p<=nOut;p++){
+      const xa=p*PW+SEAM*0.5, xb=(p+1)*PW-SEAM*0.5;
+      /* clip this plank to the field at both ends of the band */
+      const a0=Math.max(xa,-f0), b0=Math.min(xb,f0);
+      const a1=Math.max(xa,-f1), b1=Math.min(xb,f1);
+      if(b0-a0<0.05*K&&b1-a1<0.05*K)continue;
+      /* one colour for this plank, between this butt and the next. Two hashes:
+         the plank itself, and which length of it this is. */
+      const bi=Math.floor((z-z0)/BUTT+p*0.37);   /* +p*0.37 SHIFTS the butts */
+      let f=0.94+srand(p*7.31+11.3)*0.12;        /* the plank's own grain */
+      f*=0.97+srand(bi*3.17+p*1.9)*0.06;         /* this length of it */
+      /* scrubbed pale amidships where the watch walks, darker at the ends */
+      const w=Math.abs((z+zn)/2-zMid)/zSpan;
+      f*=1.05-w*0.13;
+      /* and a shade darker down the centreline, which is the traffic lane */
+      f*=1.0-0.045*Math.max(0,1-Math.abs((xa+xb)/2)/(2.4*K));
+      const col=RGB(shadeHex(base,f));
+      g.quad([Math.max(a0,-f0),y,z],[Math.min(b0,f0),y,z],
+             [Math.min(b1,f1),y,zn],[Math.max(a1,-f1),y,zn],col);
+      /* the seam outboard of it, if there is another plank out there */
+      const sa=xb, sb=xb+SEAM;
+      const s0a=Math.max(sa,-f0),s0b=Math.min(sb,f0);
+      const s1a=Math.max(sa,-f1),s1b=Math.min(sb,f1);
+      if(s0b-s0a>0.001||s1b-s1a>0.001)
+        g.quad([s0a,y,z],[s0b,y,z],[s1b,y,zn],[s1a,y,zn],seamC);
+    }
+    /* the butt line across the planks, where this band crosses one */
+    if(Math.floor((z-z0)/BUTT)!==Math.floor((zn-z0)/BUTT)){
+      const zb=z0+Math.ceil((z-z0)/BUTT)*BUTT;
+      if(zb>z&&zb<zn){
+        const t=(zb-z)/(zn-z), hbb=f0+(f1-f0)*t;
+        g.quad([-hbb,y,zb-SEAM*0.5],[hbb,y,zb-SEAM*0.5],
+               [hbb,y,zb+SEAM*0.5],[-hbb,y,zb+SEAM*0.5],seamC);
+      }
+    }
+    /* the margin plank, both sides, following the curve of the side */
+    for(let sg=-1;sg<=1;sg+=2){
+      g.quad([sg*f0,y,z],[sg*hb0,y,z],[sg*hb1,y,zn],[sg*f1,y,zn],margC);
+      /* and the waterway: a low fillet where the deck meets the bulwark, which
+         is what stops a deck looking like a floor dropped into a box */
+      g.quad([sg*hb0,y,z],[sg*hb0,y+0.30*K,z],
+             [sg*hb1,y+0.30*K,zn],[sg*hb1,y,zn],wayC);
     }
   }
   if(shadeFn)g.shade(shadeFn);
   root.add(g.mesh(false,true));
+}
+/* shade a HEX by a factor and give a hex back, so a colour can be varied before
+   it becomes a vertex triple */
+function shadeHex(hex,f){
+  const r=Math.max(0,Math.min(255,Math.round(((hex>>16)&255)*f)));
+  const g=Math.max(0,Math.min(255,Math.round(((hex>>8)&255)*f)));
+  const b=Math.max(0,Math.min(255,Math.round((hex&255)*f)));
+  return (r<<16)|(g<<8)|b;
 }
 /* One mesh for the whole deckhead. This used to emit a separate box() per beam -
    about twenty meshes a deck, four decks, every one of them its own draw call for
@@ -12038,6 +12129,13 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"2 August 1607 · latest",
+   head:"The deck is a deck",
+   lines:[
+     "The ship's decks were drawn as a checkerboard of six-foot squares. They are laid planks now — eleven inches wide, running fore and aft, with pitched seams between them and the butt joints shifted so they never line up, the way a real deck is laid.",
+     "A margin plank follows the curve of the ship's side, and a waterway runs along the foot of the bulwark.",
+     "The planking is scrubbed paler amidships where the watch walks, and darker toward the bow and stern."
+   ]},
+  {when:"2 August 1607",
    head:"A proper opening",
    lines:[
      "Beginning a new voyage now opens on the Earth from space, closes on England, crosses the Atlantic with the three ships in company, and finds them at anchor inside the capes before the title card.",
@@ -12339,7 +12437,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260802-2206-1f60911";
+const BUILD="20260803-0250-e99c706";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
