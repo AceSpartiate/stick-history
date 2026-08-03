@@ -2196,6 +2196,20 @@ Geo.prototype.tri=function(a,b,c,col){
   for(let i=0;i<3;i++)this.c.push(col[0],col[1],col[2]);
 };
 Geo.prototype.quad=function(a,b,c,d,col){this.tri(a,b,c,col);this.tri(a,c,d,col);};
+/* A rectangular timber run along z with its two ends at DIFFERENT heights, which
+   a box cannot be. This is how a rail follows the sheer: box() is axis aligned,
+   so a cap rail built out of boxes can only step down the curve in four-foot
+   jumps, and a stepped rail reads as sawteeth on the most legible line she has.
+   Windings are absolute here, not mirrored, because x0 < x1 either side of the
+   keel - so unlike the bulwark faces this one needs no sign. The end caps are
+   left off: consecutive runs overlap and bury them. */
+function railRun(g,x,yA,yB,zA,zB,w,h,col){
+  const x0=x-w/2, x1=x+w/2, tA=yA+h/2, tB=yB+h/2, bA=yA-h/2, bB=yB-h/2;
+  g.quad([x0,tA,zA],[x0,tB,zB],[x1,tB,zB],[x1,tA,zA],col);                 /* up */
+  g.quad([x0,bA,zA],[x1,bA,zA],[x1,bB,zB],[x0,bB,zB],shadeRGB(col,0.72));  /* under */
+  g.quad([x1,bA,zA],[x1,tA,zA],[x1,tB,zB],[x1,bB,zB],shadeRGB(col,0.94));
+  g.quad([x0,bA,zA],[x0,bB,zB],[x0,tB,zB],[x0,tA,zA],shadeRGB(col,0.88));
+}
 /* PER-VERTEX colours. This is the whole mechanism for ambient occlusion in a
    project with no textures: the same triangle can be dark where it meets the
    ground or tucks under something, and light where it is open to the sky. It
@@ -2452,7 +2466,10 @@ function inPort(z,y){
 /* the hull is higher where the castles stand, so the galley forward and the
    great cabin aft are enclosed rather than open above the waist rail */
 function topAt(z){
-  const low=SHIP.DECK_Y+3.6*K, high=SHIP.CASTLE_Y+1.4*K, w=3*K;
+  /* the waist rises with the sheer, because the bulwark that caps it does. The
+     castles do NOT: those are structures standing on the deck, and their rails
+     are their own geometry. */
+  const low=SHIP.DECK_Y+3.6*K+sheer(z), high=SHIP.CASTLE_Y+1.4*K, w=3*K;
   const f=-24*K, a=14*K;
   if(z<f-w)return high;
   if(z<f)return low+(high-low)*((f-z)/w);
@@ -2460,9 +2477,34 @@ function topAt(z){
   if(z<a+w)return low+(high-low)*((z-a)/w);
   return high;
 }
+/* ---- SHE HAD NO SHEER, AND A SHIP WITHOUT SHEER IS A TUBE ----
+   Every longitudinal line on this hull sat at a constant height. The deck, the
+   bulwark cap, the rails - and, because hullColour keyed off ABSOLUTE y, both
+   wales and all three painted bands as well. So the most conspicuous curve on a
+   wooden ship, the one that makes her look like a ship from a hundred yards, was
+   a set of dead level stripes.
+
+   `sheer` is the curve those lines actually follow: lowest a little aft of
+   amidships and sweeping up toward both ends, higher aft than forward. Two
+   parabolic branches meeting at the low point, and both have zero slope there, so
+   they join without a crease.
+
+   ONE THING MUST NOT SWEEP: the waterline. That is where the water is, and water
+   is level. So the tallow below it is tested against true height and everything
+   above it against height-above-the-sheer - which is also how a shipwright thinks
+   about it, since he strikes the wales from the sheer and not from the sea. */
+function sheer(z){
+  const zl=6*K;                       /* the lowest point of the curve */
+  if(z<zl){
+    const f=(zl-z)/(zl-SHIP.Z_BOW);
+    return 2.6*K*f*f;                 /* forward */
+  }
+  const f=(z-zl)/(SHIP.Z_STERN-zl);
+  return 3.6*K*f*f;                   /* and more of it aft, as she carries it */
+}
 function hullColour(y,z){
-  const u=y/K, band=Math.floor(z/(2.6*K));
-  if(u<-0.6)   return 0x9a917c;                       /* tallow below the waterline */
+  if(y/K<-0.6)return 0x9a917c;                        /* tallow: the sea is LEVEL */
+  const u=(y-sheer(z))/K, band=Math.floor(z/(2.6*K));
   if(u<4.2)    return 0x53402a;
   if(u<5.9)    return 0x141009;                       /* lower wale */
   if(u<7.2)    return 0x5a4530;
@@ -2474,30 +2516,67 @@ function hullColour(y,z){
   return 0x54401f;
 }
 
+/* ---- THE ROWS GO WHERE THE STRAKES GO ----
+   buildHull used to space 24 rings by uniform parameter, so a band boundary
+   landed on whichever ring happened to be nearest. Measured across 57 stations
+   that cost 32 band-instances never drawn AT ALL - among them the top strake,
+   missing along the entire waist because it is 0.83 of a ring tall and fell
+   between two of them - and left the lower wale one ring thick at some stations
+   and two at others: a single timber varying twofold along its own length.
+
+   So the rows sit ON the strake edges now. Every band gets its true thickness at
+   every station, nothing falls through the gaps, and because the rows themselves
+   carry the sheer the sweep is exact rather than a staircase. It is also CHEAPER:
+   19 bands where there were 24, because the rows are spent where the eye is
+   instead of spread evenly over a hull that is mostly one colour below the water.
+
+   u is height in ship-feet. s is how much of the sheer that row carries: none
+   below the waterline, because water is level; all of it from the lower wale up,
+   because that is where a shipwright strikes his lines from; and the two rows
+   between blend, so the planking does not kink at the waterline. */
+const HULL_ROWS=[
+  [-11.5,0],[-10.2,0],[-8.9,0],[-7.4,0],   /* the keel and the turn of the bilge */
+  [ -5.9,0],[ -4.4,0],[ -3.0,0],[-1.8,0],
+  [ -0.6,0],                               /* THE WATERLINE. the tallow ends here */
+  [  1.2,0.35],[  2.7,0.72],               /* blending up onto the sheer */
+  [  4.2,1],[  5.9,1],                     /* lower wale, both edges */
+  [  7.2,1],[  8.7,1],                     /* buff, then blue and white */
+  [  9.9,1],                               /* upper wale */
+  [ 11.2,1],[ 12.3,1],[ 13.7,1]            /* red/white, buff, green/yellow */
+];
 function buildHull(root){
-  /* One continuous, smoothly curved outer hull. 56 stations x 22 rings,
+  /* One continuous, smoothly curved outer hull. 56 stations x 19 strakes,
      vertex coloured for the wales and the painted bands, so the whole of the
      topsides, underbody and paintwork costs a single draw call. */
-  const N=56,M=24;
+  const N=56,M=HULL_ROWS.length;            /* row M is the cap, at topAt(z) */
   const zA=SHIP.Z_BOW,zB=SHIP.Z_STERN;
   const yA=-11.5*K;
   const g=new Geo();
   const yAt=function(i,j){
-    const z=zA+(zB-zA)*i/N;
-    return yA+(topAt(z)-yA)*j/M;
+    const z=zA+(zB-zA)*i/N, top=topAt(z);
+    if(j>=M)return top;
+    const r=HULL_ROWS[j];
+    /* clamped, so a strake driven above the cap by the sheer collapses onto it
+       and its quads go away, rather than poking through the rail */
+    return Math.min(top,r[0]*K+r[1]*sheer(z));
   };
   const P=function(sd,i,j){
     const z=zA+(zB-zA)*i/N, y=yAt(i,j);
     return [sd*halfBeam(z,y),y,z];
   };
+  /* the quad's own CENTRE, not its bottom corner: a row sits exactly on a band
+     boundary now, and asking hullColour about a point exactly on the boundary is
+     asking it to answer a floating-point coin toss */
   const colAt=function(i,j){
-    const z=zA+(zB-zA)*i/N, y=yAt(i,j);
+    const z=zA+(zB-zA)*(i+0.5)/N;
+    const y=(yAt(i,j)+yAt(i,j+1)+yAt(i+1,j)+yAt(i+1,j+1))/4;
     return RGB(hullColour(y,z));
   };
   for(let sd=-1;sd<=1;sd+=2){
     for(let i=0;i<N;i++)for(let j=0;j<M;j++){
       const zc=zA+(zB-zA)*(i+0.5)/N, yc=(yAt(i,j)+yAt(i+1,j+1))/2;
       if(inPort(zc,yc))continue;              /* leave the gunports open */
+      if(yAt(i,j+1)-yAt(i,j)<1e-4&&yAt(i+1,j+1)-yAt(i+1,j)<1e-4)continue;
       g.quad(P(sd,i,j),P(sd,i+1,j),P(sd,i+1,j+1),P(sd,i,j+1),colAt(i,j));
     }
   }
@@ -2546,30 +2625,55 @@ function buildDecks(root){
      The first pass here gave that face its own colour and got the direction right
      for the wrong reason: I reasoned about how bare oak weathers when the answer
      was that she is not bare. Painted now, from the vessel rather than from
-     inference about timber. */
+     inference about timber.
+
+     Two further faults, both measured rather than seen. THE WHOLE STARBOARD
+     BULWARK WAS INSIDE OUT: quad() is plain counter-clockwise and this mesh is
+     FrontSide, so writing one winding and using it for sg=-1 and sg=+1 alike is
+     right on one side and reversed on the other - mirroring across the centreline
+     reverses handedness. Every one of the three faces failed on starboard, which
+     means the painted inboard face has been showing on the OUTSIDE of the ship
+     and the buff weather face is what the player was looking at from the deck.
+     The pass that chose those two colours worked on half the vessel. And the head
+     of the bulwark sat dead level, which is the other half of the sheer: see
+     sheer(). The foot stays on the deck, because the deck IS flat; only the head
+     rises, which is what sheer looks like from in the waist - the rail lifting
+     away from you forward and aft while you stand in the low of it. */
   const bw=new Geo(),cW=RGB(0x8a7a5c),cR=RGB(0x8f3a2c);
   const cIn=RGB(0xd8c9a4), cCap=RGB(0x7a2f24);
+  /* winding that survives being mirrored */
+  const mq=function(sg,a,b,c,d,col){
+    if(sg>0)bw.quad(a,d,c,b,col); else bw.quad(a,b,c,d,col);
+  };
+  const mq4=function(sg,a,b,c,d,ca,cb,cc,cd){
+    if(sg>0)bw.quad4(a,d,c,b,ca,cd,cc,cb); else bw.quad4(a,b,c,d,ca,cb,cc,cd);
+  };
   for(let z=SHIP.Z_BOW+K;z<SHIP.Z_STERN;z+=3*K){
     const hbw=halfBeam(z,SHIP.DECK_Y);
     if(hbw<1.6*K)continue;
     const zA=z-1.55*K, zB=z+1.55*K;
-    const y0=SHIP.DECK_Y, y1=SHIP.DECK_Y+3.2*K;
+    const y0=SHIP.DECK_Y;
+    const hA=y0+3.2*K+sheer(zA), hB=y0+3.2*K+sheer(zB);
     for(let sg=-1;sg<=1;sg+=2){
       const xo=sg*(hbw+0.35*K), xi=sg*(hbw-0.35*K);
       /* outboard face, in the weather */
-      bw.quad([xo,y0,zA],[xo,y0,zB],[xo,y1,zB],[xo,y1,zA],cW);
+      mq(sg,[xo,y0,zA],[xo,y0,zB],[xo,hB,zB],[xo,hA,zA],cW);
       /* the painted inboard face, darkening toward the deck because the angle
          between a bulwark and a deck never gets full sky. Pale paint is what
          makes this work: it takes the contact shading visibly, where dark brown
          swallowed it. */
-      bw.quad4([xi,y0,zB],[xi,y0,zA],[xi,y1,zA],[xi,y1,zB],
+      mq4(sg,[xi,y0,zB],[xi,y0,zA],[xi,hA,zA],[xi,hB,zB],
         shadeRGB(cIn,0.70),shadeRGB(cIn,0.70),cIn,cIn);
       /* the top of the timbering, under the rail */
-      bw.quad([xo,y1,zA],[xo,y1,zB],[xi,y1,zB],[xi,y1,zA],shadeRGB(cIn,0.88));
+      mq(sg,[xo,hA,zA],[xo,hB,zB],[xi,hB,zB],[xi,hA,zA],shadeRGB(cIn,0.88));
       /* THE RED CAP RAIL, which is the strongest single colour aboard her and
-         the thing that stops the whole waist reading as one brown mass */
-      bw.box(sg*hbw,SHIP.DECK_Y+3.4*K,z,0.95*K,0.45*K,3.1*K,cR);
-      bw.box(xi-sg*0.06*K,SHIP.DECK_Y+3.4*K,z,0.16*K,0.47*K,3.1*K,cCap);
+         the thing that stops the whole waist reading as one brown mass. Sloped,
+         not stepped: a rail stepped down the sheer in four-foot jumps is
+         sawteeth, and this is the most legible line on her. */
+      railRun(bw,sg*hbw,     y0+3.4*K+sheer(zA),y0+3.4*K+sheer(zB),
+              zA-0.05*K,zB+0.05*K,0.95*K,0.45*K,cR);
+      railRun(bw,xi-sg*0.06*K,y0+3.4*K+sheer(zA),y0+3.4*K+sheer(zB),
+              zA-0.05*K,zB+0.05*K,0.16*K,0.47*K,cCap);
     }
   }
   root.add(bw.mesh(false,false));
@@ -2928,7 +3032,11 @@ function buildFittings(root){
       y:SHIP.CASTLE_Y,lvl:LVL.CASTLE,r:7*K,action:"bell",data:null});
   }
   /* lanterns */
-  const lz=[[0,SHIP.QUARTER_Y+2.6*K,40*K],[-10*K,SHIP.DECK_Y+3.4*K,-6*K],[10*K,SHIP.DECK_Y+3.4*K,12*K]];
+  /* the two on the cap rail have to ride UP with it now, or they hang below a
+     rail that has risen out from under them */
+  const lz=[[0,SHIP.QUARTER_Y+2.6*K,40*K],
+            [-10*K,SHIP.DECK_Y+3.4*K+sheer(-6*K),-6*K],
+            [ 10*K,SHIP.DECK_Y+3.4*K+sheer(12*K), 12*K]];
   for(let i=0;i<lz.length;i++){
     const l=new THREE.Mesh(boxGeom(1.4*K,2*K,1.4*K),new THREE.MeshBasicMaterial({color:lin(0xffd98a)}));
     l.position.set(lz[i][0],lz[i][1],lz[i][2]);root.add(l);
@@ -12485,6 +12593,14 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"3 August 1607 · latest",
+   head:"The ship has a sheer, and half her paintwork was inside out",
+   lines:[
+     "Every long line on the ship used to sit at exactly one height — the wales, the painted bands, the top of the bulwark, all dead level from bow to stern. That is the single thing that makes a wooden ship look like a wooden ship, and she did not have it. She curves now: the lines dip amidships and sweep up about two and a half feet forward and three and a half feet aft, and the bulwark and its red cap rail rise with them, so standing in the waist the rail lifts away from you at both ends.",
+     "The waterline does not sweep, because water is level.",
+     "The hull's planking is now laid out along those lines instead of being spaced evenly, which fixed something I could not see: measured across the ship's whole length, thirty-two of the painted bands were not being drawn at all. The strake above the green-and-yellow band was missing along the entire middle of the ship. The wales came out twice as thick at some points as others — one timber, changing size along its own length. All of it is right now, and the hull costs a fifth fewer triangles than before.",
+     "The whole starboard bulwark was inside out. The pale cream paint was on the outside of the ship and the weathered buff was what you saw from the deck — the exact opposite of the port side, and of yesterday's note about painting her. Mirroring something across the middle of a ship turns it inside out unless you account for it, and I had not."
+   ]},
+  {when:"3 August 1607",
    head:"Fixed: getting stuck coming down to the 'tween deck",
    lines:[
      "Going down the main hatch could leave you unable to move. A cargo chest I added yesterday sat right where the ladder sets you down, and once you are inside a crate every direction is blocked. The fore scuttle was buried the same way.",
@@ -12806,7 +12922,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260803-1616-7e877ef";
+const BUILD="20260803-1655-a006ca7";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
