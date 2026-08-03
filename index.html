@@ -1406,7 +1406,9 @@ const CH={
      "\u201cAsk them what I actually did. They'll not tell you, because there's nothing to tell.\u201d",
      "\u201cNewport will come round. Or he won't, and there's an end of me.\u201d",
      "\u201cWhen we land they'll open that sealed box and read out the Council.\u201d He grins without any warmth. \u201cWon't that be a morning.\u201d"]},
-  {id:"cook",name:"The Ship's Cook",voice:"male",role:"keeps the galley",lvl:2,pos:[0,-31],face:-1.57,
+  /* Moved off the centreline: at x=0 he stood in the only gap between the hearth
+     and the mess table and sealed the deck forward. A cook stands at his hearth. */
+  {id:"cook",name:"The Ship's Cook",voice:"male",role:"keeps the galley",lvl:2,pos:[-2.4,-28.4],face:-1.57,
    eq:{skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"head_cap",build:"build_normal",face:"hearty"},
    jests:[
      {q:"\u201cWhat meat does a sailor love best?\u201d",a:"\u201cAny he has not lately seen moving.\u201d"},
@@ -4364,9 +4366,24 @@ function buildCabins(root){
   const W=0x6b5433,W2=0x5d4a2e;
   /* ---- forward, beneath the forecastle: the galley and the seamen's cabbins ---- */
   const hFwd=SHIP.CASTLE_Y-SHIP.DECK_Y;
-  bulkhead(root,-26*K,halfBeam(-26*K,y)-1.6*K,y,hFwd,W,LVL.MAIN,3.2*K);
+  /* MOVED FORWARD FROM -26, BECAUSE THE FOREMAST STOOD IN THE DOORWAY. The mast is
+     at z=-24 and the bulkhead was at -26: two feet apart, and blocked() inflates
+     everything by a 0.74 ft body radius, so 1.48 of those two feet were eaten from
+     both sides at once. Measured, the way past came to NINE INCHES of freedom for
+     the player's centre - on the only route forward in the ship. At -27.5 they are
+     3.5 ft apart and the mast is something you walk round instead of something you
+     scrape past. The forecastle deck above still begins at -26, so it simply
+     overhangs the bulkhead by a foot and a half, which is what a forecastle does. */
+  bulkhead(root,-27.5*K,halfBeam(-27.5*K,y)-1.6*K,y,hFwd,W,LVL.MAIN,3.2*K);
   const GZ=-31*K;
-  const hx=-(halfBeam(GZ,y)-3.3*K);
+  /* 3.3K inboard of the hull left the hearth and the mess table 2.9 ft apart on the
+     centreline - and once the body radius is taken off both sides that is 1.4 ft of
+     walkable deck, which one standing cook then closed completely. Both are pushed
+     out against the hull now. MEASURED, not asserted: 2.55 ft of freedom for the
+     player's own centre, which is a physical gap of 4.03 ft between hearth and
+     table. The cookroom is a passage as well as a room - forward of it are the
+     riding bitts and the cable, and a man had to be able to get to them. */
+  const hx=-(halfBeam(GZ,y)-2.2*K);
   const hearth=box(3.0*K,2.0*K,4.2*K,0x7d4a3a);hearth.position.set(hx,y+1.0*K,GZ);root.add(hearth);
   const bricks=box(3.3*K,0.35*K,4.5*K,0x8a5445);bricks.position.set(hx,y+2.1*K,GZ);root.add(bricks);
   const emb=new THREE.Mesh(new THREE.BoxGeometry(2.1*K,0.4*K,3.1*K),
@@ -4378,7 +4395,7 @@ function buildCabins(root){
   const kettle=new THREE.Mesh(new THREE.CylinderGeometry(1.0*K,0.78*K,1.3*K,8),mat(0x2b2b30));
   kettle.position.set(hx,y+3.2*K,GZ-0.6*K);root.add(kettle);
   const chain=box(0.12*K,2.0*K,0.12*K,0x3a3a40);chain.position.set(hx,y+4.6*K,GZ-0.6*K);root.add(chain);
-  const tx=halfBeam(GZ,y)-3.3*K;
+  const tx=halfBeam(GZ,y)-2.4*K;
   const tbl=box(2.2*K,0.4*K,4.6*K,0x6b5433);tbl.position.set(tx,y+2.4*K,GZ);root.add(tbl);
   for(let i=-1;i<=1;i+=2){
     const lg=box(0.35*K,2.2*K,0.35*K,0x46341f);lg.position.set(tx,y+1.2*K,GZ+i*1.9*K);root.add(lg);
@@ -5259,7 +5276,19 @@ registerWorld("ch1",function(root){
       const x=Math.max(-lim,Math.min(lim,n.pos[0]*K));
       const m=buildFigure(n.eq);m.position.set(x,y,z);m.rotation.y=n.face;root.add(m);
       npcMeshes.push({npc:n,mesh:m});
-      solid(x,z,1.0*K,1.0*K,lvl);
+      /* A MAN'S BODY SHOULD NOT BE ABLE TO WALL A PASSAGE, and one was. The
+         Ship's Cook stood on the centreline under the forecastle at x=0, and
+         blocked() inflates every collider by a one-unit body radius, so his
+         1.0*K box occupied x -1.74 to +1.74 FEET - three and a half feet of
+         beam for one man. Together with the hearth to port and the mess table
+         to starboard that spanned the whole deck, and the forward third of the
+         main deck was sealed. The man you were trying to reach was the thing
+         barring the way to him.
+         0.5*K puts a standing figure at about two and a half feet across the
+         shoulders once the body radius is added, which is generous for a person
+         and no longer enough to close a doorway. This can only ever OPEN space,
+         never close it, so it cannot introduce a soft-lock. */
+      solid(x,z,0.5*K,0.5*K,lvl);
       interactables.push({id:n.id,label:n.name,x:x,z:z,y:y,lvl:lvl,r:9*K,action:kind,data:n});
     }
   }
@@ -5344,6 +5373,171 @@ function blocked(x,z){
   }
   return false;
 }
+
+/* ========== THE DECK AUDIT ==========
+   Reachability has now failed three separate times in this project and every time
+   it presented as something else. The ship's aft third was sealed and read as "the
+   chart is hard to find". A cargo chest landed on a ladder foot and read as "I get
+   stuck coming down". The whole forward third of the main deck was sealed by the
+   galley, the mess table and THE COOK'S OWN BODY standing between them, and read as
+   "the galley is walkable space you can't enter".
+
+   None of those is visible. All three are one question - CAN THE PLAYER STAND
+   THERE - and that question has an exact answer, so it should be asked by machine
+   every time rather than rediscovered by a teacher walking into a wall.
+
+   Two resolutions, because the difference between them is itself a defect:
+     COARSE (0.59 ft) is roughly the clearance a person needs to get somewhere
+       without fighting the controls.
+     FINE (0.15 ft) is geometric truth.
+   A region the fine pass reaches and the coarse pass does not is passable only by
+   threading a gap of a few inches. That is arguably WORSE than a sealed room: the
+   player can nearly get in, so it reads as the game being broken rather than as a
+   wall. It gets its own verdict.
+
+   Run it from the console at any time as deckAudit(), or load with ?audit. */
+const AUDIT=/(^|[?&#])audit\b/i.test(location.search+location.hash);
+function deckAudit(){
+  const COARSE=0.8, FINE=0.2, MINCELLS=6;
+  const was=plevel, LV=[LVL.HOLD,LVL.TWEEN,LVL.MAIN,LVL.CASTLE,LVL.QUARTER];
+  const out=[];
+  /* flood from one seed at one resolution, optionally inside a local box */
+  function flood(lvl,step,sx,sz,box){
+    plevel=lvl;
+    if(blocked(sx,sz))return null;
+    const S=new Set(), q=[[Math.round(sx/step),Math.round(sz/step)]];
+    S.add(q[0][0]+","+q[0][1]);
+    let n=0;
+    while(q.length){
+      const c=q.pop();
+      if(++n>400000)break;
+      const nb=[[c[0]+1,c[1]],[c[0]-1,c[1]],[c[0],c[1]+1],[c[0],c[1]-1]];
+      for(let i=0;i<4;i++){
+        const jx=nb[i][0]*step, jz=nb[i][1]*step, k=nb[i][0]+","+nb[i][1];
+        if(S.has(k))continue;
+        if(box&&(jx<box[0]||jx>box[1]||jz<box[2]||jz>box[3]))continue;
+        if(!box&&(Math.abs(jx)>60||Math.abs(jz)>95))continue;
+        if(blocked(jx,jz))continue;
+        S.add(k); q.push(nb[i]);
+      }
+    }
+    return S;
+  }
+  /* 1. every walkable cell per deck, and its connected regions */
+  const walk={}, region={};
+  LV.forEach(function(l){
+    plevel=l;
+    const S=new Set();
+    for(let ix=-75;ix<=75;ix++)for(let iz=-118;iz<=118;iz++)
+      if(!blocked(ix*COARSE,iz*COARSE))S.add(ix+","+iz);
+    walk[l]=S;
+    const seen=new Map(), list=[];
+    S.forEach(function(k){
+      if(seen.has(k))return;
+      const id=list.length, q=[k], cells=[];
+      seen.set(k,id);
+      while(q.length){
+        const p=q.pop().split(",").map(Number); cells.push(p);
+        [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){
+          const nk=(p[0]+d[0])+","+(p[1]+d[1]);
+          if(S.has(nk)&&!seen.has(nk)){seen.set(nk,id);q.push(nk);}
+        });
+      }
+      list.push(cells);
+    });
+    region[l]={seen:seen,list:list};
+  });
+  /* 2. which regions the player actually gets into, hopping by LADDERS */
+  const live={}; LV.forEach(function(l){live[l]=new Set();});
+  function regionAt(l,x,z){
+    const m=region[l].seen;
+    for(let d=0;d<=3;d++)for(let dx=-d;dx<=d;dx++)for(let dz=-d;dz<=d;dz++){
+      const id=m.get((Math.round(x/COARSE)+dx)+","+(Math.round(z/COARSE)+dz));
+      if(id!==undefined)return id;
+    }
+    return undefined;
+  }
+  const s0=regionAt(LVL.MAIN,0,-6*K);
+  if(s0!==undefined)live[LVL.MAIN].add(s0);
+  let grew=true;
+  while(grew){ grew=false;
+    LADDERS.forEach(function(L){
+      [[L.a,L.b],[L.b,L.a]].forEach(function(pr){
+        const f=pr[0], t=pr[1], cf=regionAt(f.lvl,f.x,f.z);
+        if(cf===undefined||!live[f.lvl].has(cf))return;
+        const ct=regionAt(t.lvl,t.x,t.z);
+        if(ct===undefined){out.push("LADDER LANDING BLOCKED  "+L.label+" -> "+
+          LVL_NAME[t.lvl]);return;}
+        if(!live[t.lvl].has(ct)){live[t.lvl].add(ct);grew=true;}
+      });
+    });
+  }
+  /* 3. the orphans, each re-tested finely to tell a seal from a slot */
+  const orphans=[];
+  LV.forEach(function(l){
+    region[l].list.forEach(function(cells,id){
+      if(live[l].has(id)||cells.length<MINCELLS)return;
+      const xs=cells.map(function(c){return c[0]*COARSE;});
+      const zs=cells.map(function(c){return c[1]*COARSE;});
+      const cx=(Math.min.apply(null,xs)+Math.max.apply(null,xs))/2;
+      const cz=(Math.min.apply(null,zs)+Math.max.apply(null,zs))/2;
+      /* a seed that IS reachable on this deck, to test a fine path from */
+      let seed=null;
+      live[l].forEach(function(rid){
+        if(seed)return;
+        const c=region[l].list[rid][Math.floor(region[l].list[rid].length/2)];
+        seed=[c[0]*COARSE,c[1]*COARSE];
+      });
+      let verdict="SEALED";
+      if(seed){
+        const box=[Math.min(cx,seed[0])-20,Math.max(cx,seed[0])+20,
+                   Math.min(cz,seed[1])-16,Math.max(cz,seed[1])+16];
+        const F=flood(l,FINE,seed[0],seed[1],box);
+        if(F){
+          let hit=false;
+          for(let dx=-1;dx<=1&&!hit;dx++)for(let dz=-1;dz<=1&&!hit;dz++)
+            if(F.has((Math.round(cx/FINE)+dx)+","+(Math.round(cz/FINE)+dz)))hit=true;
+          if(hit)verdict="SLOT ONLY - a gap under 7 inches";
+        }
+      } else verdict="SEALED (no reachable ground on this deck at all)";
+      const inside=interactables.filter(function(it){
+        return it.lvl===l&&cells.some(function(c){
+          return Math.hypot(c[0]*COARSE-it.x,c[1]*COARSE-it.z)<3.2;});
+      }).map(function(it){return it.label;});
+      orphans.push({deck:LVL_NAME[l],sqft:Math.round(cells.length*COARSE*COARSE),
+        x_ft:[+(Math.min.apply(null,xs)/K).toFixed(1),+(Math.max.apply(null,xs)/K).toFixed(1)],
+        z_ft:[+(Math.min.apply(null,zs)/K).toFixed(1),+(Math.max.apply(null,zs)/K).toFixed(1)],
+        verdict:verdict, contains:inside});
+    });
+  });
+  /* 4. anything the player can never get within reach of */
+  const mute=[];
+  interactables.forEach(function(it){
+    let ok=false;
+    region[it.lvl].seen.forEach(function(id,k){
+      if(ok||!live[it.lvl].has(id))return;
+      const p=k.split(",").map(Number);
+      if(Math.hypot(p[0]*COARSE-it.x,p[1]*COARSE-it.z)<=it.r)ok=true;
+    });
+    if(!ok)mute.push(it.label+" ("+LVL_NAME[it.lvl]+")");
+  });
+  plevel=was;
+  const decks={};
+  LV.forEach(function(l){
+    let n=0; live[l].forEach(function(id){n+=region[l].list[id].length;});
+    decks[LVL_NAME[l]]=n+"/"+walk[l].size+" cells, "+
+      region[l].list.filter(function(c){return c.length>=MINCELLS;}).length+" region(s)";
+  });
+  const bad=orphans.filter(function(o){return o.sqft>=8;});
+  return {world:CURRENT_WORLD, decks:decks, notes:out,
+    orphans:orphans, out_of_reach:mute,
+    PASS:(bad.length===0&&mute.length===0&&out.length===0),
+    summary:orphans.length+" orphaned region(s), "+mute.length+" thing(s) out of reach"};
+}
+if(AUDIT&&window.console)setTimeout(function(){
+  if(!CURRENT_WORLD)return;
+  console.log("%c DECK AUDIT ","background:#8f3a2c;color:#efe6cd",deckAudit());
+},2500);
 
 /* ========== MAIN LOOP ========== */
 function animate(){
@@ -12746,6 +12940,16 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"3 August 1607 · latest",
+   head:"The cook was standing in the only way through to himself",
+   lines:[
+     "The forward third of the main deck — the galley, the hearth, the mess table, the seamen's cabbins — was walled off. You could see it and you could talk to the Cook across the wall, but you could not go in.",
+     "There was no wall. The cause was three things standing in a row: the hearth to port, the mess table to starboard, and the Ship's Cook himself planted on the centreline between them. Together they spanned the whole beam. The man you were trying to reach was what barred the way to him.",
+     "So: the hearth and the table are pushed out against the ship's sides, leaving four feet of clear deck between them, and the cook stands at his hearth where a cook belongs. You can walk forward past him now, between the cabbins, all the way to the bow under the forecastle.",
+     "A man's body also took up three and a half feet of beam, which is about twice a man. That is halved, so nobody can block a doorway again by standing in it.",
+     "And getting forward at all meant edging past the foremast through NINE INCHES of gap, because the fore bulkhead had been built two feet from the mast and they were squeezing each other. The bulkhead is a foot and a half further forward now and the gap there is five feet — you walk round the mast instead of scraping past it.",
+     "Under the hood: reachability has now gone wrong three times in this game — the sealed stern, the chest on the ladder foot, and this — and every time it showed up as something else entirely. There is now a check that walks every deck by machine and lists anywhere you cannot get to. It runs in a fifth of a second. Six small empty patches of deck are still listed and left alone, none of them with anything in it; they are behind barrels and bed-boards and no bigger than a doormat."
+   ]},
+  {when:"3 August 1607",
    head:"That was not a shoreline, and it was not even the right water",
    lines:[
      "The shore was two ribbons of bank six hundred and fifty feet apart with sixty scattered tree-boxes on each, and open water beyond them in every direction — so it read exactly as it was: two thin islands with sea behind them.",
@@ -13085,7 +13289,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260803-2138-de3bb4b";
+const BUILD="20260803-2213-6d062ca";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
