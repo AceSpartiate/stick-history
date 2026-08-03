@@ -3376,26 +3376,110 @@ function buildTweenLevel(root){
   const SH=belowDecks([-14*K,-4.5*K,5*K,15*K],0.80,SHIP.TWEEN_Y,SHIP.TWEEN_Y+5*K);
   planks(root,SHIP.Z_BOW+5*K,SHIP.Z_STERN-4*K,y,0.7*K,0x6b5433,0x5d4a2e,SH);
   beams(root,SHIP.Z_BOW+5*K,SHIP.Z_STERN-4*K,SHIP.DECK_Y,0x46341f,SH);
-  /* Passengers berthed in the ends. A gun crew needs the whole width to run a
-     piece in and out, so nobody slept beside the ports. */
-  const BG2=new Geo(),cBunk=RGB(0x7a6039),cPost=RGB(0x46341f),cRoll=RGB(0x8a7f66),cRoll2=RGB(0x7f7460),cChest=RGB(0x54432a);
-  const berthZ=[-32*K,-25*K,24*K,31*K];
-  for(let bi=0;bi<berthZ.length;bi++){
-    const z=berthZ[bi];
+  /* ========== WHERE A HUNDRED AND FIVE MEN ACTUALLY SLEPT ==========
+     Reported from play: "we have wooden beds on a ship? i'd assume hammocks."
+     Both halves of that are better than what was here, and the arithmetic settles
+     it before any source does. This deck is 1,412 square feet. There were about
+     144 souls aboard - 105 colonists and her crew - which is NINE AND A HALF
+     SQUARE FEET each, a three-foot square per man. One of the bunks that used to
+     stand here has a footprint of twenty square feet: a single bed took twice the
+     space one person had. Eighteen of them slept twelve per cent of the ship's
+     company and ate a quarter of the deck - and this deck also had to hold four
+     months of victuals for a hundred men, their tools, trade goods, and a thirty
+     foot shallop knocked down in pieces.
+
+     So: no beds. And the answer is not hammocks either - it is better than that,
+     because THE VIRGINIA COMPANY'S OWN PACKING LIST survives and tells each man
+     what to bring:
+
+         "Five Ells course Canvase, to make a bed at Sea for two men,
+          to be filled with straw"
+         "One coorse Rug at Sea for two men, will cost 6.S."
+
+     A straw-stuffed canvas sack, laid on the deck, SHARED BETWEEN TWO MEN. Not
+     ship's furniture at all - the passenger brought his own bed and shared it. The
+     same list specifies a second, better bed of seven ells "filled in Virginia",
+     that is, only after landing. So these are laid in PAIRS on the planks.
+
+     Hammocks belonged to the SEAMEN and built cabins to the OFFICERS - three
+     different arrangements for three classes of person aboard, which is the thing
+     worth showing. The crew's hammocks are forward, in buildCabins.
+
+     The partitions are the Mayflower's, thirteen years later and the same kind of
+     ship: passengers nailed up thin plank dividers for a scrap of privacy. Gapped
+     and out of plumb here, because they were knocked together at sea by men who
+     were not carpenters.
+
+     AND THE OLD COMMENT WAS WRONG ON ITS OWN TERMS. It said nobody slept beside
+     the ports because a gun crew needs the width. Eight guns at four men to a
+     saker is thirty-two men; the whole fleet carried thirty-nine crew across three
+     ships, so her share was seventeen or eighteen. She could not man one broadside
+     without arming the passengers, and on passage a merchantman's guns were housed
+     - muzzles lashed up, ports shut and often caulked. Jamestown Settlement's own
+     interpretive marker says it plainly: "Passengers were cramped below with
+     cannon, supplies, and baggage." They slept among the guns. */
+  const BG2=new Geo();
+  const cPart=RGB(0x6b5433),cPartD=RGB(0x54432a),cChest=RGB(0x54432a);
+  const cStraw=RGB(0x9a8a55), cRug=RGB(0x6e5a46);
+  /* one slung bed: a sagging trough of canvas between two lashings, wider in the
+     middle because a loaded sling bellies out */
+  function sling(G,cx,cy,cz,len,seed){
+    const N=6, sag=0.62*K, half=len/2;
+    const wob=(srand(seed*3.7)-0.5)*0.5*K;      /* nobody hung two the same */
+    for(let i=0;i<N;i++){
+      const t0=i/N, t1=(i+1)/N;
+      const z0=cz-half+len*t0, z1=cz-half+len*t1;
+      const y0=cy-sag*Math.sin(Math.PI*t0), y1=cy-sag*Math.sin(Math.PI*t1);
+      const w0=(0.30+0.42*Math.sin(Math.PI*t0))*K, w1=(0.30+0.42*Math.sin(Math.PI*t1))*K;
+      const xa=cx+wob;
+      /* the trough: floor plus two sides, so it reads as cloth holding something */
+      G.quad4([xa-w0,y0,z0],[xa+w0,y0,z0],[xa+w1,y1,z1],[xa-w1,y1,z1],
+        cSlingD,cSlingD,cSling,cSling);
+      G.quad([xa-w0,y0+0.34*K,z0],[xa-w0,y0,z0],[xa-w1,y1,z1],[xa-w1,y1+0.34*K,z1],cSling);
+      G.quad([xa+w0,y0,z0],[xa+w0,y0+0.34*K,z0],[xa+w1,y1+0.34*K,z1],[xa+w1,y1,z1],cSlingD);
+    }
+    /* the lashings up to the beam above */
+    G.beam8([cx+wob,cy,cz-half],[cx+wob,cy+1.5*K,cz-half-0.5*K],0.10*K,0.09*K,cLash,cLash);
+    G.beam8([cx+wob,cy,cz+half],[cx+wob,cy+1.5*K,cz+half+0.5*K],0.10*K,0.09*K,cLash,cLash);
+  }
+  /* `berth` was the wrong word and is gone: Mainwaring's berth is MOORING room,
+     and the sleeping sense is later. These are bed-places - "cabbins" in 1607. */
+  const cabbinZ=[-32*K,-25*K,24*K,31*K];
+  for(let bi=0;bi<cabbinZ.length;bi++){
+    const z=cabbinZ[bi];
     const hbw=halfBeam(z,y)-3.0*K;
     if(hbw<2)continue;
     for(let sd=-1;sd<=1;sd+=2){
-      BG2.box(sd*hbw,y+1.6*K,z,3.4*K,0.4*K,6*K,cBunk);
-      BG2.box(sd*hbw,y+4.2*K,z,3.4*K,0.4*K,6*K,cBunk);
-      BG2.box(sd*(hbw-1.6*K),y+2.5*K,z-2.9*K,0.5*K,5*K,0.5*K,cPost);
-      BG2.box(sd*(hbw-1.6*K),y+2.5*K,z+2.9*K,0.5*K,5*K,0.5*K,cPost);
-      BG2.box(sd*hbw,y+1.95*K,z,2.6*K,0.7*K,4.4*K,cRoll);
-      BG2.box(sd*hbw,y+4.55*K,z,2.6*K,0.7*K,4.4*K,cRoll2);
-      solid(sd*hbw,z,1.8*K,3.0*K,LVL.TWEEN);
+      /* THE COMPANY'S BED: five ells of coarse canvas filled with straw, for two
+         men, on the deck. Five ells is about 6 ft 3 in of cloth, which makes a
+         sack roughly six feet by three - so it is drawn at that, in pairs, with
+         the coarse rug over it. Slumped and uneven, because it is a sack of straw
+         and not a mattress. */
+      for(let b=0;b<2;b++){
+        const bz=z-1.9*K+b*3.4*K, bx=sd*(hbw+0.5*K);
+        const sh=(0.52+srand(bi*9+b*3+sd)*0.16)*K;
+        BG2.box(bx,y+sh/2,bz,3.0*K,sh,6.0*K,cStraw,(srand(bi*4+b)-0.5)*0.03);
+        /* the rug, thrown over and never straight */
+        BG2.box(bx-sd*0.15*K,y+sh+0.10*K,bz+0.3*K,2.6*K,0.20*K,4.6*K,cRug,
+          (srand(bi*6+b+17)-0.5)*0.05);
+      }
+      /* a partition knocked up out of whatever plank was to hand: gapped, and
+         deliberately out of plumb */
+      const px=sd*(hbw-2.0*K);
+      for(let k=0;k<4;k++){
+        const ph=(3.0+srand(bi*7+k)*1.1)*K;
+        const lean=(srand(bi*5+k+31)-0.5)*0.05;
+        BG2.box(px,y+ph/2,z-2.6*K+k*1.55*K,0.16*K,ph,1.30*K,
+          (k%2)?cPart:cPartD,lean);
+      }
+      solid(px,z,0.6*K,3.0*K,LVL.TWEEN);
     }
   }
-  for(let z=-16*K;z<18*K;z+=8*K){
-    BG2.box(0,y+0.9*K,z,2.4*K,1.8*K,3.4*K,cChest);
+  /* the cargo they slept among - and there is more of it now, because it is what
+     the bunks were standing on top of */
+  for(let z=-18*K;z<20*K;z+=6.2*K){
+    const s=0.85+srand(z*0.31)*0.4;
+    BG2.box(0,y+0.9*K*s,z,2.4*K,1.8*K*s,3.4*K,cChest);
     solid(0,z,1.4*K,1.9*K,LVL.TWEEN);
   }
   root.add(BG2.shade(SH).mesh(false,false));
@@ -4138,7 +4222,7 @@ const BINNACLE_DOC={
 function buildCabins(root){
   const y=SHIP.DECK_Y,h=6.2*K;
   const W=0x6b5433,W2=0x5d4a2e;
-  /* ---- forward, beneath the forecastle: the galley and the seamen's berths ---- */
+  /* ---- forward, beneath the forecastle: the galley and the seamen's cabbins ---- */
   const hFwd=SHIP.CASTLE_Y-SHIP.DECK_Y;
   bulkhead(root,-26*K,halfBeam(-26*K,y)-1.6*K,y,hFwd,W,LVL.MAIN,3.2*K);
   const GZ=-31*K;
@@ -4169,16 +4253,87 @@ function buildCabins(root){
   const lid=new THREE.Mesh(new THREE.CylinderGeometry(1.0*K,1.0*K,0.2*K,8),mat(0x3f3220));
   lid.position.set(bx,y+2.5*K,-27.48*K);root.add(lid);
   solid(bx,-27.48*K,1.0*K,1.0*K,LVL.MAIN);
-  const berthZ=[-35.2*K];
-  for(let i=0;i<berthZ.length;i++){
-    const bz=berthZ[i], bw=halfBeam(bz,y)-2.8*K;
-    if(bw<1.5)continue;
+  /* ---- THE SEAMEN'S CABBINS, AND HAMMOCKS ARE WRONG FOR 1607 ----
+     I built hammocks here and had to take them out again. The teacher asked
+     "i'd assume hammocks", I checked the usual 1597 date, found it, and was
+     wrong anyway - so this is worth writing down properly.
+
+     THE 1597 WARRANT IS REAL. Calendar of State Papers Domestic, Elizabeth
+     1595-97, p.444: 23 June 1597, three hundred pounds to Roger Langford, Navy
+     Paymaster, "for 300 bolts of canvas to make cabins or beds for the mariners
+     employed in the fleet under the Earl of Essex, for better preservation of
+     their health, as likewise to avoid the danger of fire."
+
+     THREE THINGS THAT DEMOLISH IT AS AUTHORITY FOR 1607:
+     1. It is ONE EXPEDITION - Essex's Azores voyage, sailing that July. Nothing
+        in it is a standing order or a fleet-wide fitting. "The Royal Navy
+        formally adopted the hammock in 1597" is a later editorial gloss on a
+        one-off purchase.
+     2. The document does not contain the word hammock in any spelling. The
+        Calendar says "cabins or beds". The word "Hammocks" is Oppenheim's own
+        1896 summary sentence, and every modern retelling - including the one I
+        found - inherits his interpretation as if it were the document's wording.
+     3. JOHN SMITH SAILED ON THIS SHIP, and in his own list of a ship's parts he
+        names "a cabben, a hanging cabben, a Hamacke" as THREE DIFFERENT THINGS.
+        A hanging cabin is not a hammock. (An Accidence for Young Sea-men, 1626.)
+
+     And the negative evidence is strong. Mainwaring's Seaman's Dictionary
+     (c.1620-23), six hundred terms, has NO entry for hammock at all - his "Beds"
+     are GUN beds and his "berth" means mooring room, so even the word berth is an
+     anachronism here. Standard naval issue is twenty to thirty years later: in
+     January 1628 Sir Henry Mervyn still reports from Plymouth that there were no
+     hammocks and "the men lodge on the bare decks... their condition miserable
+     beyond relation."
+
+     WHAT THE SEAMEN HAD INSTEAD was a "cabbin" - a built-in bed-place - and they
+     SHARED it, watch by watch. Smith instructs that watch-mates be split between
+     the two watches "because they may haue the more roome in their Cabbins to
+     rest": one bed, two men, never off duty at the same time. Hot-bunking, in
+     1607. And the museum's own reconstruction - the vessel this chapter is a
+     reconstruction OF - shows exactly this below decks: an enclosed boxed wooden
+     bed-place with a curtain on a rod.
+
+     So: boxed, curtained, and half the number a modern eye expects, because two
+     men are sharing each one and only one of them is ever in it. */
+  const CB=new Geo();
+  const cCabin=RGB(0x6b5433),cCabinD=RGB(0x4e3a22),cBoard=RGB(0x7a6039);
+  const cCurt=RGB(0x8c7d63),cPad=RGB(0x9a8a55);
+  /* ---- AND THEY MUST NOT WALL THE SHIP OFF ----
+     First attempt sealed the forecastle. Flood-filled it: the player got forward
+     to -29 ft and stopped, and the station at -31 read ZERO per cent clear across
+     its whole ten feet of beam. Two reasons, and only one was my arithmetic:
+       - at the bow the half-beam is 3.6 ft, so a bed-place 2.6 ft inboard of the
+         side sits 1.0 ft off the centreline and its collider spans -0.2 to +2.2 -
+         the two sides CROSS and meet in the middle.
+       - and -31 already had structure in it, so I was stacking on top of the
+         galley end rather than into free deck.
+     So the placement is self-limiting now: a cabbin is only built where it leaves
+     a clear lane down the middle, and the loop is told to skip rather than the
+     numbers being hand-tuned until they happen to fit. LANE is the promise. */
+  const LANE=1.7*K;                /* half-width of the passage that must survive */
+  const CW=0.9*K;                  /* half-width of a cabbin's collider */
+  for(let i=0;i<3;i++){
+    const bz=-33.0*K-i*2.9*K, bw=halfBeam(bz,y)-2.6*K;
+    if(bw-CW<LANE)continue;        /* no room here without blocking the deck */
     for(let sd=-1;sd<=1;sd+=2){
-      const bunk=box(2.0*K,0.4*K,3.0*K,0x7a6039);bunk.position.set(sd*bw,y+1.6*K,bz);root.add(bunk);
-      const roll=box(1.6*K,0.6*K,2.4*K,0x8a7f66);roll.position.set(sd*bw,y+1.95*K,bz);root.add(roll);
-      solid(sd*bw,bz,1.1*K,1.6*K,LVL.MAIN);
+      const bx=sd*bw, bl=6.0*K, bh=2.9*K;
+      /* the box: back against the ship's side, a floor, a head and a foot board */
+      CB.box(bx+sd*0.55*K,y+bh/2,bz,0.18*K,bh,bl,cCabinD);          /* outboard back */
+      CB.box(bx,y+0.16*K,bz,2.2*K,0.32*K,bl,cBoard);                 /* the bed floor */
+      CB.box(bx,y+bh/2,bz-bl/2,2.2*K,bh,0.18*K,cCabin);              /* head board */
+      CB.box(bx,y+bh/2,bz+bl/2,2.2*K,bh,0.18*K,cCabin);              /* foot board */
+      CB.box(bx,y+bh,bz,2.4*K,0.20*K,bl+0.2*K,cCabinD);              /* the top */
+      /* straw pad, and the curtain on its rod - drawn half back, because the man
+         whose watch it is has just got out of it */
+      CB.box(bx,y+0.52*K,bz,2.0*K,0.40*K,bl-0.5*K,cPad);
+      CB.beam8([bx-sd*1.1*K,y+bh-0.2*K,bz-bl/2],[bx-sd*1.1*K,y+bh-0.2*K,bz+bl/2],
+        0.11*K,0.11*K,RGB(0x3a2c1a),RGB(0x3a2c1a));
+      const cw=(0.45+srand(i*3.1+sd)*0.30);
+      CB.box(bx-sd*1.08*K,y+bh*0.55,bz-bl*0.5+bl*cw*0.5,0.06*K,bh*0.86,bl*cw,cCurt);
+      solid(bx,bz,CW,3.0*K,LVL.MAIN);
     }
   }
+  root.add(CB.mesh(false,false));
   lamp(root,0,y+6.2*K,-35.5*K,16);
 
   /* ---- aft: a clear passage, three cabins off it, the great cabin right aft ---- */
@@ -4193,7 +4348,7 @@ function buildCabins(root){
      that BOTH MASTS step through the deck in the middle of it, so the corridor is
      really two lanes either side of a tree, and 3.2K minus the mast minus the
      player's own width left almost nothing. Widened to 4.1K, which the hull can
-     afford here - it leaves the side cabins 3.1K, still wider than the 2.6K berths
+     afford here - it leaves the side cabins 3.1K, still wider than the 2.6K bed-places
      in them - and taken with the mast collider above it turns two 0.6K slots into
      two lanes of about 1.8K. */
   const PASS=4.1*K;
@@ -12306,7 +12461,10 @@ const PATCH_NOTES=[
      "Below decks there is now something actually lit rather than only shaded: a pool of lamplight on the deck under each lantern, and a slab of daylight coming in at each gunport.",
      "She is painted, as the real reconstruction at Jamestown Settlement is: the inboard bulwarks in pale cream-buff with a red cap rail, instead of the same dark brown as everything else.",
      "The deck under the forecastle and half deck is warmer as well as darker, because oak only goes grey where the sun and rain can reach it.",
-     "Every deck beam is bracketed to the ship's side with a hanging knee, the way a wooden hull is actually held together."
+     "Every deck beam is bracketed to the ship's side with a hanging knee, the way a wooden hull is actually held together.",
+     "The passengers no longer have wooden bunks. The Virginia Company's own packing list told each man to bring “Five Ells course Canvase, to make a bed at Sea for two men, to be filled with straw” — so that is what is down there, straw beds in pairs on the deck among the cargo, behind plank dividers the passengers knocked up themselves.",
+     "The seamen forward have built-in bed-places shared watch by watch, and the officers aft keep their bedsteads. Three kinds of people aboard, three ways of sleeping.",
+     "Not hammocks, though: the usual 1597 date for those turns out to be one purchase order for one voyage, and it does not use the word."
    ]},
   {when:"2 August 1607",
    head:"A proper opening",
@@ -12610,7 +12768,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260803-1039-cbdf26a";
+const BUILD="20260803-1110-1163ad1";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
