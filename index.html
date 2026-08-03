@@ -2527,16 +2527,40 @@ function buildHull(root){
 }
 
 function buildDecks(root){
-  /* main deck planking, as one mesh */
-  planks(root,SHIP.Z_BOW+2*K,SHIP.Z_STERN-K,SHIP.DECK_Y,0.7*K,0x8a6f45,0x7a6039);
-  /* bulwarks and rails, merged into one mesh */
+  /* main deck planking, as one mesh - and BAKED, which it never was. See
+     weatherDeck(): the castle overhang, the bulwark angle, the scrubbed lane and
+     the scupper stains, all in the vertex colours at no run-time cost. */
+  planks(root,SHIP.Z_BOW+2*K,SHIP.Z_STERN-K,SHIP.DECK_Y,0.7*K,0x8a6f45,0x7a6039,
+    weatherDeck());
+  /* ---- bulwarks and rails, merged into one mesh ----
+     THE INBOARD FACE IS THE ONE THE PLAYER LOOKS AT ALL CHAPTER, and it was the
+     same value as the face nobody ever sees, because box() takes one colour for
+     all six faces. An unpainted face sheltered from the weather stays lighter
+     than the one taking the sea, so the inboard side is warmer and lighter -
+     which also separates the bulwark from the deck it stands on, and gives the
+     new waterway something to sit against. Zero extra triangles: the same box,
+     drawn as its own quads so the faces can differ. */
   const bw=new Geo(),cW=RGB(0x4e3a22),cR=RGB(0x6b5433);
+  const cIn=RGB(0x5f4a2c), cCap=RGB(0x765c39);
   for(let z=SHIP.Z_BOW+K;z<SHIP.Z_STERN;z+=3*K){
     const hbw=halfBeam(z,SHIP.DECK_Y);
     if(hbw<1.6*K)continue;
+    const zA=z-1.55*K, zB=z+1.55*K;
+    const y0=SHIP.DECK_Y, y1=SHIP.DECK_Y+3.2*K;
     for(let sg=-1;sg<=1;sg+=2){
-      bw.box(sg*hbw,SHIP.DECK_Y+1.6*K,z,0.7*K,3.2*K,3.1*K,cW);
+      const xo=sg*(hbw+0.35*K), xi=sg*(hbw-0.35*K);
+      /* outboard face, in the weather */
+      bw.quad([xo,y0,zA],[xo,y0,zB],[xo,y1,zB],[xo,y1,zA],cW);
+      /* inboard face, sheltered - and it darkens toward the deck, because the
+         angle between a bulwark and a deck never gets full sky */
+      bw.quad4([xi,y0,zB],[xi,y0,zA],[xi,y1,zA],[xi,y1,zB],
+        shadeRGB(cIn,0.72),shadeRGB(cIn,0.72),cIn,cIn);
+      /* the top of the timbering, under the rail */
+      bw.quad([xo,y1,zA],[xo,y1,zB],[xi,y1,zB],[xi,y1,zA],shadeRGB(cIn,1.06));
       bw.box(sg*hbw,SHIP.DECK_Y+3.4*K,z,0.95*K,0.45*K,3.1*K,cR);
+      /* a capping strip on the inboard edge of the rail, so the rail reads as a
+         piece of timber laid ON the bulwark rather than as part of it */
+      bw.box(xi-sg*0.06*K,SHIP.DECK_Y+3.4*K,z,0.16*K,0.47*K,3.1*K,cCap);
     }
   }
   root.add(bw.mesh(false,false));
@@ -2947,6 +2971,70 @@ function belowDecks(lampZs,base,deckY,lampY){
        room from it. Without this the tops of the cargo were as dark as their
        sides and the whole hold read as one warm mass. */
     if(deckY!==undefined)m*=0.78+0.36*Math.min(1,Math.max(0,(y-deckY)/span));
+    /* ---- AND NOW SOMETHING THAT IS ACTUALLY LIT ----
+       Everything above this line DARKENS. A surface that is only ever graded
+       downward reads as PAINTED; what makes a surface read as lit is one hard
+       bright patch with an edge on it. So the lamps now throw a pool on the deck
+       beneath them and the gunports throw a slab of daylight in.
+       Positive terms, clamped, and only on the deck plane - light on a wall is
+       the wall's own business and belowDecks does not know which way a vertex
+       faces. */
+    if(deckY!==undefined&&Math.abs(y-deckY)<0.9*K){
+      for(let i=0;i<lampZs.length;i++){
+        const r=Math.hypot(x*0.62,z-lampZs[i])/(5.0*K);
+        if(r<1)m*=1+0.42*(1-r)*(1-r);
+      }
+      /* The ports are cut at PORT_Y and the deck is below them, so the sun comes
+         in and lands INBOARD of the port, not under it. sunLight sits at
+         (60,150,40) - about 64 degrees up - so the throw is PORT_H/tan(64) of
+         horizontal run, and it lands to one side because the sun is to one side.
+         A lozenge, not a rectangle, because a port is a hole with thick sides. */
+      const run=(PORT_Y-deckY)/2.06;                 /* tan(64 degrees) */
+      for(let i=0;i<GUN_Z.length;i++){
+        const hbp=halfBeam(GUN_Z[i],PORT_Y);
+        for(let sg=-1;sg<=1;sg+=2){
+          const cx=sg*(hbp-run*0.55), cz=GUN_Z[i]+run*0.30*sg;
+          const q=Math.hypot((x-cx)/(1.9*K),(z-cz)/(2.1*K));
+          if(q<1)m*=1+0.62*(1-q);
+        }
+      }
+    }
+    return Math.min(1.45,m);
+  };
+}
+/* ---- THE WEATHER DECK HAD NO BAKE AT ALL ----
+   The hold and the 'tween deck both get belowDecks(); the main deck, which is
+   where the player spends the chapter, was passed no shade function whatever -
+   so it was uniformly lit from end to end with the castle standing over one
+   third of it and four-foot bulwarks down both sides. It is the largest single
+   flat area in the game and it had no shading information in it at all.
+   Composed of multiplied terms, so the corners fall out for free: where the
+   overhang meets the bulwark, both terms apply and the corner goes darkest
+   without anyone writing a corner. */
+function weatherDeck(){
+  return function(x,y,z){
+    let m=1;
+    /* under the forecastle and the half deck. topAt() already knows where the
+       eaves are - reuse ITS breakpoints so the shadow lands under the actual
+       overhang instead of near it. */
+    const f=-24*K, a=14*K, ramp=3.2*K;
+    if(z<f)      m*=0.60+0.40*Math.max(0,Math.min(1,(z-(f-ramp))/ramp));
+    else if(z>a) m*=0.60+0.40*Math.max(0,Math.min(1,((a+ramp)-z)/ramp));
+    /* contact darkening where the deck runs into the bulwark: a real deck is
+       never as bright in the angle as it is out in the middle, and this is what
+       gives the waterway something to sit against */
+    const hb=Math.max(1,halfBeam(z,y));
+    const edge=Math.max(0,1-(hb-Math.abs(x))/(2.6*K));
+    m*=1-0.26*edge*edge;
+    /* scrubbed pale where the watch actually walks - bare deck holystoned daily
+       goes LIGHTER, so this is a positive term, and it follows the waist */
+    const lane=Math.max(0,1-Math.abs(Math.abs(x)-3.4*K)/(2.8*K));
+    if(z>f&&z<a)m*=1+0.075*lane;
+    /* and a stain at each scupper, where the water goes over the side */
+    for(let i=0;i<GUN_Z.length;i++){
+      const q=Math.hypot((Math.abs(x)-hb+1.1*K)/(1.5*K),(z-GUN_Z[i])/(2.0*K));
+      if(q<1)m*=1-0.14*(1-q);
+    }
     return m;
   };
 }
@@ -3067,6 +3155,7 @@ function shadeHex(hex,f){
    it can take the bake as well. */
 function beams(root,z0,z1,y,col,shadeFn){
   const g=new Geo(), c=RGB(col), up=shadeRGB(c,0.66);
+  const kn=shadeRGB(c,0.88), knD=shadeRGB(c,0.58);
   for(let z=z0;z<z1;z+=4*K){
     const hbw=halfBeam(z,y);
     if(hbw<1)continue;
@@ -3074,6 +3163,26 @@ function beams(root,z0,z1,y,col,shadeFn){
        soffit is the face that catches them and the shoulder against the deck
        above is the face that never does. */
     g.oct(0,z,y-0.85*K,y-0.15*K,hbw*2,0.8*K,hbw*2,0.8*K,0.14,c,up);
+    /* ---- HANGING KNEES, six triangles each ----
+       A deck beam does not just rest on the ship's side; it is bracketed to it by
+       a knee - a grown crook of oak bolted to the frame and to the beam end. Every
+       beam in a wooden ship has one at each end, and without them a deckhead
+       reads as a row of dowels stuck into a tube. This is the cheapest thing in
+       the ship that says "wooden hull structure": a triangular bracket, three
+       quads, hung under each beam end against the side. */
+    const kd=2.5*K;             /* how far down the side the knee reaches */
+    const ka=2.2*K;             /* and how far inboard along the beam */
+    for(let sg=-1;sg<=1;sg+=2){
+      const xo=sg*(hbw-0.10*K), xi=sg*(hbw-ka);
+      const yb=y-0.85*K, yl=yb-kd;
+      const zf=z-0.34*K, zb=z+0.34*K;
+      /* the sloping inboard face - the hypotenuse a player actually sees - and
+         one triangular cheek each side, so it is a solid crook and not a flag.
+         Two triangles plus a quad: six triangles, and it is the whole knee. */
+      g.quad4([xi,yb,zf],[xo,yl,zf],[xo,yl,zb],[xi,yb,zb], kn,knD,knD,kn);
+      g.tri([xi,yb,zf],[xo,yb,zf],[xo,yl,zf],kn);
+      g.tri([xi,yb,zb],[xo,yl,zb],[xo,yb,zb],knD);
+    }
   }
   if(shadeFn)g.shade(shadeFn);
   root.add(g.mesh(false,false));
@@ -12129,11 +12238,14 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"2 August 1607 · latest",
-   head:"The deck is a deck",
+   head:"The deck is a deck, and the ship has light in it",
    lines:[
      "The ship's decks were drawn as a checkerboard of six-foot squares. They are laid planks now — eleven inches wide, running fore and aft, with pitched seams between them and the butt joints shifted so they never line up, the way a real deck is laid.",
      "A margin plank follows the curve of the ship's side, and a waterway runs along the foot of the bulwark.",
-     "The planking is scrubbed paler amidships where the watch walks, and darker toward the bow and stern."
+     "The main deck now has shade on it. It is darker under the forecastle and the half deck, darker in the angle where it meets the bulwark, and scrubbed paler amidships where the watch walks.",
+     "Below decks there is now something actually lit rather than only shaded: a pool of lamplight on the deck under each lantern, and a slab of daylight coming in at each gunport.",
+     "The inboard face of the bulwark — the one you look at all chapter — is no longer the same colour as the face nobody sees.",
+     "Every deck beam is bracketed to the ship's side with a hanging knee, the way a wooden hull is actually held together."
    ]},
   {when:"2 August 1607",
    head:"A proper opening",
@@ -12437,7 +12549,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260803-0250-e99c706";
+const BUILD="20260803-0301-ee559e1";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
