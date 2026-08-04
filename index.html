@@ -6746,6 +6746,24 @@ function animate(){
   const raw=clock.getDelta();
   const dt=Math.min(0.05,raw);
   watchFrames(raw);
+  /* ---- THE PIECE IS A CHILD OF THE CAMERA, SO A CUTSCENE CARRIED IT ----
+     buildGunModel does cam.add(gunPiece): the matchlock is a first-person view model
+     parented to the camera, which is right for holding it and wrong for every shot the
+     player is not looking through. Both cutscene paths below take the camera and return
+     early, so nothing ever reset the piece - it hung across the middle of the frame for
+     the whole of a flogging if you happened to be carrying it when you earned one.
+     Reported exactly that way: recently fired the gun, then punished, and the gun blocks
+     the view.
+     Hidden while the camera is not the player's, and restored to precisely what it was
+     afterwards - a flag rather than a guess, because the piece is legitimately invisible
+     when stowed and this must not hand it back to a man who has not drawn it. */
+  const camTaken=(CS.active||CAMLOCK.on);
+  if(camTaken){
+    if(gunPiece&&gunPiece.visible){GUN_HID_BY_CS=true;gunPiece.visible=false;}
+  } else if(GUN_HID_BY_CS){
+    GUN_HID_BY_CS=false;
+    if(gunPiece)gunPiece.visible=true;
+  }
   if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateCutscene(dt);renderer.render(scene,cam);return;}
   if(CAMLOCK.on){
     updateFx(dt);updateFlog(dt);
@@ -8785,6 +8803,8 @@ function endPersuade(){
    Lashed to the mainmast - forward of it, clear of the capstan and the
    hatch gratings - while the boatswain's whip does its work behind you. */
 const CAMLOCK={on:false,pos:null,look:null};
+/* set when a cutscene hid the held piece, so it can be given back exactly as it was */
+let GUN_HID_BY_CS=false;
 let FLOG=null;
 function beginFlogging(){
   if(!scene||!player)return;
@@ -15368,7 +15388,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-2338";
+const BUILD="20260804-2347";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
