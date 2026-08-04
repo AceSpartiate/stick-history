@@ -2762,23 +2762,78 @@ function buildDecks(root){
      the LADDERS table is the only way between decks. Replaced with what would
      actually be there: a coaming round the hatch, and a grating over it. */
   const ST=new Geo(),cCoam=RGB(0x6b5433);
-  /* A COMPANIONWAY hatch is open - that is what it is for. I had put a grating
-     over it and given the coaming colliders, which meant the ladder came up
-     through a grid and set you down inside a box walled fore and aft. Both were
-     wrong for this hatch.
+  /* ---- ONE HOLE, AND IT LOOKS LIKE A HOLE ----
+     Reported from play: "the main mast and foremast seem to going through grates.
+     it isn't visually obvious which grate is used to move lower in the ship." Both
+     were true and they had the same root: hatch furniture placed by eye near things
+     whose positions are fixed by the rig.
 
-     A coaming is a raised lip a few inches high that keeps water off the ladder;
-     you step over one without thinking about it, so it is scenery and not a wall.
-     Gratings belong over CARGO hatches, where they let light and air below while
-     stopping men dropping through - so the grated one is now amidships, where a
-     cargo hatch actually was, and nothing climbs out of it. */
-  function coaming(hx,hz,hw,hd){
+     Measured before the fix. The mainmast stands at z=0 and is 1.5 ft square; the
+     grating drawn over the Main Hatch at z=3 reached forward to z=0.3, so the mast
+     passed through it - 1.5 ft by 0.45 ft of overlap. The foremast stands at z=-24
+     and the coaming laid round the forecastle ladder at (-3,-24) reached to x=+0.6,
+     so that mast passed through its rail too, by 1.35 ft by 1.5 ft.
+
+     And the way down was indistinguishable from scenery, because the Main Hatch -
+     the ONLY hole through the main deck - had a grating drawn over it identical to
+     the decorative cargo grating nine feet forward of it. Two grids, one of them a
+     staircase, and no way to tell.
+
+     So the deck speaks a language now, with three words in it:
+       a HOLE you can go down    - coaming, black void, ladder head, and its grating
+                                   cover lifted off and stood on edge beside it,
+                                   which is what you do with a grating you are using
+       a CLOSED cargo grating    - barred, flush, nothing climbs out of it
+       a LADDER going UP         - just the ladder. No coaming, because a coaming
+                                   rims a hole and there is no hole here: the
+                                   opening is in the deck ABOVE, and ladderMesh
+                                   already draws that.
+     Deleting the two up-ladder coamings is also what clears the foremast. */
+  function coaming(hx,hz,hw,hd,splitFwd){
     const y=SHIP.DECK_Y+0.35*K;
-    ST.box(hx,y,hz-hd,hw*2+0.8*K,0.7*K,0.8*K,cCoam);
+    /* the forward rail can be split in two round the mast partners, which is where
+       a hatch immediately abaft a mast really ended */
+    if(splitFwd){
+      const gap=1.15*K;
+      const seg=(hw+0.4*K)-gap;
+      if(seg>0.2*K)for(let sg=-1;sg<=1;sg+=2)
+        ST.box(hx+sg*(gap+seg/2),y,hz-hd,seg,0.7*K,0.8*K,cCoam);
+    } else ST.box(hx,y,hz-hd,hw*2+0.8*K,0.7*K,0.8*K,cCoam);
     ST.box(hx,y,hz+hd,hw*2+0.8*K,0.7*K,0.8*K,cCoam);
     ST.box(hx-hw,y,hz,0.8*K,0.7*K,hd*2,cCoam);
     ST.box(hx+hw,y,hz,0.8*K,0.7*K,hd*2,cCoam);
     /* no collider: it is ankle height and men walked over it all day */
+  }
+  /* THE WAY DOWN. A coaming, a void with nothing in it, and the grating that
+     belongs on top of this hatch leaning against the coaming where a man set it
+     when he opened her up. The lifted cover is the whole affordance: a grating on
+     the deck is a floor, a grating on its edge is an invitation. */
+  function openHatch(hx,hz,hw,hd){
+    coaming(hx,hz,hw,hd,true);
+    /* the void: black, and set just below the deck so the planks frame it */
+    ST.box(hx,SHIP.DECK_Y-0.12*K,hz,hw*2-0.3*K,0.22*K,hd*2-0.3*K,RGB(0x0a0906));
+    /* the coaming's inner faces, so you see thickness rather than a painted hole */
+    const cIn=RGB(shadeHex(0x6b5433,0.55));
+    for(let sg=-1;sg<=1;sg+=2){
+      ST.box(hx+sg*(hw-0.18*K),SHIP.DECK_Y-0.3*K,hz,0.2*K,0.9*K,hd*2-0.4*K,cIn);
+      ST.box(hx,SHIP.DECK_Y-0.3*K,hz+sg*(hd-0.18*K),hw*2-0.4*K,0.9*K,0.2*K,cIn);
+    }
+    /* and the cover, off and on edge against the after coaming */
+    const gx=hx+hw*0.15, gz=hz+hd+1.05*K;
+    const G=new Geo(), cf=RGB(0x46341f), cb=RGB(0x2e2519);
+    G.box(0,0,0,hw*1.8,0.34*K,hd*1.7,cf);
+    for(let i=-2;i<=2;i++){
+      G.box(i*(hw*1.8/5.4),0.1*K,0,0.3*K,0.3*K,hd*1.6,cb);
+      G.box(0,0.1*K,i*(hd*1.7/5.4),hw*1.7,0.3*K,0.3*K,cb);
+    }
+    const cover=G.mesh(false,false);
+    /* +0.35K measured, not guessed: at hd*0.78 alone its lower edge finished 0.35 ft
+       INSIDE the deck, so it stood in the planking instead of on it. */
+    cover.position.set(gx,SHIP.DECK_Y+hd*0.78+0.35*K,gz);
+    cover.rotation.x=-1.28;                    /* stood up, leaning on the coaming */
+    cover.rotation.y=0.09;
+    root.add(cover);
+    solid(gx,gz,hw*0.9,0.5*K);                 /* you cannot walk through it */
   }
   /* There WAS a cargoHatch() here, grated and blocking, placed amidships at
      (0, -4K). The player spawns at (0, -6K), which is inside it - so the whole
@@ -2792,8 +2847,9 @@ function buildDecks(root){
 
      The waist is now open deck with two ankle-height coamings, and nothing on the
      main deck blocks anybody. */
-  coaming(6*K,14*K,3.2*K,2.4*K);      /* aft companionway - open, you climb it */
-  coaming(-3*K,-24*K,3.2*K,2.4*K);    /* fore companionway - open */
+  /* The two ladders that go UP get no coaming - see above. That is also what takes
+     the foremast out of the fore one. */
+  openHatch(0,3*K,3.0*K,2.1*K);       /* THE MAIN HATCH: the only way below */
   root.add(ST.mesh(false,false));
   /* transom stern, merged */
   const TR=new Geo();
@@ -2997,8 +3053,11 @@ function buildFittings(root){
     const a=i*Math.PI/3;const b=box(0.4*K,0.4*K,5*K,0x5a4728);
     b.position.set(Math.sin(a)*2.4*K,SHIP.DECK_Y+3.2*K,8*K+Math.cos(a)*2.4*K);b.rotation.y=a;root.add(b);
   }
-  /* hatch gratings */
-  const hz=[-9*K,3*K];
+  /* THE CARGO GRATING - closed, barred, flush, and nothing climbs out of it. There
+     used to be a second one of these drawn over the Main Hatch at z=3, which both
+     put the mainmast through it and made the only way below look like a floor. The
+     Main Hatch is an openHatch() now; this is the one that stays shut. */
+  const hz=[-9*K];
   for(let k=0;k<hz.length;k++){
     const fr=box(6.4*K,0.4*K,5.4*K,0x46341f);fr.position.set(0,SHIP.DECK_Y+0.2*K,hz[k]);root.add(fr);
     for(let i=-2;i<=2;i++){const b=box(0.35*K,0.5*K,5*K,0x2e2519);b.position.set(i*1.2*K,SHIP.DECK_Y+0.45*K,hz[k]);root.add(b);}
@@ -13226,62 +13285,55 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    list nobody finishes is a list nobody reads.
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
-  {when:"3 August 1607 · latest",
-   head:"Three out of three, and the hold is a hold now",
+  {when:"3 August 2026 · latest",
+   head:"Her curves, her coast, and everything below decks",
    lines:[
+     "<b>One hole, and it looks like a hole</b>",
+     "Two masts were standing in the hatch furniture. The mainmast passed through the grating drawn over the main hatch, and the foremast passed through the rail laid round the forecastle ladder — measured at a foot and a half by five inches, and sixteen inches by eighteen. Both came from placing deck fittings by eye near things whose positions are fixed by the rig.",
+     "And the way below was indistinguishable from scenery, because the main hatch — the only hole through the main deck — had a grating over it identical to the ornamental one nine feet forward of it. Two grids, one of them a staircase, and nothing to tell you which.",
+     "The deck says three different things now. A hole you can go down has a coaming, a black void, a ladder head, and its grating cover lifted off and stood on edge beside it, which is what a man does with a grating he is using. A cargo grating stays shut and flush. A ladder that only goes UP is just a ladder — no coaming, because a coaming rims a hole and there is no hole there; the opening is in the deck above. Deleting those two coamings is also what took the foremast out of one of them. Looking straight down, the open hatch is now dark down the middle and the closed grating is not.",
+     "<b>These notes are dated properly</b>",
+     "They were headed 1607, which is the year the game is set in, not the year they were written. They are 2026, and there is now one entry per day instead of six for the same afternoon.",
+     "<b>Three out of three, and the hold is a hold now</b>",
      "Taking the note from the rations is <b>three out of three</b>. One slip and a hand closes on your collar — you used to be allowed one. It is only fair because there is still a way back from being caught: the Captain, the boatswain's reckoning, and another go at the casks.",
      "The rammer in the loading drill now works the same way, at a different count: <b>four clean blows</b>, and a blow caught on the rise puts you back to none. Its window is a little wider than it was to pay for that, because with no averaging left a near miss has to be genuinely a miss. Nothing is lost by failing — the count resets, the drill does not.",
      "THE HOLD. It was a row of grey slabs and eight brown cubes in a space eighty feet long, and it was fair to call it boring boxes. A 1607 hold is not a warehouse of crates — crates are for things that do not leak, and almost nothing on this voyage qualifies. It is casks, on their sides, bung up, chocked so they cannot start rolling in a sea, on a bed of shingle. Four months of food and beer for a hundred and forty people is most of the ship.",
      "So there is shingle ballast heaped along the keelson, casks in two tiers in the wings, the pump well and the mainmast's step amidships, the anchor cable coiled in its tier forward where it can drain, firewood for the cook's hearth, and a few bales of trade goods — six different shapes, which was the actual complaint. It is also lighter down there than it was, and that is a compromise stated rather than hidden: a real hold was pitch dark and you carried a lantern into it, which is unplayable.",
      "AND THE MAN IN IRONS IS ACTUALLY IN IRONS. He was standing up loose on the passenger deck, in a game that tells you twice he has been shackled since the Canaries. He is at the bottom of the ship now, sitting on the ballast where a man under arrest for mutiny on a small vessel would be — with a ring bolt behind him, a chain hanging in a curve from it, and bilboes across his ankles. Bilboes are the period word: a bar bolted down with sliding shackles and a lock, named for Bilbao, where the good ones were made.",
-     "Two lines that said he was held below the half deck now say the hold, because he is."
-   ]},
-  {when:"3 August 1607",
-   head:"That wall is a fort, and two ladders had the wrong name by 135 years",
-   lines:[
+     "Two lines that said he was held below the half deck now say the hold, because he is.",
+     "<b>That wall is a fort, and two ladders had the wrong name by 135 years</b>",
      "The wall shutting off the forecastle has a name in 1607, and it is not “bulkhead”. Mainwaring's Seaman's Dictionary of about 1623: a cubbridge-head “is the same that is a bulkhead, only that we use this word to the bulkhead of the forecastle and the half deck, which we call the cubbridge head afore or the cubbridge head abaft.”",
      "And it was built to be fought from, which I had missed entirely. John Smith — who was on this voyage — wrote in 1627 that murtherers were set in the cubbridge-heads “to clear the Decks fore and aft”; a murderer is a small swivel gun dropped by its pin into a socket. Boteler wanted such walls musket-proof with loopholes, “so secured that their musketeers may be safely shadowed”, and called them the close fights. It is what you get behind when boarders are in the waist.",
      "So the wall now has loopholes at chest height and a swivel gun in its socket, trained aft down the deck you walk up. It also answers a question I had been asking backwards: I had treated the narrow door as a problem to widen. The door is narrow on purpose.",
      "“Companionway” is a 1742 word. Two ladders were labelled with it, in a game about 1607 — it comes into English from Dutch, and its first recorded use is 135 years after this morning. They are “Ladder to the Forecastle” and “Ladder to the Half Deck” now. “Scuttle” and “hatch” are both genuinely period and are kept.",
-     "One thing checked and left alone: the galley belongs in the forecastle on a MERCHANT ship, which is where it already was. Mainwaring says so and gives the reason — a merchantman needs its whole hold for cargo, so the fire goes forward and up. On a king's ship it would be down in the hold, and putting it there would have been the wrong kind of accurate."
-   ]},
-  {when:"3 August 1607",
-   head:"The cook was standing in the only way through to himself",
-   lines:[
+     "One thing checked and left alone: the galley belongs in the forecastle on a MERCHANT ship, which is where it already was. Mainwaring says so and gives the reason — a merchantman needs its whole hold for cargo, so the fire goes forward and up. On a king's ship it would be down in the hold, and putting it there would have been the wrong kind of accurate.",
+     "<b>The cook was standing in the only way through to himself</b>",
      "The forward third of the main deck — the galley, the hearth, the mess table, the seamen's cabbins — was walled off. You could see it and you could talk to the Cook across the wall, but you could not go in.",
      "There was no wall. The cause was three things standing in a row: the hearth to port, the mess table to starboard, and the Ship's Cook himself planted on the centreline between them. Together they spanned the whole beam. The man you were trying to reach was what barred the way to him.",
      "So: the hearth and the table are pushed out against the ship's sides, leaving four feet of clear deck between them, and the cook stands at his hearth where a cook belongs. You can walk forward past him now, between the cabbins, all the way to the bow under the forecastle.",
      "A man's body also took up three and a half feet of beam, which is about twice a man. That is halved, so nobody can block a doorway again by standing in it.",
      "And getting forward at all meant edging past the foremast through NINE INCHES of gap, because the fore bulkhead had been built two feet from the mast and they were squeezing each other. The bulkhead is a foot and a half further forward now and the gap there is five feet — you walk round the mast instead of scraping past it.",
-     "Under the hood: reachability has now gone wrong three times in this game — the sealed stern, the chest on the ladder foot, and this — and every time it showed up as something else entirely. There is now a check that walks every deck by machine and lists anywhere you cannot get to. It runs in a fifth of a second. Six small empty patches of deck are still listed and left alone, none of them with anything in it; they are behind barrels and bed-boards and no bigger than a doormat."
-   ]},
-  {when:"3 August 1607",
-   head:"That was not a shoreline, and it was not even the right water",
-   lines:[
+     "Under the hood: reachability has now gone wrong three times in this game — the sealed stern, the chest on the ladder foot, and this — and every time it showed up as something else entirely. There is now a check that walks every deck by machine and lists anywhere you cannot get to. It runs in a fifth of a second. Six small empty patches of deck are still listed and left alone, none of them with anything in it; they are behind barrels and bed-boards and no bigger than a doormat.",
+     "<b>That was not a shoreline, and it was not even the right water</b>",
      "The shore was two ribbons of bank six hundred and fifty feet apart with sixty scattered tree-boxes on each, and open water beyond them in every direction — so it read exactly as it was: two thin islands with sea behind them.",
      "The reason is worth stating, because it is measurable. Your eye on the main deck is twenty and a half feet above the water, and the sea only reaches one and a third degrees below your eye line before the world ends. The top of that old bank sat two and two-thirds degrees below your eye — UNDER the horizon. Land under the horizon has sea behind it and above it, which is what a raft is. The only thing breaking the skyline anywhere was the scattered trees. Sweeping all three hundred and sixty bearings found seventeen separate patches of land with sixteen stretches of open water between them.",
      "It was also the wrong place. That was the James River, and Chapter I is the morning of 26 April 1607, inside the Virginia capes — Percy: “about foure a clocke in the morning, wee descried the Land of Virginia.” They had not found the James yet. It was three weeks off.",
      "So it is the mouth of the Chesapeake now. Cape Henry stands close to starboard as one unbroken coast — a strand, a dune, and a wood in three ranks that recede and haze off — with its ends running away into the distance rather than stopping dead. The Eastern Shore is a hairline twelve miles off to port. Open sea astern and westward, because that is what was there. The water is bay water now instead of river green.",
      "Two lines of text still had you on a river and now do not: the end of the chapter, and what is said if a man goes over the side.",
-     "The whole shore costs fewer triangles than the two islands did."
-   ]},
-  {when:"3 August 1607",
-   head:"The ship has a sheer, and half her paintwork was inside out",
-   lines:[
+     "The whole shore costs fewer triangles than the two islands did.",
+     "<b>The ship has a sheer, and half her paintwork was inside out</b>",
      "Every long line on the ship used to sit at exactly one height — the wales, the painted bands, the top of the bulwark, all dead level from bow to stern. That is the single thing that makes a wooden ship look like a wooden ship, and she did not have it. She curves now: the lines dip amidships and sweep up about two and a half feet forward and three and a half feet aft, and the bulwark and its red cap rail rise with them, so standing in the waist the rail lifts away from you at both ends.",
      "The waterline does not sweep, because water is level.",
      "The hull's planking is now laid out along those lines instead of being spaced evenly, which fixed something I could not see: measured across the ship's whole length, thirty-two of the painted bands were not being drawn at all. The strake above the green-and-yellow band was missing along the entire middle of the ship. The wales came out twice as thick at some points as others — one timber, changing size along its own length. All of it is right now, and the hull costs a fifth fewer triangles than before.",
-     "The whole starboard bulwark was inside out. The pale cream paint was on the outside of the ship and the weathered buff was what you saw from the deck — the exact opposite of the port side, and of yesterday's note about painting her. Mirroring something across the middle of a ship turns it inside out unless you account for it, and I had not."
-   ]},
-  {when:"3 August 1607",
-   head:"Fixed: getting stuck coming down to the 'tween deck",
-   lines:[
+     "The whole starboard bulwark was inside out. The pale cream paint was on the outside of the ship and the weathered buff was what you saw from the deck — the exact opposite of the port side, and of yesterday's note about painting her. Mirroring something across the middle of a ship turns it inside out unless you account for it, and I had not.",
+     "<b>Fixed: getting stuck coming down to the 'tween deck</b>",
      "Going down the main hatch could leave you unable to move. A cargo chest I added yesterday sat right where the ladder sets you down, and once you are inside a crate every direction is blocked. The fore scuttle was buried the same way.",
      "Cargo now refuses to be placed on a ladder landing at all, so this cannot come back if anything moves later."
    ]},
-  {when:"2 August 1607",
-   head:"The deck is a deck, and the ship has light in it",
+  {when:"2 August 2026",
+   head:"Decks, light, an opening, and a camp that works",
    lines:[
+     "<b>The deck is a deck, and the ship has light in it</b>",
      "The ship's decks were drawn as a checkerboard of six-foot squares. They are laid planks now — eleven inches wide, running fore and aft, with pitched seams between them and the butt joints shifted so they never line up, the way a real deck is laid.",
      "A margin plank follows the curve of the ship's side, and a waterway runs along the foot of the bulwark.",
      "The main deck now has shade on it. It is darker under the forecastle and the half deck, darker in the angle where it meets the bulwark, and scrubbed paler amidships where the watch walks.",
@@ -13291,62 +13343,49 @@ const PATCH_NOTES=[
      "Every deck beam is bracketed to the ship's side with a hanging knee, the way a wooden hull is actually held together.",
      "The passengers no longer have wooden bunks. The Virginia Company's own packing list told each man to bring “Five Ells course Canvase, to make a bed at Sea for two men, to be filled with straw” — so that is what is down there, straw beds in pairs on the deck among the cargo, behind plank dividers the passengers knocked up themselves.",
      "The seamen forward have built-in bed-places shared watch by watch, and the officers aft keep their bedsteads. Three kinds of people aboard, three ways of sleeping.",
-     "Not hammocks, though: the usual 1597 date for those turns out to be one purchase order for one voyage, and it does not use the word."
-   ]},
-  {when:"2 August 1607",
-   head:"A proper opening",
-   lines:[
+     "Not hammocks, though: the usual 1597 date for those turns out to be one purchase order for one voyage, and it does not use the word.",
+     "<b>A proper opening</b>",
      "Beginning a new voyage now opens on the Earth from space, closes on England, crosses the Atlantic with the three ships in company, and finds them at anchor inside the capes before the title card.",
      "The chapter's opening is read aloud over it, and there is a Skip button for the second time through.",
-     "Continuing a saved run goes straight back to the game, as before."
-   ]},
-  {when:"2 August 1607",
-   head:"Cape Henry is not an island, and the woods are woods",
-   lines:[
+     "Continuing a saved run goes straight back to the game, as before.",
+     "<b>Cape Henry is not an island, and the woods are woods</b>",
      "The land no longer stops in a square with sea on every side. Virginia runs away inland to the horizon, the way a cape works.",
      "The pine woods are a wood now. There were fifty-two feet between trunks and you could see sky through every gap; there are five times as many trees and they stand in clumps, so the treeline is the wall of dark the ambush needs.",
-     "The forest floor is needle litter instead of lawn, with brush, fallen trunks and undergrowth on it."
-   ]},
-  {when:"2 August 1607",
-   head:"Loading her costs what it should, and the far mark is hard again",
-   lines:[
+     "The forest floor is needle litter instead of lawn, with brush, fallen trunks and undergrowth on it.",
+     "<b>Loading her costs what it should, and the far mark is hard again</b>",
      "Firing now empties the piece. It did not, so every reload after Captain Kendall's lesson took six seconds instead of the full forty — which is the one thing this chapter is about.",
      "Your shots scatter sideways as well as up and down. On the practice range they had no sideways error at all, so the piece was far more accurate than any smoothbore has ever been.",
      "The forty-yard butt is no longer twice as easy to hit as it looks. It was exactly as easy as the twenty-yard stump, which made nonsense of having two ranges.",
      "A flash in the pan flashes in the pan, instead of blowing smoke out of the muzzle.",
      "Nothing happens until the match reaches the powder — no more being told the shot failed a moment before the match comes down.",
      "The powder now falls from the flask into the muzzle, and into the pan when you prime. It used to pour onto the top of the barrel.",
-     "Wind on an open shore makes the match harder to keep alive, which it always claimed to and never did."
-   ]},
-  {when:"2 August 1607",
-   head:"The camp, the chart, and three things that stopped you dead",
-   lines:[
+     "Wind on an open shore makes the match harder to keep alive, which it always claimed to and never did.",
+     "<b>The camp, the chart, and three things that stopped you dead</b>",
      "Ringing the bell no longer leaves you unable to move.",
      "Conversations you are required to have now start when you press the button. The prompt could name one man and speak to another, and bystanders on the strand could shoulder Captain Kendall out of the way.",
      "Chapters are checkpoints. Any chapter you have reached stays open from the title screen, so finishing one can never strand you.",
      "The captain's chart at Cape Henry is under a tent you can see and walk to, instead of an invisible spot on the sand.",
-     "More to see and do around the landing camp, and the men on the strand have work in their hands."
-   ]},
-  {when:"2 August 1607",
-   head:"The matchlock fires in the right order",
-   lines:[
+     "More to see and do around the landing camp, and the men on the strand have work in their hands.",
+     "<b>The matchlock fires in the right order</b>",
      "The match now falls into the pan BEFORE the pan flashes and the piece goes off, which is how the weapon actually works.",
      "You can see the ball drop down the muzzle during the drill. It used to hang in the air and disappear.",
      "The serpentine no longer forgets to fall when you fire, and no longer falls by itself the next time you pick her up.",
      "Powder smoke stays where a shot's smoke should. It used to stream up to ninety feet across the beach depending on which way you faced.",
      "Overcharging her can now burst the barrel, as Captain Kendall keeps warning you it will."
    ]},
-  {when:"1 August 1607",
+  {when:"1 August 2026",
    head:"The piece itself, rebuilt to size",
    lines:[
+     "<b>The piece itself, rebuilt to size</b>",
      "Every rounded part of the matchlock was drawn at half its proper size. The barrel, the stock, the wrist, the butt, the trigger guard, the match cord and the scouring stick are all their true thickness now.",
      "That fixed the gaps: the barrel sat clear of the stock, the lock touched nothing, the pan hung off the side and both sights hovered over the metal.",
      "The ball is smaller than the bore it goes down, which it was not.",
      "The sights, the notch and your eye now line up on one line."
    ]},
-  {when:"31 July 1607",
+  {when:"31 July 2026",
    head:"Aiming, and the ground beyond the fort",
    lines:[
+     "<b>Aiming, and the ground beyond the fort</b>",
      "Raise the piece and the mouse locks to your aim. Left button fires, hold the right to lean in over the sights.",
      "One set of controls for a keyboard and mouse, another for a touchscreen — never both at once.",
      "New ground to survey beyond Cape Henry: Point Comfort, Archer's Hope and the island itself.",
@@ -13595,7 +13634,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-0244-d5604e9";
+const BUILD="20260804-0254-f07b231";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
