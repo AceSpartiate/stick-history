@@ -1264,7 +1264,7 @@ const SMITH_EQ={skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_tors
   accessory:"none_acc",head:"none_head",build:"build_normal",face:"smith"};
 const CH={
  intro:"Four months and more at sea are behind you. Land was descried at four this morning, and the ships are standing into the Chesapeake between two capes that had no English names yesterday, low green country on either hand, while the gentlemen argue over where they will plant the fort. Below deck, in the dark and the stink, men still trade the old rumours - of a colony that vanished, and of a Company that promised them gold. You are hungry, and the provisions are stowed in the hold.",
- obj:"Question the crew, and read the Charter that lies in the great cabin. The scrivener will test you once you have learned five things he can fairly ask about - and he asks six questions, drawn from a great many, some of them off a chart. The more you have learned, the better your odds. Press the menu at any time to see how you stand.",
+ obj:"Question the crew - all three of them, until they have nothing left to tell you - and read the Charter that lies in the great cabin. The scrivener sits with you only when you have done all four, and then he asks six questions drawn from a great many, some of them off a chart. What is hidden in the hold is not required, but a man who has found it answers more easily. Press the menu at any time to see how you stand.",
 
  npcs:[
  {id:"sailor",name:"Weathered Sailor",voice:"male",role:"twice to Virginia",lvl:2,pos:[-5,-9],face:0.6,
@@ -1868,13 +1868,7 @@ function insightCount(){let n=0;CH.targets.forEach(function(k){if(S.insight[k])n
    makes a memorised list less use again. It used to be five with one wrong - eighty
    per cent - which was already strict and is much stricter now the items are harder. */
 const RECK_ASK=6, RECK_ALLOW=2, RECK_MAPS=2;
-/* A question is only fair if you have had the chance to learn its subject.
-   THE GATE COUNTS WHAT YOU LEARNED, NOT HOW MANY QUESTIONS THAT UNLOCKS. It used to
-   open the chapter as soon as five fair questions existed, which was sound when the
-   bank held nine and each insight unlocked one or two. The bank holds thirty-five now
-   and a single insight - "What the Charter Actually Says" - unlocks seven of them, so
-   the old rule would have opened the assessment after one conversation. Five distinct
-   things learned, which is what the sentence always meant. */
+/* A question is only fair if you have had the chance to learn its subject. */
 function reckPool(){
   return CH.reck.q.filter(function(q){
     if(!q.need)return true;
@@ -1882,8 +1876,39 @@ function reckPool(){
     return false;
   });
 }
-function reckReady(){return Math.min(5,insightCount());}
-function chapterReady(){return insightCount()>=5&&reckPool().length>=RECK_ASK;}
+/* ---- WHAT OPENS THE ASSESSMENT: BREADTH, NOT A COUNT ----
+   Twice I gated this on a count and twice the count was the wrong quantity. First it
+   was "five fair questions exist", which was sound when the bank held nine items and
+   each insight made one or two askable; the bank holds thirty-five now and the Charter
+   alone makes seven fair, so one visit to the great cabin opened the chapter. Then it
+   was "five insights learned" - but each of the three men yields five or six, so
+   questioning ONE man out reached five and opened it again. Measured: sailor 6, clerk
+   6, gentleman 5, Charter 1, note 1.
+
+   ANY count of a thing three men each supply in bulk is satisfiable by one man. The
+   fix is not a bigger number, it is a different KIND of requirement. The chapter's own
+   objective already names it - "question the crew, and read the Charter" - so make
+   that the gate, and now the objective, the goals list and the lock all say one thing.
+   Four sources: the three named men, asked until they have nothing left, and the
+   Charter. The note in the rations stays OPTIONAL: it rewards searching the hold, and
+   a reward that becomes a toll is not a reward. */
+function reckSources(){
+  let n=0;
+  for(let i=0;i<CH.npcs.length;i++)if(npcDone(CH.npcs[i].id))n++;
+  if(S.insight[CH.charter.insight.b])n++;
+  return n;
+}
+function reckNeed(){return CH.npcs.length+1;}
+/* what is still owed, by name, so the lock can say so instead of showing a fraction */
+function reckMissing(){
+  const m=[];
+  for(let i=0;i<CH.npcs.length;i++)
+    if(!npcDone(CH.npcs[i].id))m.push(CH.npcs[i].name);
+  if(!S.insight[CH.charter.insight.b])m.push("the Charter in the great cabin");
+  return m;
+}
+function reckReady(){return reckSources();}
+function chapterReady(){return reckSources()>=reckNeed()&&reckPool().length>=RECK_ASK;}
 
 const screens={};["title","intro","scene","wardrobe","codex","ending"].forEach(function(id){screens[id]=$(id);});
 let backTo="title";
@@ -4050,7 +4075,18 @@ function closeFight(root,z,halfW,doorHalf,y,col){
 let LIT=0;
 function lamp(root,x,y,z,range,strong){
   if(BG)return;
-  const l=new THREE.Mesh(boxGeom(1.1*K,1.5*K,1.1*K),new THREE.MeshBasicMaterial({color:lin(0xffd08a)}));
+  /* fog:false because MeshBasicMaterial defaults to fog:true and a thing that EMITS
+     light should not be greyed out by the air in front of it - a lamp across the deck
+     used to fade toward the fog colour. Small, and worth having.
+
+     It is NOT why the lamp by the fore scuttle looks like a pale slab. I guessed fog
+     first and was wrong: 0xffd08a simply IS pale cream, so the box renders exactly as
+     specified. The real fault is that it is a 1.5 x 2 ft FEATURELESS cube nine feet
+     from where the player now opens the chapter - no frame, no glazing, no horn
+     panes - so it reads as a blank rectangle rather than a lantern, and it sits in
+     front of the "Fore Scuttle" label. That needs modelling, not a material flag. */
+  const l=new THREE.Mesh(boxGeom(1.1*K,1.5*K,1.1*K),
+    new THREE.MeshBasicMaterial({color:lin(0xffd08a),fog:false}));
   l.position.set(x,y,z);root.add(l);
   if(strong&&LIT<3){
     LIT++;
@@ -4062,7 +4098,14 @@ function lamp(root,x,y,z,range,strong){
 function buildInnerShell(root){
   const N=30, M=14;
   const zA=SHIP.Z_BOW-0.5*K, zB=SHIP.Z_STERN+0.5*K;
-  const yA=-11.5*K;
+  /* +0.3 off the keel, and it is not a fudge. buildHull lays its bottom at exactly
+     -11.5*K and this shell used to as well, so two full-length DoubleSide meshes
+     shared one plane down the whole bottom of the ship - the largest exactly-coplanar
+     pair in the model, and the depth buffer cannot break a tie it is handed. It is
+     also wrong as carpentry: ceiling planking lies ON the floor timbers, it is not
+     the same surface as the outer planking. Three and a half inches of timber fixes
+     a rendering fault and an accuracy fault with one number. */
+  const yA=-11.5*K+0.3*K;
   const zs=[];
   for(let i=0;i<=N;i++)zs.push(zA+(zB-zA)*i/N);
   const yAt=function(z,j){return yA+((topAt(z)-0.6*K)-yA)*j/M;};
@@ -6697,13 +6740,25 @@ function updateGuide(){
   }
 }
 
+/* Has this man been asked out? ONE owner for that question - firstOpenBeat - which
+   counts only sound answers you could actually GIVE. This used to take the first
+   `wise` choice on each beat, and since the rewrite some beats carry two sound
+   answers with the first one GATED behind an insight from elsewhere; an unreachable
+   gate therefore left a man permanently unfinished, and the goals list said so for
+   ever. That bug was invisible while nothing depended on it. The gate depends on it.
+
+   Latched on purpose. A gated beat can open LATER - learn something from the clerk and
+   a new question for the sailor becomes askable - so a purely computed answer could
+   flip back to false and shut an assessment that was already open. S.spoke is the
+   high-water mark: once a man has been asked out he stays asked out, and anything a
+   later insight unlocks is a bonus rather than a toll. */
 function npcDone(id){
   const n=CH.npcs.filter(function(x){return x.id===id;})[0];
   if(!n)return false;
-  for(let i=0;i<n.beats.length;i++){
-    const w=n.beats[i].choices.filter(function(c){return c.wise;})[0];
-    if(w&&w.insight&&!S.insight[w.insight.b])return false;
-  }
+  if(!S.spoke)S.spoke={};
+  if(S.spoke[id])return true;
+  if(firstOpenBeat(n)>=0)return false;
+  S.spoke[id]=true;
   return true;
 }
 function refreshPlayer(){
@@ -6939,7 +6994,7 @@ function doInteract(){
   else if(a==="survey"){doSurvey(activeSpot.data);}
   else if(a==="reck"){
     if(chapterReady())openReckoning();
-    else toast("The scrivener can fairly test you on "+reckReady()+" of 5 things so far. Learn more first.");}
+    else toast("The scrivener will not sit with you yet. Still to ask: "+reckMissing().join("; ")+".");}
 }
 /* ========== PORTRAIT ========== */
 let portR=null,portScene=null,portCam=null;
@@ -7065,8 +7120,8 @@ function openDialogue(npc){
   $("dlgLeave").textContent="Step away";$("dlgLeave").style.display="";
   openModal("mDlg");setPaused(true);
   if(dlg.finished){
-    $("dlgMeter").style.width=Math.round(100*reckReady()/5)+"%";
-    $("dlgProgress").textContent="Learned: "+reckReady()+" of 5";
+    $("dlgMeter").style.width=Math.round(100*reckReady()/reckNeed())+"%";
+    $("dlgProgress").textContent="Asked out: "+reckReady()+" of "+reckNeed();
     $("dlgRapport").textContent="";
     $("dlgChoices").innerHTML="";
     sayLine("dlgLine",npc.done||"\u201cWe have said all we have to say to one another. Mind what I told you.\u201d",
@@ -7125,8 +7180,8 @@ function meters(){
     $("dlgMeter").style.width=Math.round(100*dlg.trust/dlg.npc.need)+"%";
     $("dlgProgress").textContent="His patience";$("dlgRapport").textContent="";return;
   }
-  $("dlgMeter").style.width=Math.round(100*reckReady()/5)+"%";
-  $("dlgProgress").textContent="Learned: "+reckReady()+" of 5";
+  $("dlgMeter").style.width=Math.round(100*reckReady()/reckNeed())+"%";
+  $("dlgProgress").textContent="Asked out: "+reckReady()+" of "+reckNeed();
   /* left alone unless a beat has just paid out, in which case pick() has written
      the Ink into it and this must not stamp on the number */
   if(!dlg.paid)
@@ -8555,7 +8610,7 @@ function openReckoning(){
      five-question assessment out of a pool that might hold two. Nothing reaches it
      wrongly today; the second call site added will. */
   if(!chapterReady()){
-    toast("The scrivener can fairly test you on "+reckReady()+" of 5 things so far. Learn more first.");
+    toast("The scrivener will not sit with you yet. Still to ask: "+reckMissing().join("; ")+".");
     return;
   }
   const R=CH.reck;
@@ -8995,7 +9050,7 @@ function renderObjectives(){
     d.className="obj-row"+(r.done?" done":"")+(r.opt?" opt":"")+(r.goal?" goal":"")+
       ((r.locked&&!r.done)?" locked":"");
     d.innerHTML="<i>"+(r.done?"\u2713":(r.locked?"\u25c7":"\u25cb"))+"</i><span>"+r.t+
-      (r.goal&&!r.done?"  \u2014 "+reckReady()+" of 5 questions ready":"")+"</span>";
+      (r.goal&&!r.done?"  \u2014 "+reckReady()+" of "+reckNeed()+" asked out":"")+"</span>";
     host.appendChild(d);
   }
 }
@@ -14356,7 +14411,7 @@ const CHAPTERS=[
    status:function(){
      if(S.chapterDone)return "Chapter complete";
      return chapterReady()?"Ready \u00b7 go to the scrivener's desk"
-                          :"Questions ready "+reckReady()+" of 5 \u00b7 learn more";
+                          :"Asked out "+reckReady()+" of "+reckNeed()+" \u00b7 more to do";
    },
    next:function(){
      if(S.chapterDone)return null;
@@ -14913,7 +14968,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-1300-f1225b6";
+const BUILD="20260804-1419-a1b5524";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
