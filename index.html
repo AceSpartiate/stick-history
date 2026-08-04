@@ -8566,8 +8566,12 @@ $("btnContinue").onclick=function(){
     return;
   }
   show("scene");closeAllModals();setPaused(false);
-  if(!renderer){initRenderer();enterWorld(SAVED_WORLD);resize();startLoop();}
+  /* startLoop() OUTSIDE the guard. See beginWorld below for the whole story: the
+     opening cutscene creates the renderer itself, so `renderer` is already truthy by
+     the time this runs and the main loop was never started. */
+  if(!renderer){initRenderer();enterWorld(SAVED_WORLD);resize();}
   else{if(CURRENT_WORLD!==SAVED_WORLD)enterWorld(SAVED_WORLD);resize();}
+  startLoop();
   toast("Taken up where you left it.");
 };
 /* the button only exists if there is something to continue */
@@ -8638,8 +8642,26 @@ function beginWorld(worldId){
   const ch=chapterOf(worldId);
   if(ch&&ch.world){S.reached=S.reached||{};S.reached[ch.world]=true;}
   show("scene");closeAllModals();setPaused(false);
-  if(!renderer){initRenderer();enterWorld(worldId);resize();startLoop();}
+  /* ---- THE MAIN LOOP HAS TO BE STARTED WHETHER OR NOT WE MADE THE RENDERER ----
+     Reported from play: "after i watched it, i appeared in the cargo hold... but i
+     was stuck and couldnt move. refreshing sent me back to the upper deck."
+
+     Both halves of that are one bug and it is here. startLoop() was inside the
+     `if(!renderer)` branch, on the assumption that the only way into a world is from
+     a cold start. The OPENING CUTSCENE breaks that assumption: playOpening() calls
+     initRenderer() for its own scene, so by the time the player presses Step Aboard
+     the renderer exists, this took the else branch, and animate() was NEVER CALLED.
+
+     With no loop there is no input, no camera update and no player movement - so you
+     stand wherever the camera was last pointed, inside the hull, unable to move. And
+     refreshing fixed it because a reload has no renderer yet, which is exactly the
+     branch that did call startLoop.
+
+     startLoop() already guards itself with RAF_ON, so calling it every time is free
+     and cannot double up. */
+  if(!renderer){initRenderer();enterWorld(worldId);resize();}
   else{ if(CURRENT_WORLD!==worldId)enterWorld(worldId); resize(); }
+  startLoop();
   setTimeout(resize,60);
   $("hint").style.opacity="1";
   setTimeout(function(){$("hint").style.opacity="0";},5600);
@@ -10814,6 +10836,33 @@ const GLOBE_LAND=[
   [46.3,2.6,3.6,"g"],[39.8,-4.2,4.6,"g"],[42.6,-8.2,1.6,"g"],[52.3,7.5,2.6,"g"],
   [43.0,12.0,3.2,"g"],[50.5,16.0,6.0,"g"],[54.0,26.0,8.0,"g"],
   [62.0,14.0,7.5,"g"],[67.5,21.0,6.0,"g"],[64.5,-19.0,2.4,"i"],
+  /* ---- AND THE OTHER HALF OF THE WORLD ----
+     Reported from play: "asia and russia seem to be missing?" They were, literally.
+     Counted, there was not ONE blob east of longitude 60 - so past the Urals the
+     planet was open ocean the whole way to California. The camera looks at the
+     Atlantic for the entire cutscene, which is presumably how it survived, but the
+     globe TURNS and the limb is in frame from the first shot.
+     Same list and the same rules as the Atlantic side, which is untouched. */
+  /* Siberia, west to east, with the tundra along the top of it */
+  [57,46,7,"g"],[59,60,8,"g"],[61,74,8,"g"],[62,89,8,"g"],[63,104,8,"g"],
+  [63,119,8,"g"],[62,134,7,"g"],[60,148,6,"g"],[58,160,5,"g"],[56,159,3,"g"],
+  [70,72,4.5,"i"],[71,98,4.5,"i"],[70,126,4,"i"],[68,150,3.5,"i"],
+  /* the steppe and the Caspian: dry, so they take the sand tone */
+  [47,53,5,"s"],[45,66,6,"s"],[44,79,6,"s"],[47,92,5,"g"],
+  /* Arabia and Persia */
+  [30,44,4.5,"s"],[23,45,6,"s"],[17,48,4,"s"],[32,55,5,"s"],
+  /* India, the Thar behind it, and the plateau above */
+  [23,78,6,"g"],[14,77,4.5,"g"],[27,71,4,"s"],[33,86,5,"s"],
+  /* China and Korea */
+  [36,105,7,"g"],[28,111,6,"g"],[43,116,6,"g"],[24,101,4,"g"],[38,127,2.2,"g"],
+  /* the peninsula and the islands */
+  [17,101,4,"g"],[10,106,3,"g"],[3,113,4,"g"],[0,101,3.4,"g"],[-7,110,3,"g"],
+  [12,122,3,"g"],
+  /* Japan */
+  [36,138,2.4,"g"],[43,142,2.2,"g"],[33,131,2,"g"],
+  /* Australia, which is mostly desert, and New Guinea and New Zealand */
+  [-24,134,9,"s"],[-29,120,7,"s"],[-18,143,5,"g"],[-33,147,4,"g"],
+  [-5,141,3.5,"g"],[-42,172,2.6,"g"],
   /* Africa: the Sahara is the band that makes the continent readable */
   [32.0,-6.0,5.2,"s"],[28.0,10.0,11.0,"s"],[22.0,22.0,11.0,"s"],[16.0,2.0,8.0,"s"],
   [10.0,-6.0,6.0,"g"],[7.0,-11.0,4.0,"g"],[4.0,20.0,9.5,"g"],[-2.0,26.0,9.0,"g"],
@@ -10834,6 +10883,12 @@ const GLOBE_LAND=[
 function globeKind(lat,lon){
   for(let i=0;i<GLOBE_LAND.length;i++){
     const b=GLOBE_LAND[i];
+    /* CHEAP REJECT FIRST. This runs for all four corners of every one of 24,000
+       quads, so it is called about a hundred thousand times per build, and the
+       blob list doubled when the eastern hemisphere was added. A latitude
+       difference greater than the blob's own radius cannot possibly be inside it,
+       and that test is a subtraction where the real one is five trig calls. */
+    if(Math.abs(lat-b[0])>=b[2])continue;
     /* great-circle angle, in degrees */
     const a1=lat*Math.PI/180, a2=b[0]*Math.PI/180, dl=(lon-b[1])*Math.PI/180;
     const c=Math.sin(a1)*Math.sin(a2)+Math.cos(a1)*Math.cos(a2)*Math.cos(dl);
@@ -13792,6 +13847,10 @@ const PATCH_NOTES=[
   {when:"4 August 2026 · latest",
    head:"The opening, rebuilt",
    lines:[
+     "<b>Fixed: stuck in the hold after the opening</b>",
+     "Watching the opening and then stepping aboard left you standing inside the hull, unable to move, and refreshing put you back on deck. Both halves of that were one fault. The game’s main loop was only started on the path that BUILDS the renderer — and the opening builds its own renderer for its own scene, so by the time you pressed Step Aboard one already existed, that branch was skipped, and the loop never started at all. No loop means no input, no camera and no movement: you stand wherever the camera was last left, which is inside the ship. Refreshing worked because a reload has no renderer yet, which is the branch that did start it.",
+     "<b>Asia and Russia were missing — actually missing</b>",
+     "Counted, there was not one piece of land east of the Urals. The planet was open ocean from there all the way to California. The camera looks at the Atlantic for the whole cutscene, which is presumably how it survived, but the globe turns and the edge of it is in frame from the first shot. Siberia, the steppe, Arabia, India, China, Korea, Japan, the East Indies, Australia and New Zealand are all in now — forty-six pieces of land, and the Pacific is still correctly empty.",
      "It is the first thing anybody sees, so it has been taken apart and put back together.",
      "THE SKY. The ocean shots played against a flat fill of one blue-grey — the largest surface in the frame, doing no work at all. There is a real dawn sky now: cool overhead, warm along the horizon, and brightest in the sun’s own quarter, with cloud lit from underneath because at four in the morning the interesting side of a cloud is its bottom.",
      "THE WATER. A low sun lays a road of broken light across a sea, and that one thing is what makes water look like water. It is there now, running from the horizon back toward you, and the swell catches the dawn on its crests — a thin warm lip on the faces turned toward the sun and nothing at all on the faces turned away.",
@@ -14156,7 +14215,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-0743-65c3d00";
+const BUILD="20260804-1046-9b61215";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
