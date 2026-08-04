@@ -383,6 +383,13 @@
   .track{position:relative;height:32px;border-radius:6px;margin:1em 0;overflow:hidden;
     background:linear-gradient(90deg,#7a2e24 0 22%,#b5892f 22% 38%,#3f7d70 38% 62%,#b5892f 62% 78%,#7a2e24 78% 100%)}
   .track .needle{position:absolute;top:-3px;bottom:-3px;width:4px;background:#1a1712;box-shadow:0 0 6px #000}
+  /* the try-it-on bar: only there while something unbought is being worn */
+  #wbBuy{display:none;margin:.5em 0 .2em;padding:.55em .7em;border-radius:5px;
+    border:1px solid rgba(224,218,187,.30);background:rgba(20,17,12,.55);
+    align-items:center;gap:.6em;flex-wrap:wrap}
+  #wbBuy.on{display:flex}
+  #wbBuy span{flex:1 1 auto;min-width:9em;color:var(--parch);font-size:.92em}
+  #wbBuy .btn{flex:0 0 auto;margin:0;padding:.35em .7em;font-size:.9em}
   .pips{display:flex;gap:6px;justify-content:center;margin:.4em 0}
   .pips i{width:13px;height:13px;border-radius:50%;border:1px solid var(--line)}
   .pips i.hit{background:var(--copper);border-color:var(--copper)} .pips i.miss{background:var(--oxblood);border-color:var(--oxblood)}
@@ -729,6 +736,7 @@
       <div class="preview"><canvas id="wbCanvas"></canvas></div>
       <div class="inkline"><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e9cf8a,#8a6a22);vertical-align:middle;margin-right:6px"></span>Ink: <span id="wbInk">0</span></div>
       <div class="desc" id="wbDesc"></div>
+      <div id="wbBuy"></div>
       <div id="wbSlots"></div>
     </div>
   </section>
@@ -5772,6 +5780,45 @@ function initWorld(){
   resize();
   startLoop();
 }
+/* ---- WHERE CHAPTER I BEGINS ----
+   You wake in the hold, in the dark, in first person.
+
+   This started as a BUG - the main loop was never started after the cutscene, so the
+   camera sat where the world builder had left it, inside the hull, and the player
+   could not move. The teacher's reaction was "i appeared in the cargo hold, i kind of
+   liked this", and he was right: the chapter's own opening text has said so all
+   along and nobody had noticed.
+
+     "Below deck, in the dark and the stink, men still trade the old rumours - of a
+      colony that vanished, and of a Company that promised them gold. You are hungry,
+      and the provisions are stowed in the hold."
+
+   That is the last line the cutscene speaks and the first line of the chapter intro.
+   Starting amidships in the daylight threw it away. So: you begin among the casks
+   with a lamp over the scuttle forward of you, and the first thing you do is climb
+   toward the light. Nothing in the writing had to change - it was already describing
+   this.
+
+   FIRST PERSON, because a man waking in a dark hold is not watching himself from
+   fifteen feet away, and because the hold is the one space on the ship where the
+   chase camera has to be reeled in anyway (see capD, which caps it at 16 below
+   decks). Scrolling out still works and the hint says so.
+
+   WRITTEN ONCE. registerWorld and resetRun both placed the player, with the same
+   three numbers typed twice - which is the drift this project keeps paying for. */
+const CH1_SPAWN={lvl:LVL.HOLD, x:0.9*K, z:-6.2*K, yaw:0.16};
+function spawnCh1(){
+  if(!player)return;
+  plevel=CH1_SPAWN.lvl;
+  player.position.set(CH1_SPAWN.x,LVL_Y[CH1_SPAWN.lvl],CH1_SPAWN.z);
+  player.rotation.set(0,CH1_SPAWN.yaw,0);
+  /* camYaw 0 looks down -z, toward the bow: see the firstPerson branch in animate,
+     which aims at (px - sin(camYaw)*20, ..., pz - cos(camYaw)*20). */
+  camYaw=CH1_SPAWN.yaw; camPitch=0.06;
+  /* camDist EASES toward camZoom, so setting the zoom alone would open on a
+     third-person shot and slide into first person over about a second. Both. */
+  setZoom(0); camDist=0; camHeight=3.0;
+}
 registerWorld("ch1",function(root){
   buildRiver(root);
 
@@ -5784,7 +5831,8 @@ registerWorld("ch1",function(root){
   buildConsorts();
 
   player=buildFigure(S.equip);
-  player.position.set(0,LVL_Y[LVL.MAIN],-6*K);root.add(player);
+  root.add(player);
+  spawnCh1();
   playerParts=player.userData.parts;
 
   function place(list,kind){
@@ -8106,10 +8154,8 @@ function drownEnding(){
 function resetRun(){
   S.firedGun=false;S.chapterDone=false;S.corrections=0;S.reckTries=0;
   knock=null;
-  plevel=LVL.MAIN;
   if(player){
-    player.position.set(0,LVL_Y[LVL.MAIN],-6*K);
-    player.rotation.set(0,0,0);
+    spawnCh1();
     const p=player.userData.parts;
     if(p){p.la.rotation.x=0;p.ra.rotation.x=0;p.ll.rotation.x=0;p.rl.rotation.x=0;}
   }
@@ -8238,7 +8284,10 @@ function paintWb(){
 }
 const SLOTS=[{key:"face",label:"Face"},{key:"palette",label:"Cloth Colour"},{key:"build",label:"Silhouette"},{key:"torso",label:"Garment"},
   {key:"cloak",label:"Cloak"},{key:"head",label:"Headwear"},{key:"accessory",label:"Accessory"}];
-function openWardrobe(){show("wardrobe");paintWb();updateInk();$("wbDesc").textContent="";renderSlots();}
+function openWardrobe(){
+  WB_PREV=null;                    /* never open still wearing an unbought thing */
+  show("wardrobe");paintWb();updateInk();$("wbDesc").textContent="";renderSlots();wbBar();
+}
 function renderSlots(){
   const host=$("wbSlots");host.innerHTML="";
   SLOTS.forEach(function(sl){
@@ -8253,6 +8302,7 @@ function renderSlots(){
         chip(chips,{name:(f.icon?f.icon+" ":"")+f.name,
           owned:(id==="none"||S.faces.has(id)),buy:f.buy,sel:S.equip.face===id,desc:f.desc,
           onSel:function(){S.equip.face=id;afterEquip(f.desc);},
+          prev:function(){S.equip.face=id;},
           onBuy:function(){
             if(S.ink>=f.buy){S.ink-=f.buy;S.faces.add(id);S.equip.face=id;afterEquip(f.desc);}
             else $("wbDesc").textContent="Not enough Ink for that yet.";
@@ -8280,16 +8330,22 @@ function renderSlots(){
       Object.keys(PALETTES).forEach(function(id){
         const p=PALETTES[id];
         const cur=(WB_PART==="all")?null:dyeId(S.equip,WB_PART);
-        const apply=function(){
+        /* split in two: the preview needs the mutation WITHOUT afterEquip, which
+           would save the game and redress the real player */
+        const mut=function(){
           if(WB_PART==="all"){
             DYE_PARTS.forEach(function(pt){S.equip.dye[pt.key]=id;});
             S.equip.palette=id;                 /* keep the fallback in step */
           } else S.equip.dye[WB_PART]=id;
+        };
+        const apply=function(){
+          mut();
           afterEquip(p.desc||"");
         };
         chip(chips,{name:p.name,owned:S.paletteUnlocked.has(id)||!!p.free,buy:p.buy,sel:cur===id,
           swatch:"#"+("000000"+p.color.toString(16)).slice(-6),desc:p.desc||"",
           onSel:apply,
+          prev:mut,
           onBuy:function(){if(S.ink>=p.buy){S.ink-=p.buy;S.paletteUnlocked.add(id);apply();}
             else $("wbDesc").textContent="Not enough Ink for that yet.";}});
       });
@@ -8298,6 +8354,7 @@ function renderSlots(){
         const c=COSMETICS[id];if(c.slot!==sl.key)return;
         chip(chips,{name:c.name,owned:S.unlocked.has(id)||!!c.free,buy:c.buy,sel:S.equip[sl.key]===id,desc:c.desc,
           onSel:function(){S.equip[sl.key]=id;afterEquip(c.desc);},
+          prev:function(){S.equip[sl.key]=id;},
           onBuy:function(){if(S.ink>=c.buy){S.ink-=c.buy;S.unlocked.add(id);S.equip[sl.key]=id;afterEquip(c.desc);}
             else $("wbDesc").textContent="Not enough Ink for that yet.";}});
       });
@@ -8420,6 +8477,65 @@ function afterEquip(desc){
   /* the menu figure is the same person, so it changes too */
   if(typeof paintTitleFig==="function")paintTitleFig();
 }
+/* ========== TRY IT ON BEFORE YOU BUY ==========
+   chip()'s click handler called onBuy() the instant you touched a priced item - no
+   preview, no confirmation, and the Ink was gone. You could only ever SEE a garment
+   you already owned, which is the wrong way round for the only shop in the game.
+
+   A priced chip now dresses the figure in the thing and asks. The preview works by
+   applying the change to S.equip for real and keeping the old equip to put back,
+   which is why nothing else here had to learn about previewing: paintWb, the colour
+   chips and the dye-part selector all read S.equip and go on working unchanged.
+
+   What a preview must NOT do is persist. afterEquip() calls refreshPlayer(),
+   saveGame() and paintTitleFig(), so the preview path never goes near it - the
+   figure in the wardrobe changes and nothing else in the game does. */
+let WB_PREV=null;                 /* {name,desc,buy,commit,base} */
+function wbClone(e){return JSON.parse(JSON.stringify(e));}
+function wbCancelPreview(repaint){
+  if(!WB_PREV)return;
+  S.equip=WB_PREV.base;WB_PREV=null;
+  if(repaint){paintWb();renderSlots();}
+  wbBar();
+}
+function wbStartPreview(o,mutate){
+  const base=WB_PREV?WB_PREV.base:wbClone(S.equip);
+  S.equip=wbClone(base);
+  mutate();
+  WB_PREV={name:o.name,desc:o.desc,buy:o.buy,commit:o.onBuy,base:base};
+  paintWb();renderSlots();
+  $("wbDesc").textContent=o.desc||"";
+  wbBar();
+}
+function wbBar(){
+  const el=$("wbBuy");
+  if(!el)return;
+  el.innerHTML="";
+  if(!WB_PREV){el.classList.remove("on");return;}
+  el.classList.add("on");
+  const short=WB_PREV.buy-S.ink;
+  const lab=document.createElement("span");
+  lab.innerHTML="Trying on <b>"+WB_PREV.name+"</b>";
+  el.appendChild(lab);
+  const b=document.createElement("button");
+  b.className="btn "+(short>0?"ghost":"copper");
+  b.textContent=(short>0)?("Need "+short+" more Ink"):("Buy \u00b7 "+WB_PREV.buy+" Ink");
+  if(short>0)b.disabled=true;
+  else b.onclick=function(){
+    const p=WB_PREV;
+    /* put the real equip back first, then let the item's OWN buy path run: it
+       charges the Ink, records the unlock and equips it properly through
+       afterEquip, so there is one owner of what buying means */
+    S.equip=p.base;WB_PREV=null;
+    p.commit();
+    wbBar();
+  };
+  el.appendChild(b);
+  const c=document.createElement("button");
+  c.className="btn ghost";c.textContent="Take it off";
+  c.onclick=function(){wbCancelPreview(true);};
+  el.appendChild(c);
+}
 function chip(host,o){
   const b=document.createElement("button");b.className="cchip"+(o.sel?" sel":"");
   let s="";
@@ -8428,7 +8544,12 @@ function chip(host,o){
   if(!o.owned&&o.buy){b.classList.add("buy");s+="<small>Buy \u00b7 "+o.buy+" Ink</small>";}
   else if(!o.owned){b.classList.add("locked");s+="<small>Locked \u00b7 earn it in play</small>";}
   b.innerHTML=s;
-  b.onclick=function(){if(o.owned)o.onSel();else if(o.buy)o.onBuy();else $("wbDesc").textContent=o.desc||"Earned in chapters to come.";};
+  b.onclick=function(){
+    if(o.owned){wbCancelPreview(false);o.onSel();}
+    else if(o.buy&&o.prev)wbStartPreview(o,o.prev);
+    else if(o.buy)o.onBuy();                    /* no preview offered: buy as before */
+    else $("wbDesc").textContent=o.desc||"Earned in chapters to come.";
+  };
   host.appendChild(b);
 }
 
@@ -8451,6 +8572,8 @@ function openCodex(){
 
 /* ========== NAV ========== */
 function backFromPanel(){
+  /* an unbought garment must not walk out of the shop wearing itself */
+  if(typeof WB_PREV!=="undefined"&&WB_PREV)wbCancelPreview(false);
   if(backTo==="scene"){show("scene");resize();setPaused(false);}
   else if(backTo==="ending")showEnding(ENDING_WORLD);
   else show("title");
@@ -8665,6 +8788,12 @@ function beginWorld(worldId){
   setTimeout(resize,60);
   $("hint").style.opacity="1";
   setTimeout(function(){$("hint").style.opacity="0";},5600);
+  /* Waking in a dark hold with no idea which way is up is atmospheric for about four
+     seconds and then it is just being lost. One line, once, pointing at the light. */
+  if(worldId==="ch1"&&plevel===LVL.HOLD)
+    setTimeout(function(){
+      if(CURRENT_WORLD==="ch1")toast("You wake among the casks. There is a lamp forward, over the scuttle.");
+    },1500);
   const c=chapterOf(worldId);
   checkpoint(c?("Chapter "+c.n+" begun"):"chapter begun");
 }
@@ -13847,6 +13976,11 @@ const PATCH_NOTES=[
   {when:"4 August 2026 · latest",
    head:"The opening, rebuilt",
    lines:[
+     "<b>Chapter I begins in the hold now, on purpose</b>",
+     "This started as the bug below — and it was the better idea. You wake among the casks in the dark, in first person, with a lamp forward over the scuttle, and the first thing you do is climb toward the light. Scroll out whenever you like; the hold caps the camera close anyway.",
+     "Nothing in the writing had to change, which is the part worth noticing. The last line the opening speaks is “Below deck, in the dark and the stink, men still trade the old rumours”, and the chapter’s own opening paragraph ends “You are hungry, and the provisions are stowed in the hold.” Both were already describing this. Starting amidships in the daylight was throwing them away. Every line of narration and dialogue was checked and none of it assumes you begin on deck.",
+     "<b>You can try clothes on before you buy them</b>",
+     "The wardrobe used to spend your Ink the instant you touched a priced item — no preview and no confirmation — so the only garment you could ever actually SEE was one you already owned, which is the wrong way round for the only shop in the game. Now a priced item dresses the figure in it and asks: turn round, look at it, and either buy it or take it off. Nothing is charged and nothing is unlocked until you say so, and an unbought garment cannot follow you out of the shop.",
      "<b>Fixed: stuck in the hold after the opening</b>",
      "Watching the opening and then stepping aboard left you standing inside the hull, unable to move, and refreshing put you back on deck. Both halves of that were one fault. The game’s main loop was only started on the path that BUILDS the renderer — and the opening builds its own renderer for its own scene, so by the time you pressed Step Aboard one already existed, that branch was skipped, and the loop never started at all. No loop means no input, no camera and no movement: you stand wherever the camera was last left, which is inside the ship. Refreshing worked because a reload has no renderer yet, which is the branch that did start it.",
      "<b>Asia and Russia were missing — actually missing</b>",
@@ -14215,7 +14349,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-1046-9b61215";
+const BUILD="20260804-1059-4856652";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
