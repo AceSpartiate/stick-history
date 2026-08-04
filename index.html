@@ -390,6 +390,11 @@
   #wbBuy.on{display:flex}
   #wbBuy span{flex:1 1 auto;min-width:9em;color:var(--parch);font-size:.92em}
   #wbBuy .btn{flex:0 0 auto;margin:0;padding:.35em .7em;font-size:.9em}
+  /* a reply that is defensible but not the whole of it, and one you cannot give yet */
+  .choice.fair{border-left:3px solid rgba(200,185,141,.55)}
+  .choice.shut{opacity:.55;border-style:dashed;cursor:default}
+  .choice.shut small{display:block;margin-top:.25em;font-style:italic;
+    color:rgba(224,218,187,.62);font-size:.86em}
   .pips{display:flex;gap:6px;justify-content:center;margin:.4em 0}
   .pips i{width:13px;height:13px;border-radius:50%;border:1px solid var(--line)}
   .pips i.hit{background:var(--copper);border-color:var(--copper)} .pips i.miss{background:var(--oxblood);border-color:var(--oxblood)}
@@ -1268,7 +1273,11 @@ const CH={
     {t:"How many days yet until we sight land?",wise:false,
      reply:"\u201cTwo months if the wind's kind. Three if it isn't.\u201d He waves it off. \u201cYou've a man before you who's crossed twice and come back. Ask me something worth the asking.\u201d"},
     {t:"Will the Company pay us well once we're ashore?",wise:false,
-     reply:"\u201cPay?\u201d He barks a laugh. \u201cAsk the clerk about wages, boy - he keeps the papers. Ask me about the country and what's already happened in it.\u201d"}
+     reply:"\u201cPay?\u201d He barks a laugh. \u201cAsk the clerk about wages, boy - he keeps the papers. Ask me about the country and what's already happened in it.\u201d"},
+    /* DEFENSIBLE AND INCOMPLETE. He is not wrong - ships had worked this coast for
+       forty years - he has just missed the only part that bears on where he is going. */
+    {t:"I know English ships have worked this coast before. Fishermen, privateers.",fair:true,ink:3,
+     reply:"\u201cThey have, and every one of them sailed home again.\u201d He is unimpressed. \u201cTouching a coast is not the same as being PUT ASHORE on it and left. That is the thing you ought to be asking me \u2014 but have it your way.\u201d"}
    ]},
   {npc:"\u201cYou've the look of a man who wants the rest of it. Go on.\u201d",
    choices:[
@@ -1292,6 +1301,13 @@ const CH={
    ]},
   {npc:"\u201cSo. You've heard the whole of it now. What do you make of it?\u201d",
    choices:[
+    /* GATED ON SOMEBODY ELSE, and it is the best answer in the chapter because it is
+       the one that puts two men's halves together. "Profit or Perish" is the Clerk's. */
+    {t:"That what stranded them - no ship coming - is the very thing the Company's arithmetic promises us.",
+     wise:true,ink:14,needs:"Profit or Perish",
+     gate:"Ask the Company Clerk what happens if the colony turns no profit.",
+     reply:"\u201cAye.\u201d He is quiet a moment, and looks at you properly. \u201cWhite could get no hull because England was at war. We shall get none because there'll be nothing in the hold worth a merchant's while carrying home. Different reason. Same empty horizon. You're the first man on this ship to say it to me.\u201d",
+     insight:{g:"disp",b:"Roanoke and the Supply Problem",s:"ANALYTIC: Roanoke was lost partly because war with Spain stopped resupply. Jamestown's resupply depended instead on the colony producing cargo worth shipping home. Different causes - the same vulnerability: a settlement that cannot feed itself depends entirely on ships arriving."}},
     {t:"That they likely went to live among the Croatoan - and that in truth nobody knows.",wise:true,ink:11,
      reply:"\u201cThat's the honest answer, and the rare one.\u201d He looks at you properly for the first time. \u201cMost men aboard have already settled it in their heads - savages did it, or Spaniards, or it was God's judgement. Truth is we do not know. And that's the thing that turns my stomach: a hundred English can vanish in that country and leave nothing behind but a word cut in a post.\u201d",
      insight:{g:"disp",b:"The Fate of Roanoke",s:"DISPUTED: the evidence (orderly departure, the 'CROATOAN' carving, no bodies) suggests the colonists may have joined the nearby Croatoan people - but no one knows. Claims of massacre or starvation are not supported by what was found."}},
@@ -1330,6 +1346,13 @@ const CH={
    ]},
   {npc:"\u201cThere's a question almost nobody thinks to put to me. I'll wait while you find it.\u201d",
    choices:[
+    /* GATED ON THE SAILOR. Having the Roanoke evidence in hand turns a question about
+       accounting into a question about what accounting does to people. */
+    {t:"A hundred English were left at Roanoke until nobody came. What is different about us?",
+     wise:true,ink:13,needs:"What Was Found at Roanoke",
+     gate:"Ask the weathered sailor what was found at Roanoke first.",
+     reply:"He is silent long enough that you hear the sea. \u201cWhat is different is that this venture is a business and that one was a Queen's whim, and I could not tell you which is the colder comfort. Roanoke waited on a war. You will wait on a ledger. A ledger does not relent when the fighting stops.\u201d",
+     insight:{g:"disp",b:"Whim and Ledger",s:"ANALYTIC: Roanoke was a Crown-backed venture undone by war; Jamestown was a joint-stock business whose survival depended on returns to investors. Both left colonists dependent on decisions made three thousand miles away for reasons that had nothing to do with them."}},
     {t:"What becomes of us if the colony turns no profit at all?",wise:true,ink:11,
      reply:"He is quiet a moment. \u201cThen it fails, and we fail with it. Shareholders do not feed men out of charity. Supply ships come when there is cargo worth the carrying home. No cargo, no ships. No ships, no us. That is the whole arithmetic of this venture, and I'd thank you not to repeat it on deck.\u201d",
      insight:{g:"known",b:"Profit or Perish",s:"Because the colony was a commercial venture, continued supply depended on producing something profitable. No saleable cargo meant no incentive for investors to keep sending ships."}},
@@ -1345,6 +1368,9 @@ const CH={
      insight:{g:"known",b:"Reading a Document's Purpose",s:"The charter's religious language was likely sincere AND served the venture's interests - lending legitimacy to settlement on land already inhabited. Sources can be honest and self-serving simultaneously."}},
     {t:"Then religion is the true purpose, and profit is secondary.",wise:false,
      reply:"\u201cIn a document drafted for shareholders?\u201d He raises an eyebrow. \u201cThe religion is real, I grant you. But it sits in the preamble, and the profits fill the body of the thing. Weigh where the ink actually falls, and ask again.\u201d"},
+    {t:"Men write what serves them. I'd read it for what it wins them, not what it says.",
+     fair:true,ink:4,
+     reply:"\u201cThat is nearer the mark than most, and cruder than it needs to be.\u201d He sets the paper down. \u201cA man may mean a thing AND profit by it. Read it for both at once and you will read it right - but you have half of it, which is more than the deck has.\u201d"},
     {t:"Then it is a lie, and only gold matters.",wise:false,
      reply:"\u201cThat is as lazy as swallowing it whole. Some men mean it sincerely and would be insulted by you.\u201d He taps the page. \u201cA paper can be honest and self-serving at once. That is the harder thing to hold in your head. Try it.\u201d"}
    ]}
@@ -1368,6 +1394,13 @@ const CH={
    ]},
   {npc:"\u201cYou look doubtful, sir. I do not care for the look.\u201d",
    choices:[
+    /* GATED ON THE CLERK. He has sold his father's plate believing he is an adventurer.
+       Knowing what the charter actually makes him is what lets you tell him. */
+    {t:"You are not a shareholder in this. Under the charter you are the Company's servant, on their wages.",
+     wise:true,ink:13,needs:"Colonists as Company Servants",
+     gate:"Ask the Company Clerk what the charter makes of you.",
+     reply:"The colour goes out of his face. \u201cThat is not \u2014 I paid my OWN passage. I sold plate that was my father's.\u201d He stops. \u201cYou are telling me I bought the right to work for them.\u201d He looks at the water for a while. \u201cI shall want to see that paper.\u201d",
+     insight:{g:"known",b:"What the Gentlemen Bought",s:"Many gentlemen paid their own passage believing they were investors or adventurers in a treasure hunt. Under the 1606 charter the colonists were Company servants, working Company land for Company profit, fed from a common store. Several refused to labour on those terms - and the food ran out anyway."}},
     {t:"What will you do if there is no gold, and the work turns out to be farming?",wise:true,ink:10,
      reply:"\u201cFarming?\u201d He recoils as though struck. \u201cI am a gentleman. I did not sell my father's plate to break ground with a hoe like a common husbandman.\u201d He says it with perfect conviction - and you count, quietly, how many aboard are dressed as he is.",
      insight:{g:"known",b:"Too Many Gentlemen",s:"A large share of the first colonists were gentlemen and their servants, who regarded manual farm labour as beneath their station - leaving very few willing or able to grow food."}},
@@ -1381,6 +1414,9 @@ const CH={
     {t:"A colony of gentlemen who will not dig will starve, whatever lies in the rivers.",wise:true,ink:12,
      reply:"He is quiet for a long moment. The sea knocks against the hull. \u201c...You have a grim tongue on you.\u201d He looks down the deck at the others in their good doublets. \u201cSay it is true. What then? Half this company is gentlemen and their manservants. If the gold is a story, and no man aboard will farm -\u201d He does not finish it.",
      insight:{g:"known",b:"The Colony's Fatal Composition",s:"The combination of an unfounded expectation of gold and a workforce unwilling to farm meant the colony was poorly equipped to feed itself - a direct cause of the starvation that followed."}},
+    {t:"Somebody aboard will have to do the digging. I only wonder who you think it will be.",
+     fair:true,ink:4,
+     reply:"\u201cThe labouring sort, I should think. That is what they are FOR.\u201d He says it quite pleasantly. \u201cThere are a dozen of them at least.\u201d He does not count the gentlemen, and does not notice that he has not.\u201d"},
     {t:"Fortune favours the bold. You will do very well.",wise:false,
      reply:"He grips your hand, thoroughly delighted. \u201cA man of sense at last!\u201d And you have told him what he wished to hear rather than what the muster roll plainly shows. Look again at who is aboard this ship."},
     {t:"The Company will send food from England if it comes to that.",wise:false,
@@ -6753,11 +6789,24 @@ $("docClose").onclick=function(){$("mDoc").classList.remove("on");setPaused(fals
 /* ========== DIALOGUE ========== */
 let dlg=null;
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;}
-/* the first beat whose sound answer you have not yet given */
+/* ---- THE FIRST BEAT YOU STILL HAVE SOMETHING TO GET FROM ----
+   This used to take the FIRST wise choice and ask whether its insight was earned. A
+   beat can now hold two sound answers - the ordinary one and a gated one that needs
+   something another man told you - and with the old rule a gated answer you could not
+   yet reach would have held the beat open for ever, so the conversation could never
+   finish.
+   The rule now: a beat is done when every sound answer you could ACTUALLY GIVE has
+   been given. A gate you cannot open yet does not count against you - and the moment
+   you can open it, the beat comes back so you can go and get it. Which is the point:
+   talking to the right man first pays more, and talking to him later still pays. */
 function firstOpenBeat(npc){
   for(let i=0;i<npc.beats.length;i++){
-    const w=npc.beats[i].choices.filter(function(c){return c.wise;})[0];
-    if(!w||!w.insight||!S.insight[w.insight.b])return i;
+    const cs=npc.beats[i].choices.filter(function(c){
+      return c.wise&&c.insight&&(!c.needs||S.insight[c.needs]);
+    });
+    if(!cs.length)continue;                       /* nothing reachable to earn here */
+    for(let k=0;k<cs.length;k++)
+      if(!S.insight[cs[k].insight.b])return i;    /* something still to be had */
   }
   return -1;
 }
@@ -6835,12 +6884,50 @@ function meters(){
   }
   $("dlgMeter").style.width=Math.round(100*reckReady()/5)+"%";
   $("dlgProgress").textContent="Questions ready: "+reckReady()+" of 5";
-  $("dlgRapport").textContent=dlg.mistakes===0?"He is speaking freely":
-    dlg.mistakes===1?"He is guarded":"He is losing patience";
+  /* left alone unless a beat has just paid out, in which case pick() has written
+     the Ink into it and this must not stamp on the number */
+  if(!dlg.paid)
+    $("dlgRapport").textContent=dlg.mistakes===0?"He is speaking freely":
+      dlg.mistakes===1?"He is guarded":"He is losing patience";
+}
+/* ========== WHY THESE CONVERSATIONS WERE TOO EASY ==========
+   Reported from play: "it's too easy to navigate, and i think not complex enough.
+   still has to be navigable by a 6th grader."
+
+   Measured: three named men, eleven beats, thirty-three choices - exactly three per
+   beat, one marked wise and two not. A wrong answer was disabled and you were told to
+   think again. So ELIMINATION WAS FREE: worst case you clicked the other two, and the
+   only thing a mistake cost was a bonus you could not see. There was no reason to read
+   the question.
+
+   What is NOT wrong is the writing. The wrong answers are deliberate misconceptions
+   with replies that correct them - "The Spanish don't tidy up after a slaughter" - and
+   that is the actual teaching in this chapter. None of it is thrown away. Four
+   mechanical changes instead:
+
+   1. THE REWARD DECAYS. Full Ink first try, then 55 per cent, then 25. The insight is
+      still granted, so nobody is ever locked out of the codex or of the five questions
+      the scrivener needs - but guessing costs, visibly, before you guess.
+   2. THE THIRD GUESS IS NOT A GUESS. With three options and two spent, the last one is
+      certain, and pretending otherwise is theatre. After two mistakes the man simply
+      tells you, for the least Ink. Honest, and it cannot strand a reader who is stuck.
+   3. A FAIR ANSWER, which is the interesting one. Some beats now carry a reply that is
+      defensible but incomplete: it advances the conversation and pays a little, and it
+      does NOT give the insight. So the choice stops being "which of these is not
+      silly" and becomes "which of these two reasonable answers is better" - and you
+      can come back later and try for the better one.
+   4. SOMETHING TO CARRY BETWEEN PEOPLE. A choice may require an insight earned from
+      SOMEBODY ELSE. It is shown, not hidden, with the reason on its face - so a
+      twelve-year-old can see that there is a door and what opens it, which is what
+      makes it navigable rather than obscure. */
+function beatPay(base,tries){
+  const f=(tries<=0)?1:(tries===1)?0.55:0.25;
+  return Math.max(1,Math.round((base||6)*f));
 }
 function renderBeat(){
   const b=dlg.npc.beats[dlg.beat];
-  if(!dlg.order){dlg.order=shuffle(b.choices.map(function(_,i){return i;}));dlg.spent={};}
+  if(!dlg.order){dlg.order=shuffle(b.choices.map(function(_,i){return i;}));dlg.spent={};dlg.tries=0;}
+  dlg.paid=null;
   meters();
   sayLine("dlgLine",b.npc,voiceOf(dlg&&dlg.npc).kind,voiceOf(dlg&&dlg.npc).who);
   $("dlgFoot").textContent=dlg.canLeave?"Choose a reply":"Choose a reply \u2014 there is no walking away from this";
@@ -6848,12 +6935,31 @@ function renderBeat(){
   const sh=document.querySelector("#mDlg .sheet");if(sh)sh.scrollTop=0;
   const els=[];
   dlg.cont=null;
+  /* two spent of three leaves a certainty, so stop pretending it is a choice */
+  const live=b.choices.filter(function(_,i){return !dlg.spent[i];}).length;
+  if(dlg.tries>=2&&live<=1){
+    const wi=b.choices.map(function(c,i){return c.wise?i:-1;}).filter(function(i){return i>=0;})[0];
+    if(wi!==undefined){
+      contBtn("Let him tell you",function(){dlg.busy=false;pick(wi,b.choices[wi],null,true);});
+      $("dlgFoot").textContent="He will tell you himself — for the least of it";
+      return;
+    }
+  }
   dlg.order.forEach(function(idx){
     const c=b.choices[idx];
     const el=document.createElement("button");
-    el.className="choice"+(dlg.spent[idx]?" spent":"");
+    const shut=c.needs&&!S.insight[c.needs];
+    el.className="choice"+(dlg.spent[idx]?" spent":"")+(shut?" shut":"")+(c.fair?" fair":"");
     el.textContent=c.t;
-    if(dlg.spent[idx])el.disabled=true;
+    if(shut){
+      /* SHOWN, not hidden, and it says what opens it. A locked door a child can see
+         is a reason to go and talk to somebody; a hidden one is just a missing line. */
+      const w=document.createElement("small");
+      w.textContent=c.gate||("You have nothing to go on there yet.");
+      el.appendChild(w);
+      el.disabled=true;
+    }
+    else if(dlg.spent[idx])el.disabled=true;
     else el.onclick=function(){pick(idx,c,el);};
     host.appendChild(el);
   });
@@ -6869,10 +6975,10 @@ function contBtn(label,fn){
   dlg.cont=b;
   $("dlgFoot").textContent="or press F";
 }
-function pick(idx,c,el){
+function pick(idx,c,el,conceded){
   if(dlg.busy)return;
   dlg.busy=true;
-  $("dlgLine").textContent=c.reply;
+  $("dlgLine").textContent=(conceded&&c.concede)?c.concede:c.reply;
   const sh=document.querySelector("#mDlg .sheet");if(sh)sh.scrollTop=0;
 
   if(dlg.mode==="persuade"){
@@ -6884,14 +6990,36 @@ function pick(idx,c,el){
     });
     return;
   }
+  /* A FAIR ANSWER: it stands, it pays a little, and it does not earn the insight.
+     The conversation moves on either way - the cost of settling for it is that the
+     thing you could have understood stays unlearned until you come back for it. */
+  if(c.fair&&!c.wise){
+    const paid=Math.max(1,Math.round((c.ink||3)*(dlg.tries?0.6:1)));
+    S.ink+=paid;updateInk();
+    dlg.beat++;dlg.order=null;
+    dlg.paid="+"+paid+" Ink · not the whole of it";
+    meters();
+    $("dlgRapport").textContent=dlg.paid;dlg.paid=null;
+    contBtn(dlg.beat>=dlg.npc.beats.length?"Take your leave":"Go on",function(){
+      dlg.busy=false;
+      if(dlg.beat>=dlg.npc.beats.length)endDialogue();else{meters();renderBeat();}
+    });
+    return;
+  }
   if(c.wise){
     if(c.insight&&!S.insight[c.insight.b]){
-      S.insight[c.insight.b]=true;S.ink+=(c.ink||6);
+      S.insight[c.insight.b]=true;
+      const paid=beatPay(c.ink,conceded?2:dlg.tries);
+      S.ink+=paid;
       if(!S.codexKeys.has(c.insight.b)){S.codexKeys.add(c.insight.b);S.codex.push(c.insight);}
       updateInk();
+      /* dlg.paid tells meters() to leave the payout line alone: meters runs after
+         this and used to overwrite the number with the rapport text. */
+      dlg.paid="+"+paid+" Ink"+((conceded||dlg.tries)?" · he had to lead you to it":"");
     }
     dlg.beat++;dlg.order=null;
     meters();
+    if(dlg.paid){$("dlgRapport").textContent=dlg.paid;dlg.paid=null;}
     if(c.teach){
       contBtn("Take the piece",function(){
         dlg.busy=false;$("mDlg").classList.remove("on");
@@ -6911,7 +7039,10 @@ function pick(idx,c,el){
     });
   } else {
     dlg.mistakes++;S.corrections++;S.talkErr[dlg.npc.id]=dlg.mistakes;dlg.spent[idx]=true;
+    dlg.tries=(dlg.tries||0)+1;
     meters();
+    $("dlgRapport").textContent=(dlg.tries===1)?"That will cost you some of it":
+      "He is having to lead you to it";
     contBtn("Think again",function(){dlg.busy=false;renderBeat();});
   }
 }
@@ -13976,6 +14107,13 @@ const PATCH_NOTES=[
   {when:"4 August 2026 · latest",
    head:"The opening, rebuilt",
    lines:[
+     "<b>The conversations ask more of you now</b>",
+     "Counted, every conversation in Chapter I was the same shape: three replies, one right and two wrong, and a wrong one was crossed out so you could try the next. Which means guessing always worked and cost nothing — there was no reason to read the question. Four changes, and none of the writing was thrown away, because the wrong answers are deliberate misconceptions and the replies that correct them are the actual teaching.",
+     "THE REWARD DECAYS. Full Ink if you get it first time, a little over half on the second try, a quarter after that. You always still learn the thing — nobody can be locked out of the Notes or out of the five questions the scrivener needs — but guessing costs, and it says so before you guess.",
+     "THE THIRD GUESS IS NOT A GUESS. With three replies and two crossed out, the last one is a certainty and pretending otherwise is theatre. Now the man simply tells you himself, for the least of it.",
+     "SOME REPLIES ARE FAIR RATHER THAN RIGHT. A few are defensible but incomplete — the sailor grants that English ships had worked that coast for forty years, and then points out that touching a coast is not the same as being put ashore on it and left. A fair reply moves the conversation on and pays a little, and it does NOT give you the understanding. So the question stops being “which of these is not silly” and becomes “which of these two reasonable answers is better” — and you can come back later and try for the better one.",
+     "AND YOU CAN NOW CARRY SOMETHING FROM ONE MAN TO ANOTHER. Three questions exist that you cannot ask until somebody else has told you something: you can only put Roanoke to the Clerk once the sailor has told you what was found there, only tell the Gentleman what the charter makes of him once the Clerk has shown you, and only see that Roanoke and this voyage share the same weakness once you have both halves. They are shown on the page, greyed, with the reason written on them — so a twelve-year-old can see that there is a door and exactly what opens it. Those are the best answers in the chapter, and they pay the most.",
+     "Every beat still has a plain way forward that needs nothing, so nobody can get stuck by talking to people in the wrong order.",
      "<b>Chapter I begins in the hold now, on purpose</b>",
      "This started as the bug below — and it was the better idea. You wake among the casks in the dark, in first person, with a lamp forward over the scuttle, and the first thing you do is climb toward the light. Scroll out whenever you like; the hold caps the camera close anyway.",
      "Nothing in the writing had to change, which is the part worth noticing. The last line the opening speaks is “Below deck, in the dark and the stink, men still trade the old rumours”, and the chapter’s own opening paragraph ends “You are hungry, and the provisions are stowed in the hold.” Both were already describing this. Starting amidships in the daylight was throwing them away. Every line of narration and dialogue was checked and none of it assumes you begin on deck.",
@@ -14349,7 +14487,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-1059-4856652";
+const BUILD="20260804-1113-e1eb0f1";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
