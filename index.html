@@ -592,7 +592,7 @@
     <div class="parchment deckle sheet">
       <div class="kicker">By the Ration Casks</div>
       <h3>Take the Extra Rations</h3>
-      <p>Wait for the quartermaster to look away. Tap <b>Take</b> when the marker is in the green. Three clean grabs and the note is yours — two slips and you are caught.</p>
+      <p>Wait for the quartermaster to look away. Tap <b>Take</b> when the marker is in the green. It must be <b>three out of three</b> — one slip and a hand closes on your collar.</p>
       <div class="pips" id="stealPips"></div>
       <div class="track"><div class="needle" id="stealNeedle" style="left:0%"></div></div>
       <button class="btn copper wide" id="stealBtn">Take</button>
@@ -1399,7 +1399,14 @@ const CH={
      "\u201cWater's gone green in the third barrel. We drink beer now. Small mercies.\u201d",
      "\u201cA good cask is worth three men on a crossing. You may write that down if you like.\u201d",
      "\u201cThey'll want barrels in Virginia before they want gold. Nobody believes me.\u201d"]},
-  {id:"irons",name:"A Man in Irons",voice:"male",role:"held below the half deck",lvl:1,pos:[-3,22],face:3.1,
+  /* MOVED TO THE HOLD, AND ACTUALLY SHACKLED. He was standing up on the 'tween
+     deck, unrestrained, in a game that tells you twice that he has been in irons
+     since the Canaries - and standing about in the passenger accommodation is not
+     what that means. A man under arrest for mutiny on a small ship goes to the
+     bottom of her, where the ballast is and there is nothing to do and nowhere to
+     go. He sits on the shingle by the mainmast with a ring bolt behind him, a chain
+     to it, and a bilbo on his ankles. See buildIrons(). */
+  {id:"irons",name:"A Man in Irons",voice:"male",role:"held below, in the ballast",lvl:0,pos:[-3.4,-4],face:1.35,sat:true,
    eq:{skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"none_head",build:"build_normal",face:"sly"},
    lines:["\u201cLook your fill. The gentlemen say I'll hang before we sight Virginia.\u201d",
      "\u201cI said what wanted saying about who ought to command here. That is the whole of my crime.\u201d",
@@ -3538,22 +3545,176 @@ function buildInnerShell(root){
 function buildHoldLevel(root){
   const y=SHIP.HOLD_Y;
   /* the two lamps this space actually has, so the bake agrees with the lights */
-  const SH=belowDecks([-13*K,16*K],0.60,SHIP.HOLD_Y,SHIP.HOLD_Y+5.4*K);
+  /* LIGHT ENOUGH TO SEE WHAT IS DOWN HERE. Measured before the rebuild landed:
+     looking along the hold from the fore scuttle the mean luminance was 23 of 255
+     with 43 per cent of the frame at black, and amidships it was 17 with 52 per
+     cent black. Casks, shingle, a cable tier and a man in irons are all worth
+     nothing in a picture nobody can read.
+     A real hold WAS pitch dark and you carried a lantern into it - that is the
+     honest fact and it is unplayable, so this is a stated compromise rather than a
+     silent one: the ambient floor comes up from 0.60 to 0.76, and there is a third
+     lamp amidships at the pump well, which is at least the one place men had
+     standing business in the dark. */
+  const SH=belowDecks([-13*K,2*K,16*K],0.76,SHIP.HOLD_Y,SHIP.HOLD_Y+5.4*K);
   planks(root,SHIP.Z_BOW+10*K,SHIP.Z_STERN-8*K,y,0.7*K,0x4a3a24,0x40321e,SH);
   beams(root,SHIP.Z_BOW+10*K,SHIP.Z_STERN-8*K,SHIP.TWEEN_Y,0x3a2c1a,SH);
-  const HG=new Geo(),cBal=RGB(0x5a5a55),cC1=RGB(0x6a4f2c),cC2=RGB(0x5e4626);
-  for(let z=SHIP.Z_BOW+12*K;z<SHIP.Z_STERN-10*K;z+=3.4*K)HG.box(0,y+0.3*K,z,5*K,0.9*K,3*K,cBal);
-  for(let z=SHIP.Z_BOW+14*K;z<SHIP.Z_STERN-12*K;z+=5.2*K){
-    const hbw=halfBeam(z,y)-3.2*K;
-    if(hbw<2)continue;
+  /* ---- WHAT IS ACTUALLY DOWN HERE ----
+     Reported from play: "the bottom deck on the ship in chapter 1 is mostly just
+     boring boxes." It was: a row of grey slabs on the centreline for ballast and
+     eight brown cubes for cargo, and nothing else in a space eighty feet long.
+
+     A hold in 1607 is not a warehouse of crates. Crates are for things that do not
+     leak; almost nothing on this voyage qualifies. It is CASKS - tuns, butts,
+     hogsheads - stowed on their sides, bung upward, bilge to bilge, chocked so they
+     cannot start rolling in a sea, on a bed of shingle. Mainwaring on why a
+     merchantman puts her cookroom forward names the reason there is anything down
+     here at all: she "must employ all their hold for the stowing of their goods".
+
+     Four months of victuals for about a hundred and forty people is the bulk of it,
+     and beer more than water - water went bad and beer did not, at roughly a gallon
+     a man a day. That arithmetic alone fills a hold this size.
+
+     So: shingle ballast heaped along the keelson, casks in two tiers in the wings,
+     the pump well and the mainmast's step amidships, the cable coiled in the tier
+     forward where it can drain, firewood billets for the hearth, and a few bales of
+     truck for trading. Every one of those is a different shape, which is the actual
+     complaint - it was not that there were boxes, it was that there was only one
+     kind of thing. */
+  const HG=new Geo();
+  const cShin=0x6b6455, cCask=0x6a4f2c, cCask2=0x5e4626, cHoop=0x3f3220;
+  const cKeel=RGB(0x4a3a22), cRope=RGB(0x8a7a52), cWood=RGB(0x5c4a2c);
+  /* the keelson, the spine everything else is stowed against */
+  HG.box(0,y+0.34*K,0,1.5*K,0.7*K,(SHIP.Z_STERN-SHIP.Z_BOW)-20*K,cKeel);
+  /* SHINGLE. Heaped, not slabbed: a per-lump size and height off a hash of its own
+     position, so the pile reads as loose stone instead of as a kerb. */
+  for(let i=0;i<300;i++){
+    const z0=SHIP.Z_BOW+11*K, z1=SHIP.Z_STERN-9*K;
+    const t=srand(i*1.7), z=z0+t*(z1-z0);
+    const hbw=Math.max(0.6,halfBeam(z,y)-1.4*K);
+    const sd=(i%2)?1:-1;
+    const x=sd*(0.9*K+srand(i*3.1)*Math.max(0.2,hbw-1.2*K));
+    const r=(0.22+srand(i*5.3)*0.34)*K;
+    const h=(0.9-Math.abs(x)/(hbw+0.001)*0.45)*K*(0.5+srand(i*7.9)*0.6);
+    HG.box(x,y+h*0.5,z,r*2,h,r*2.4,RGB(shadeHex(cShin,0.82+srand(i*11.3)*0.36)));
+  }
+  /* CASKS on their sides, bung up, in two tiers, chocked. A cask lying fore and aft
+     is a cylinder about the axis of the ship, so it is drawn as an octagon in
+     section - eight faces is enough at this light level and costs 48 triangles. */
+  const caskAt=function(cx,cy,cz,rr,len,col){
+    const N=8;
+    for(let i=0;i<N;i++){
+      const a0=(i/N)*Math.PI*2, a1=((i+1)/N)*Math.PI*2;
+      const y0=cy+Math.cos(a0)*rr, x0=cx+Math.sin(a0)*rr;
+      const y1=cy+Math.cos(a1)*rr, x1=cx+Math.sin(a1)*rr;
+      /* the stave face, darker as it turns under */
+      const f=0.62+0.38*Math.max(0,Math.cos((a0+a1)/2-0.6));
+      HG.quad([x0,y0,cz-len/2],[x1,y1,cz-len/2],[x1,y1,cz+len/2],[x0,y0,cz+len/2],
+        RGB(shadeHex(col,f)));
+      HG.tri([cx,cy,cz+len/2],[x0,y0,cz+len/2],[x1,y1,cz+len/2],RGB(shadeHex(col,0.9)));
+      HG.tri([cx,cy,cz-len/2],[x1,y1,cz-len/2],[x0,y0,cz-len/2],RGB(shadeHex(col,0.5)));
+    }
+    /* two hoops, so it reads as a cask and not a log */
+    for(let k=-1;k<=1;k+=2)
+      HG.box(cx,cy,cz+k*len*0.31,rr*2.06,rr*2.06,0.16*K,RGB(cHoop));
+  };
+  let nCask=0;
+  for(let z=SHIP.Z_BOW+15*K;z<SHIP.Z_STERN-13*K;z+=4.6*K){
+    const hbw=halfBeam(z,y)-2.5*K;
+    if(hbw<2.2*K)continue;
     for(let sd=-1;sd<=1;sd+=2){
-      for(let t=0;t<2;t++)HG.box(sd*hbw,y+1.4*K+t*2.9*K,z,2.6*K,2.6*K,2.8*K,t?cC1:cC2);
-      solid(sd*hbw,z,1.5*K,1.5*K,LVL.HOLD);
+      const rr=1.15*K;
+      for(let t=0;t<2;t++){
+        const inset=t?0.55*K:0;             /* the upper tier sits in the cantline */
+        caskAt(sd*(hbw-inset),y+1.0*K+t*2.05*K,z,rr,4.0*K,(t?cCask:cCask2));
+        nCask++;
+      }
+      /* chocks under the bottom cask, which is what stops a hold killing a crew */
+      for(let k=-1;k<=1;k+=2)
+        HG.box(sd*(hbw+k*0.85*K),y+0.42*K,z,0.5*K,0.55*K,1.1*K,cKeel);
+      solid(sd*hbw,z,1.5*K,2.1*K,LVL.HOLD);
     }
   }
-  root.add(HG.shade(SH).mesh(false,false));
+  /* THE PUMP WELL and the mainmast's step, amidships, where the water comes to */
+  const wz=2*K;
+  for(let sd=-1;sd<=1;sd+=2)
+    HG.box(sd*1.5*K,y+2.0*K,wz,0.3*K,4.0*K,3.4*K,RGB(shadeHex(0x50401f,1)));
+  HG.box(0,y+4.0*K,wz,3.3*K,0.4*K,3.4*K,RGB(shadeHex(0x50401f,0.8)));
+  const pumpG=new THREE.Mesh(new THREE.CylinderGeometry(0.42*K,0.42*K,5.4*K,8),mat(0x4a3a22));
+  pumpG.position.set(0.9*K,y+2.7*K,wz-1.2*K);root.add(pumpG);
+  const brake=box(0.3*K,0.3*K,2.6*K,0x6b5433);
+  brake.position.set(0.9*K,y+5.2*K,wz-2.3*K);brake.rotation.x=0.22;root.add(brake);
+  solid(0,wz,1.9*K,1.9*K,LVL.HOLD);
+  /* THE CABLE TIER, forward, coiled where it can drain into the well */
+  const tz=SHIP.Z_BOW+13.5*K;
+  for(let i=0;i<7;i++){
+    const rr=(3.0-i*0.34)*K;
+    const c=new THREE.Mesh(new THREE.TorusGeometry(rr,0.30*K,5,12),
+      new THREE.MeshLambertMaterial({color:lin(i%2?0x8a7a52:0x7a6a46)}));
+    c.rotation.x=Math.PI/2;c.position.set(0,y+0.55*K+i*0.5*K,tz);root.add(c);
+  }
+  solid(0,tz,2.6*K,2.6*K,LVL.HOLD);
+  /* FIREWOOD for the hearth - Mainwaring's "saving of wood in long journeys" */
+  for(let i=0;i<26;i++){
+    const bz=-8*K+srand(i*2.3)*5*K, bx=-(halfBeam(bz,y)-3.0*K)+srand(i*4.1)*0.9*K;
+    const ly=y+0.75*K+Math.floor(i/7)*0.42*K;
+    HG.box(bx,ly,bz,0.34*K,0.34*K,2.6*K,RGB(shadeHex(0x59452a,0.8+srand(i*6.7)*0.5)));
+  }
+  /* and a few bales of truck, the only square things left down here */
+  const bale=[[11,-0.9],[15.5,0.9],[19,-0.7]];
+  for(let i=0;i<bale.length;i++){
+    const bz=bale[i][0]*K, bx=bale[i][1]*K;
+    HG.box(bx,y+1.1*K,bz,2.3*K,2.0*K,2.3*K,RGB(shadeHex(0x6e6350,0.9+srand(i)*0.2)));
+    for(let k=-1;k<=1;k+=2)
+      HG.box(bx,y+1.1*K,bz+k*0.7*K,2.36*K,0.18*K,0.18*K,cRope);
+    solid(bx,bz,1.3*K,1.3*K,LVL.HOLD);
+  }
+  buildIrons(root,-3.4*K,y,-4*K);
+  root.add(HG.shade(SH).mesh(true,false));
   lamp(root,0,y+5.4*K,-13*K,22,true);
+  lamp(root,-2.6*K,y+5.4*K,2*K,20);      /* over the pump, where men worked */
   lamp(root,0,y+5.4*K,16*K,20);
+}
+/* ---- THE IRONS ----
+   The game says twice that this man has been in irons since the Canaries and then
+   drew him standing loose on the passenger deck. What "in irons" means on an English
+   ship of this date is BILBOES: a long iron bar bolted to the deck or to a timber,
+   with sliding shackles on it that close over a man's ankles and a lock at the end.
+   Named for Bilbao, where the good ones came from - the word is period, Shakespeare
+   has it in Hamlet in 1602, so it is safe to say aboard a ship in 1607.
+
+   Drawn as what it is: a ring bolt in the mast partner behind him, a short chain -
+   drooping, because a chain at rest is a catenary and a straight one reads as a rod
+   - and the bar with two shackles across where his ankles are. He can reach the
+   shingle he is sitting on and nothing else. */
+function buildIrons(root,x,y,z){
+  const G=new Geo();
+  const iron=RGB(0x3a3a40), dark=RGB(0x24242a), rust=RGB(0x53372a);
+  /* the ring bolt, driven into the timber at his back */
+  G.box(x-0.5*K,y+1.5*K,z+0.9*K,0.55*K,0.55*K,0.30*K,dark);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.34*K,0.09*K,4,8),mat(0x3a3a40));
+  ring.rotation.y=Math.PI/2;ring.position.set(x-0.5*K,y+1.5*K,z+0.72*K);root.add(ring);
+  /* the chain, hanging in a curve from the bolt down to the bar. A chain drawn
+     straight is a rod, so the links follow a sag. */
+  const ax=x-0.5*K, ay=y+1.42*K, az=z+0.66*K;
+  const bx=x+0.10*K, by=y+0.30*K, bz=z-1.15*K;
+  const N=9;
+  for(let i=0;i<N;i++){
+    const t=(i+0.5)/N;
+    const sag=Math.sin(t*Math.PI)*0.52*K;
+    const lx=ax+(bx-ax)*t, ly=ay+(by-ay)*t-sag, lz=az+(bz-az)*t;
+    G.box(lx,ly,lz,0.13*K,0.13*K,0.30*K,(i%2)?iron:dark);
+  }
+  /* THE BILBOES: the bar across, and a shackle over each ankle */
+  G.box(x+0.10*K,y+0.26*K,z-1.15*K,2.5*K,0.20*K,0.20*K,iron);
+  for(let k=-1;k<=1;k+=2){
+    const sx=x+0.10*K+k*0.52*K;
+    const sh=new THREE.Mesh(new THREE.TorusGeometry(0.30*K,0.085*K,4,9),mat(0x3a3a40));
+    sh.position.set(sx,y+0.40*K,z-1.15*K);root.add(sh);
+    G.box(sx,y+0.26*K,z-1.15*K,0.34*K,0.30*K,0.34*K,dark);
+  }
+  /* the lock at the outboard end, and a scrape of rust where it has sat wet */
+  G.box(x+1.30*K,y+0.30*K,z-1.15*K,0.42*K,0.46*K,0.34*K,rust);
+  root.add(G.mesh(true,false));
 }
 
 
@@ -5343,6 +5504,21 @@ registerWorld("ch1",function(root){
       const lim=halfBeam(z,y)-(lvl<=LVL.TWEEN?3.4*K:3.0*K);
       const x=Math.max(-lim,Math.min(lim,n.pos[0]*K));
       const m=buildFigure(n.eq);m.position.set(x,y,z);m.rotation.y=n.face;root.add(m);
+      /* SOME MEN ARE NOT STANDING UP. A figure is built upright and every one of
+         them was, including a man supposedly in irons for weeks. `sat` drops him to
+         the deck, folds his legs out in front of him and lets his arms hang - and
+         it is worth doing properly, because a seated man is the only thing in this
+         chapter that reads as having been somewhere a long time. */
+      if(n.sat){
+        const q=m.userData.parts;
+        m.position.y=y-1.05;
+        if(q){
+          q.ll.rotation.x=-1.42; q.rl.rotation.x=-1.30;
+          q.la.rotation.x= 0.42; q.ra.rotation.x= 0.30;
+          q.la.rotation.z= 0.18; q.ra.rotation.z=-0.14;
+        }
+        m.rotation.x=0.10;
+      }
       npcMeshes.push({npc:n,mesh:m});
       /* A MAN'S BODY SHOULD NOT BE ABLE TO WALL A PASSAGE, and one was. The
          Ship's Cook stood on the centreline under the forecastle at x=0, and
@@ -6421,19 +6597,35 @@ function endDialogue(){
   checkpoint("what the "+n.name.toLowerCase()+" told you");
 }
 
+/* ========== CLEAN RUNS ==========
+   Two places in this game ask you to hit a moving mark a set number of times, and
+   they had different rules for it - the casks let you slip once and get away with
+   it, the rammer let every blow count no matter how badly timed. Both are now the
+   same rule, ALL OR NOTHING, at different counts: three clean grabs at the casks,
+   four clean blows at the rammer, and one bad one puts you back to nothing.
+
+   What is shared is the RULE and the row of pips, not the moving mark. The casks
+   have a needle sweeping a bar. The rammer's mark mirrors the scouring stick you
+   are actually watching swing - it was an independent needle once, and gRamStrike
+   still carries the note about why that was worse. Sharing a rule is not a reason
+   to unshare the thing that fixed it. */
+function pipRow(id,need,hits,bad){
+  const el=$(id);
+  if(!el)return;
+  if(el.children.length!==need){
+    el.innerHTML="";
+    for(let i=0;i<need;i++)el.appendChild(document.createElement("i"));
+  }
+  for(let i=0;i<need;i++)
+    el.children[i].className=(bad&&i===hits)?"miss":(i<hits?"hit":"");
+}
 /* ========== STEAL ========== */
 let steal=null;
+const STEAL_NEED=3;
 function openSteal(){
-  steal={pos:0,dir:1,speed:0.9,hits:0,miss:0,running:true};
-  $("stealPips").innerHTML="";
-  for(let i=0;i<3;i++)$("stealPips").appendChild(document.createElement("i"));
+  steal={pos:0,dir:1,speed:0.9,hits:0,running:true};
+  pipRow("stealPips",STEAL_NEED,0,false);
   $("mSteal").classList.add("on");setPaused(true);stealLoop();
-}
-function pips(){
-  const el=$("stealPips").children;
-  for(let i=0;i<3;i++)el[i].className=i<steal.hits?"hit":"";
-  let m=steal.miss;
-  for(let i=2;i>=0&&m>0;i--){if(el[i].className===""){el[i].className="miss";m--;}}
 }
 function stealLoop(){
   if(!steal||!steal.running)return;
@@ -6448,9 +6640,17 @@ $("stealCancelBtn").onclick=function(){stealCancel();};
 function stealTake(){
   if(!steal||!steal.running)return;
   if(steal.pos>=38&&steal.pos<=62){
-    steal.hits++;steal.speed+=0.25;pips();
-    if(steal.hits>=3){steal.running=false;stealWin();}
-  } else {steal.miss++;pips();if(steal.miss>=2){steal.running=false;stealLose();}}
+    steal.hits++;steal.speed+=0.25;
+    pipRow("stealPips",STEAL_NEED,steal.hits,false);
+    if(steal.hits>=STEAL_NEED){steal.running=false;stealWin();}
+  } else {
+    /* THREE OF THREE. One slip and the hand closes on your collar - which is a
+       real difficulty rise, and it is only fair because there is a way back: the
+       Captain, the boatswain's reckoning, and "try the casks again". */
+    pipRow("stealPips",STEAL_NEED,steal.hits,true);
+    steal.running=false;
+    setTimeout(stealLose,320);
+  }
 }
 function stealCancel(){if(steal)steal.running=false;$("mSteal").classList.remove("on");setPaused(false);}
 function stealWin(){
@@ -8235,6 +8435,10 @@ function resolveMisfire(arm,st){
   for(const k in d)p+=d[k]*(st[k]||0);
   return Math.max(0,Math.min(0.95,p));
 }
+/* Four clean blows to seat the ball, all or nothing - the casks' rule at a
+   different count. Derived once, so the strike counter, the pips, the seating
+   animation and the automatic reload cannot come to disagree about it. */
+const RAM_NEED=4;
 const GUN={arm:"matchlock",step:"powder",charge:0,prime:0,ramQ:0,ramHits:0,
   hasBall:false,hasWad:false,glow:0.6,active:false,t0:0,shots:0,hits:0,
   onHit:null,pourOn:false,poseT:0,sightT:0,ramT:0,ramAnim:0,ramCycle:0,ramSeat:0,cont:null,
@@ -9013,7 +9217,7 @@ function updateReload(dt){
          and hang fire are untouched, which is the historical point. */
       GUN.charge=(G_LO+G_HI)/2;
       GUN.prime=(P_LO+P_HI)/2;
-      GUN.hasBall=true;GUN.hasWad=true;GUN.ramQ=1;GUN.ramHits=4;
+      GUN.hasBall=true;GUN.hasWad=true;GUN.ramQ=1;GUN.ramHits=RAM_NEED;
       GUN.spent=false;
       /* the match is tended as part of the sequence - it is one of the motions.
          It still burns down afterwards, so a piece held loaded too long goes cold
@@ -9136,11 +9340,13 @@ function gStep(k){
     $("gSkip").onclick=function(){GUN.hasWad=false;gStep("ram");toast("No wad \u2014 the ball will not stay put.");};
   } else if(k==="ram"){
     /* the bar reads the STICK's depth in the bore now: hard right is hard home */
-    ui.innerHTML='<div class="ggauge"><div class="band" style="left:86%;width:14%"></div>'+
+    ui.innerHTML='<div class="ggauge"><div class="band" style="left:82%;width:18%"></div>'+
       '<div class="mark" id="gMark" style="left:0%"></div></div>'+
-      '<button class="gact" id="gRam">Strike \u2014 4 left</button>';
+      '<div class="pips" id="gRamPips"></div>'+
+      '<button class="gact" id="gRam">Strike \u2014 '+RAM_NEED+' clean blows</button>';
     $("gRam").onclick=gRamStrike;
-    GUN.ramCycle=0;GUN.ramSeat=0;
+    GUN.ramCycle=0;GUN.ramSeat=0;GUN.ramHits=0;GUN.ramQ=0;
+    pipRow("gRamPips",RAM_NEED,0,false);
   } else if(k==="prime"){
     ui.innerHTML=gGauge("gPrimeFill",P_LO,P_HI)+'<button class="gact" id="gPrime">Hold to prime the pan</button>';
     gHold($("gPrime"),function(){GUN.pourOn=true;playSfx("pour",0.12);},
@@ -9193,16 +9399,29 @@ function gRamStrike(){
      fair a little over half a second. A poor blow still costs, but 0.15 made a
      scrappy load nearly unfireable, which punishes the wrong thing - the drill
      is meant to teach that loading is SLOW, not that it is a reflex test. */
-  const good=(depth>0.82), fair=(depth>0.58);
-  playSfx("ram",good?0.46:(fair?0.32:0.18));
-  if(good)camKick=0.016;                   /* you feel a blow that lands */
-  GUN.ramQ+=good?1:(fair?0.68:0.32);
-  GUN.ramHits++;
+  /* FOUR OF FOUR, AND A GLANCING BLOW PUTS YOU BACK TO NONE - the same all-or-
+     nothing rule the casks use, at a different count. See pipRow().
+     The good band widens from 0.82 to 0.78 to pay for it: when every blow has to
+     land there is no averaging left to absorb a near miss, so the window has to be
+     honest rather than merely survivable. Failing costs nothing but the count -
+     the drill does not restart - so this cannot strand anybody. */
+  const good=(depth>0.78);
+  playSfx("ram",good?0.46:0.18);
+  if(good){
+    camKick=0.016;                         /* you feel a blow that lands */
+    GUN.ramHits++;
+    GUN.ramQ=GUN.ramHits/RAM_NEED;
+  } else {
+    GUN.ramHits=0;GUN.ramQ=0;
+    toast("Caught it on the rise \u2014 that blow seated nothing.");
+  }
+  pipRow("gRamPips",RAM_NEED,GUN.ramHits,!good);
   /* thrown back up, and the swing starts again from the top - so each strike is
      its own stroke rather than a tap into a wave that was passing anyway */
   GUN.ramCycle=0;
-  if(GUN.ramHits>=4){GUN.ramQ/=4;gStep("prime");}
-  else $("gRam").textContent="Strike \u2014 "+(4-GUN.ramHits)+" left";
+  if(GUN.ramHits>=RAM_NEED){GUN.ramQ=1;gStep("prime");}
+  else if($("gRam"))
+    $("gRam").textContent="Strike \u2014 "+(RAM_NEED-GUN.ramHits)+" of "+RAM_NEED+" to go";
 }
 function gPaint(){
   const cf=$("gChargeFill");if(cf)cf.style.width=Math.min(100,GUN.charge*100)+"%";
@@ -10203,7 +10422,7 @@ function updateDrill(dt){
       } else if(GUN.step==="ram"){
         GUN.ramCycle=(GUN.ramCycle||0)+dt/RAM_PERIOD;
         GUN.ramAnim=0.5+0.5*Math.cos(GUN.ramCycle*Math.PI*2);
-        GUN.ramSeat=Math.min(1,(GUN.ramHits||0)/4);
+        GUN.ramSeat=Math.min(1,(GUN.ramHits||0)/RAM_NEED);
         /* the bar IS the stick: hard right is hard home, and the green is the
            bottom of the swing. One value driving both, so they cannot disagree. */
         const mk=$("gMark");
@@ -12144,7 +12363,7 @@ function sealedBox(){
     {shot:{of:["smith"],dist:7*K,height:5.0*K,lookH:4.4*K,tight:true},t:5.4,
      narrate:knewSmith
        ?"You know him. He told you below the half deck that the box would be opened, and asked whether that would not be a morning. He was not joking."
-       :"You never spoke to him. He has sat in irons below the half deck for weeks, and he is one of the seven appointed to govern this place."},
+       :"You never spoke to him. He has sat in irons in the hold for weeks, down among the ballast, and he is one of the seven appointed to govern this place."},
     {shot:{of:["player","smith"],dist:16*K,height:8.5*K,lookH:5*K},t:5.6,
      narrate:"Nobody unties him. The list was written in London in the autumn, by men who could not know what the voyage would make of it. He is not sworn for another six weeks."}
   ];
@@ -12165,7 +12384,7 @@ function sealedBox(){
       "Seven names, sealed in London in the autumn and carried three thousand miles unread. "+
       (knewSmith
         ? "You had already met the man in irons, and now you know what he is. That is worth something at the muster."
-        : "One of the seven has been in irons below the half deck since the Canaries, and you never spoke to him.")+
+        : "One of the seven has been in irons in the hold since the Canaries, and you never spoke to him.")+
       " Kendall heard his own name read out an hour after complaining that nobody had shown a warrant. Within the year the other six will have him shot.",
       knewSmith?["+"+ink+" Ink","You knew the man in irons"]:["+"+ink+" Ink"],
       function(){
@@ -13008,6 +13227,16 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"3 August 1607 · latest",
+   head:"Three out of three, and the hold is a hold now",
+   lines:[
+     "Taking the note from the rations is <b>three out of three</b>. One slip and a hand closes on your collar — you used to be allowed one. It is only fair because there is still a way back from being caught: the Captain, the boatswain's reckoning, and another go at the casks.",
+     "The rammer in the loading drill now works the same way, at a different count: <b>four clean blows</b>, and a blow caught on the rise puts you back to none. Its window is a little wider than it was to pay for that, because with no averaging left a near miss has to be genuinely a miss. Nothing is lost by failing — the count resets, the drill does not.",
+     "THE HOLD. It was a row of grey slabs and eight brown cubes in a space eighty feet long, and it was fair to call it boring boxes. A 1607 hold is not a warehouse of crates — crates are for things that do not leak, and almost nothing on this voyage qualifies. It is casks, on their sides, bung up, chocked so they cannot start rolling in a sea, on a bed of shingle. Four months of food and beer for a hundred and forty people is most of the ship.",
+     "So there is shingle ballast heaped along the keelson, casks in two tiers in the wings, the pump well and the mainmast's step amidships, the anchor cable coiled in its tier forward where it can drain, firewood for the cook's hearth, and a few bales of trade goods — six different shapes, which was the actual complaint. It is also lighter down there than it was, and that is a compromise stated rather than hidden: a real hold was pitch dark and you carried a lantern into it, which is unplayable.",
+     "AND THE MAN IN IRONS IS ACTUALLY IN IRONS. He was standing up loose on the passenger deck, in a game that tells you twice he has been shackled since the Canaries. He is at the bottom of the ship now, sitting on the ballast where a man under arrest for mutiny on a small vessel would be — with a ring bolt behind him, a chain hanging in a curve from it, and bilboes across his ankles. Bilboes are the period word: a bar bolted down with sliding shackles and a lock, named for Bilbao, where the good ones were made.",
+     "Two lines that said he was held below the half deck now say the hold, because he is."
+   ]},
+  {when:"3 August 1607",
    head:"That wall is a fort, and two ladders had the wrong name by 135 years",
    lines:[
      "The wall shutting off the forecastle has a name in 1607, and it is not “bulkhead”. Mainwaring's Seaman's Dictionary of about 1623: a cubbridge-head “is the same that is a bulkhead, only that we use this word to the bulkhead of the forecastle and the half deck, which we call the cubbridge head afore or the cubbridge head abaft.”",
@@ -13366,7 +13595,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-0227-da2d1f5";
+const BUILD="20260804-0244-d5604e9";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
