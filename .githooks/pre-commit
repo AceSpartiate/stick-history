@@ -1,6 +1,6 @@
 #!/bin/sh
 # "Check before committing" - the README's instruction, enforced rather than
-# remembered. tools/check.py exits non-zero if any of its eight checks fail.
+# remembered. tools/check.py exits non-zero if any of its checks fail.
 #
 # This lives in .githooks/ (tracked) rather than .git/hooks/ (not tracked), so
 # it travels with the repository. A fresh clone still has to point git at it:

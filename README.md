@@ -35,13 +35,14 @@ different machines carry progress with the **Muster Code** in the pause menu.
 python3 tools/check.py
 ```
 
-On Windows that is `python tools/check.py`. Check 1 shells out to `node --check`
-and is the only step with an external dependency; without Node on PATH it skips
-and the other seven still run.
+On Windows that is `python tools/check.py`. Two steps reach outside Python: check 1
+shells out to `node --check`, and check 10 asks `git` what is staged. Each skips
+rather than fails when its tool is missing, so the rest still run.
 
-Eight checks, each corresponding to a bug that reached the player at least once —
-unwired actions, unregistered modals, unguarded element reads, undefined calls,
-over-long cutscenes, and accidental image assets.
+Ten numbered checks — eleven, counting 6b — each corresponding to a bug that reached
+the player at least once: unwired actions, unregistered modals, unguarded element
+reads, undefined calls, over-long cutscenes, accidental image assets, and a build
+stamp split across the two files that have to agree.
 
 You do not have to remember to run it. `.githooks/pre-commit` runs it for you and
 refuses the commit if anything fails. It is tracked, so it travels with the repo,

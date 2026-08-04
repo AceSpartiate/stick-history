@@ -10,9 +10,9 @@ corresponds to a bug that reached the player at least once. Run after any change
 Exit code is non-zero if anything fails, so it can gate a commit - which is
 what .githooks/pre-commit does with it.
 
-Check 1 needs `node` on PATH; it is the only external dependency and it SKIPS
-rather than failing when node is absent, so checks 2-8 still run on a machine
-that has only Python.
+Check 1 needs `node` on PATH, and check 10 asks `git` what is staged. Those are the
+only external dependencies, and both SKIP rather than fail when the tool is absent,
+so every other check still runs on a machine that has only Python.
 """
 import re, sys, os, subprocess, tempfile, shutil
 
@@ -217,6 +217,64 @@ if tdz:
         print("          %-16s ~script line %d" % (n, ln))
 else:
     ok("no typeof-before-declaration guards")
+
+print("\n10. The build stamp agrees with itself")
+# tools/stamp.py writes ONE id to two places, and they only mean anything as a pair:
+# the page compares the BUILD baked into it against the version.txt it fetches, and
+# reads any difference as "I am stale". So a mismatch is not a quiet mismatch. The
+# page reloads once, still disagrees, and then parks the player behind "An update is
+# ready, and your browser is serving an older copy" with a button that cannot help,
+# for the rest of the session - the exact confusion the stamp exists to prevent,
+# wearing the stamp's own uniform. Nothing caught this before; the script writing
+# both values was the only thing holding them together.
+VER = os.path.join(ROOT, "version.txt")
+
+
+def stamp_pair(html, ver):
+    """The BUILD baked into some index.html, and the id in some version.txt."""
+    m = re.search(r'const BUILD="([^"]*)"', html)
+    return (m.group(1) if m else None), ver.strip()
+
+
+def staged(path):
+    """A file's STAGED content, or None if git or the index cannot supply it."""
+    if shutil.which("git") is None:
+        return None
+    r = subprocess.run(["git", "show", ":" + path], capture_output=True, cwd=ROOT)
+    # Decoded here rather than with text=True: index.html is UTF-8, and on Windows
+    # text=True decodes as cp1252, which raises on bytes that are perfectly ordinary
+    # inside a UTF-8 sequence. A check must not be the thing that crashes.
+    return r.stdout.decode("utf-8", "replace") if r.returncode == 0 else None
+
+
+if not os.path.exists(VER):
+    bad("version.txt is missing - the page's update check has nothing to fetch")
+else:
+    wb, wv = stamp_pair(s, open(VER, encoding="utf-8").read())
+    if wb is None:
+        bad('no `const BUILD="..."` in index.html - tools/stamp.py cannot write it either')
+    elif wb != wv:
+        bad("index.html says %r and version.txt says %r\n"
+            "        run `python tools/stamp.py`, which writes both at once" % (wb, wv))
+    else:
+        ok("index.html and version.txt both say %s" % wb)
+
+# The nine checks above read the working tree, and for this one that is not enough:
+# the likeliest way to ship a split pair is to stage one file without the other, and
+# the working tree looks perfect in precisely that case. So the index gets asked too.
+# No git, or files not yet tracked, is a skip rather than a failure - the same bargain
+# check 1 makes with node. A path-limited `git commit -- one-file` can still slip past
+# this, because the hook is shown the whole index either way.
+sh, sv = staged("index.html"), staged("version.txt")
+if sh is None or sv is None:
+    print("  skip  staged pair unchecked (no git, or the files are not in the index)")
+else:
+    gb, gv = stamp_pair(sh, sv)
+    if gb != gv:
+        bad("the STAGED copies disagree: index.html says %r, version.txt says %r\n"
+            "        stage them together - `git add index.html version.txt`" % (gb, gv))
+    else:
+        ok("the staged pair agrees too")
 
 print("\n" + ("PASS" if not fail else "FAILED %d check(s)" % len(fail)))
 sys.exit(0 if not fail else 1)

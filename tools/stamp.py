@@ -45,9 +45,21 @@ def build_id():
 
     The timestamp alone does the job this value actually has - the page compares it with
     version.txt to notice it is stale - and it is never wrong. To map a build back to
-    code, find the first commit at or after that UTC minute:
+    code, print every commit's date in the build id's own format and read off the match:
 
-        git log --format='%h %cI %s' --date-order | sort -k2
+        TZ=UTC git log --format='%h %cd %s' --date=format-local:%Y%m%d-%H%M
+
+        $env:TZ='UTC'; git log --format='%h %cd %s' --date=format-local:%Y%m%d-%H%M
+                                                            (the same, in PowerShell)
+
+    TZ=UTC is the load-bearing part, and leaving it off is the trap this note exists to
+    spring first: a build id is UTC, and git prints dates in LOCAL time unless told
+    otherwise, so the recipe without it reports times hours from the string in your hand
+    and you go looking in the wrong evening. With it the two are the same characters and
+    the match is a plain string match, which is the whole point of dropping the hash.
+
+    The stamp is written moments before the commit, so a build ships in the commit whose
+    date equals it - or, if a stamp was ever left sitting, the first commit after it.
 
     If a hash is ever wanted in here again, it must be the hash of the CONTENT (say of
     index.html before stamping), never of the commit, because that one is knowable.
