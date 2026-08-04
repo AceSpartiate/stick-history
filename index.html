@@ -2742,6 +2742,16 @@ function railRun(g,x,yA,yB,zA,zB,w,h,col){
   g.quad([x0,bA,zA],[x1,bA,zA],[x1,bB,zB],[x0,bB,zB],shadeRGB(col,0.72));  /* under */
   g.quad([x1,bA,zA],[x1,tA,zA],[x1,tB,zB],[x1,bB,zB],shadeRGB(col,0.94));
   g.quad([x0,bA,zA],[x0,bB,zB],[x0,tB,zB],[x0,tA,zA],shadeRGB(col,0.88));
+  /* I tried capping the ends here so the runs could abut instead of overlapping by
+     0.05 each side, on the theory that the overlap was the 36.7 sq ft of coplanar
+     geometry measured in this mesh. IT WAS NOT, and the attempt made it worse: 112.5
+     sq ft on the ship went to 118.5, and this mesh went 1232 triangles to 1680 with its
+     own overlap UP from 36.7 to 42.6. Two reasons, both instructive. The 36.7 sits at
+     y[14.9..19.9] - five feet tall, so it is the bulwark PLANKING, not a rail 0.45
+     high; I had matched a symptom to the nearest suspect. And the new caps of the wide
+     rail and of the narrow cap-trim share a z plane and overlap in x, so capping
+     introduced a fresh tie of its own. Reverted, and recorded here so the next attempt
+     starts from the planking. */
 }
 /* PER-VERTEX colours. This is the whole mechanism for ambient occlusion in a
    project with no textures: the same triangle can be dark where it meets the
@@ -5196,12 +5206,23 @@ function buildPoop(root){
   const DECK=RGB(0x7a6039), BEAM=RGB(0x46341f), RAIL=RGB(0x5a4728),
         BRASS=RGB(0xa9822f), IRON=RGB(0x2b2b30), CARD=RGB(0xe8dcc0);
 
-  /* the deck, planked, following the hull as it narrows aft */
+  /* ---- THE COURSES ABUT: (z1-z0), NOT (z1-z0)+0.1*K ----
+     This is the transom's fault three more times over. Each box was built a tenth of a
+     ship-foot LONGER than the step it sits on, so consecutive boxes overlapped in z -
+     and since a run of them shares one y, their top faces AND their bottom faces were
+     coplanar and overlapped in a band at every junction. On the poop deck that is 15.5
+     sq ft over eight junctions, the largest single coplanar site left on the ship.
+
+     The +0.1 was insurance against a gap, and it was not needed: box i's far edge is
+     (z0+z1)/2 + (z1-z0)/2, which IS z1, and box i+1 starts at z1. The two expressions
+     are algebraically identical, so the worst case is a gap of one floating-point unit
+     in the last place - about 1e-15 ft. Insurance against nothing, paid for with a
+     depth tie you can see. */
   const zA=POOP.Z_FWD, zB=POOP.Z_AFT, steps=9;
   for(let i=0;i<steps;i++){
     const z0=zA+(zB-zA)*i/steps, z1=zA+(zB-zA)*(i+1)/steps;
     const hb=halfBeam((z0+z1)/2,SHIP.CASTLE_Y)-1.2*K;
-    PP.box(0,y-0.35*K,(z0+z1)/2,hb*2,0.7*K,(z1-z0)+0.1*K,DECK);
+    PP.box(0,y-0.35*K,(z0+z1)/2,hb*2,0.7*K,(z1-z0),DECK);
     /* the beams carrying it, seen from the quarterdeck below */
     PP.box(0,y-0.95*K,z0,hb*2,0.5*K,0.5*K,BEAM);
   }
@@ -5210,7 +5231,7 @@ function buildPoop(root){
     const z0=zA+(zB-zA)*i/steps, z1=zA+(zB-zA)*(i+1)/steps;
     const zc=(z0+z1)/2, hb=halfBeam(zc,SHIP.CASTLE_Y)-1.2*K;
     for(const sd of [-1,1]){
-      PP.box(sd*hb,y+1.1*K,zc,0.5*K,2.2*K,(z1-z0)+0.1*K,RAIL);
+      PP.box(sd*hb,y+1.1*K,zc,0.5*K,2.2*K,(z1-z0),RAIL);   /* abuts, see above */
       solid(sd*hb,zc,0.5*K,(z1-z0)/2+0.2*K,LVL.QUARTER);
     }
   }
@@ -5281,7 +5302,7 @@ function buildPoop(root){
     const hbo=halfBeam(zc,SHIP.CASTLE_Y);
     for(const sd of [-1,1]){
       SG.box(sd*hbo,(SHIP.CASTLE_Y+1.4*K+SHIP.QUARTER_Y)/2,zc,
-        0.7*K,SHIP.QUARTER_Y-SHIP.CASTLE_Y-1.4*K,(z1-z0)+0.1*K,RGB(0x46341f));
+        0.7*K,SHIP.QUARTER_Y-SHIP.CASTLE_Y-1.4*K,(z1-z0),RGB(0x46341f));
     }
   }
   /* THE FORWARD BULKHEAD IS GONE.
@@ -15280,7 +15301,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-2225";
+const BUILD="20260804-2318";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
