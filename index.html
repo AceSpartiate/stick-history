@@ -4307,17 +4307,61 @@ function buildHoldLevel(root){
   const cKeel=RGB(0x4a3a22), cRope=RGB(0x8a7a52), cWood=RGB(0x5c4a2c);
   /* the keelson, the spine everything else is stowed against */
   HG.box(0,y+0.34*K,0,1.5*K,0.7*K,(SHIP.Z_STERN-SHIP.Z_BOW)-20*K,cKeel);
-  /* SHINGLE. Heaped, not slabbed: a per-lump size and height off a hash of its own
-     position, so the pile reads as loose stone instead of as a kerb. */
-  for(let i=0;i<300;i++){
-    const z0=SHIP.Z_BOW+11*K, z1=SHIP.Z_STERN-9*K;
-    const t=srand(i*1.7), z=z0+t*(z1-z0);
-    const hbw=Math.max(0.6,halfBeam(z,y)-1.4*K);
-    const sd=(i%2)?1:-1;
-    const x=sd*(0.9*K+srand(i*3.1)*Math.max(0.2,hbw-1.2*K));
-    const r=(0.22+srand(i*5.3)*0.34)*K;
-    const h=(0.9-Math.abs(x)/(hbw+0.001)*0.45)*K*(0.5+srand(i*7.9)*0.6);
-    HG.box(x,y+h*0.5,z,r*2,h,r*2.4,RGB(shadeHex(cShin,0.82+srand(i*11.3)*0.36)));
+  /* ---- SHINGLE IS A HEAP, NOT THREE HUNDRED LITTLE CRATES ----
+     This was 300 axis-aligned boxes, 3600 triangles, every one a flat-topped
+     rectangular block sharing its neighbours' orientation - which is the strongest
+     possible cue for "crate". The old comment claimed it would "read as loose stone
+     instead of as a kerb"; it read as pale luggage on the floor, which is what was
+     reported.
+
+     The mistake was the approach, not the numbers. A heap of loose stone is not read
+     by its stones. At the distance and the light this is seen at, a four-inch cobble
+     is well under a pixel - what the eye actually reads is the SURFACE: a mounded bed,
+     lumpy, no two facets catching the light alike. So it is a surface now. A grid over
+     the hold floor whose height falls away from the keelson out to the wings, each
+     vertex displaced by a hash of its own position, flat-shaded so every facet differs.
+
+     ONE consistent winding across the whole width, which is deliberate: emitting each
+     side in a mirrored loop with a single winding is the trap that turned the starboard
+     bulwark inside out, so the grid runs straight through from port to starboard and
+     the keelson band is skipped instead.
+
+     Height is capped so the keelson still stands proud of the bed - its top is at
+     0.69*K and the heap peaks near 0.62*K, so the spine everything is stowed against
+     stays visible rather than being buried by its own ballast.
+
+     About 1140 triangles against 3600, so the hold gets CHEAPER as well as better. */
+  /* Grid pitch and noise amplitude are BOTH legibility settings, and the first pass
+     had them too tame: 44 x 14 gave facets about 1.8 ft across, which at the distance
+     you stand from this read as flat tiles - a slate floor rather than a bed of stone.
+     Finer, and much noisier, with a second higher-frequency term so no facet agrees
+     with its neighbour. The tonal scatter does more work than the silhouette here:
+     at four feet in lamplight the eye reads loose stone from mottling, not from shape. */
+  const shN=56, shM=18;
+  const shZ0=SHIP.Z_BOW+11*K, shZ1=SHIP.Z_STERN-9*K;
+  const shH=function(xw,zw,hbw){
+    /* highest against the keelson, dying away outboard */
+    const u=Math.min(1,Math.abs(xw)/Math.max(0.001,hbw));
+    const ridge=0.94-0.62*Math.pow(u,1.35);
+    const n=0.50+0.62*srand(Math.round(xw*7.3)*13.1+Math.round(zw*5.1)*2.7)
+                +0.42*srand(Math.round(xw*19.7)*3.9+Math.round(zw*17.3)*7.1);
+    return Math.max(0.04*K,ridge*n*0.42*K);
+  };
+  for(let i=0;i<shN;i++){
+    const zA=shZ0+(shZ1-shZ0)*i/shN, zB=shZ0+(shZ1-shZ0)*(i+1)/shN;
+    const hbA=Math.max(0.6,halfBeam(zA,y)-1.4*K), hbB=Math.max(0.6,halfBeam(zB,y)-1.4*K);
+    for(let j=0;j<shM;j++){
+      const uA=-1+2*j/shM, uB=-1+2*(j+1)/shM;
+      /* the keelson stands here: the ballast heaps against it, not over it */
+      if(Math.abs((uA+uB)*0.5)*Math.max(hbA,hbB)<0.80*K)continue;
+      const xAa=uA*hbA, xAb=uB*hbA, xBa=uA*hbB, xBb=uB*hbB;
+      const hAa=shH(xAa,zA,hbA), hAb=shH(xAb,zA,hbA);
+      const hBa=shH(xBa,zB,hbB), hBb=shH(xBb,zB,hbB);
+      const f=0.60+0.74*srand(i*3.7+j*11.9);   /* wide tonal scatter: wet stone */
+      /* wound so the facet faces UP: near-port, far-port, far-stbd, near-stbd */
+      HG.quad([xAa,y+hAa,zA],[xBa,y+hBa,zB],[xBb,y+hBb,zB],[xAb,y+hAb,zA],
+        RGB(shadeHex(cShin,f)));
+    }
   }
   /* CASKS on their sides, bung up, in two tiers, chocked. A cask lying fore and aft
      is a cylinder about the axis of the ship, so it is drawn as an octagon in
@@ -15124,7 +15168,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-1914-53e64cb";
+const BUILD="20260804-1931-94b79a0";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
