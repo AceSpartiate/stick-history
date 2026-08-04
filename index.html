@@ -3394,11 +3394,21 @@ function buildDecks(root){
      it and room to walk round both. */
   openHatch(0,-9*K,3.0*K,2.1*K);      /* THE MAIN HATCH: the only way below */
   root.add(ST.mesh(false,false));
-  /* transom stern, merged */
+  /* transom stern, merged. THE COURSES ABUT: 2.4 tall on a 2.4 step.
+     They used to be 2.5 tall on that same 2.4 step, overlapping by 0.1 - and because
+     every course sits at one z, their aft faces were COPLANAR and overlapped in a thin
+     band at every junction. Eleven horizontal stripes of depth tie across the stern,
+     38.7 sq ft measured, the largest single patch 2.4. It was the biggest coplanar site
+     left on the ship after the planking.
+     Exact abutment is safe here and does not risk a hairline gap, because both courses
+     derive their edge from the same loop: course i tops out at 2 + i*2.4 + 1.2, and
+     course i+1 starts at 2 + (i+1)*2.4 - 1.2, which is the same expression. Widths
+     still differ per course, since halfBeam is read at each height, so the two faces
+     meet along an edge and never over an area. */
   const TR=new Geo();
   for(let y=2*K;y<SHIP.QUARTER_Y;y+=2.4*K){
     const hbw=halfBeam(SHIP.Z_STERN-0.5*K,y);
-    TR.box(0,y,SHIP.Z_STERN+0.4*K,hbw*2,2.5*K,0.8*K,RGB(y>10*K?0x54401f:0x3a2c1a));
+    TR.box(0,y,SHIP.Z_STERN+0.4*K,hbw*2,2.4*K,0.8*K,RGB(y>10*K?0x54401f:0x3a2c1a));
   }
   /* Her name, painted across the upper transom. The board is sized from the
      transom's own half-beam at that height, so it fits whatever the hull does. */
@@ -15270,7 +15280,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-2051";
+const BUILD="20260804-2225";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
