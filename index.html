@@ -3876,8 +3876,40 @@ function planks(root,z0,z1,y,inset,col1,col2,shadeFn){
   const margC=RGB(shadeHex(base,0.86));
   const wayC =RGB(shadeHex(base,0.72));
   const zMid=(z0+z1)/2, zSpan=Math.max(1,(z1-z0)/2);
-  for(let z=z0;z<z1;z+=STEP){
-    const zn=Math.min(z+STEP,z1);
+  /* ---- THE BANDS BREAK AT THE BUTTS, AND THAT IS A Z-FIGHTING FIX ----
+     The butt seam used to be drawn ACROSS the planks it crossed, at exactly the same
+     y - a full-beam strip of coincident geometry at every butt on every deck. Nothing
+     resolves that: two surfaces at an identical depth are a tie the depth buffer is
+     not allowed to break, so which one wins is decided per pixel per frame and the
+     deck crawls. Now a band ENDS at the butt, the gap between two bands IS the seam,
+     and no plank quad ever crosses one.
+
+     IT COSTS TRIANGLES, and the first version of this comment claimed the opposite.
+     Breaking the bands adds boundaries, so every butt adds a row of quads: measured,
+     the main deck went 2246 -> 2476 and the tween 2772 -> 3062, about 570 triangles
+     across the five decks. That is the price of the fix, not a saving, and it is
+     worth paying - 853 coincident pairs over 116 square feet of planking is the
+     shimmer you can see, and 570 triangles is not. */
+  const buttZs=[];
+  for(let k=1;z0+k*BUTT<z1;k++){
+    const zb=z0+k*BUTT;
+    if(zb-SEAM*0.5>z0&&zb+SEAM*0.5<z1)buttZs.push(zb);
+  }
+  const cuts=[z1];
+  for(let z=z0;z<z1;z+=STEP)cuts.push(z);
+  for(let k=0;k<buttZs.length;k++)cuts.push(buttZs[k]-SEAM*0.5,buttZs[k]+SEAM*0.5);
+  cuts.sort(function(a,b){return a-b;});
+  const bands=[];
+  for(let i=0;i<cuts.length-1;i++){
+    const ba=cuts[i],bb=cuts[i+1];
+    if(bb-ba<1e-4)continue;                      /* the sort leaves duplicates */
+    let isB=false;
+    for(let k=0;k<buttZs.length;k++)
+      if(Math.abs(ba-(buttZs[k]-SEAM*0.5))<1e-6){isB=true;break;}
+    bands.push({a:ba,b:bb,butt:isB});
+  }
+  for(let bi2=0;bi2<bands.length;bi2++){
+    const z=bands[bi2].a, zn=bands[bi2].b, isButt=bands[bi2].butt;
     const hb0=halfBeam(z,y)-inset, hb1=halfBeam(zn,y)-inset;
     if(hb0<1||hb1<1)continue;
     /* The field of straight planks stops short of the side; the margin fills it.
@@ -3888,12 +3920,26 @@ function planks(root,z0,z1,y,inset,col1,col2,shadeFn){
     const mg=Math.min(MARG,hb0*0.34,hb1*0.34);
     const f0=hb0-mg, f1=hb1-mg;
     if(f0<0.4*K||f1<0.4*K)continue;
+    if(isButt){
+      /* the butt itself - pitch across the whole field, with no plank under it */
+      g.quad([-f0,y,z],[f0,y,z],[f1,y,zn],[-f1,y,zn],seamC);
+    } else {
     const nOut=Math.floor(Math.max(f0,f1)/PW);
     for(let p=-nOut-1;p<=nOut;p++){
       const xa=p*PW+SEAM*0.5, xb=(p+1)*PW-SEAM*0.5;
-      /* clip this plank to the field at both ends of the band */
-      const a0=Math.max(xa,-f0), b0=Math.min(xb,f0);
-      const a1=Math.max(xa,-f1), b1=Math.min(xb,f1);
+      /* ---- CLIP TO THE FIELD WITHOUT EVER INVERTING ----
+         The field narrows across the band, so a plank can be inside it at one end and
+         outside it at the other. Each end used to be clamped on its own, which let the
+         far edge run BACKWARDS - and a quad whose two edges run opposite ways is a
+         bowtie, whose two triangles overlap each other at exactly the same y. That was
+         most of 853 coincident pairs across the five decks, worst at the bow and stern
+         where the taper is fastest, which is exactly where the planking shimmered.
+         Where a plank leaves the field its true intersection with it is a TRIANGLE, so
+         collapse that end onto the field edge and let the quad degenerate honestly. */
+      let a0=Math.max(xa,-f0), b0=Math.min(xb,f0);
+      let a1=Math.max(xa,-f1), b1=Math.min(xb,f1);
+      if(b0<a0){const e=(xa>f0)?f0:-f0; a0=e; b0=e;}
+      if(b1<a1){const e=(xa>f1)?f1:-f1; a1=e; b1=e;}
       if(b0-a0<0.05*K&&b1-a1<0.05*K)continue;
       /* one colour for this plank, between this butt and the next. Two hashes:
          the plank itself, and which length of it this is. */
@@ -3906,23 +3952,17 @@ function planks(root,z0,z1,y,inset,col1,col2,shadeFn){
       /* and a shade darker down the centreline, which is the traffic lane */
       f*=1.0-0.045*Math.max(0,1-Math.abs((xa+xb)/2)/(2.4*K));
       const col=RGB(shadeHex(base,f));
-      g.quad([Math.max(a0,-f0),y,z],[Math.min(b0,f0),y,z],
-             [Math.min(b1,f1),y,zn],[Math.max(a1,-f1),y,zn],col);
-      /* the seam outboard of it, if there is another plank out there */
+      g.quad([a0,y,z],[b0,y,z],[b1,y,zn],[a1,y,zn],col);
+      /* the seam outboard of it, if there is another plank out there - same
+         non-inverting clip, for the same reason */
       const sa=xb, sb=xb+SEAM;
-      const s0a=Math.max(sa,-f0),s0b=Math.min(sb,f0);
-      const s1a=Math.max(sa,-f1),s1b=Math.min(sb,f1);
+      let s0a=Math.max(sa,-f0),s0b=Math.min(sb,f0);
+      let s1a=Math.max(sa,-f1),s1b=Math.min(sb,f1);
+      if(s0b<s0a){const e=(sa>f0)?f0:-f0; s0a=e; s0b=e;}
+      if(s1b<s1a){const e=(sa>f1)?f1:-f1; s1a=e; s1b=e;}
       if(s0b-s0a>0.001||s1b-s1a>0.001)
         g.quad([s0a,y,z],[s0b,y,z],[s1b,y,zn],[s1a,y,zn],seamC);
     }
-    /* the butt line across the planks, where this band crosses one */
-    if(Math.floor((z-z0)/BUTT)!==Math.floor((zn-z0)/BUTT)){
-      const zb=z0+Math.ceil((z-z0)/BUTT)*BUTT;
-      if(zb>z&&zb<zn){
-        const t=(zb-z)/(zn-z), hbb=f0+(f1-f0)*t;
-        g.quad([-hbb,y,zb-SEAM*0.5],[hbb,y,zb-SEAM*0.5],
-               [hbb,y,zb+SEAM*0.5],[-hbb,y,zb+SEAM*0.5],seamC);
-      }
     }
     /* the WATERWAY, both sides, following the curve of the side - the planks
        simply butt it, because nibbing is not evidenced for 1607 */
@@ -3984,7 +4024,17 @@ function beams(root,z0,z1,y,col,shadeFn){
   root.add(g.mesh(false,false));
 }
 function wallSeg(root,x,z,w,d,y,h,col,lvl,noSolid){
-  const b=box(w,h,d,col);b.position.set(x,y+h/2,z);root.add(b);
+  /* ---- THE HEAD RUNS 0.18 INTO THE DECK ABOVE, AND THAT IS A Z-FIGHTING FIX ----
+     Every partition here is built with h = CASTLE_Y - DECK_Y, so its top edge landed
+     exactly on the underside of the deckhead plate. That is a SHARED EDGE, not merely
+     a near miss: a ray grazing that plane hits the wall's side and the plate's soffit
+     at the same depth, so the join crawled along the top of every bulkhead on the
+     forecastle and the half deck. It cannot be fixed by precision - the depths are
+     equal. A real bulkhead is let INTO the beam rather than stopped against it, so run
+     the head up into the deck and let the junction hide inside the timber. Two inches
+     is enough, and on the rare wall with no deck over it that is not visible. */
+  const hh=h+0.18;
+  const b=box(w,hh,d,col);b.position.set(x,y+hh/2,z);root.add(b);
   if(!noSolid)solid(x,z,w/2,d/2,lvl);
 }
 function longWall(root,x,z0,z1,gaps,y,h,col,lvl){
@@ -4108,6 +4158,14 @@ function buildInnerShell(root){
   const yA=-11.5*K+0.3*K;
   const zs=[];
   for(let i=0;i<=N;i++)zs.push(zA+(zB-zA)*i/N);
+  /* The shell rises past the main deck to topAt(z)-0.6*K, and I tried capping it at
+     the deck: above there the bulwark lines the same wall, and at one point far aft
+     they run 0.0084 ft apart, which is a depth tie. Capping it did NOT help - measured
+     flicker went 0.167 to 0.169 per cent and the MAIN deck got WORSE, because the
+     shell was the INBOARD surface (11.57 at midships against the bulwark's ~12.2) so
+     removing it merely exposed the hull's own inner face to tie with the bulwark
+     instead. Reverted. Recorded so the next person does not spend the same hour: the
+     0.0084 ft pair is real but it is not what makes the wooden structure shimmer. */
   const yAt=function(z,j){return yA+((topAt(z)-0.6*K)-yA)*j/M;};
   const hb=function(z,y){return Math.max(0.25*K,halfBeam(z,y)-0.62*K);};
   const v=[];
@@ -14968,7 +15026,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-1419-a1b5524";
+const BUILD="20260804-1630-0f24aef";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
