@@ -1230,6 +1230,13 @@ function readMusterCode(txt){
 
 /* ========== CHAPTER I ========== */
 const NEED=6;
+/* ---- ONE MAN, ONE FACE ----
+   A named historical person must look the same everywhere he appears, or the game
+   is telling the player he is two people. Smith is the case that surfaced, so his
+   appearance is declared ONCE here and referenced; the next chapter to put him on
+   screen uses this and cannot drift. */
+const SMITH_EQ={skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
+  accessory:"none_acc",head:"none_head",build:"build_normal",face:"smith"};
 const CH={
  intro:"Four months and more at sea are behind you. Land was descried at four this morning, and the ships are standing into the Chesapeake between two capes that had no English names yesterday, low green country on either hand, while the gentlemen argue over where they will plant the fort. Below deck, in the dark and the stink, men still trade the old rumours - of a colony that vanished, and of a Company that promised them gold. You are hungry, and the provisions are stowed in the hold.",
  obj:"Question the crew, and read the Charter that lies in the great cabin. The scrivener will test you when he has five questions he can fairly put to you - so the more you learn, the sooner he is ready. Press the menu at any time to see how you stand.",
@@ -1407,7 +1414,16 @@ const CH={
      go. He sits on the shingle by the mainmast with a ring bolt behind him, a chain
      to it, and a bilbo on his ankles. See buildIrons(). */
   {id:"irons",name:"A Man in Irons",voice:"male",role:"held below, in the ballast",lvl:0,pos:[-3.4,-4],face:1.35,sat:true,
-   eq:{skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"none_head",build:"build_normal",face:"sly"},
+   /* HE HAS HIS OWN FACE NOW. This is John Smith, and the game already owned a
+      documented likeness of him - FACEDEF.smith, the forked beard and the moustache
+      turned up at the ends, taken from the 1616 engraving, the only portrait of him
+      made from life. It was sitting in the wardrobe as something the PLAYER could
+      buy, while Smith himself wore a generic "sly". Reported as "john smith looks
+      different in the different chapters", and this is the half of it that is a
+      real inconsistency: one man, two appearances, and the accurate one given to
+      somebody else. Whoever else appears as Smith in a later chapter takes this
+      same eq - see SMITH_EQ. */
+   eq:SMITH_EQ,
    lines:["\u201cLook your fill. The gentlemen say I'll hang before we sight Virginia.\u201d",
      "\u201cI said what wanted saying about who ought to command here. That is the whole of my crime.\u201d",
      "\u201cAsk them what I actually did. They'll not tell you, because there's nothing to tell.\u201d",
@@ -1814,11 +1830,63 @@ const FIG_SCALE=2.916;
 /* feet -> figure-local, for anything world-sized built inside a figure */
 const FIG_FT=1/FIG_SCALE;
 
+/* ========== THE RIG ==========
+   Reported from play: "our normal models don't have hands, and they're missing
+   important joints for animation purposes."
+
+   Both were true. A figure was five meshes: one merged body, and four RIGID limbs
+   pinned at the shoulder and the hip. An arm was a single tapered tube from
+   shoulder to wrist with no elbow in it, so the only motion available was a swing
+   from the shoulder like a pendulum, and there was nothing on the end of it. The
+   only hand in the game was a bare skin band past the cuff, and only on the two
+   garments that HAVE a cuff.
+
+   That is enough for walking and for nothing else. Every gesture this project will
+   ever want - a man hauling on a rope, holding a match to a pan, pointing at a
+   headland, shading his eyes, carrying a chest between two of them - needs an elbow
+   and a hand, and half of them need a knee.
+
+   So the limbs are chains of joints now, each segment hung off the end of the one
+   above it:
+
+     shoulder -> upper arm -> elbow -> forearm -> wrist -> hand (with a thumb)
+     hip      -> thigh     -> knee  -> shin    -> ankle -> foot
+     neck     -> head
+
+   WHAT DOES NOT CHANGE: parts.la, parts.ra, parts.ll and parts.rl still name the
+   shoulder and hip nodes, because sixteen places in this file already rotate them
+   and every one of those keeps working untouched - rotating a shoulder still swings
+   the whole arm. The new joints are additions, not replacements.
+
+   WHAT IS STILL MISSING, said plainly: there is no spine. The torso is one merged
+   garment mesh - a doublet is drawn as continuous octagonal sections through the
+   waist - and bending a figure at the middle means splitting that, which is a
+   change to every garment rather than to the rig. Arms and head hang off the body
+   mesh, so leaning the chest alone would tear them off it. When a chapter needs a
+   man to bow or to bend over a boat, that is the next piece. */
+const RIG={
+  NECK_Y:1.460,                        /* base of the skull, where a nod pivots */
+  SHO_Y:1.360, SHO_X:0.170,
+  /* Measured against a man and corrected: the hand came out 5.4 inches long
+     against a real 7.5, and the shoe 7.0 against a real 10. The two bones are
+     right - upper arm 12.1 inches against 12, thigh 17.7 against 17 - so they are
+     left alone rather than churned. */
+  UPARM:0.300, FOREARM:0.220, HAND:0.150,
+  HIP_Y:0.800, HIP_X:0.110,
+  /* THIGH + SHIN is not free: the ankle has to land where the old rigid leg put the
+     top of its shoe, or the figure stands in the deck. The old shoe spanned figure
+     y 0.000 to 0.065, so ANKLE_Y must be 0.065 and the two bones must come to
+     0.800 - 0.065 = 0.735 between them. Guessed at 0.440 and 0.340 first, which is
+     0.780, and every figure in the game sank an inch and a half into the planking. */
+  ANKLE_Y:0.065, FOOT:0.065, SHOE_LEN:0.280,
+  THIGH:0.400, SHIN:0.335
+};
 function buildFigureRaw(eq){
-  /* One merged mesh for everything that does not move, plus four limb meshes.
-     Six draw calls a character instead of roughly forty. */
+  /* One merged mesh for the body, one for the head, and a chain of small meshes
+     per limb. Twenty-odd draw calls a character where it used to be six - which
+     Chapter I can afford twice over: measured, it runs 191 of a 600 ceiling. */
   const g=new THREE.Group();
-  const B=new Geo(), extra=[];
+  const B=new Geo(), HD=new Geo(), extra=[];
   const SK=RGB(skinOf(eq));
   /* one dye per garment, each falling back to eq.palette */
   const palHex=dyeHex(eq,"torso");
@@ -1881,41 +1949,99 @@ function buildFigureRaw(eq){
      And a neck. There was none - the jaw sat straight on the collar, which is
      most of why the head read as a block balanced on a block. */
   B.oct(0,0,1.33,1.455,0.135,0.145,0.165,0.175,0.30,shadeRGB(SK,0.80),SK);
-  B.oct(0,0,1.44,1.575,0.315,0.395,0.385,0.395,0.34,HEADC,HEADC,0.90);   /* jaw */
-  B.oct(0,0,1.575,1.715,0.385,0.395,0.385,0.395,0.34,HEADC,HEADC,0.90);  /* temples */
-  B.oct(0,0,1.715,1.835,0.385,0.395,0.285,0.305,0.34,HEADC,HEADC,0.90);  /* crown */
-  B.oct(0,-0.01,1.80,1.875,0.395,0.405,0.34,0.35,0.34,RGB(0x4e3a26),RGB(0x42301f));
+  /* The head goes into its own Geo so it can turn on the neck. It stays authored
+     in FIGURE coordinates - the same numbers as before, and addFace's face plate at
+     z=0.203 is untouched - and the neck group carries a compensating offset. That
+     way nothing about the face has to move to give the head a joint. */
+  HD.oct(0,0,1.44,1.575,0.315,0.395,0.385,0.395,0.34,HEADC,HEADC,0.90);   /* jaw */
+  HD.oct(0,0,1.575,1.715,0.385,0.395,0.385,0.395,0.34,HEADC,HEADC,0.90);  /* temples */
+  HD.oct(0,0,1.715,1.835,0.385,0.395,0.285,0.305,0.34,HEADC,HEADC,0.90);  /* crown */
+  HD.oct(0,-0.01,1.80,1.875,0.395,0.405,0.34,0.35,0.34,RGB(0x4e3a26),RGB(0x42301f));
   B.box(0,0.80,0,0.22,thin,thin,SK);
-  if(fkey)addFace(B,extra,fkey);
+  if(fkey)addFace(HD,extra,fkey);
 
-  function limbMesh(build){const L=new Geo();build(L);return L.mesh(false,false);}
   /* Limbs taper. An untapered limb is a plank, and the eye reads a plank as
      scenery - a forearm is narrower than an upper arm and a calf than a thigh.
      The pivot stays at y=0, so the animation is untouched. */
-  const arm=function(L){
-    L.oct(0,0,-0.52,0,limbW*0.78,limbW*0.80,limbW*1.06,limbW*1.06,0.34,
+  /* ---- the segments. Each is authored from its own pivot at y=0, downward, so a
+     joint is just a group at the end of the segment above it. ---- */
+  const upperArm=function(L){
+    L.oct(0,0,-RIG.UPARM,0,limbW*0.94,limbW*0.96,limbW*1.06,limbW*1.06,0.34,
           shadeRGB(sleeveCol,0.94),sleeveCol,0.82);
-    if(cuffCol!==null){
-      L.oct(0,0,-0.515,-0.445,limbW*1.30,limbW*1.30,limbW*1.22,limbW*1.22,0.34,cuffCol,cuffCol);
-      L.oct(0,0,-0.60,-0.505,thin*1.02,thin*1.02,thin*1.14,thin*1.14,0.34,shadeRGB(SK,0.90),SK);
-    }
+    /* the point of the shoulder, so the joint has a form instead of a seam */
+    L.oct(0,0,-0.055,0.045,limbW*1.10,limbW*1.10,limbW*0.98,limbW*1.00,0.34,
+          sleeveCol,shadeRGB(sleeveCol,0.90),0.86);
   };
-  const leg=function(L){
-    /* thigh into calf into ankle */
-    L.oct(0,0,-0.44,0,thin*1.14,thin*1.16,thin*1.30,thin*1.30,0.34,stockCol,stockCol,0.88);
-    L.oct(0,0,-0.78,-0.44,thin*0.94,thin*0.98,thin*1.14,thin*1.16,0.34,
-          shadeRGB(stockCol,0.90),stockCol,0.88);
+  const foreArm=function(L){
+    L.oct(0,0,-RIG.FOREARM,0,limbW*0.80,limbW*0.82,limbW*0.94,limbW*0.96,0.34,
+          shadeRGB(sleeveCol,0.92),sleeveCol,0.82);
+    if(cuffCol!==null)
+      L.oct(0,0,-RIG.FOREARM-0.005,-RIG.FOREARM+0.070,limbW*1.30,limbW*1.30,
+            limbW*1.22,limbW*1.22,0.34,cuffCol,cuffCol);
+  };
+  /* A HAND. Seven inches at this scale is about 0.19 of a unit, so it is small -
+     but it is the difference between an arm that ends and an arm that stops. Palm,
+     four fingers taken together as one block because at this size they are, and a
+     thumb set off the inboard edge so the hand has a front and a back. */
+  const hand=function(L,sg){
+    const sk=shadeRGB(SK,0.95);
+    L.oct(0,0,-0.072,0.005,thin*1.12,thin*0.78,thin*1.06,thin*0.80,0.32,sk,SK,0.88);
+    L.oct(0,0.006,-RIG.HAND,-0.068,thin*0.98,thin*0.68,thin*1.10,thin*0.76,0.30,
+          shadeRGB(SK,0.86),sk,0.88);
+    /* the thumb, inboard and forward, angled off the palm */
+    L.box(sg*thin*0.72,-0.036,thin*0.30,thin*0.42,thin*0.70,thin*0.44,sk,sg*0.55);
+  };
+  const thigh=function(L){
+    L.oct(0,0,-RIG.THIGH,0,thin*1.14,thin*1.16,thin*1.30,thin*1.30,0.34,
+          stockCol,stockCol,0.88);
     if(breechCol!==null){
       L.oct(0,0,-breechLen,0,0.196,0.206,0.222,0.232,0.32,breechCol,breechCol,0.86);
       L.oct(0,0,-breechLen-0.045,-breechLen+0.005,0.180,0.190,0.196,0.206,0.32,
             breechIsWool?WOOL_T:breechCol,breechIsWool?WOOL_T:breechCol);
     }
-    L.oct(0,0.035,-0.80,-0.735,0.125,0.20,0.132,0.185,0.30,shadeRGB(SHOE,0.85),SHOE);
   };
-  const la=limbMesh(arm);la.position.set(-0.17,1.36,0);
-  const ra=limbMesh(arm);ra.position.set(0.17,1.36,0);
-  const ll=limbMesh(leg);ll.position.set(-0.11,0.80,0);
-  const rl=limbMesh(leg);rl.position.set(0.11,0.80,0);
+  const shin=function(L){
+    L.oct(0,0,-RIG.SHIN,0,thin*0.94,thin*0.98,thin*1.14,thin*1.16,0.34,
+          shadeRGB(stockCol,0.90),stockCol,0.88);
+    /* the knee, filling the joint from the front */
+    L.oct(0,0.012,-0.050,0.040,thin*1.12,thin*1.14,thin*1.16,thin*1.18,0.34,
+          stockCol,stockCol,0.90);
+  };
+  const foot=function(L){
+    L.oct(0,0.055,-RIG.FOOT,0,0.125,RIG.SHOE_LEN,0.132,RIG.SHOE_LEN*0.93,0.30,
+          shadeRGB(SHOE,0.85),SHOE);
+  };
+  /* ---- and the chain. joint(parent,y,build) hangs a segment at a pivot. ---- */
+  function joint(parent,y,build,sg){
+    const j=new THREE.Group();
+    j.position.y=y;
+    if(build){
+      const L=new Geo();
+      build(L,sg===undefined?1:sg);
+      j.add(L.mesh(false,false));
+    }
+    parent.add(j);
+    return j;
+  }
+  const arms={}, legs={};
+  for(let k=0;k<2;k++){
+    const sg=k?1:-1, tag=k?"R":"L";
+    const sh=new THREE.Group();
+    sh.position.set(sg*RIG.SHO_X,RIG.SHO_Y,0);
+    const uaG=new Geo(); upperArm(uaG); sh.add(uaG.mesh(false,false));
+    const el=joint(sh,-RIG.UPARM,foreArm);
+    const wr=joint(el,-RIG.FOREARM,hand,sg);
+    arms[tag]={sh:sh,el:el,wr:wr};
+    const hp=new THREE.Group();
+    hp.position.set(sg*RIG.HIP_X,RIG.HIP_Y,0);
+    const thG=new Geo(); thigh(thG); hp.add(thG.mesh(false,false));
+    const kn=joint(hp,-RIG.THIGH,shin);
+    const an=joint(kn,-RIG.SHIN,foot);
+    legs[tag]={hp:hp,kn:kn,an:an};
+  }
+  /* la/ra/ll/rl stay the names of the shoulder and hip nodes: every existing
+     animation in this file rotates one of these four and must go on working. */
+  const la=arms.L.sh, ra=arms.R.sh, ll=legs.L.hp, rl=legs.R.hp;
 
   if(T==="torso_doublet"){
     /* waist 0.295 to chest 0.365: a doublet was cut to do exactly this */
@@ -2006,13 +2132,34 @@ function buildFigureRaw(eq){
     B.box(-0.17,1.13,0,0.165,0.06,0.165,cuffCol||sleeveCol);
   }
   g.add(B.mesh(false,false));
+  /* the head, on its neck. The geometry is in figure coordinates, so the mesh is
+     pushed down by the pivot height and the group puts it back - which means a nod
+     or a turn costs one rotation and no rebuilt vertices. */
+  const neck=new THREE.Group();
+  neck.position.y=RIG.NECK_Y;
+  const hdMesh=HD.mesh(false,false);
+  hdMesh.position.y=-RIG.NECK_Y;
+  neck.add(hdMesh);
+  g.add(neck);
+  /* anything addFace or an accessory put in `extra` is in figure coordinates too;
+     the flame of a candle belongs to the body, the rest to the head */
   for(let i=0;i<extra.length;i++)g.add(extra[i]);
   /* only the surviving limb is added, so nothing swings where nothing is */
   if(eq.arm==="no_right")g.add(la);
   else if(eq.arm==="no_left")g.add(ra);
   else {g.add(la);g.add(ra);}
   g.add(ll);g.add(rl);
-  g.userData.parts={la:la,ra:ra,ll:ll,rl:rl};
+  /* Every joint is named. la/ra/ll/rl are the four the old code knows; the rest
+     are what a gesture needs. `look` is the one a chapter will reach for first. */
+  g.userData.parts={
+    la:la, ra:ra, ll:ll, rl:rl,
+    neck:neck, look:neck,
+    shoulderL:arms.L.sh, elbowL:arms.L.el, wristL:arms.L.wr,
+    shoulderR:arms.R.sh, elbowR:arms.R.el, wristR:arms.R.wr,
+    hipL:legs.L.hp, kneeL:legs.L.kn, ankleL:legs.L.an,
+    hipR:legs.R.hp, kneeR:legs.R.kn, ankleR:legs.R.an,
+    rig:RIG
+  };
   return g;
 }
 
@@ -2022,7 +2169,85 @@ function buildFigure(eq){
   inner.scale.setScalar(FIG_SCALE);
   wrap.add(inner);
   wrap.userData.parts=inner.userData.parts;
+  /* the wrapper yaws, the inner group tips. Keeping those on two different objects
+     is what lets a man be turned to face his work AND bent over it without the two
+     rotations fighting each other over Euler order. */
+  wrap.userData.parts.body=inner;
   return wrap;
+}
+/* ========== ONE POSE FUNCTION ==========
+   Chapter II drew its thirty-six men with a separate, cruder routine - tapered beams
+   merged into one static mesh, with no garments, no face and no hands - while the
+   SAME MAN got a proper figure the moment you spoke to him and his portrait opened.
+   Reported from play as "the weird looking models in chapter 2", and it was really
+   two systems disagreeing about what a person looks like.
+
+   The reason for the cheap one was cost, and the cost is not there: measured,
+   Chapter I runs 191 draw calls of a 600 ceiling and Chapter II ran 14. So there is
+   one kind of person in this game now, and this is how he is put to work.
+
+   NO SPINE, so a stoop is made by tipping the whole man forward and bending his
+   knees under him - which is what a man lifting a boat timber does anyway. When the
+   torso can bend, this is the function that gets better. */
+function bakeFigure(fig){
+  /* A crowd figure is posed once and never moves again, so it has no use for its
+     joints afterwards. This walks the finished, POSED figure and merges every mesh
+     into one, each transformed into place - the same detail, the same garments, the
+     same hands, at ONE draw call instead of fourteen.
+
+     That is what makes the unification affordable. Thirty-six men articulated would
+     be about five hundred draw calls against a six hundred ceiling, which is why the
+     cheap beam-figures existed in the first place; baked, they are thirty-six. The
+     articulated rig stays for anyone who has to move - the player, the named NPCs,
+     anybody a cutscene touches.
+
+     Geometry comes out in WORLD space, so the returned mesh belongs at the origin. */
+  fig.updateMatrixWorld(true);
+  const P=[],C=[],v=new THREE.Vector3();
+  fig.traverse(function(o){
+    if(!o.isMesh||!o.geometry||!o.geometry.attributes.position)return;
+    /* only the vertex-coloured body meshes: an emissive prop would lose the very
+       thing that makes it emissive if it were merged into a Lambert mesh */
+    if(!o.material||!o.material.vertexColors)return;
+    const pa=o.geometry.attributes.position, ca=o.geometry.attributes.color;
+    for(let i=0;i<pa.count;i++){
+      v.fromBufferAttribute(pa,i).applyMatrix4(o.matrixWorld);
+      P.push(v.x,v.y,v.z);
+      if(ca)C.push(ca.getX(i),ca.getY(i),ca.getZ(i)); else C.push(1,1,1);
+    }
+  });
+  const g=new THREE.BufferGeometry();
+  g.setAttribute("position",new THREE.Float32BufferAttribute(P,3));
+  g.setAttribute("color",new THREE.Float32BufferAttribute(C,3));
+  g.computeVertexNormals();
+  return new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true}));
+}
+function poseFigure(fig,pose,seed){
+  const q=fig.userData.parts;
+  if(!q)return;
+  const r=function(k){return srand(seed*7.13+k*3.71);};
+  if(pose==="stoop"||pose==="kneel"){
+    const deep=(pose==="kneel");
+    q.body.rotation.x=(deep?0.42:0.30)+r(1)*0.10;
+    q.hipL.rotation.x=deep?0.95:0.34; q.hipR.rotation.x=deep?0.20:0.30;
+    q.kneeL.rotation.x=deep?-1.55:-0.62-r(2)*0.14;
+    q.kneeR.rotation.x=deep?-0.42:-0.56-r(3)*0.14;
+    q.ankleL.rotation.x=deep?0.55:0.28; q.ankleR.rotation.x=0.26;
+    q.la.rotation.x=-0.52-r(4)*0.28; q.ra.rotation.x=-0.58-r(5)*0.28;
+    q.elbowL.rotation.x=-0.80-r(6)*0.30; q.elbowR.rotation.x=-0.92-r(7)*0.30;
+    q.wristL.rotation.x=-0.25; q.wristR.rotation.x=-0.30;
+    q.neck.rotation.x=0.24;                       /* he is looking at the work */
+  } else {
+    /* standing. Nobody stands identically, and thirty-six men in one posture is
+       the other half of why a crowd looks wrong. */
+    q.la.rotation.x=-0.05-r(4)*0.16; q.ra.rotation.x=-0.03-r(5)*0.18;
+    q.la.rotation.z= 0.06+r(8)*0.07; q.ra.rotation.z=-0.06-r(9)*0.07;
+    q.elbowL.rotation.x=-0.16-r(6)*0.34; q.elbowR.rotation.x=-0.14-r(7)*0.34;
+    q.kneeL.rotation.x=-0.04-r(10)*0.10;
+    q.hipR.rotation.x=r(11)*0.10;
+    q.neck.rotation.y=(r(12)-0.5)*0.75;           /* looking about him */
+    q.body.rotation.x=(r(13)-0.5)*0.05;
+  }
 }
 
 /* ========== SUSAN CONSTANT ==========
@@ -11780,60 +12005,12 @@ const SHORE_SAYS={
   "James Read":["\u201cSmith. One forge, one anvil, and every nail this colony will ever have comes off it.\u201d",
                 "\u201cI have no patience with men who give orders and cannot do the thing they order. It will get me into trouble one day.\u201d"]
 };
-const CROWD_COL={
-  gent:   {cloth:0x4e6076, trim:0x3a2c1a, hat:0x2c2417, skin:0xd8b48c},
-  soldier:{cloth:0x8a7a55, trim:0x4a3a26, hat:0x1d1d21, skin:0xd8b48c},
-  trade:  {cloth:0xbdb39a, trim:0x6b5433, hat:0x1d1d21, skin:0xd8b48c},
-  /* Bare-headed, and now it SAYS so. This read `hat:0x00000` - five digits, not
-     six - which evaluates to 0, which is falsy, which is why `if(C.hat)` skipped
-     it. The intent was right by accident: a malformed literal standing in for
-     "none", and a hat that genuinely wanted to be black would have been
-     unrepresentable. */
-  labour: {cloth:0xa8a08a, trim:0x6f6552, hat:null, skin:0xd8b48c},
-  boy:    {cloth:0xc0b79c, trim:0x6f6552, hat:null, skin:0xd8b48c}
-};
-/* one man, emitted as beams into a shared Geo. `pose` tilts him to his work. */
-function crowdMan(G,kind,x,y,z,yaw,pose){
-  const C=CROWD_COL[kind]||CROWD_COL.labour;
-  const sc=(kind==="boy")?0.78:1;
-  const S=FIG_SCALE*sc;
-  const cy=Math.cos(yaw), sy=Math.sin(yaw);
-  /* local (right, up, forward) -> world */
-  function T(r,u,f){
-    return [x+r*cy+f*sy, y+u*S, z-r*sy+f*cy];
-  }
-  const R=function(v){return v*S;};
-  const stoop=(pose==="stoop")?0.30:(pose==="kneel")?0.55:0;
-  const hip=1.02-stoop*0.55, sho=1.46-stoop*0.42;
-  const lean=stoop*0.42;
-  /* Occlusion baked per part, the same way the pines get it: dark where a form
-     tucks under another or meets the ground, light where it is open to the sky.
-     On a figure with no animation and no separate meshes this is the only tool
-     there is for describing where one limb ends and the next begins. */
-  const cloth=RGB(C.cloth), trim=RGB(C.trim), skin=RGB(C.skin);
-  const clothLo=shadeRGB(cloth,0.70), trimLo=shadeRGB(trim,0.58);
-  const skinLo=shadeRGB(skin,0.74);
-  /* legs: ankle narrow into a thicker thigh, and darkest at the sand */
-  G.beam8(T(R(-0.09),0.02,0),T(R(-0.07),hip,0),R(0.125),R(0.185),trimLo,trim);
-  G.beam8(T(R(0.09),0.02,0),T(R(0.07),hip,0),R(0.125),R(0.185),trimLo,trim);
-  /* torso: waist into chest */
-  G.beam8(T(R(-0.02),hip,R(lean*0.2)),T(R(0.02),sho,R(lean)),R(0.255),R(0.325),clothLo,cloth);
-  /* arms: reaching forward at a task, or down at rest - shoulder into wrist */
-  const ax=(pose==="stoop"||pose==="kneel")?R(0.34):R(0.06);
-  const ay=(pose==="stoop"||pose==="kneel")?hip+0.10:hip-0.02;
-  G.beam8(T(R(-0.17),sho-0.06,R(lean)),T(R(-0.13),ay,ax),R(0.145),R(0.105),cloth,clothLo);
-  G.beam8(T(R(0.17),sho-0.06,R(lean)),T(R(0.13),ay,ax),R(0.145),R(0.105),cloth,clothLo);
-  /* a neck, then a head that is wider than it - the old single beam was a peg */
-  G.beam8(T(0,sho+0.01,R(lean)),T(0,sho+0.10,R(lean*1.1)),R(0.115),R(0.135),skinLo,skinLo);
-  G.beam8(T(0,sho+0.09,R(lean*1.1)),T(0,sho+0.32,R(lean*1.3)),R(0.215),R(0.245),skin,skin);
-  if(C.hat){
-    const hat=RGB(C.hat), hatLo=shadeRGB(hat,0.62);
-    /* a flat brim - a very short wide beam is a disc - and a crown above it,
-       rather than the horizontal roll that used to stand in for a hat */
-    G.beam8(T(0,sho+0.30,R(lean*1.3)),T(0,sho+0.335,R(lean*1.3)),R(0.42),R(0.40),hatLo,hat);
-    G.beam8(T(0,sho+0.325,R(lean*1.3)),T(0,sho+0.46,R(lean*1.4)),R(0.255),R(0.215),hat,hat);
-  }
-}
+/* CROWD_COL and crowdMan lived here: a second, cruder kind of person, built out of
+   tapered beams with no garments, no face and no hands, merged flat into one mesh
+   for the thirty-six men of the shore party. They are gone. Chapter II uses the
+   same buildFigure() as everybody else, from the same crowdEq() that was already
+   feeding those men's portraits - so a man on the beach and the man in his own
+   portrait are at last the same person. See poseFigure(). */
 const CROWD_ROLE={shallop:"carpenter, at the shallop",cross:"at the cross",
   guard:"on guard",idle:"gentleman",stores:"labourer",surgeon:"surgeon to the voyage",
   drum:"drum",boys:"ship's boy",smith:"blacksmith"};
@@ -11856,7 +12033,6 @@ const TASK_POSE={shallop:"stoop",cross:"stoop",stores:"stoop",smith:"stoop",
   surgeon:"stand",guard:"stand",idle:"stand",drum:"stand",boys:"stand"};
 let CROWD_HITS=[];
 function buildShoreParty(root){
-  const G=new Geo();
   CROWD_HITS.length=0;
   let count=0;
   SHORE_TASKS.forEach(function(grp){
@@ -11885,7 +12061,26 @@ function buildShoreParty(root){
                :(grp.task==="guard")?Math.atan2(-px,CAPE.TREE-pz)
                :Math.atan2(-px,20-pz);
       const gy=capeGround(px,pz);
-      crowdMan(G,grp.kind,px,gy,pz,face+(Math.random()-0.5)*0.5,pose);
+      /* THE SAME FIGURE AS EVERY OTHER PERSON IN THE GAME, from the very eq that
+         already fed this man's portrait - so what you meet on the beach and what
+         you see when he speaks are finally the same person. */
+      const eqi=crowdEq(grp.kind,i);
+      const man=buildFigure(eqi);
+      if(grp.kind==="boy")man.scale.setScalar(0.78);
+      man.position.set(px,gy,pz);
+      man.rotation.y=face+(srand(count*5.7)-0.5)*0.5;
+      poseFigure(man,pose,count+1);
+      /* PLANT HIM. Bending a knee shortens a leg's vertical reach and tipping the
+         body about the ankles swings the toe, so a POSED man does not stand where
+         an unposed one did - measured, as much as two feet out, which on a beach
+         reads as floating. Rather than hand-tune the offset for every pose, take the
+         finished figure's own lowest point and set him down on it. Derived, so it
+         cannot drift when a pose changes or a new one is added. */
+      man.updateMatrixWorld(true);
+      const bb=new THREE.Box3().setFromObject(man);
+      man.position.y+=gy-bb.min.y;
+      /* posed, then baked flat: nobody on this beach has to move again */
+      root.add(bakeFigure(man));
       /* No collider. Thirty-four of them made the strand a maze and walled
          several men off from being spoken to at all - and a player walking
          through a crowd is a far smaller sin than a player unable to reach it. */
@@ -11907,9 +12102,6 @@ function buildShoreParty(root){
       count++;
     }
   });
-  /* smooth-shaded now the sections are octagonal, so a limb reads as round
-     rather than as eight flat strips */
-  root.add(G.mesh(true,false));
   return count;
 }
 
@@ -13288,6 +13480,14 @@ const PATCH_NOTES=[
   {when:"3 August 2026 · latest",
    head:"Her curves, her coast, and everything below decks",
    lines:[
+     "<b>The people, overhauled</b>",
+     "Everybody in the game had four rigid limbs pinned at the shoulder and the hip — an arm was one tapered tube with no elbow in it, so the only movement possible was a swing like a pendulum, and there was nothing on the end of it. The only hand anywhere was a strip of bare skin past a cuff, and only on the two garments that have a cuff.",
+     "There are twenty named joints now: shoulder, elbow, wrist and a hand with a thumb on it; hip, knee, ankle and a foot; and a neck, so a man can turn his head and look at something. Every animation already in the game still runs untouched, because the four joints it knew about are still called by the same names.",
+     "The hand and the shoe were then measured against a real man and corrected — the hand came out five and a half inches long against a real seven and a half, and the shoe seven inches against ten. The arm and thigh bones were already right to within an inch, so they were left alone.",
+     "CHAPTER II had a second, cruder kind of person: thirty-six men built out of plain tapered beams with no garments, no faces and no hands — and then the very same man got a proper figure the moment you spoke to him and his portrait opened. Two systems disagreeing about what a person looks like. There is one kind of person now, built from the same description that was already feeding those portraits, so the man on the beach and the man in the portrait are finally the same man.",
+     "They are also posed by the rig rather than by hand: a man at the shallop stoops over his work with his knees bent and his head down, and no two of them stand quite alike. Each one is then flattened into a single object once he is posed, because nobody on that beach has to move again — which is what makes it affordable. Looking at the whole shore party costs eighty-one draws of a six-hundred budget, where the crude beam-men were the only way to do it before.",
+     "AND JOHN SMITH HAS HIS OWN FACE. The game already owned a documented likeness of him — the forked beard and the moustache turned up at the ends, from the 1616 engraving, the only portrait of him taken from life — and it was sitting in the wardrobe as something you could buy, while Smith himself wore a generic expression. He wears his own face now, defined in one place so that any later chapter putting him on screen gets the same man.",
+     "Still missing, and said plainly: there is no spine. The torso is one piece of tailoring, so a man cannot yet bend at the middle — a stoop is done by tipping him forward from the ankles, which is what a man lifting actually does, but a bow or a man doubled over an oar needs the next piece of work.",
      "<b>One hole, and it looks like a hole</b>",
      "Two masts were standing in the hatch furniture. The mainmast passed through the grating drawn over the main hatch, and the foremast passed through the rail laid round the forecastle ladder — measured at a foot and a half by five inches, and sixteen inches by eighteen. Both came from placing deck fittings by eye near things whose positions are fixed by the rig.",
      "And the way below was indistinguishable from scenery, because the main hatch — the only hole through the main deck — had a grating over it identical to the ornamental one nine feet forward of it. Two grids, one of them a staircase, and nothing to tell you which.",
@@ -13634,7 +13834,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-0254-f07b231";
+const BUILD="20260804-0314-375eb7c";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
