@@ -395,6 +395,10 @@
   .choice.shut{opacity:.55;border-style:dashed;cursor:default}
   .choice.shut small{display:block;margin-top:.25em;font-style:italic;
     color:rgba(224,218,187,.62);font-size:.86em}
+  /* the assessment's map. Drawn, not loaded - see drawQuizMap(). */
+  #reckMap{display:none;width:100%;max-width:520px;height:auto;margin:.2em auto .6em;
+    border:1px solid rgba(74,58,34,.5);border-radius:3px;background:#e6dcbe}
+  #reckMap.on{display:block}
   .pips{display:flex;gap:6px;justify-content:center;margin:.4em 0}
   .pips i{width:13px;height:13px;border-radius:50%;border:1px solid var(--line)}
   .pips i.hit{background:var(--copper);border-color:var(--copper)} .pips i.miss{background:var(--oxblood);border-color:var(--oxblood)}
@@ -642,6 +646,7 @@
       <div class="rk-count" id="reckCount"></div>
       <div id="reckFrame" style="font-style:italic;line-height:1.5;margin-bottom:.8em"></div>
       <div class="stim" id="reckStim"></div>
+      <canvas id="reckMap" width="520" height="330"></canvas>
       <div class="qtext" id="reckQ"></div>
       <div id="reckOpts" data-readopts></div>
       <div class="center" style="font-size:.78rem;color:#6a5836;margin-top:.5em">Tap your answer</div>
@@ -1259,7 +1264,7 @@ const SMITH_EQ={skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_tors
   accessory:"none_acc",head:"none_head",build:"build_normal",face:"smith"};
 const CH={
  intro:"Four months and more at sea are behind you. Land was descried at four this morning, and the ships are standing into the Chesapeake between two capes that had no English names yesterday, low green country on either hand, while the gentlemen argue over where they will plant the fort. Below deck, in the dark and the stink, men still trade the old rumours - of a colony that vanished, and of a Company that promised them gold. You are hungry, and the provisions are stowed in the hold.",
- obj:"Question the crew, and read the Charter that lies in the great cabin. The scrivener will test you when he has five questions he can fairly put to you - so the more you learn, the sooner he is ready. Press the menu at any time to see how you stand.",
+ obj:"Question the crew, and read the Charter that lies in the great cabin. The scrivener will test you once you have learned five things he can fairly ask about - and he asks six questions, drawn from a great many, some of them off a chart. The more you have learned, the better your odds. Press the menu at any time to see how you stand.",
 
  npcs:[
  {id:"sailor",name:"Weathered Sailor",voice:"male",role:"twice to Virginia",lvl:2,pos:[-5,-9],face:0.6,
@@ -1602,7 +1607,7 @@ const CH={
  ],
 
  reck:{seal:"records",kick:"The Scrivener's Desk",title:"Set the Records True",
-  frame:"\u201cYou have a reading eye,\u201d says the ship's scrivener, clearing a space among the papers. \u201cHelp me judge these before we make land. Five questions. I'll accept one wrong.\u201d",
+  frame:"\u201cYou have a reading eye,\u201d says the ship's scrivener, clearing a space among the papers. \u201cHelp me judge these before we make land. Six questions, and some have a chart to them. I'll bear two wrong \u2014 no more.\u201d",
   pass:{title:"Well judged.",body:"\u201cYou read a document for what it truly says - not for what you wish it said.\u201d The scrivener presses ink upon you, and a traveller's cloak against the cold that is coming."},
   fail:{title:"You have not understood.",body:"\u201cYou have the words but not their meaning. Go back and talk to the crew properly - and listen to what they actually tell you.\u201d"},
   q:[
@@ -1631,9 +1636,218 @@ const CH={
     need:["The Hidden Tally"],q:"Keeping two counts most strongly suggests that the Company -",
     o:["managed its records to protect the venture's reputation","had no reliable way to count the dead","was scrupulously honest about every loss","was required by law to file duplicate records"],a:0},
    {stim:"You wish to establish what the Company itself intended by founding this colony.",
-    need:["What the Charter Actually Says","Reading Evidence"],
+    need:["What the Charter Actually Says","Reading a Document's Purpose"],
     q:"Which would be the most reliable source for that purpose?",
-    o:["The Company's own charter and shareholder agreements","A sailor's second-hand account of tavern rumours","A ballad about Roanoke composed years afterwards","A gentleman passenger's expectations of finding gold"],a:0}
+    o:["The Company's own charter and shareholder agreements","A sailor's second-hand account of tavern rumours","A ballad about Roanoke composed years afterwards","A gentleman passenger's expectations of finding gold"],a:0},
+   /* ===================== ADDED: the pool was nine and five were asked =====================
+      Reported from play: "there should be enough variation in possible questions players
+      will see that they can't reasonably memorize them all... 8th grade staar difficulty."
+
+      Nine questions with five asked meant every question turned up in about five runs in
+      nine, and a class comparing notes would have the whole bank inside a lesson. Twenty-
+      eight now, of which four put a MAP in front of you.
+
+      Written to the eighth-grade STAAR pattern rather than to recall: a stimulus, a
+      question that needs a step of reasoning off it, and distractors that are wrong for a
+      REASON - the commonly held error, the true-but-irrelevant statement, and the right
+      answer to a question that was not asked. The old bank often had one plausible option
+      and three obviously silly ones, which is a reading exercise, not an assessment. */
+
+   /* ---- the maps ---- */
+   {stim:"The map shows the fleet's outbound track from England to Virginia, and the direct course they did not take. Arrows mark the prevailing winds.",
+    map:"atlantic",need:["The Roanoke Colony","The Virginia Company"],
+    q:"Which statement BEST explains the route the fleet actually sailed?",
+    o:["They sailed south to pick up winds that blow west, because a direct westward course runs against the wind",
+       "They sailed south because the direct course crossed waters claimed by Spain",
+       "They sailed south because the ships could not carry enough water for a shorter crossing",
+       "They sailed south to trade at the Canaries before attempting the ocean"],a:0},
+   {stim:"The map shows the fleet's outbound track. The voyage from England to Virginia took four months and more.",
+    map:"atlantic",need:["The Roanoke Colony"],
+    q:"The length of the voyage is BEST explained by the fact that the fleet -",
+    o:["followed the winds, which meant sailing far south and then west before turning north",
+       "was becalmed for most of the crossing and had to be rowed",
+       "stopped to establish trading posts along the African coast",
+       "sailed against the current the whole way across the Atlantic"],a:0},
+   {stim:"The map shows the bay, the river running west from it, and three possible sites for a fort. Site X stands on the open cape facing the Atlantic; Y lies well up the river; Z lies far inland at the head of navigation.",
+    map:"capes",need:["The Virginia Company","Profit or Perish"],
+    q:"The colonists were ordered to choose a site a good way up the river rather than on the coast. Which BEST explains that instruction?",
+    o:["A site up the river was harder for Spanish warships to find and reach",
+       "A site up the river had better farmland than the coast",
+       "A site up the river was closer to the passage through to Asia",
+       "A site up the river was where the Roanoke colonists had settled"],a:0},
+   {stim:"The map shows Roanoke Island and Croatoan Island, some fifty miles apart, inside the barrier banks. In 1590 the word CROATOAN was found cut into a post at the abandoned settlement.",
+    map:"roanoke",need:["What Was Found at Roanoke","The Fate of Roanoke"],
+    q:"Using the map, the carving is BEST understood as -",
+    o:["a message naming where the colonists had gone, since it names a real place fifty miles off",
+       "proof that the colonists were carried away by the Croatoan people against their will",
+       "a warning to later ships that the Croatoan had attacked the settlement",
+       "the name the colonists had given to their own settlement on Roanoke"],a:0},
+
+   /* ---- Roanoke, read as evidence ---- */
+   {stim:"A gentleman aboard says: 'Roanoke shows plainly that the savages of that country cannot be trusted.'",
+    need:["The Fate of Roanoke","What Was Found at Roanoke"],
+    q:"A historian would MOST likely object to this claim because -",
+    o:["the evidence at Roanoke shows no signs of a battle, and the word left behind named a friendly people",
+       "the Roanoke colony was too long ago to be relevant to Virginia",
+       "no Englishman ever returned to Roanoke to look",
+       "the gentleman was not himself present at Roanoke"],a:0},
+   {stim:"Two accounts of Roanoke: John White's own report of what he found in 1590, and a ballad about the lost colony printed in London in the 1620s.",
+    need:["What Was Found at Roanoke","Reading a Document's Purpose"],
+    q:"For establishing what was actually at the site, White's report is the better source MAINLY because -",
+    o:["he was present and describing what he saw, while the ballad was composed later to entertain",
+       "he was an official of the Crown and officials do not make errors",
+       "it is written in prose rather than verse",
+       "the ballad was printed and printed sources are less reliable than handwritten ones"],a:0},
+   {stim:"White sailed for supplies in 1587 and did not return until 1590. In those years England fought the Spanish Armada.",
+    need:["Why Roanoke Was Abandoned"],
+    q:"Which conclusion about English colonisation does this BEST support?",
+    o:["A colony's survival could depend on events in Europe that had nothing to do with it",
+       "England lacked the ships to reach North America at all",
+       "The colonists at Roanoke had asked to be left alone",
+       "Colonies were normally resupplied within a year"],a:0},
+
+   /* ---- the Company, the charter, and what a colonist was ---- */
+   {stim:"The Virginia Company was a joint-stock company: many investors bought shares, and returns were divided among them.",
+    need:["The Virginia Company"],
+    q:"Compared with a colony paid for by the Crown, a joint-stock colony was MOST likely to -",
+    o:["be judged by whether it returned a profit to its shareholders",
+       "receive supplies whenever the colonists asked for them",
+       "be governed directly by Parliament",
+       "be free of any obligation to send goods to England"],a:0},
+   {stim:"Charter of 1606: the colonists were to serve a term of years; land and stores were held by the Company; what they produced went into a common magazine.",
+    need:["Colonists as Company Servants"],
+    q:"A colonist who expected to own a farm of his own would find that the charter -",
+    o:["gave him no property in the land he worked",
+       "granted him fifty acres upon arrival",
+       "allowed him to sell his share to another man",
+       "made him a tenant of the King rather than of the Company"],a:0},
+   {stim:"A gentleman passenger sold his father's silver plate to pay for his own passage to Virginia.",
+    need:["What the Gentlemen Bought","Colonists as Company Servants"],
+    q:"Under the 1606 charter, what had he actually purchased?",
+    o:["The right to work for the Company on the Company's land",
+       "A share of the Company's profits proportional to his payment",
+       "A grant of land to be surveyed on his arrival",
+       "A commission as an officer of the colony's council"],a:0},
+   {stim:"Supply ships would sail when there was cargo worth carrying home. The Crown had invested nothing.",
+    need:["Profit or Perish"],
+    q:"Which situation would MOST endanger the colonists under this arrangement?",
+    o:["A year in which the colony produced nothing that could be sold in England",
+       "A year in which the colony produced more food than it could eat",
+       "A year in which new investors bought shares in the Company",
+       "A year in which the Crown declared peace with Spain"],a:0},
+   {stim:"The charter's opening speaks of propagating the Christian religion. Its later articles set out the division of gold, silver and other commodities among the shareholders.",
+    need:["Reading a Document's Purpose","What the Charter Actually Says"],
+    q:"Which is the MOST careful way to read the two parts together?",
+    o:["Both may be genuine: a stated religious purpose could be sincerely held and also make the venture easier to justify",
+       "The religious language must be false, because the document also discusses money",
+       "The financial articles must be secondary, because religion is mentioned first",
+       "The two parts contradict each other, so the document cannot be used as evidence"],a:0},
+   {stim:"The charter claims land 'not now actually possessed by any Christian Prince or People.'",
+    need:["What the Charter Actually Says"],
+    q:"What was the effect of this wording on the people already living in Virginia?",
+    o:["It treated their land as unclaimed, because they were not Christians",
+       "It guaranteed them the protection of English law",
+       "It required the Company to purchase land from them",
+       "It recognised their existing ownership of the territory"],a:0},
+
+   /* ---- who was aboard, and what that predicted ---- */
+   {stim:"Of the first company: a large share were gentlemen and their personal servants. Very few were farmers.",
+    need:["Too Many Gentlemen","The Colony's Fatal Composition"],
+    q:"Which outcome does the make-up of the company BEST predict?",
+    o:["Food shortages, because too few of those aboard would or could farm",
+       "Rapid discovery of gold, because gentlemen were better educated",
+       "Peaceful relations with neighbours, because gentlemen avoided quarrels",
+       "A well-defended fort, because gentlemen were trained soldiers"],a:0},
+   {stim:"A gentleman aboard: 'The labouring sort will do the digging. That is what they are for. There are a dozen of them at least.'",
+    need:["Too Many Gentlemen","What the Gentlemen Bought"],
+    q:"What is the MOST significant problem with his reasoning?",
+    o:["A dozen labourers could not feed a hundred men, and he does not count himself among the workers",
+       "Labourers were not permitted to farm under the charter",
+       "The Company had promised that nobody would have to work",
+       "There were in fact no labourers aboard at all"],a:0},
+   {stim:"Expectations of gold in Virginia rested on promotional pamphlets and on the Spanish experience in Peru and Mexico.",
+    need:["Gold in Virginia"],
+    q:"Which BEST describes the weakness of that reasoning?",
+    o:["It assumed one region must hold what another region held, with no evidence from Virginia itself",
+       "It relied on Spanish sources, which were always false",
+       "It ignored the fact that gold had already been found in Virginia",
+       "It confused gold with silver"],a:0},
+
+   /* ---- governance, records, and the analytic links ---- */
+   {stim:"The names of the colony's seven councillors were sealed in a locked box, not to be opened until the ships made land.",
+    need:["The Sealed Box"],
+    q:"What problem would this arrangement MOST likely create during the voyage?",
+    o:["No one aboard could be certain who held lawful authority",
+       "The councillors would refuse to serve once named",
+       "The ships could not be navigated without the box",
+       "The Company would be unable to change its instructions"],a:0},
+   {stim:"The officers kept two counts of the dead: an honest tally, and a shorter column marked 'for London.'",
+    need:["The Hidden Tally"],
+    q:"A historian using ONLY the London figures would MOST likely -",
+    o:["underestimate how deadly the colony was",
+       "overestimate how deadly the colony was",
+       "be unable to tell how many colonists there had been",
+       "conclude that the records had been lost"],a:0},
+   {stim:"Roanoke was left unsupplied because war with Spain took England's ships. Jamestown's supply depended on the colony producing cargo worth shipping home.",
+    need:["Roanoke and the Supply Problem","Whim and Ledger"],
+    q:"What do the two cases have in COMMON?",
+    o:["In both, colonists' survival rested on decisions made in England for reasons unconnected to the colony",
+       "In both, the colonists were abandoned deliberately by their backers",
+       "In both, the colony failed because of conflict with neighbouring peoples",
+       "In both, the Crown refused to fund the venture at all"],a:0},
+   {stim:"Roanoke was a venture backed by courtiers under a royal charter. Jamestown was a joint-stock business answerable to shareholders.",
+    need:["Whim and Ledger","The Virginia Company"],
+    q:"Which is the MOST important DIFFERENCE this made to the colonists?",
+    o:["Jamestown's supply depended on profit, which does not relent when a war ends",
+       "Jamestown's colonists could vote on whether to be resupplied",
+       "Roanoke's colonists had signed no agreement of any kind",
+       "Roanoke's colonists owned their land outright"],a:0},
+   {stim:"A student writes: 'The Jamestown colonists starved because the land was barren.'",
+    need:["Too Many Gentlemen","Profit or Perish","The Colony's Fatal Composition"],
+    q:"Which evidence from the voyage would MOST directly challenge that claim?",
+    o:["Most of those aboard were unwilling or unable to farm, and their supply depended on producing saleable cargo",
+       "The colonists arrived in April, which is late for planting",
+       "The Company had promised that food would be sent from England",
+       "The Spanish had found gold in far less promising country"],a:0},
+
+   /* ---- navigation, which the chapter teaches and never assessed ---- */
+   {stim:"At sea in 1607 a ship's latitude could be measured with a cross-staff and the sun. Its longitude could only be estimated from speed, heading and time elapsed.",
+    need:["Dead Reckoning","The Roanoke Colony"],
+    q:"What was the MOST serious consequence of this for a long crossing?",
+    o:["Error in the east-west position built up over the whole voyage",
+       "The ship could not tell north from south",
+       "The ship could not measure its speed at all",
+       "The crew could not find the coast of Europe on the way home"],a:0},
+   {stim:"The fleet spent weeks in the West Indies before turning north for Virginia.",
+    need:["Dead Reckoning"],
+    q:"Which BEST explains why a navigator would want to do this?",
+    o:["Landmarks of known latitude let him fix where he really was before the last leg",
+       "The West Indies were the only source of fresh water in the Atlantic",
+       "Spanish charts of Virginia could be purchased there",
+       "The prevailing winds blew from the West Indies straight to England"],a:0},
+
+   /* ---- source-handling, which is the chapter's real subject ---- */
+   {stim:"You wish to establish what the Company itself intended by founding the colony.",
+    need:["What the Charter Actually Says","Reading a Document's Purpose"],
+    q:"Which source would be MOST reliable for that purpose?",
+    o:["The Company's own charter and its agreements with shareholders",
+       "A pamphlet written to persuade Londoners to invest",
+       "A sailor's account of what was said in a tavern",
+       "A gentleman passenger's hopes of finding gold"],a:0},
+   {stim:"A promotional pamphlet printed in London in 1609 describes Virginia as a country of easy plenty and certain riches.",
+    need:["Gold in Virginia","Reading a Document's Purpose"],
+    q:"This pamphlet is MOST useful to a historian as evidence of -",
+    o:["what the Company wanted English readers to believe",
+       "the actual conditions colonists found in Virginia",
+       "the number of colonists who died in the first years",
+       "the geography of the Chesapeake Bay"],a:0},
+   {stim:"Two men aboard describe the same voyage. One is a sailor who has crossed twice; one is a gentleman on his first crossing who has read pamphlets about Virginia.",
+    need:["Gold in Virginia","The Roanoke Colony"],
+    q:"Which is the MOST accurate statement about using these two as sources?",
+    o:["Each is reliable about different things, so what each had reason to know must be weighed",
+       "The sailor is reliable and the gentleman is not, because he is of lower rank",
+       "The gentleman is reliable because he can read and the sailor cannot",
+       "Neither can be used, because both are describing the same events"],a:0}
   ]},
  unlocks:[{k:"cloak",v:"cloak_weathered"},{k:"palette",v:"lostcolony"}]
 };
@@ -1648,9 +1862,19 @@ CH.targets=(function(){
   return k.filter(function(v,i,a){return a.indexOf(v)===i;});
 })();
 function insightCount(){let n=0;CH.targets.forEach(function(k){if(S.insight[k])n++;});return n;}
+/* ---- HOW MANY, AND WHEN HE WILL ASK ----
+   Derived once. Six of them, two may be wrong: sixty-seven per cent, which is about
+   where a STAAR passing standard sits, and six draws from the bank rather than five
+   makes a memorised list less use again. It used to be five with one wrong - eighty
+   per cent - which was already strict and is much stricter now the items are harder. */
+const RECK_ASK=6, RECK_ALLOW=2, RECK_MAPS=2;
 /* A question is only fair if you have had the chance to learn its subject.
-   The chapter opens up when five such questions exist - which is also exactly
-   how many the scrivener asks, so the requirement explains itself. */
+   THE GATE COUNTS WHAT YOU LEARNED, NOT HOW MANY QUESTIONS THAT UNLOCKS. It used to
+   open the chapter as soon as five fair questions existed, which was sound when the
+   bank held nine and each insight unlocked one or two. The bank holds thirty-five now
+   and a single insight - "What the Charter Actually Says" - unlocks seven of them, so
+   the old rule would have opened the assessment after one conversation. Five distinct
+   things learned, which is what the sentence always meant. */
 function reckPool(){
   return CH.reck.q.filter(function(q){
     if(!q.need)return true;
@@ -1658,8 +1882,8 @@ function reckPool(){
     return false;
   });
 }
-function reckReady(){return Math.min(5,reckPool().length);}
-function chapterReady(){return reckPool().length>=5;}
+function reckReady(){return Math.min(5,insightCount());}
+function chapterReady(){return insightCount()>=5&&reckPool().length>=RECK_ASK;}
 
 const screens={};["title","intro","scene","wardrobe","codex","ending"].forEach(function(id){screens[id]=$(id);});
 let backTo="title";
@@ -6696,7 +6920,7 @@ function doInteract(){
   else if(a==="survey"){doSurvey(activeSpot.data);}
   else if(a==="reck"){
     if(chapterReady())openReckoning();
-    else toast("The scrivener has only "+reckReady()+" of 5 questions he could fairly put to you. Learn more first.");}
+    else toast("The scrivener can fairly test you on "+reckReady()+" of 5 things so far. Learn more first.");}
 }
 /* ========== PORTRAIT ========== */
 let portR=null,portScene=null,portCam=null;
@@ -6823,7 +7047,7 @@ function openDialogue(npc){
   openModal("mDlg");setPaused(true);
   if(dlg.finished){
     $("dlgMeter").style.width=Math.round(100*reckReady()/5)+"%";
-    $("dlgProgress").textContent="Questions ready: "+reckReady()+" of 5";
+    $("dlgProgress").textContent="Learned: "+reckReady()+" of 5";
     $("dlgRapport").textContent="";
     $("dlgChoices").innerHTML="";
     sayLine("dlgLine",npc.done||"\u201cWe have said all we have to say to one another. Mind what I told you.\u201d",
@@ -6883,7 +7107,7 @@ function meters(){
     $("dlgProgress").textContent="His patience";$("dlgRapport").textContent="";return;
   }
   $("dlgMeter").style.width=Math.round(100*reckReady()/5)+"%";
-  $("dlgProgress").textContent="Questions ready: "+reckReady()+" of 5";
+  $("dlgProgress").textContent="Learned: "+reckReady()+" of 5";
   /* left alone unless a beat has just paid out, in which case pick() has written
      the Ink into it and this must not stamp on the number */
   if(!dlg.paid)
@@ -8312,28 +8536,50 @@ function openReckoning(){
      five-question assessment out of a pool that might hold two. Nothing reaches it
      wrongly today; the second call site added will. */
   if(!chapterReady()){
-    toast("The scrivener has only "+reckReady()+" of 5 questions he could fairly put to you. Learn more first.");
+    toast("The scrivener can fairly test you on "+reckReady()+" of 5 things so far. Learn more first.");
     return;
   }
   const R=CH.reck;
   let fair=shuffle(reckPool().slice());
-  if(fair.length<5){            /* safety net; the gate should prevent this */
+  if(fair.length<RECK_ASK){     /* safety net; the gate should prevent this */
     const rest=CH.reck.q.filter(function(q){return fair.indexOf(q)<0;});
     fair=fair.concat(shuffle(rest));
   }
-  rk={set:fair.slice(0,5),pos:0,correct:0,ans:[]};
+  /* ---- A PAPER ALWAYS HAS MAPS ON IT ----
+     Drawing six at random from thirty-five left 42 of every 100 papers with no map
+     question at all - measured - so a player could finish the chapter without ever
+     being asked to read one. Map work is half of what an eighth-grade social studies
+     assessment tests, so the paper is COMPOSED rather than drawn: two map items and
+     four of the rest.
+     That costs nothing in variation. Six ways to pick two maps of four, times 31,465
+     ways to pick four of the remaining thirty-one, is a hundred and eighty-eight
+     thousand distinct papers - and the ORDER is shuffled after, so two papers with
+     the same six questions still do not look alike. */
+  const allMaps=fair.filter(function(q){return q.map;});
+  const maps=allMaps.slice(0,Math.min(RECK_MAPS,allMaps.length));
+  /* the FILL excludes maps, or a third one slips in from the remainder and the
+     composition stops being the thing this comment says it is - measured, 2 papers in
+     120 came out with three. Prose first, and only fall back to spare maps if there
+     is genuinely not enough prose to finish the paper. */
+  let fill=fair.filter(function(q){return !q.map;});
+  if(maps.length+fill.length<RECK_ASK)
+    fill=fill.concat(allMaps.filter(function(q){return maps.indexOf(q)<0;}));
+  const set=shuffle(maps.concat(fill.slice(0,RECK_ASK-maps.length)));
+  rk={set:set,pos:0,correct:0,ans:[]};
   $("reckKick").textContent=R.kick;$("reckTitle").textContent=R.title;
   $("reckSeal").textContent=R.seal;$("reckFrame").textContent=R.frame;
   $("mReck").classList.add("on");setPaused(true);renderRK();
 }
 function rkCount(){
   const el=$("reckCount");el.innerHTML="";
-  for(let i=0;i<5;i++){const b=document.createElement("i");
+  for(let i=0;i<RECK_ASK;i++){const b=document.createElement("i");
     b.className=i<rk.pos?(rk.ans[i]?"good":"bad"):i===rk.pos?"cur":"";el.appendChild(b);}
 }
 function renderRK(){
   const R=CH.reck,Q=rk.set[rk.pos];
   $("reckStim").textContent=Q.stim;$("reckQ").textContent=(rk.pos+1)+". "+Q.q;
+  const mc=$("reckMap");
+  if(mc)mc.classList.toggle("on",!!(Q.map&&drawQuizMap(Q.map)));
   const opts=Q.o.map(function(t,i){return {t:t,ok:i===Q.a};});
   shuffle(opts);
   const host=$("reckOpts");host.innerHTML="";
@@ -8345,14 +8591,15 @@ function renderRK(){
   });
   rkCount();  const sh=document.querySelector("#mReck .sheet");if(sh)sh.scrollTop=0;
 }
-function rkAns(ok){rk.ans[rk.pos]=ok;if(ok)rk.correct++;else S.corrections++;rk.pos++;if(rk.pos>=5)rkEnd();else renderRK();}
+function rkAns(ok){rk.ans[rk.pos]=ok;if(ok)rk.correct++;else S.corrections++;rk.pos++;
+  if(rk.pos>=RECK_ASK)rkEnd();else renderRK();}
 function rkEnd(){
   $("mReck").classList.remove("on");
-  const R=CH.reck,passed=rk.correct>=4;
+  const R=CH.reck,passed=rk.correct>=(RECK_ASK-RECK_ALLOW);
   $("resSeal").textContent=passed?"\u2713":"\u2715";
   $("resSeal").style.background=passed?"radial-gradient(circle at 35% 30%,#5c9d8e,#2f5b50)":"radial-gradient(circle at 35% 30%,#a34638,#6d271d)";
   $("resKick").textContent=passed?"The Record Stands":"Not Yet";
-  $("resTitle").textContent=(passed?R.pass.title:R.fail.title)+"  ("+rk.correct+"/5)";
+  $("resTitle").textContent=(passed?R.pass.title:R.fail.title)+"  ("+rk.correct+"/"+RECK_ASK+")";
   $("resBody").textContent=passed?R.pass.body:R.fail.body;
   const rw=$("resReward");rw.innerHTML="";
   if(passed){
@@ -13024,6 +13271,157 @@ const CHARTS={
       "Everything west of the two capes on this sheet is a guess, and the men who drew it never came here."}
 };
 /* the lower Chesapeake, in normalised coordinates - east to the right */
+/* ========== MAPS FOR THE ASSESSMENT ==========
+   Eighth-grade STAAR leans hard on stimulus-based items, and a good share of the
+   social studies ones put a map in front of you and ask you to reason off it. This
+   chapter had none: nine questions, all prose.
+
+   Three maps, each drawn for a question that cannot be answered without reading it:
+     "atlantic" - the outbound track, south to the Canaries and across on the trades,
+                  against the straight line nobody sailed. The question is WHY.
+     "capes"    - the bay mouth, the two capes and the river running west. The
+                  question is where you would put a fort and what that costs you.
+     "roanoke"  - the Carolina banks, Roanoke island and Croatoan to the south. The
+                  question is what a word cut in a post actually pointed at.
+   No labels are given away that the question is asking for. */
+function drawQuizMap(kind){
+  const c=$("reckMap");
+  if(!c)return false;
+  const g=c.getContext("2d"), W=c.width, H=c.height;
+  const X=function(u){return u*W;}, Y=function(v){return v*H;};
+  g.clearRect(0,0,W,H);
+  g.fillStyle="#e6dcbe";g.fillRect(0,0,W,H);
+  const ink="#4a3a22", sea="#c3cfc9", land="#cdc49f";
+  g.lineJoin="round";g.lineCap="round";
+  const label=function(t,u,v,size,align){
+    g.fillStyle=ink;g.font="italic "+(size||12)+"px Georgia,serif";
+    g.textAlign=align||"left";g.fillText(t,X(u),Y(v));
+  };
+  const dot=function(u,v,r){g.fillStyle=ink;g.beginPath();
+    g.arc(X(u),Y(v),r||3.2,0,Math.PI*2);g.fill();};
+  if(kind==="atlantic"){
+    /* ocean */
+    g.fillStyle=sea;g.fillRect(0,0,W,H);
+    /* Europe and Africa on the right, the Americas on the left */
+    g.fillStyle=land;
+    g.beginPath();g.moveTo(X(0.86),Y(0));g.lineTo(X(1),Y(0));g.lineTo(X(1),Y(1));
+    g.lineTo(X(0.80),Y(1));g.quadraticCurveTo(X(0.84),Y(0.52),X(0.86),Y(0));g.fill();
+    g.beginPath();g.moveTo(X(0),Y(0));g.lineTo(X(0.20),Y(0));
+    g.quadraticCurveTo(X(0.26),Y(0.30),X(0.16),Y(0.46));
+    g.quadraticCurveTo(X(0.24),Y(0.66),X(0.12),Y(1));g.lineTo(X(0),Y(1));g.fill();
+    g.strokeStyle=ink;g.lineWidth=1.3;
+    g.beginPath();g.moveTo(X(0.86),Y(0));g.quadraticCurveTo(X(0.84),Y(0.52),X(0.80),Y(1));g.stroke();
+    g.beginPath();g.moveTo(X(0.20),Y(0));g.quadraticCurveTo(X(0.26),Y(0.30),X(0.16),Y(0.46));
+    g.quadraticCurveTo(X(0.24),Y(0.66),X(0.12),Y(1));g.stroke();
+    /* the straight line nobody sailed */
+    g.strokeStyle="#8a7a58";g.lineWidth=1.6;g.setLineDash([6,5]);
+    g.beginPath();g.moveTo(X(0.83),Y(0.20));g.lineTo(X(0.20),Y(0.26));g.stroke();
+    g.setLineDash([]);
+    label("the direct course",0.50,0.16,12,"center");
+    /* the track actually sailed: south, then west, then north */
+    g.strokeStyle="#8f2f28";g.lineWidth=2.6;
+    g.beginPath();
+    g.moveTo(X(0.83),Y(0.20));
+    g.quadraticCurveTo(X(0.80),Y(0.44),X(0.72),Y(0.58));   /* down to the Canaries */
+    g.quadraticCurveTo(X(0.50),Y(0.72),X(0.30),Y(0.70));   /* across on the trades */
+    g.quadraticCurveTo(X(0.20),Y(0.60),X(0.22),Y(0.40));   /* north along the coast */
+    g.stroke();
+    /* arrow heads on the track */
+    const arrow=function(u,v,a){
+      g.save();g.translate(X(u),Y(v));g.rotate(a);g.fillStyle="#8f2f28";
+      g.beginPath();g.moveTo(7,0);g.lineTo(-4,4);g.lineTo(-4,-4);g.closePath();g.fill();g.restore();};
+    arrow(0.775,0.50,1.7);arrow(0.50,0.715,3.14);arrow(0.215,0.50,-1.6);
+    dot(0.83,0.20,3.6); label("England",0.845,0.175,12);
+    dot(0.72,0.585,3.2); label("the Canaries",0.705,0.635,11,"right");
+    dot(0.30,0.70,3.2);  label("the Indies",0.31,0.755,11);
+    dot(0.22,0.375,3.6); label("Virginia",0.245,0.355,12);
+    label("prevailing winds \u2192",0.40,0.88,11,"center");
+    g.strokeStyle="#6a5836";g.lineWidth=1.2;g.setLineDash([3,4]);
+    g.beginPath();g.moveTo(X(0.62),Y(0.83));g.lineTo(X(0.30),Y(0.83));g.stroke();
+    g.beginPath();g.moveTo(X(0.28),Y(0.30));g.lineTo(X(0.60),Y(0.30));g.stroke();
+    g.setLineDash([]);
+    label("\u2190 prevailing winds",0.62,0.27,11,"left");
+  } else if(kind==="capes"){
+    g.fillStyle=land;g.fillRect(0,0,W,H);
+    /* the Atlantic to the east */
+    g.fillStyle=sea;
+    g.beginPath();g.moveTo(X(0.80),Y(0));g.lineTo(X(1),Y(0));g.lineTo(X(1),Y(1));
+    g.lineTo(X(0.76),Y(1));g.quadraticCurveTo(X(0.82),Y(0.5),X(0.80),Y(0));g.fill();
+    /* the bay, opening between two capes */
+    g.beginPath();
+    g.moveTo(X(0.78),Y(0.26));
+    g.quadraticCurveTo(X(0.50),Y(0.22),X(0.36),Y(0.34));
+    g.quadraticCurveTo(X(0.26),Y(0.46),X(0.32),Y(0.62));
+    g.quadraticCurveTo(X(0.46),Y(0.70),X(0.58),Y(0.62));
+    g.quadraticCurveTo(X(0.70),Y(0.60),X(0.775),Y(0.58));
+    g.quadraticCurveTo(X(0.81),Y(0.42),X(0.78),Y(0.26));g.fill();
+    /* the river, running west, with a narrows and an island */
+    g.strokeStyle=sea;g.lineWidth=Math.max(7,W*0.016);
+    g.beginPath();
+    g.moveTo(X(0.575),Y(0.625));
+    g.quadraticCurveTo(X(0.44),Y(0.665),X(0.30),Y(0.655));
+    g.quadraticCurveTo(X(0.19),Y(0.648),X(0.10),Y(0.675));
+    g.stroke();
+    g.strokeStyle=ink;g.lineWidth=1.3;
+    g.beginPath();g.moveTo(X(0.78),Y(0.26));
+    g.quadraticCurveTo(X(0.50),Y(0.22),X(0.36),Y(0.34));
+    g.quadraticCurveTo(X(0.26),Y(0.46),X(0.32),Y(0.62));
+    g.quadraticCurveTo(X(0.46),Y(0.70),X(0.58),Y(0.62));
+    g.quadraticCurveTo(X(0.70),Y(0.60),X(0.775),Y(0.58));g.stroke();
+    /* three lettered sites for the question to refer to */
+    const site=function(u,v,t){
+      g.fillStyle="#8f2f28";g.beginPath();g.arc(X(u),Y(v),7,0,Math.PI*2);g.fill();
+      g.fillStyle="#f4ecd6";g.font="bold 11px Georgia,serif";g.textAlign="center";
+      g.fillText(t,X(u),Y(v)+4);};
+    site(0.735,0.30,"X");                 /* on the open cape, by the sea */
+    site(0.375,0.645,"Y");                /* well up the river, low ground */
+    site(0.145,0.672,"Z");                /* far inland, at the head of navigation */
+    label("Atlantic",0.90,0.12,12,"center");
+    label("the bay",0.52,0.44,12,"center");
+    label("the river",0.24,0.60,11,"center");
+    label("N",0.055,0.10,13);
+    g.strokeStyle=ink;g.lineWidth=1.4;
+    g.beginPath();g.moveTo(X(0.062),Y(0.20));g.lineTo(X(0.062),Y(0.115));g.stroke();
+    g.beginPath();g.moveTo(X(0.045),Y(0.145));g.lineTo(X(0.062),Y(0.112));
+    g.lineTo(X(0.079),Y(0.145));g.stroke();
+  } else if(kind==="roanoke"){
+    g.fillStyle=sea;g.fillRect(0,0,W,H);
+    /* mainland to the west */
+    g.fillStyle=land;
+    g.beginPath();g.moveTo(X(0),Y(0));g.lineTo(X(0.30),Y(0));
+    g.quadraticCurveTo(X(0.36),Y(0.34),X(0.30),Y(0.56));
+    g.quadraticCurveTo(X(0.36),Y(0.80),X(0.28),Y(1));g.lineTo(X(0),Y(1));g.fill();
+    /* the barrier banks, a thin arc off the coast */
+    g.strokeStyle=land;g.lineWidth=Math.max(6,W*0.013);
+    g.beginPath();g.moveTo(X(0.62),Y(0.02));
+    g.quadraticCurveTo(X(0.70),Y(0.34),X(0.60),Y(0.60));
+    g.quadraticCurveTo(X(0.52),Y(0.82),X(0.40),Y(0.98));g.stroke();
+    g.strokeStyle=ink;g.lineWidth=1.1;
+    g.beginPath();g.moveTo(X(0),Y(0));g.lineTo(X(0.30),Y(0));
+    g.quadraticCurveTo(X(0.36),Y(0.34),X(0.30),Y(0.56));
+    g.quadraticCurveTo(X(0.36),Y(0.80),X(0.28),Y(1));g.stroke();
+    /* two islands inside the banks */
+    const isle=function(u,v,rx,ry,nm,nu,nv){
+      g.fillStyle=land;g.beginPath();g.ellipse(X(u),Y(v),X(rx),Y(ry),0.3,0,Math.PI*2);g.fill();
+      g.strokeStyle=ink;g.lineWidth=1.1;g.stroke();
+      if(nm)label(nm,nu,nv,12);
+    };
+    isle(0.50,0.26,0.045,0.075,"Roanoke I.",0.395,0.175);
+    isle(0.44,0.78,0.038,0.058,"Croatoan I.",0.30,0.885);
+    dot(0.50,0.26,3.0);dot(0.44,0.78,3.0);
+    label("the sound",0.40,0.50,11,"center");
+    label("Atlantic",0.86,0.62,12,"center");
+    g.strokeStyle=ink;g.lineWidth=1.2;g.setLineDash([4,4]);
+    g.beginPath();g.moveTo(X(0.50),Y(0.32));g.lineTo(X(0.44),Y(0.72));g.stroke();
+    g.setLineDash([]);
+    label("about 50 miles",0.505,0.53,11,"left");
+    label("N",0.90,0.12,13);
+    g.beginPath();g.moveTo(X(0.905),Y(0.22));g.lineTo(X(0.905),Y(0.135));g.stroke();
+    g.beginPath();g.moveTo(X(0.888),Y(0.165));g.lineTo(X(0.905),Y(0.132));
+    g.lineTo(X(0.922),Y(0.165));g.stroke();
+  } else return false;
+  return true;
+}
 function drawChart(spec){
   const c=$("mapCanvas");
   if(!c)return;
@@ -14107,6 +14505,11 @@ const PATCH_NOTES=[
   {when:"4 August 2026 · latest",
    head:"The opening, rebuilt",
    lines:[
+     "<b>The end-of-chapter assessment, rebuilt to match</b>",
+     "The bank held nine questions and five were asked, so nearly every question turned up in every other run and a class comparing notes would have had the whole thing inside a lesson. There are <b>thirty-five</b> now and it asks six, which is over a million and a half different papers — and the order and the answer positions are shuffled on top of that. Two hundred papers drawn in testing produced two hundred different ones.",
+     "FOUR OF THEM PUT A MAP IN FRONT OF YOU, and every paper carries exactly two, because map work is half of what an eighth-grade social studies assessment tests and the old quiz had none at all. The maps are drawn, not pictures: the Atlantic with the outbound track and the winds, so the question is why they sailed south before sailing west; the bay with three possible fort sites, so the question is what siting a fort up a river buys you and what it costs; and the Carolina banks with Roanoke and Croatoan fifty miles apart, so the question is what a word cut into a post actually pointed at.",
+     "The questions are written to the STAAR pattern rather than to recall — a stimulus, then a step of reasoning off it — and the wrong answers are wrong for a reason: the common mistake, the true-but-irrelevant fact, and the right answer to a question nobody asked. The old bank often had one sensible option and three silly ones, which tests reading, not history. It now asks six and bears two wrong, which is about where a STAAR passing standard sits; it used to demand four of five.",
+     "And the scrivener now waits until you have learned five things, not until five questions happen to be askable. With thirty-five questions a single insight makes seven of them fair, so the old rule would have opened the assessment after one conversation.",
      "<b>The conversations ask more of you now</b>",
      "Counted, every conversation in Chapter I was the same shape: three replies, one right and two wrong, and a wrong one was crossed out so you could try the next. Which means guessing always worked and cost nothing — there was no reason to read the question. Four changes, and none of the writing was thrown away, because the wrong answers are deliberate misconceptions and the replies that correct them are the actual teaching.",
      "THE REWARD DECAYS. Full Ink if you get it first time, a little over half on the second try, a quarter after that. You always still learn the thing — nobody can be locked out of the Notes or out of the five questions the scrivener needs — but guessing costs, and it says so before you guess.",
@@ -14487,7 +14890,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-1113-e1eb0f1";
+const BUILD="20260804-1208-1d826c3";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
