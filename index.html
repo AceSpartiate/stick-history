@@ -3400,13 +3400,70 @@ function longWall(root,x,z0,z1,gaps,y,h,col,lvl){
     wallSeg(root,x,(sg[0]+sg[1])/2,0.5*K,d,y,h,col,lvl);
   }
 }
-function bulkhead(root,z,halfW,y,h,col,lvl,doorHalf){
+function bulkhead(root,z,halfW,y,h,col,lvl,doorHalf,fight){
   const seg=(halfW-doorHalf)/2;
   if(seg>0.2){
     wallSeg(root,-(doorHalf+seg),z,seg*2,0.6*K,y,h,col,lvl);
     wallSeg(root, (doorHalf+seg),z,seg*2,0.6*K,y,h,col,lvl);
   }
   const lintel=box(halfW*2,0.8*K,0.6*K,col);lintel.position.set(0,y+h-0.4*K,z);root.add(lintel);
+  if(fight)closeFight(root,z,halfW,doorHalf,y,col);
+}
+/* ---- THIS WALL IS A FORTIFICATION, AND I HAD IT AS A PARTITION ----
+   The bulkhead shutting off the forecastle has a name in 1607 and it is not
+   "bulkhead". Mainwaring, Seaman's Dictionary (c.1623): a cubbridge-head "is the
+   same that is a bulkhead, only that we use this word to the bulkhead of the
+   forecastle and the half deck, which we call the cubbridge head afore or the
+   cubbridge head abaft."
+
+   And it was built to be fought from. John Smith - who sailed on this voyage -
+   in A Sea Grammar (1627) has murtherers placed IN the cubbridge-heads "to clear
+   the Decks fore and aft", a murderer being a small swivel piece dropped by its
+   pintle into a socket. Mainwaring: in merchantmen murderers "are most used at the
+   bulkheads of the forecastle, half-deck or steerage." Boteler wants such
+   bulkheads "full musket-proof... having likewise loopholes for their muskets, so
+   secured that their musketeers may be safely shadowed, and yet command every inch
+   of the ship abroad" - and calls them the close fights.
+
+   Which is the answer to a question I had asked the wrong way round. I had been
+   treating the narrow door as a problem to be widened. It is narrow ON PURPOSE:
+   this wall is the thing you retreat behind when boarders are in the waist, and a
+   wide opening in it would defeat the whole work. So the door stays the size it
+   is, and the wall gets what makes sense of it - loopholes at chest height, and a
+   swivel gun in its socket trained aft down the waist the player walks up. */
+function closeFight(root,z,halfW,doorHalf,y,col){
+  const G=new Geo();
+  const dark=RGB(0x140f08), iron=RGB(0x3b3a3f), wood=RGB(shadeHex(col,0.82));
+  /* loopholes: a musket slit is a few inches, so at this scale it is the DARKNESS
+     that reads, not the hole. Drawn proud of the planking as recessed shadow. */
+  for(let sg=-1;sg<=1;sg+=2){
+    for(let i=0;i<2;i++){
+      const lx=sg*(doorHalf+0.55*K+i*1.5*K);
+      if(Math.abs(lx)>halfW-0.4*K)continue;
+      G.box(lx,y+3.5*K,z+0.32*K,0.34*K,0.9*K,0.06*K,dark);
+      G.box(lx,y+3.5*K,z-0.32*K,0.34*K,0.9*K,0.06*K,dark);
+    }
+  }
+  /* the murderer: a socket set IN the wall at chest-over-head height, a pintle
+     dropped in it, and a short swivel piece trained AFT down the waist - which is
+     what it is for. Measured on the built mesh: the barrel reaches 3.58 ft aft of
+     the bulkhead, and the whole work sits between 3.05 and 5.9 ft above the deck,
+     inside a bulkhead 7 ft high. Smith has them "placed in the Cubbridge-heads",
+     not standing on top of them. */
+  const mx=-(doorHalf+0.9*K);
+  if(Math.abs(mx)<halfW-0.6*K){
+    G.box(mx,y+4.6*K,z,0.7*K,0.5*K,0.7*K,wood);                    /* the socket */
+    G.box(mx,y+5.1*K,z,0.22*K,0.6*K,0.22*K,iron);                  /* the pintle */
+    /* barrel, aft and a little raised */
+    const bl=2.6*K;
+    for(let i=0;i<6;i++){
+      const t=i/6, r=(0.20-0.055*t)*K;
+      G.box(mx,y+5.5*K+t*0.30*K,z+0.5*K+t*bl,r*2,r*2,bl/6+0.02*K,iron);
+    }
+    G.box(mx,y+5.42*K,z+0.3*K,0.34*K,0.34*K,0.5*K,iron);           /* the breech */
+    G.box(mx,y+5.30*K,z+3.5*K,0.16*K,0.9*K,0.16*K,RGB(0x4a3a22));  /* the tiller */
+  }
+  root.add(G.mesh(true,false));
 }
 /* Each real point light multiplies the shading cost of every lit surface, so
    the lanterns are emissive boxes and only a few of them actually cast. */
@@ -4374,7 +4431,7 @@ function buildCabins(root){
      3.5 ft apart and the mast is something you walk round instead of something you
      scrape past. The forecastle deck above still begins at -26, so it simply
      overhangs the bulkhead by a foot and a half, which is what a forecastle does. */
-  bulkhead(root,-27.5*K,halfBeam(-27.5*K,y)-1.6*K,y,hFwd,W,LVL.MAIN,3.2*K);
+  bulkhead(root,-27.5*K,halfBeam(-27.5*K,y)-1.6*K,y,hFwd,W,LVL.MAIN,3.2*K,true);
   const GZ=-31*K;
   /* 3.3K inboard of the hull left the hearth and the mess table 2.9 ft apart on the
      centreline - and once the body radius is taken off both sides that is 1.4 ft of
@@ -4574,16 +4631,27 @@ function buildCabins(root){
   lamp(root,0,y+6.6*K,-31*K,18);
 }
 
-/* ---- companionway ladders: the only way between decks ---- */
+/* ---- ladders: the only way between decks ----
+   "COMPANIONWAY" IS A 1742 WORD and this is 1607. It comes into English from the
+   obsolete Dutch kompanje, the deck over the officers' cabins, and its first
+   attestation is a hundred and thirty-five years after this morning. Two of these
+   were labelled with it, in a game whose whole point is the period.
+
+   What a man in 1607 called them: "the ladder". Mainwaring's Seaman's Dictionary
+   (c.1623) lists only three ladders worth naming - the entering ladder in the
+   waist, a rope ladder out of the gallery, and one at the beakhead over the
+   bowsprit - and every one of those is for getting ABOARD or out onto the
+   bowsprit. The ones inside the ship were too ordinary to name. "Scuttle" and
+   "hatch" ARE period and both are kept. */
 const LADDERS=[
   {label:"Main Hatch",a:{lvl:LVL.MAIN,x:0,z:3*K},b:{lvl:LVL.TWEEN,x:0,z:3*K}},
   {label:"Fore Scuttle",a:{lvl:LVL.TWEEN,x:0,z:-13*K},b:{lvl:LVL.HOLD,x:0,z:-13*K}},
-  {label:"Aft Companionway",a:{lvl:LVL.MAIN,x:6*K,z:14*K},b:{lvl:LVL.CASTLE,x:6*K,z:19*K}},
+  {label:"Ladder to the Half Deck",a:{lvl:LVL.MAIN,x:6*K,z:14*K},b:{lvl:LVL.CASTLE,x:6*K,z:19*K}},
   /* Moved in from x -5K. The bow narrows fast: at -5K the hull limit falls below
      the player's own x by z -31K, so the ladder top sat in a pocket about three
      units deep with the hull ahead and the waist block behind. At -3K there is
      clear deck forward to the beakhead. */
-  {label:"Fore Companionway",a:{lvl:LVL.MAIN,x:-3*K,z:-24*K},b:{lvl:LVL.CASTLE,x:-3*K,z:-29*K}},
+  {label:"Ladder to the Forecastle",a:{lvl:LVL.MAIN,x:-3*K,z:-24*K},b:{lvl:LVL.CASTLE,x:-3*K,z:-29*K}},
   /* buildLadders draws the mesh at the A end only, so B has to be close enough
      that you step off ONTO the ladder head rather than three units from it - and
      off the centreline, which the whipstaff and binnacle occupy. */
@@ -12940,6 +13008,15 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"3 August 1607 · latest",
+   head:"That wall is a fort, and two ladders had the wrong name by 135 years",
+   lines:[
+     "The wall shutting off the forecastle has a name in 1607, and it is not “bulkhead”. Mainwaring's Seaman's Dictionary of about 1623: a cubbridge-head “is the same that is a bulkhead, only that we use this word to the bulkhead of the forecastle and the half deck, which we call the cubbridge head afore or the cubbridge head abaft.”",
+     "And it was built to be fought from, which I had missed entirely. John Smith — who was on this voyage — wrote in 1627 that murtherers were set in the cubbridge-heads “to clear the Decks fore and aft”; a murderer is a small swivel gun dropped by its pin into a socket. Boteler wanted such walls musket-proof with loopholes, “so secured that their musketeers may be safely shadowed”, and called them the close fights. It is what you get behind when boarders are in the waist.",
+     "So the wall now has loopholes at chest height and a swivel gun in its socket, trained aft down the deck you walk up. It also answers a question I had been asking backwards: I had treated the narrow door as a problem to widen. The door is narrow on purpose.",
+     "“Companionway” is a 1742 word. Two ladders were labelled with it, in a game about 1607 — it comes into English from Dutch, and its first recorded use is 135 years after this morning. They are “Ladder to the Forecastle” and “Ladder to the Half Deck” now. “Scuttle” and “hatch” are both genuinely period and are kept.",
+     "One thing checked and left alone: the galley belongs in the forecastle on a MERCHANT ship, which is where it already was. Mainwaring says so and gives the reason — a merchantman needs its whole hold for cargo, so the fire goes forward and up. On a king's ship it would be down in the hold, and putting it there would have been the wrong kind of accurate."
+   ]},
+  {when:"3 August 1607",
    head:"The cook was standing in the only way through to himself",
    lines:[
      "The forward third of the main deck — the galley, the hearth, the mess table, the seamen's cabbins — was walled off. You could see it and you could talk to the Cook across the wall, but you could not go in.",
@@ -13289,7 +13366,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260803-2213-6d062ca";
+const BUILD="20260804-0227-da2d1f5";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
