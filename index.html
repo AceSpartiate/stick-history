@@ -1977,7 +1977,11 @@ const FACEDEF={
   stern:     {eyes:"open",   mouth:"frown", brow:"angry", prop:"steam"},
   eager:     {eyes:"wide",   mouth:"grin"},
   hearty:    {eyes:"happy",  mouth:"tongue"},
-  sly:       {eyes:"wink",   mouth:"smirk", brow:"raised"}
+  sly:       {eyes:"wink",   mouth:"smirk", brow:"raised"},
+  /* THE ONLY FACE IN HERE THAT IS NOT A CHARACTER NOTE. Nineteen faces and not one of
+     them was afraid, because until now nothing in the game needed a man to be. It is
+     used for one shot, held close, and it is the whole of what the scene shows. */
+  afraid:    {eyes:"wide",   mouth:"open",  brow:"raised"}
 };
 /* wardrobe entries the player can earn */
 const FACES={
@@ -6764,7 +6768,7 @@ function animate(){
     GUN_HID_BY_CS=false;
     if(gunPiece)gunPiece.visible=true;
   }
-  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateCutscene(dt);renderer.render(scene,cam);return;}
+  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateCutscene(dt);renderer.render(scene,cam);return;}
   if(CAMLOCK.on){
     updateFx(dt);updateFlog(dt);
     cam.position.lerp(CAMLOCK.pos,Math.min(1,dt*3.5));
@@ -8870,6 +8874,60 @@ function endFlogging(){
   CAMLOCK.on=false;FLOG=null;
   stopSfx();
 }
+
+/* ---- A ROPE OVER A LIMB ----
+   Built only when it is needed and taken away after, because it exists for four shots.
+   Three parts and no more: the fall from the limb, the standing part hitched off to one
+   side so the limb reads as bearing weight rather than as a stick with string on it, and
+   the noose - a ring of eight short segments, which at this distance is a loop.
+   NOTHING BELOW THE NOOSE IS EVER FRAMED. See the shots. */
+let HANG_ROPE=null, HANG_ON=false, HANG_T=0, HANG_FACE=null;
+/* The kick, and the going quiet. Driven from the frame loop rather than a stack of
+   setTimeouts, so that skipping or ending the scene stops it dead instead of leaving
+   timers to fire into a world that has moved on. Two seconds of real struggle, then it
+   decays away over three - the amplitude does the acting, and the feet are the only
+   part of him in frame. */
+function updateHang(dt){
+  if(!HANG_ON||!player||!player.userData||!player.userData.parts)return;
+  HANG_T+=dt;
+  const p=player.userData.parts;
+  const fade=Math.max(0,1-Math.max(0,HANG_T-2.0)/3.0);
+  const amp=0.62*fade*fade;
+  const w=HANG_T*11.0;
+  if(p.hipL)p.hipL.rotation.x= Math.sin(w)*amp;
+  if(p.hipR)p.hipR.rotation.x=-Math.sin(w)*amp;
+  if(p.kneeL)p.kneeL.rotation.x=-Math.abs(Math.sin(w*1.3))*amp*1.1;
+  if(p.kneeR)p.kneeR.rotation.x=-Math.abs(Math.cos(w*1.3))*amp*1.1;
+  /* and he turns on the rope, which does not stop when the kicking does */
+  player.rotation.y=0.4+Math.sin(HANG_T*0.7)*0.30;
+  player.rotation.z=Math.sin(w*0.5)*amp*0.10;
+}
+function buildHangRope(tx,ty,tz,limbY,neckY){
+  const g=new Geo(), c=RGB(0x9c8b63), cd=RGB(0x6f6244);
+  const R=0.07;
+  /* the fall: limb down to the neck */
+  g.box(tx,(limbY+neckY)/2,tz,R*2,limbY-neckY,R*2,c);
+  /* the standing part, hitched away to a second limb - a rope has two ends */
+  const hx=tx+2.6, hy=limbY-0.5;
+  for(let i=0;i<6;i++){
+    const t0=i/6, t1=(i+1)/6;
+    const x0=tx+(hx-tx)*t0, x1=tx+(hx-tx)*t1;
+    const y0=limbY-Math.sin(t0*1.1)*0.9, y1=limbY-Math.sin(t1*1.1)*0.9;
+    g.box((x0+x1)/2,(y0+y1)/2,tz,Math.abs(x1-x0)+R*2,Math.abs(y1-y0)+R*2,R*2,cd);
+  }
+  /* the noose */
+  const nr=0.42;
+  for(let i=0;i<8;i++){
+    const a0=(i/8)*Math.PI*2, a1=((i+1)/8)*Math.PI*2;
+    const x0=tx+Math.cos(a0)*nr, z0=tz+Math.sin(a0)*nr;
+    const x1=tx+Math.cos(a1)*nr, z1=tz+Math.sin(a1)*nr;
+    g.box((x0+x1)/2,neckY,(z0+z1)/2,Math.abs(x1-x0)+R*1.6,R*2,Math.abs(z1-z0)+R*1.6,c);
+  }
+  const m=g.mesh(true,false);
+  scene.add(m);HANG_ROPE=m;
+  return m;
+}
+function clearHangRope(){if(HANG_ROPE){scene.remove(HANG_ROPE);HANG_ROPE=null;}}
 
 /* ========== LASHES ========== */
 let lash=null;
@@ -11168,14 +11226,49 @@ function shotAMan(who,off,radius){
       steps.push({shot:{of:["player"],dist:16*K,height:9*K,lookH:6*K},t:2.8,
         sfx:"boom",gain:0.5,shake:0.06,fade:"out",narrate:"They do it quickly."});
     } else {
-      steps.push({shot:{of:["player"],dist:10*K,height:7*K,lookH:5.5*K},t:5.0,
+      /* ---- A HANGING THAT IS ACTUALLY A HANGING ----
+         This was two shots and the words "They do it quickly." Nothing was built, the
+         figure stood on the ground, and it did not read as an execution at all.
+         WHAT IS SHOWN, and in this order: the rope. Then the face, framed so close that
+         the rope is out of shot - and afraid, which is a face this game did not own until
+         now. Then the feet, off the ground, kicking. Then the kicking stops.
+         WHAT IS NEVER SHOWN: the neck, and the whole body at the moment of the drop. The
+         camera is at ankle height for the third shot and at eye height for the second,
+         and there is no shot between them. It is the oldest way of doing this and it
+         works because the audience finishes it themselves. Nothing gruesome is drawn,
+         and nothing needs to be. */
+      const limbY=ty+11.0, neckY=ty+6.6;
+      steps.push({shot:{of:["player"],dist:5.0*K,height:ty+9.4-((player&&player.position.y)||ty),lookH:9.0*K,tight:true},t:4.6,
         sfx:"creak",gain:0.4,
         do:function(){
           if(player){player.position.set(tx,ty,tz);player.rotation.y=0.4;}
+          buildHangRope(tx,ty,tz,limbY,neckY);
         },
-        narrate:"A rope is thrown over a limb. The sentence is read from the Company\u2019s instructions, and it is short \u2014 because you came aboard in a labourer\u2019s slops, and a labouring man is hanged."});
-      steps.push({shot:{of:["player"],dist:16*K,height:9*K,lookH:6*K},t:2.8,
-        fade:"out",narrate:"They do it quickly."});
+        narrate:"A rope goes over a limb. The sentence is read from the Company\u2019s instructions, and it is short \u2014 you came aboard in a labourer\u2019s slops, and a labouring man is hanged."});
+      /* THE FACE. Held close enough that the rope is outside the frame. */
+      /* FRAMED SO THE ROPE IS OUT OF SHOT, and the number is derived, not chosen: at
+         dist 1.7*K = 2.30 ft with a 56 degree vertical field, the half-height in frame is
+         2.30*tan(28) = 1.22 ft. Looking at 5.2 the frame runs 3.98 to 6.42 and the noose
+         at 6.6 is above it. My first pass looked at 6.8 and put the noose dead centre. */
+      steps.push({shot:{of:["player"],dist:1.7*K,height:4.0*K,lookH:3.85*K,tight:true},t:4.4,
+        do:function(){
+          HANG_FACE=S.equip.face;S.equip.face="afraid";
+          if(typeof refreshPlayer==="function")refreshPlayer();
+          if(player){player.position.set(tx,ty,tz);player.rotation.y=0.4;}
+        },
+        narrate:"They ask if you have anything to say. You find that you have not."});
+      /* THE FEET. Camera at ankle height, so the frame stops at the shins. */
+      steps.push({shot:{of:["player"],dist:3.4*K,height:1.15*K,lookH:1.0*K,tight:true},t:5.6,
+        sfx:"creak",gain:0.5,
+        do:function(){
+          if(player)player.position.set(tx,ty+2.05,tz);
+          HANG_T=0;HANG_ON=true;
+        },
+        narrate:"\u2014"});
+      steps.push({shot:{of:["player"],dist:4.2*K,height:1.15*K,lookH:1.0*K,tight:true},t:4.8,
+        fade:"out",
+        do:function(){HANG_ON=false;},
+        narrate:"And then the wood is quiet again, and the drill goes on without you."});
     }
   } else {
     steps.push({shot:{of:["player"],dist:12*K,height:7.4*K,lookH:5*K},t:5.2,
@@ -11206,7 +11299,26 @@ function shotAMan(who,off,radius){
       narrate:"It is done. You are cut down, and the drill goes on without you."});
   }
   setPaused(true);
+  /* ---- EVERYTHING THE HANGING BORROWED MUST GO BACK ----
+     The scene swaps the player's FACE to build its one close shot, and S.equip is the
+     saved wardrobe - so without this the player wears a frightened face for the rest of
+     the game, and a rope hangs in the wood for ever. Restored on the way out, and also
+     on the skip path, which is the one that gets forgotten. */
+  const hangTidy=function(){
+    HANG_ON=false;
+    clearHangRope();
+    if(HANG_FACE!==null){
+      S.equip.face=HANG_FACE;HANG_FACE=null;
+      if(typeof refreshPlayer==="function")refreshPlayer();
+    }
+    if(player){player.rotation.z=0;
+      const pp=player.userData&&player.userData.parts;
+      if(pp){["hipL","hipR","kneeL","kneeR"].forEach(function(k){
+        if(pp[k])pp[k].rotation.x=0;});}
+    }
+  };
   playCutscene({steps:steps,skippable:false},function(){
+    hangTidy();
     $("cineFade").style.transition="opacity .8s linear";
     $("cineFade").style.opacity="0";
     if(player)player.rotation.z=0;
@@ -15388,7 +15500,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-2347";
+const BUILD="20260804-2359";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
