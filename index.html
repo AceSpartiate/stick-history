@@ -13316,18 +13316,65 @@ const CROWD_ROLE={shallop:"carpenter, at the shallop",cross:"at the cross",
   guard:"on guard",idle:"gentleman",stores:"labourer",surgeon:"surgeon to the voyage",
   drum:"drum",boys:"ship's boy",smith:"blacksmith"};
 /* a portrait needs equipment, so derive it from his station */
+/* ---- EVERY MAN ASHORE HAD A BLANK HEAD ----
+   Reported as some of the Chapter II people not looking right, and this is why: all four
+   of these returned face:"none", and faceKey() reads
+
+       if(!eq||!eq.face||eq.face==="none")return null;
+
+   so no face geometry was built at all. No eyes, no brow, no mouth. The shore party was
+   the ONLY population in the game like it - every named person in Chapter I carries a
+   characterising face, and so does the anonymous consort crew in crewFigure(), which is
+   the precedent this should have followed from the start:
+
+       const faces=["plain","eager","hearty","shrewd","sly"];   // crewFigure
+
+   PROPS ARE DELIBERATELY EXCLUDED. Five of the nineteen faces carry a cartoon prop -
+   pious a halo, sleepy a "zzz", cool smoked glasses, stern a jet of steam, bookish
+   spectacles - and starstruck has literal stars for eyes. Those are character beats
+   written for one named man each, and scattering them over a working party would read
+   as a joke rather than as a crew. queasy is excluded too: it TINTS the face green,
+   which belongs to the one seasick gentleman at the rail and nowhere else. What is left
+   is the plain human range, and each role draws from the part of it that suits it.
+
+   Cycled on i, so a man never stands next to his own twin. The dye blocks stay: dye is
+   a per-part override of palette (see the accessor above) and it is what gives the
+   soldiers their slate and the gentlemen their company colours - a superset of what
+   Chapter I asks for, not a departure from it. */
+/* SET LENGTHS ARE THE DOSAGE, and the first draft got it wrong. A four-long gent set
+   put starstruck - which draws literal STARS for eyes - on one gentleman in four, and a
+   quarter of the shore party with star eyes is the same fault that was reported, not a
+   fix for it. The two faces with any comedy in them, starstruck and hearty (which puts
+   the tongue out), appear once in eight now. Everything else is the plain human range,
+   so the party reads as a crew with one man in it still expecting to find gold. */
+const CROWD_FACES={
+  /* adventurers: shrewd and watchful, and one in eight still believes the pamphlets */
+  gent:   ["shrewd","keen","mild","plain","shrewd","starstruck","keen","mild"],
+  /* soldiers: keen and weathered, nothing comic at all */
+  soldier:["keen","shrewd","weary","plain"],
+  /* ship's boys: young and willing */
+  boy:    ["eager","kind","plain","eager"],
+  /* sailors and labourers, the bulk of the party */
+  hand:   ["plain","weary","keen","sly","kind","plain","hearty","weary"]
+};
+function crowdFace(kind,i){
+  const set=CROWD_FACES[kind]||CROWD_FACES.hand;
+  return set[Math.abs(i)%set.length];
+}
 function crowdEq(kind,i){
   if(kind==="gent")return {skin:"english",palette:"company",cloak:(i%2?"cloak_weathered":"none_cloak"),
     torso:"torso_merchant",accessory:"none_acc",head:(i%2?"head_feather":"head_capotain"),
-    build:"build_normal",face:"none",dye:{torso:(i%2?"company":"slate"),breech:"slate",stock:"ink",cloak:"lostcolony",head:"ink"}};
+    build:"build_normal",face:crowdFace("gent",i),dye:{torso:(i%2?"company":"slate"),breech:"slate",stock:"ink",cloak:"lostcolony",head:"ink"}};
   if(kind==="soldier")return {skin:"english",palette:"slate",cloak:"none_cloak",
-    torso:"torso_buffcoat",accessory:"none_acc",head:"head_cap",build:"build_normal",face:"none",
+    torso:"torso_buffcoat",accessory:"none_acc",head:"head_cap",build:"build_normal",
+    face:crowdFace("soldier",i),
     dye:{torso:"slate",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"}};
   if(kind==="boy")return {skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
-    accessory:"none_acc",head:"none_head",build:"build_normal",face:"none",
+    accessory:"none_acc",head:"none_head",build:"build_normal",face:crowdFace("boy",i),
     dye:{torso:"ink",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"}};
   return {skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
-    accessory:"none_acc",head:(i%2?"head_cap":"none_head"),build:"build_normal",face:"none",
+    accessory:"none_acc",head:(i%2?"head_cap":"none_head"),build:"build_normal",
+    face:crowdFace("hand",i),
     dye:{torso:"ink",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"}};
 }
 const TASK_POSE={shallop:"stoop",cross:"stoop",stores:"stoop",smith:"stoop",
@@ -15321,7 +15368,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-2320";
+const BUILD="20260804-2338";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
