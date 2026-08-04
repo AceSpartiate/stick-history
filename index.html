@@ -4125,19 +4125,67 @@ function closeFight(root,z,halfW,doorHalf,y,col){
 let LIT=0;
 function lamp(root,x,y,z,range,strong){
   if(BG)return;
-  /* fog:false because MeshBasicMaterial defaults to fog:true and a thing that EMITS
-     light should not be greyed out by the air in front of it - a lamp across the deck
-     used to fade toward the fog colour. Small, and worth having.
+  /* ---- A LANTHORN, AFTER THE MARY ROSE ----
+     This was a featureless 1.5 x 2 ft box of flat 0xffd08a, and the player now opens
+     the chapter nine feet from one, so it was the first object in the game they ever
+     looked at. Rebuilt from the record:
 
-     It is NOT why the lamp by the fore scuttle looks like a pale slab. I guessed fog
-     first and was wrong: 0xffd08a simply IS pale cream, so the box renders exactly as
-     specified. The real fault is that it is a 1.5 x 2 ft FEATURELESS cube nine feet
-     from where the player now opens the chapter - no frame, no glazing, no horn
-     panes - so it reads as a blank rectangle rather than a lantern, and it sits in
-     front of the "Fore Scuttle" label. That needs modelling, not a material flag. */
-  const l=new THREE.Mesh(boxGeom(1.1*K,1.5*K,1.1*K),
-    new THREE.MeshBasicMaterial({color:lin(0xffd08a),fog:false}));
+     - HORN, not glass, and that is why the word is "lanthorn" (first recorded 1587).
+       The Mary Rose yielded eighteen horn-paned lanterns and not one glazed. The Guy
+       Fawkes lantern of 1605 - one year before this voyage - is sheet iron with a
+       hinged door "once fitted with a window made of horn".
+     - TWELVE INCHES TALL. Mary Rose 81A2258, beech and poplar, panes about eleven
+       inches on the smaller type. The old box was twice that.
+     - MOSTLY WINDOW ON A THIN WOODEN SKELETON. That is the whole reason a plain slab
+       reads wrong: the frame should be a dark spindly cage and the panes should
+       dominate it. So the cage is one dark box and the panes are inset ON its faces,
+       which spends two triangles a pane and gets the border for nothing.
+     - A WOODEN frame, because the only excavated ENGLISH shipboard lanterns are the
+       Mary Rose ones and they are beech and poplar with the horn in grooves cut in
+       the slats. The sheet-iron kind existed alongside it, but bright tinplate,
+       japanned black, and the pierced-tin "Paul Revere" type are all eighteenth
+       century and would be anachronisms.
+     - A LID WITH A VENT, not a sharp cone. The steep vented cone is documented for
+       the round sheet-iron hanging lantern; the wooden Mary Rose type had a lid, and
+       reconstructions give it a flat top with a turned chimney. RECONSTRUCTION: the
+       lid here is shallowly tapered, between the two, and the gap under its rim is
+       the vent. Said plainly because the lid itself shattered on excavation.
+     - A BAIL AND A ROD, NO GIMBAL. Gimbals are documented in this exact period, by
+       Smith 1627, for the COMPASS inside the binnacle - not for lanterns. A gimballed
+       ship's lamp is an 18th-19th century type and the player is looking straight at
+       this one.
+     Two meshes, because the cage is LIT and the panes EMIT. fog:false on the panes:
+     a thing that makes light must not be greyed out by the air in front of it. */
+  const cg=new Geo(), pg=new Geo();
+  const HW=0.29, BY=0.50;                  /* 7 in across, 12 in tall */
+  const wood=RGB(0x4a3a26), woodD=RGB(0x2f2417), soot=RGB(0x241c12);
+  cg.box(0,0,0,HW*2,BY*2,HW*2,wood);                       /* the cage */
+  cg.box(0,-BY-0.045,0,HW*2+0.05,0.09,HW*2+0.05,woodD);    /* the base it sits on */
+  /* the lid, shallowly tapered, standing off the body so the gap is the vent */
+  cg.oct(0,0,BY+0.055,BY+0.25,HW*2+0.07,HW*2+0.07,HW*0.8,HW*0.8,0.16,wood,woodD);
+  cg.box(0,BY+0.31,0,0.10,0.13,0.10,soot);                 /* the chimney */
+  cg.box(0,BY+0.50,0,0.04,0.26,0.04,soot);                 /* the rod it hangs by */
+  cg.box(HW-0.02,0,HW+0.012,0.05,BY*1.7,0.05,woodD);       /* the door's hinge stile */
+  /* THE PANES. Three bands each, because a candle is brighter level with its flame
+     than at the lid or the base, and horn is not clear glass - it glows rather than
+     shows. Graded, so the lantern has a bright middle instead of one flat value. */
+  const px=HW-0.055, py=BY-0.075, off=HW+0.008;
+  const BANDS=[[-py,-py*0.30,0xb47b3a],[-py*0.30,py*0.34,0xffd79a],[py*0.34,py,0xc98c48]];
+  for(let s=0;s<4;s++){
+    for(let b=0;b<BANDS.length;b++){
+      const y0=BANDS[b][0], y1=BANDS[b][1], c=RGB(BANDS[b][2]);
+      /* four faces, each wound so it looks outward from its own side */
+      if(s===0)      pg.quad([-px,y0,off],[px,y0,off],[px,y1,off],[-px,y1,off],c);
+      else if(s===1) pg.quad([px,y0,-off],[-px,y0,-off],[-px,y1,-off],[px,y1,-off],c);
+      else if(s===2) pg.quad([off,y0,px],[off,y0,-px],[off,y1,-px],[off,y1,px],c);
+      else           pg.quad([-off,y0,-px],[-off,y0,px],[-off,y1,px],[-off,y1,-px],c);
+    }
+  }
+  const l=cg.mesh(true,false);
   l.position.set(x,y,z);root.add(l);
+  const pane=pg.mesh(true,false);
+  pane.material=new THREE.MeshBasicMaterial({vertexColors:true,fog:false});
+  pane.position.set(x,y,z);root.add(pane);
   if(strong&&LIT<3){
     LIT++;
     const pl=new THREE.PointLight(lin(0xffb46a),1.25,(range||22)*K*1.6);pl.position.set(x,y,z);root.add(pl);
@@ -15026,7 +15074,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-1630-0f24aef";
+const BUILD="20260804-1806-5a36a62";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
