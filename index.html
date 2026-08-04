@@ -3349,7 +3349,26 @@ function buildDecks(root){
      main deck blocks anybody. */
   /* The two ladders that go UP get no coaming - see above. That is also what takes
      the foremast out of the fore one. */
-  openHatch(0,3*K,3.0*K,2.1*K);       /* THE MAIN HATCH: the only way below */
+  /* ---- THE WAY BELOW MOVED FORWARD, AND THIS IS THE ONLY PLACE IT FITS ----
+     Reported from play: "one of the masts still clips with the entrance to the lower
+     deck. that same entrance also clips with the spinny thing for the anchor. maybe we
+     should remove that entrance al together and use the other one that's in the middle
+     of the deck."
+
+     Measured, and the report is right for a reason bigger than either clip. At z=3 the
+     hatch stood in a fifteen-foot pile-up: the mainmast at z=0, the hatch itself, its
+     lifted grating cover leaning aft, and the capstan - the spinny thing, and it IS
+     for the anchor - crowded from z=-2 to z=12.9 with no clear air anywhere in it. The
+     cover and the capstan genuinely interpenetrated (cover 4.35..7.95, capstan bars
+     5.33..8.22). The mast did not, at triangle level - but four objects touching in
+     fifteen feet all read as clipping whether they intersect or not.
+
+     Then the deck was swept for somewhere a 5 ft hatch WOULD fit, and there is exactly
+     one gap on the whole centreline big enough: -11.7 to -6.3, which is 5.4 ft and is
+     where the cargo grating was. So the grating's place becomes the hatch's place, the
+     grating goes, and the waist is left as open deck with the mast and the capstan in
+     it and room to walk round both. */
+  openHatch(0,-9*K,3.0*K,2.1*K);      /* THE MAIN HATCH: the only way below */
   root.add(ST.mesh(false,false));
   /* transom stern, merged */
   const TR=new Geo();
@@ -3553,16 +3572,11 @@ function buildFittings(root){
     const a=i*Math.PI/3;const b=box(0.4*K,0.4*K,5*K,0x5a4728);
     b.position.set(Math.sin(a)*2.4*K,SHIP.DECK_Y+3.2*K,8*K+Math.cos(a)*2.4*K);b.rotation.y=a;root.add(b);
   }
-  /* THE CARGO GRATING - closed, barred, flush, and nothing climbs out of it. There
-     used to be a second one of these drawn over the Main Hatch at z=3, which both
-     put the mainmast through it and made the only way below look like a floor. The
-     Main Hatch is an openHatch() now; this is the one that stays shut. */
-  const hz=[-9*K];
-  for(let k=0;k<hz.length;k++){
-    const fr=box(6.4*K,0.4*K,5.4*K,0x46341f);fr.position.set(0,SHIP.DECK_Y+0.2*K,hz[k]);root.add(fr);
-    for(let i=-2;i<=2;i++){const b=box(0.35*K,0.5*K,5*K,0x2e2519);b.position.set(i*1.2*K,SHIP.DECK_Y+0.45*K,hz[k]);root.add(b);}
-    for(let i=-2;i<=2;i++){const b=box(6*K,0.5*K,0.35*K,0x2e2519);b.position.set(0,SHIP.DECK_Y+0.45*K,hz[k]+i*1.1*K);root.add(b);}
-  }
+  /* THE CARGO GRATING IS GONE. It stood at z=-9, which turned out to be the one place
+     on the centreline with room for the hatch - so the hatch has it, and the waist is
+     open deck with the mast and the capstan standing in it. There is no second grid to
+     be confused with the way below any more, which was the other half of the earlier
+     complaint: two grids and no way to tell which one was a staircase. */
   /* whipstaff, under the half deck */
   const wh=box(0.45*K,5.5*K,0.45*K,0x6b5433);wh.position.set(0,SHIP.DECK_Y+2.8*K,19*K);wh.rotation.x=0.12;root.add(wh);
   const whk=box(1.1*K,0.5*K,1.1*K,0x46341f);whk.position.set(0,SHIP.DECK_Y+5.6*K,19*K);root.add(whk);
@@ -5364,8 +5378,13 @@ function buildCabins(root){
    bowsprit. The ones inside the ship were too ordinary to name. "Scuttle" and
    "hatch" ARE period and both are kept. */
 const LADDERS=[
-  {label:"Main Hatch",a:{lvl:LVL.MAIN,x:0,z:3*K},b:{lvl:LVL.TWEEN,x:0,z:3*K}},
-  {label:"Fore Scuttle",a:{lvl:LVL.TWEEN,x:0,z:-13*K},b:{lvl:LVL.HOLD,x:0,z:-13*K}},
+  /* Moved with the hatch above it. ladderMesh draws a 4.4 ft dark opening at each
+     end, so a hatchway at -9 reaches -11.2 and the scuttle at -13 reached -10.8: four
+     inches of overlap, two holes in one deckhead. -15.5 clears it by two feet, and a
+     scuttle in line with the hatch above is what a ship has anyway - that is how cargo
+     was struck down from one deck to the next. */
+  {label:"Main Hatch",a:{lvl:LVL.MAIN,x:0,z:-9*K},b:{lvl:LVL.TWEEN,x:0,z:-9*K}},
+  {label:"Fore Scuttle",a:{lvl:LVL.TWEEN,x:0,z:-15.5*K},b:{lvl:LVL.HOLD,x:0,z:-15.5*K}},
   {label:"Ladder to the Half Deck",a:{lvl:LVL.MAIN,x:6*K,z:14*K},b:{lvl:LVL.CASTLE,x:6*K,z:19*K}},
   /* Moved in from x -5K. The bow narrows fast: at -5K the hull limit falls below
      the player's own x by z -31K, so the ladder top sat in a pocket about three
@@ -14505,6 +14524,10 @@ const PATCH_NOTES=[
   {when:"4 August 2026 · latest",
    head:"The opening, rebuilt",
    lines:[
+     "<b>The way below has moved forward, and the waist is clear</b>",
+     "The hatch down to the ’tween deck stood in a fifteen-foot traffic jam: the mainmast just forward of it, the hatch, its lifted grating cover leaning aft, and the capstan — the spinny thing, and it really is for the anchor — all crowded together from one end of the waist to the other with no clear air anywhere in it. The cover and the capstan genuinely ran into each other. The mast did not quite touch the coaming, but four objects packed into fifteen feet look like a pile-up whether they intersect or not, and that is what you were seeing.",
+     "So the deck was swept for anywhere a hatch would actually FIT, and there is exactly one gap on the whole centreline big enough for it — five and a half feet, forward of the mast, which is where the ornamental cargo grating was. Your instinct was right and it was the only option. The grating is gone, the way below is there now, and the waist is open deck with the mast and the capstan standing in it and room to walk round both. The hatch is eight feet clear of the capstan and four feet clear of the mast.",
+     "There is also no second grid on the deck to be mistaken for the way down any more, which was the other half of an earlier complaint. The fore scuttle below moved forward with it, because two hatchways four inches apart put two holes in one deckhead — and a scuttle in line under the hatch is how cargo was struck down from deck to deck anyway.",
      "<b>The end-of-chapter assessment, rebuilt to match</b>",
      "The bank held nine questions and five were asked, so nearly every question turned up in every other run and a class comparing notes would have had the whole thing inside a lesson. There are <b>thirty-five</b> now and it asks six, which is over a million and a half different papers — and the order and the answer positions are shuffled on top of that. Two hundred papers drawn in testing produced two hundred different ones.",
      "FOUR OF THEM PUT A MAP IN FRONT OF YOU, and every paper carries exactly two, because map work is half of what an eighth-grade social studies assessment tests and the old quiz had none at all. The maps are drawn, not pictures: the Atlantic with the outbound track and the winds, so the question is why they sailed south before sailing west; the bay with three possible fort sites, so the question is what siting a fort up a river buys you and what it costs; and the Carolina banks with Roanoke and Croatoan fifty miles apart, so the question is what a word cut into a post actually pointed at.",
@@ -14890,7 +14913,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-1208-1d826c3";
+const BUILD="20260804-1300-f1225b6";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
