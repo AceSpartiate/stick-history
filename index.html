@@ -3191,10 +3191,30 @@ function buildDecks(root){
   const mq4=function(sg,a,b,c,d,ca,cb,cc,cd){
     if(sg>0)bw.quad4(a,d,c,b,ca,cd,cc,cb); else bw.quad4(a,b,c,d,ca,cb,cc,cd);
   };
+  /* ---- LAP ONLY WHERE THE BEAM STEPS ----
+     The step here is 3*K and each segment ran z-1.55*K to z+1.55*K, which is 3.1*K -
+     so every segment overlapped its neighbour by 0.1. Amidships that is a depth tie and
+     nothing else: halfBeam is FLAT from about -20 to +16, so consecutive segments put
+     their outboard faces on exactly the same plane (hbw+0.35) and their inboard faces on
+     exactly the same plane (hbw-0.35), and then overlap along it. Measured 36.7 sq ft
+     across both sides at x = 11.93 and 12.88, which is this bulwark's 0.70 thickness,
+     over precisely y[14.9..19.9] z[-20.3..16.3]. It was the largest coplanar site left.
+
+     But the lap is load-bearing where the beam DOES step: a segment has an outboard
+     face, an inboard face and a head, and no end caps, so at a joint between two
+     different half-beams the lap is what hides the hollow. Delete it everywhere and the
+     bow and stern get notches - which is worse than a shimmer.
+
+     So lap where it is needed and abut where it is not. Where the neighbouring
+     half-beam is identical there is no step to hide, and abutting removes the tie;
+     where it differs the faces are on different planes anyway, so the lap costs
+     nothing. One test, applied at each end of the segment independently. */
   for(let z=SHIP.Z_BOW+K;z<SHIP.Z_STERN;z+=3*K){
     const hbw=halfBeam(z,SHIP.DECK_Y);
     if(hbw<1.6*K)continue;
-    const zA=z-1.55*K, zB=z+1.55*K;
+    const lapA=(Math.abs(halfBeam(z-3*K,SHIP.DECK_Y)-hbw)<1e-6)?0:0.05*K;
+    const lapB=(Math.abs(halfBeam(z+3*K,SHIP.DECK_Y)-hbw)<1e-6)?0:0.05*K;
+    const zA=z-1.5*K-lapA, zB=z+1.5*K+lapB;
     const y0=SHIP.DECK_Y;
     const hA=y0+3.2*K+sheer(zA), hB=y0+3.2*K+sheer(zB);
     for(let sg=-1;sg<=1;sg+=2){
@@ -15301,7 +15321,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-2318";
+const BUILD="20260804-2320";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
