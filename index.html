@@ -1254,7 +1254,6 @@ function readMusterCode(txt){
 }
 
 /* ========== CHAPTER I ========== */
-const NEED=6;
 /* ---- ONE MAN, ONE FACE ----
    A named historical person must look the same everywhere he appears, or the game
    is telling the player he is two people. Smith is the case that surfaced, so his
@@ -5735,10 +5734,51 @@ function buildRiver(root){
 
   const swell=new Geo(), landG=new Geo(), woodG=new Geo();
   const cA=RGB(0x46656e),cB=RGB(0x35525c);
-  for(let i=0;i<44;i++){
-    const a=Math.random()*Math.PI*2,r=95+Math.random()*300;
-    const w=16+Math.random()*22;
-    swell.box(Math.cos(a)*r,0.35,Math.sin(a)*r,w,0.9,w,(Math.random()<0.5)?cA:cB);
+  /* ---- FORTY-FOUR BOXES, SCATTERED AT RANDOM, ALL EXACTLY THE SAME HEIGHT ----
+     Two faults, and the second one made the first impossible to pin down.
+
+     Math.random() GAVE THE SEA A DIFFERENT SHAPE ON EVERY LOAD. Everything else in
+     this project draws its jitter from srand() for exactly this reason: a world that
+     is not reproducible cannot be measured twice, and a fault that moves cannot be
+     confirmed fixed. This was the one place that opted out.
+
+     AND EVERY TOP FACE SAT AT y=0.8. Forty-four squares 16 to 38 ft across, dropped at
+     random over an annulus three hundred feet deep, overlap constantly - and where two
+     overlap, their top faces are COPLANAR. Measured: 3,758 square feet of depth tie
+     across 50 pairs, the largest single patch 222 square feet. That was the biggest
+     z-fight left anywhere in the chapter, and it is on open water where it reads as a
+     crawling stain rather than as a seam.
+
+     Fixed by CONSTRUCTION, on a jittered polar grid. I tried rejection sampling first -
+     draw a position, drop it if it touches one already placed - and it seated seven of
+     the forty-four, because retrying with srand(i*2.71 + k*0.37) barely moves the
+     position: consecutive hashes of nearly equal inputs are not independent draws. A
+     grid needs no retries and cannot fail.
+
+     Four rings 75 ft apart, eleven swells to a ring, and the jitter is DERIVED rather
+     than guessed - I wrote +/-0.20 rad first and it was wrong, because 0.20 rad at the
+     inner ring is 24 ft of arc, not the 14 I had in mind.
+
+       tightest spacing  = 2*pi*120/11 = 68.5 ft, at the inner ring
+       widest swell      = 38 ft, so centres must stay 38 ft apart
+       slack to share    = 68.5 - 38 = 30.5 ft, i.e. 15 ft each
+       so angular jitter = 15/120 = 0.127 rad maximum
+
+     Held at +/-0.09 rad, which closes 21.6 ft and leaves 46.9 ft between centres
+     against the 38 ft needed. Radially: 75 ft apart, +/-14 ft each, so 47 ft against
+     38. Disjoint footprints cannot be coplanar, so this does not come back if someone
+     retunes the numbers - and the check below proves it rather than trusting it.
+
+     Each swell also carries its own height, which is free now that overlap is
+     impossible, and is simply truer: a sea of identically tall swells is not a sea. */
+  const SW_RING=11, SW_ROWS=4;
+  for(let i=0;i<SW_RING*SW_ROWS;i++){
+    const ring=Math.floor(i/SW_RING), slot=i%SW_RING;
+    const r=120+ring*75+(srand(i*5.13)-0.5)*28;
+    const a=(slot/SW_RING)*Math.PI*2+(srand(i*2.71)-0.5)*0.18;
+    const w=16+srand(i*7.77)*22;
+    const h=0.62+srand(i*11.31)*0.78;
+    swell.box(Math.cos(a)*r,h*0.5-0.1,Math.sin(a)*r,w,h,w,(srand(i*3.19)<0.5)?cA:cB);
   }
   root.add(swell.mesh(false,false));
 
@@ -6756,6 +6796,7 @@ function animate(){
   labelTick++;
   const doLabels=(labelTick%2===0);
   const rect=doLabels?$("viewport").getBoundingClientRect():null;
+  const lblQ=doLabels?[]:null;
   for(let i=0;i<interactables.length;i++){
     const it=interactables[i];
     if(it.lvl!==undefined&&it.lvl!==plevel){
@@ -6779,21 +6820,22 @@ function animate(){
     if(d>60*K){if(it.el.style.display!=="none")it.el.style.display="none";continue;}
     const v=new THREE.Vector3(it.x,(it.y||SHIP.DECK_Y)+(it.action==="reck"?6:7.7),it.z).project(cam);
     if(v.z<1&&Math.abs(v.x)<1.4){
-      it.el.style.display="block";
-      it.el.style.left=((v.x*0.5+0.5)*rect.width)+"px";
-      it.el.style.top=((-v.y*0.5+0.5)*rect.height)+"px";
-      it.el.classList.toggle("dim",d>it.r);
+      /* position is NOT set here any more - it is queued and placed after the loop,
+         once every label's screen box is known. See placeLabels. */
       const sub=it.el.querySelector("i");
       if(it.action==="ladder")sub.textContent=(it.data.dir==="down"?"\u25bc ":"\u25b2 ")+LVL_NAME[it.data.toLvl];
-      else if(it.action==="reck")sub.textContent=chapterReady()?"\u25c6 ready":"\u25c7 "+insightCount()+" of "+NEED;
+      else if(it.action==="reck")sub.textContent=chapterReady()?"\u25c6 ready":"\u25c7 "+reckReady()+" of "+reckNeed();
       else if(it.action==="cannon")sub.textContent=S.firedGun?"secured":"\u25c6 loaded";
       else if(it.action==="doc")sub.textContent=S.insight[it.data.insight.b]?"\u2713 read":"\u25c6 unread";
       else if(it.action==="steal")sub.textContent=S.shipNote?"\u2713 taken":"\u25c6";
       else if(it.action==="talk")sub.textContent=npcDone(it.id)?"\u2713 spoken":"\u25c6 has something to tell you";
       else if(it.action==="idle")sub.textContent=S.met[it.id]?"\u2713":"";
       else sub.textContent="";
+      lblQ.push({it:it,d:d,pri:pri,
+        cx:(v.x*0.5+0.5)*rect.width, cy:(-v.y*0.5+0.5)*rect.height});
     } else it.el.style.display="none";
   }
+  if(doLabels)placeLabels(lblQ,best);
   /* ---- THE PROMPT IS DRIVEN BY WHAT IT SAYS, NOT BY WHEN THE SPOT CHANGED ----
      This whole block used to be gated on `best!==activeSpot`, and it assigned
      activeSpot on its FIRST line while only drawing the label if the game was not
@@ -6869,6 +6911,66 @@ function chapterOf(id){
   const st=(typeof SITES!=="undefined")&&siteOf(id);
   if(st&&st.chapter)return chapterOf(st.chapter);
   return null;
+}
+/* ---- TWO LABELS MUST NOT BE PRINTED ON TOP OF EACH OTHER ----
+   Every label was positioned straight from its own projection with no knowledge of any
+   other, so two interactables a few feet apart wrote their names over one another and
+   neither could be read. Seen in the hold, where "Weathered Sailor" landed across
+   "Main Deck (above)".
+
+   The standard fix, and it is worth saying why each part is the way it is:
+     - PLACE IN PRIORITY ORDER, and use the SAME ranking the Speak button uses - the
+       thing you are about to act on first, then content, then idle chatter, nearest
+       first inside each. What you can read then agrees with what the button will do,
+       which is the failure this same function was already burned by once.
+     - NUDGE UP, never sideways. A label already hangs above its anchor, so lifting it
+       further keeps it over the thing it names; moving it sideways would slide it onto
+       a neighbour and make it a lie.
+     - HIDE ONLY AS A LAST RESORT, and the cap is DERIVED, not picked. A label is 31px
+       tall over two lines plus 3px of padding, so stacking n of them needs (n-1)*34px
+       of lift. 46px was my first guess and it only ever fitted TWO - measured on four
+       labels projecting within 9px, it hid half of them. 76px fits three, which covers
+       what actually clusters on these decks. Beyond that they are hidden rather than
+       floated a fifth of the way up the screen, where a label is no longer plainly over
+       the thing it names and has stopped being a label.
+     - BOXES ARE ESTIMATED FROM THE TEXT, not measured. getBoundingClientRect on every
+       label every other frame is a forced synchronous layout twenty times over and
+       this has to run on a phone. The font is pinned at 12px over 11px, so a
+       per-character estimate is easily close enough to keep two lines of text apart,
+       which is the only job it has. Padding covers the error. */
+const LBL_PAD=3, LBL_STEP=7, LBL_LIFT_MAX=76;   /* 76 = two 34px stacks, so three fit */
+function placeLabels(q,best){
+  q.sort(function(a,b){
+    const ap=(a.it===best?-1:a.pri), bp=(b.it===best?-1:b.pri);
+    return (ap-bp)||(a.d-b.d);
+  });
+  const put=[];
+  for(let i=0;i<q.length;i++){
+    const e=q[i], el=e.it.el;
+    const tb=el.querySelector("b"), ti=el.querySelector("i");
+    const tw=(tb&&tb.textContent||"").length, sw=(ti&&ti.textContent||"").length;
+    const w=Math.max(tw*6.2,sw*5.8)+8, h=sw?30:16;
+    let lift=0, seated=false;
+    while(lift<=LBL_LIFT_MAX){
+      const top=e.cy-lift;
+      const l=e.cx-w/2, r=e.cx+w/2, t=top-h, b=top;
+      let clash=false;
+      for(let k=0;k<put.length;k++){
+        const p=put[k];
+        if(l<p.r+LBL_PAD&&r>p.l-LBL_PAD&&t<p.b+LBL_PAD&&b>p.t-LBL_PAD){clash=true;break;}
+      }
+      if(!clash){
+        put.push({l:l,r:r,t:t,b:b});
+        el.style.display="block";
+        el.style.left=e.cx+"px";
+        el.style.top=top+"px";
+        el.classList.toggle("dim",e.d>e.it.r);
+        seated=true;break;
+      }
+      lift+=LBL_STEP;
+    }
+    if(!seated)el.style.display="none";
+  }
 }
 function chapterLabel(){
   const c=chapterOf(CURRENT_WORLD);
@@ -15168,7 +15270,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-1931-94b79a0";
+const BUILD="20260804-2051";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Stamp a build id into index.html and version.txt, so a stale copy can tell.
+"""Stamp a build id - a UTC minute - into index.html and version.txt, so a stale
+copy can tell.
 
 GitHub Pages serves index.html with a cache lifetime. Without this, a tester can be
 playing a build from before the last fix and reporting bugs that are already mended -
@@ -20,7 +21,6 @@ a habit.
 import io
 import os
 import re
-import subprocess
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,22 +29,30 @@ VER = os.path.join(ROOT, "version.txt")
 
 
 def build_id():
-    """A UTC minute, plus the short commit if git can tell us one.
+    """A UTC minute, and nothing else.
 
-    The timestamp alone would be enough to detect staleness; the commit makes the
-    value tell a human which build they are looking at.
+    IT USED TO APPEND THE SHORT COMMIT, AND IT WAS ALWAYS THE WRONG ONE. This runs
+    before `git commit`, so `git rev-parse HEAD` can only report the PREVIOUS commit.
+    Checked over eight consecutive commits: every single build was stamped with its
+    parent. A student reporting "build ...-5a36a62" was naming code that build does not
+    contain, which makes the first step of every bug report point at the wrong place.
+
+    Moving it later does not help, and this is the part worth understanding: a commit's
+    hash is a hash of its own content, so no committed file can contain its own commit
+    hash. Stamping after the commit and amending re-hashes the commit and invalidates
+    the stamp again. It is a fixed point that does not exist, so the honest move is to
+    stop reaching for it.
+
+    The timestamp alone does the job this value actually has - the page compares it with
+    version.txt to notice it is stale - and it is never wrong. To map a build back to
+    code, find the first commit at or after that UTC minute:
+
+        git log --format='%h %cI %s' --date-order | sort -k2
+
+    If a hash is ever wanted in here again, it must be the hash of the CONTENT (say of
+    index.html before stamping), never of the commit, because that one is knowable.
     """
-    stamp = time.strftime("%Y%m%d-%H%M", time.gmtime())
-    try:
-        sha = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=ROOT, capture_output=True, text=True, timeout=10,
-        )
-        if sha.returncode == 0 and sha.stdout.strip():
-            return stamp + "-" + sha.stdout.strip()
-    except Exception:
-        pass
-    return stamp
+    return time.strftime("%Y%m%d-%H%M", time.gmtime())
 
 
 def main():
