@@ -456,6 +456,12 @@
     background:rgba(23,19,12,.7);border:1px solid rgba(224,218,187,.4);border-radius:16px;
     color:var(--parch);font-family:'IM Fell English SC',serif;font-size:.82rem;padding:.35em .9em}
   #cineFade{position:absolute;inset:0;background:#070805;opacity:0;pointer-events:none}
+  /* A VIGNETTE. Free, and it does more for "this is a shot and not a render" than
+     any amount of geometry: the corners of a real lens fall off, and the eye is led
+     to the middle of frame where the ships are. */
+  #cineVig{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse 72% 62% at 50% 48%,rgba(0,0,0,0) 42%,
+      rgba(6,8,10,.30) 78%,rgba(4,6,8,.62) 100%)}
   /* THE OPENING BORROWS THE SCENE SCREEN, so the whole game HUD comes with it -
      the menu button, the walk hint, the thumb zones, the objective arrow. Caught
      on the first frame that rendered: a planet in space with "pinch to zoom" over
@@ -770,6 +776,7 @@
     <div class="cbar bot"></div>
     <div id="cineSub"></div>
     <button id="cineSkip">Skip &#9656;</button>
+    <div id="cineVig"></div>
     <div id="cineFade"></div>
     <div id="openTitle">
       <div class="ot1">Stick History</div>
@@ -10835,6 +10842,35 @@ function globeKind(lat,lon){
   return null;
 }
 const GLOBE_R=1000;
+/* ---- ONE SUN ----
+   The sky, the glitter path on the water, the light on the sails and the rim on the
+   capes are four different things that must agree about where the sun is, or the
+   picture comes apart. So it is stated once, here, and everything reads it.
+
+   It is DAWN - Percy has them descrying land at four in the morning - and the
+   camera runs toward -z all through the sea shots. So the sun sits low and nearly
+   dead ahead: seven degrees up, which puts the light behind the ships and the
+   glitter path pointing straight back at the lens. Looking into a low sun across
+   water is the single most flattering thing you can do to a flat-shaded sea. */
+const OPEN_SUN=(function(){
+  /* THE CONVENTION, checked rather than assumed: this azimuth feeds
+     z = -cos(az), so az=0 is dead ahead down -z and az=90 is off to starboard.
+     Written as 188 first - reading "180 is ahead" off nothing - which put the sun
+     BEHIND the lens and laid the whole glitter path out where the camera could
+     never see it. Eight degrees: just off the bow, so the path is not a mirror
+     straight down the centre of frame. */
+  const el=7.0*Math.PI/180, az=8*Math.PI/180;
+  return {el:el,az:az,
+    dir:new THREE.Vector3(Math.sin(az)*Math.cos(el),Math.sin(el),
+                          -Math.cos(az)*Math.cos(el)).normalize()};
+})();
+/* Detail scale for the cutscene. It starts optimistic and the space shots MEASURE -
+   see openDetail() - because this file's own rule is that the only honest number is
+   the frame time on the machine in front of you, and GFX.tier cannot help here: it
+   is still at its "high" default when the cutscene begins and only moves after
+   several seconds of play that have not happened yet. */
+const OPEN_Q={scale:1, measured:false, n:0, sum:0};
+function openDetail(){return OPEN_Q.scale;}
 function buildGlobe(root){
   /* AT 96 x 64 A CELL IS 2.8 DEGREES OF LATITUDE - three hundred kilometres -
      and Britain is three cells tall, so no arrangement of blobs could ever have
@@ -10865,29 +10901,100 @@ function buildGlobe(root){
     }
   }
   const earth=g.mesh(true,false);root.add(earth);
-  /* the limb: a shell turned inside out, so the planet carries a rim of air.
-     One transparent sphere, drawn back-face only, is the whole of the trick. */
-  const air=new THREE.Mesh(new THREE.SphereGeometry(GLOBE_R*1.035,48,32),
-    new THREE.MeshBasicMaterial({color:lin(0x74a8dd),side:THREE.BackSide,
-      transparent:true,opacity:0.30,depthWrite:false}));
-  root.add(air);
+  /* ---- WEATHER ----
+     A planet with no cloud on it reads as a globe in a study, not as the Earth. The
+     cloud is a shell a little above the surface, emitted only where a noise field
+     says there is weather, so it is patchy and banded the way the real thing is -
+     dense along the equator and the two temperate belts, thin over the horse
+     latitudes. Vertex-coloured white, lit by nothing, and transparent so the limb
+     still shows through it. */
+  const CS=Math.max(56,Math.round(132*openDetail())), CR=Math.max(34,Math.round(80*openDetail()));
+  const cl=new Geo(), CLR=GLOBE_R*1.013;
+  const cnoise=function(la,lo){
+    /* three octaves of cheap trig noise, plus a latitude band term */
+    const b=Math.cos(la*Math.PI/180*3.1)*0.5+0.5;
+    return 0.42*b
+      +0.30*Math.sin(la*0.21+lo*0.13)*Math.cos(lo*0.09-la*0.07)
+      +0.20*Math.sin(la*0.62-lo*0.44)*Math.cos(lo*0.31+la*0.23)
+      +0.13*Math.sin(la*1.71+lo*1.32);
+  };
+  for(let i=0;i<CR;i++){
+    const la0=88-i*(176/CR), la1=88-(i+1)*(176/CR);
+    for(let j=0;j<CS;j++){
+      const lo0=-180+j*(360/CS), lo1=-180+(j+1)*(360/CS);
+      const v=cnoise((la0+la1)/2,(lo0+lo1)/2);
+      if(v<0.46)continue;
+      const t=Math.min(1,(v-0.46)/0.34);
+      const w=RGB(mixHex(0xbfc9d2,0xffffff,t));
+      const A=llv(la0,lo0,CLR),B2=llv(la0,lo1,CLR);
+      const C2=llv(la1,lo1,CLR),D=llv(la1,lo0,CLR);
+      cl.quad4([A.x,A.y,A.z],[D.x,D.y,D.z],[C2.x,C2.y,C2.z],[B2.x,B2.y,B2.z],w,w,w,w);
+    }
+  }
+  const cloud=cl.mesh(true,false);
+  cloud.material.transparent=true;cloud.material.opacity=0.80;
+  cloud.material.depthWrite=false;
+  root.add(cloud);
+  /* ---- THE LIMB ----
+     One shell at 0.30 was a flat band with an edge on it. Air does not have an edge;
+     it falls off. Three nested shells at thinning opacity give a gradient for three
+     draw calls and no shader, and the outermost is warmer because that is the light
+     coming round the terminator. */
+  const RIM=[[1.012,0x8fc0ec,0.20],[1.030,0x74a8dd,0.15],[1.055,0xa9cdf0,0.085]];
+  for(let i=0;i<RIM.length;i++){
+    const sh=new THREE.Mesh(new THREE.SphereGeometry(GLOBE_R*RIM[i][0],44,28),
+      new THREE.MeshBasicMaterial({color:lin(RIM[i][1]),side:THREE.BackSide,
+        transparent:true,opacity:RIM[i][2],depthWrite:false}));
+    sh.renderOrder=2+i;
+    root.add(sh);
+  }
   return earth;
 }
 function buildStars(root){
-  const N=900, pos=new Float32Array(N*3), col=new Float32Array(N*3);
-  for(let i=0;i<N;i++){
-    /* evenly over the sphere, not clustered at the poles */
-    const u=srand(i*1.7)*2-1, th=srand(i*3.1)*Math.PI*2, s=Math.sqrt(1-u*u), R=14000;
-    pos[i*3]=Math.cos(th)*s*R; pos[i*3+1]=u*R; pos[i*3+2]=Math.sin(th)*s*R;
-    const b=0.55+srand(i*5.3)*0.45;
-    col[i*3]=b;col[i*3+1]=b;col[i*3+2]=b*(0.92+srand(i*7.9)*0.12);
+  /* Nine hundred evenly-scattered grey dots is a planetarium, not a sky. A real one
+     has a MILKY WAY through it and a handful of stars far brighter than the rest,
+     and both are free: points cost nothing and there is no texture involved.
+     Three layers, so brightness is a real distribution instead of one band of it. */
+  const R=14000;
+  function layer(n,size,pick){
+    const pos=new Float32Array(n*3), col=new Float32Array(n*3);
+    for(let i=0;i<n;i++){
+      const p=pick(i);
+      pos[i*3]=p.x*R;pos[i*3+1]=p.y*R;pos[i*3+2]=p.z*R;
+      col[i*3]=p.r;col[i*3+1]=p.g;col[i*3+2]=p.b;
+    }
+    const bg=new THREE.BufferGeometry();
+    bg.setAttribute("position",new THREE.BufferAttribute(pos,3));
+    bg.setAttribute("color",new THREE.BufferAttribute(col,3));
+    root.add(new THREE.Points(bg,new THREE.PointsMaterial({size:size,
+      sizeAttenuation:false,vertexColors:true,transparent:true,opacity:0.95})));
   }
-  const bg=new THREE.BufferGeometry();
-  bg.setAttribute("position",new THREE.BufferAttribute(pos,3));
-  bg.setAttribute("color",new THREE.BufferAttribute(col,3));
-  /* no map, so no asset - a PointsMaterial with vertexColors is a dot each */
-  root.add(new THREE.Points(bg,new THREE.PointsMaterial({size:2.2,
-    sizeAttenuation:false,vertexColors:true})));
+  const dir=function(u,th){const s=Math.sqrt(Math.max(0,1-u*u));
+    return {x:Math.cos(th)*s,y:u,z:Math.sin(th)*s};};
+  /* the field */
+  layer(1100,1.8,function(i){
+    const d=dir(srand(i*1.7)*2-1,srand(i*3.1)*Math.PI*2);
+    const b=0.34+srand(i*5.3)*0.42;
+    return {x:d.x,y:d.y,z:d.z,r:b,g:b,b:b*(0.92+srand(i*7.9)*0.14)};
+  });
+  /* the galaxy: crowded onto a great circle tilted out of the ecliptic, dimmer and
+     denser, which is what actually reads as the Milky Way at this scale */
+  const ti=1.05, ci=Math.cos(ti), si=Math.sin(ti);
+  layer(Math.round(1500*openDetail())||600,1.5,function(i){
+    const th=srand(i*2.3)*Math.PI*2;
+    /* squeeze toward the plane: cube a signed uniform to bunch it at zero */
+    const q=srand(i*4.7)*2-1, w=q*q*q*0.30;
+    const x=Math.cos(th), y=w, z=Math.sin(th);
+    const b=0.20+srand(i*6.1)*0.30+(1-Math.abs(w)/0.30)*0.14;
+    return {x:x, y:y*ci-z*si, z:y*si+z*ci, r:b*1.02,g:b,b:b*1.10};
+  });
+  /* and the few you would actually name */
+  layer(26,4.4,function(i){
+    const d=dir(srand(i*11.3)*2-1,srand(i*13.7)*Math.PI*2);
+    const b=0.95+srand(i*17.1)*0.05, warm=srand(i*19.3);
+    return {x:d.x,y:d.y,z:d.z,
+      r:b*(warm>0.7?1:0.92), g:b*0.96, b:b*(warm>0.7?0.86:1)};
+  });
 }
 /* ---- THE SECOND SET: open water, and then the bay ----
    Built at the game's own scale, one unit to the foot, so the ships are the
@@ -10895,19 +11002,167 @@ function buildStars(root){
    anchorage three thousand feet up-scene; the camera never has both in frame, so
    six hulls cost nothing in confusion and save a great deal in bookkeeping over
    trying to sail one group into the other. */
+/* ---- THE DAWN SKY ----
+   The sea shots played against a FLAT FILL of one blue-grey. Everything else in the
+   frame was doing work and the largest surface in it was doing none.
+
+   It is four in the morning on 26 April, so: a dome, vertex coloured, cool at the
+   zenith, warm along the horizon, and brightest in the sun's own quarter. Basic
+   material because a sky is not lit by anything, and fog:false because a sky that
+   fogs turns grey and stops being a sky. One draw call. */
+function buildDawnSky(root){
+  const R=17000, SEG=Math.max(28,Math.round(56*openDetail())), RING=18;
+  /* Measured off the finished frame and brought down: the first pass read about
+     rgb(219,205,179) across the whole sky, which is a bright hazy noon. It is FOUR
+     IN THE MORNING. Darker, more saturated, and the warm band kept narrow so the
+     sun's quarter is an event rather than the whole sky. */
+  const ZEN=0x16294a, MID=0x51708f, HOR=0x9c8266, WARM=0xecbe82;
+  const g=new Geo();
+  function tint(az,el){
+    const t=Math.max(0,Math.min(1,el/(Math.PI/2)));
+    let c=mixHex(HOR,MID,Math.min(1,t/0.32));
+    c=mixHex(c,ZEN,Math.max(0,(t-0.22)/0.78));
+    /* the sun's quarter: warm, strongest low and dead on the bearing */
+    let d=Math.cos(az-OPEN_SUN.az);
+    if(d>0){
+      const w=Math.pow(d,4.6)*Math.pow(1-t,3.2);
+      c=mixHex(c,WARM,Math.min(0.90,w*1.25));
+    }
+    return RGB(c);
+  }
+  const P=function(az,el){
+    const ce=Math.cos(el);
+    return [Math.sin(az)*ce*R, Math.sin(el)*R, -Math.cos(az)*ce*R];
+  };
+  for(let i=0;i<RING;i++){
+    /* start a little below the horizon so the dome never shows its own hem */
+    const e0=-0.06+(i/RING)*(Math.PI/2+0.06), e1=-0.06+((i+1)/RING)*(Math.PI/2+0.06);
+    for(let j=0;j<SEG;j++){
+      const a0=(j/SEG)*Math.PI*2, a1=((j+1)/SEG)*Math.PI*2;
+      g.quad4(P(a0,e0),P(a1,e0),P(a1,e1),P(a0,e1),
+        tint(a0,e0),tint(a1,e0),tint(a1,e1),tint(a0,e1));
+    }
+  }
+  const m=g.mesh(false,true);
+  m.material=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,
+    fog:false,depthWrite:false});
+  m.renderOrder=-10;
+  root.add(m);
+  return m;
+}
+/* ---- CLOUD, FROM UNDERNEATH ----
+   There was none at all over the ocean. At this hour the interesting side of a cloud
+   is its BOTTOM, because the sun is under it - so these are decks of flat quads seen
+   from below, warm where they face the sun's bearing and slate where they do not.
+   Fogged on purpose, so the far ones sink into the same haze that hides the capes. */
+function buildDawnCloud(root){
+  const g=new Geo();
+  const N=Math.max(16,Math.round(44*openDetail()));
+  for(let i=0;i<N;i++){
+    const a=srand(i*1.31)*Math.PI*2, rr=1200+srand(i*2.17)*8200;
+    const cx=Math.sin(a)*rr, cz=-Math.cos(a)*rr;
+    const cy=1050+srand(i*3.71)*1900;
+    /* warm on the sun's side of the sky, cold away from it */
+    const d=Math.max(0,Math.cos(a-OPEN_SUN.az));
+    let lit=mixHex(0x3f4b5c,0xe0a97e,Math.pow(d,2.0)*0.94);
+    /* AERIAL PERSPECTIVE, BAKED, BECAUSE THE FOG CANNOT DO IT HERE.
+       These are sky, not surface: they run out to nine thousand feet against a fog
+       that saturates at three thousand one hundred, so left to the fog every cloud
+       past the third of the way out became a solid plate of flat grey - measured, a
+       horizontal slice across the sky came back rgb(159,180,189) at every single
+       sample, which is the fog colour exactly, and the dawn behind it was invisible.
+       So fog:false below, and the fade toward the horizon is mixed in here instead,
+       where it can stay warm while it fades. */
+    const far=Math.min(1,rr/8600);
+    lit=mixHex(lit,0x8e7f6c,far*0.58);
+    const under=RGB(shadeHex(lit,0.86)), edge=RGB(shadeHex(lit,1.06));
+    /* three overlapping plates per cloud, so the outline is not a rectangle */
+    const k=3;
+    for(let q=0;q<k;q++){
+      const w=520+srand(i*5.3+q)*1500, d2=380+srand(i*7.9+q)*1100;
+      const ox=(srand(i*11.3+q)-0.5)*900, oz=(srand(i*13.7+q)-0.5)*700;
+      const oy=(srand(i*17.1+q)-0.5)*130;
+      const x0=cx+ox-w/2, x1=cx+ox+w/2, z0=cz+oz-d2/2, z1=cz+oz+d2/2, y=cy+oy;
+      g.quad4([x0,y,z0],[x1,y,z0],[x1,y,z1],[x0,y,z1],under,edge,under,edge);
+    }
+  }
+  const m=g.mesh(false,true);
+  m.material=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,
+    transparent:true,opacity:0.90,depthWrite:false,fog:false});
+  m.renderOrder=-6;
+  root.add(m);
+  return m;
+}
+/* ---- THE GLITTER PATH ----
+   The one thing that makes flat-shaded water read as WATER. A low sun lays a road of
+   broken light across a sea, narrow at the far end and spreading toward the eye, and
+   it is nothing but a scatter of bright specks lying along the sun's bearing. Unlit,
+   so it stays bright when everything else is in dawn shadow, and merged into one
+   object. Density falls off away from the bearing and toward the viewer. */
+function buildGlitter(root){
+  const g=new Geo();
+  const N=Math.max(320,Math.round(2100*openDetail()));
+  const sa=OPEN_SUN.az;
+  for(let i=0;i<N;i++){
+    /* distance out along the bearing, biased to the far end where the sun is */
+    const u=srand(i*1.7);
+    const dist=180+u*u*9200;
+    /* spread across the bearing, widening as it comes toward the eye */
+    const spread=(1.05-u*0.78)*760;
+    const off=(srand(i*3.1)*2-1);
+    const across=off*spread;
+    /* thin it out at the edges of the path */
+    if(srand(i*5.3)>1.02-Math.abs(off)*0.9)continue;
+    const x=Math.sin(sa)*dist+Math.cos(sa)*across;
+    const z=-Math.cos(sa)*dist+Math.sin(sa)*across;
+    const w=9+srand(i*7.9)*40, d2=2.6+srand(i*11.3)*9;
+    /* fogged flat at three thousand feet like everything else, the far end of the
+       path - the end nearest the sun, the bright end - simply disappeared. Its own
+       falloff instead: brightest far out under the sun, dimming toward the eye and
+       toward the edges of the path, and never grey. */
+    const near=1-u;
+    const hot=mixHex(0xfff4dc,0xf0c896,near*0.55+Math.abs(off)*0.30);
+    const c=RGB(shadeHex(hot,0.80+srand(i*13.7)*0.34));
+    g.quad4([x-w/2,0.62,z-d2/2],[x+w/2,0.62,z-d2/2],
+            [x+w/2,0.62,z+d2/2],[x-w/2,0.62,z+d2/2],c,c,c,c);
+  }
+  const m=g.mesh(false,true);
+  m.material=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,
+    transparent:true,opacity:0.88,depthWrite:false,fog:false});
+  m.renderOrder=-4;
+  root.add(m);
+  return m;
+}
 function buildOpenSea(root){
   const sky=0x9fb4bd;
-  const sea=new THREE.Mesh(new THREE.PlaneGeometry(30000,30000),mat(0x33586a));
+  buildDawnSky(root);buildDawnCloud(root);buildGlitter(root);
+  /* 0x223f52 measured out at rgb(3,28,44) once lit - all but black, with two fifths
+     of the frame near it. A sea looking INTO a low sun is dark, but not that dark,
+     and a dim school laptop screen would lose it entirely. Lifted, and the sky light
+     with it, because a nearly-horizontal plane gets almost nothing from a sun seven
+     degrees up and takes its tone from the hemisphere instead. */
+  const sea=new THREE.Mesh(new THREE.PlaneGeometry(30000,30000),mat(0x2f4f63));
   sea.rotation.x=-Math.PI/2;root.add(sea);
   /* swell, thinning with distance so the eye reads depth off the water alone */
   /* Swell, and it has to be nearly the colour of the water. Drawn at 0.6 high in
      two tones a long way off the sea's own, four hundred slabs read as pack ice
      rather than as a running sea - caught on the first frame. Flatter, smaller
      and only just lighter than what they float on. */
-  const W=new Geo(),a=RGB(0x3a6072),b=RGB(0x2f5364),f=RGB(0xc9d8d6);
-  for(let i=0;i<420;i++){
+  const W=new Geo(),a=RGB(0x3a6072),b=RGB(0x2f5364);
+  const NW=Math.max(160,Math.round(420*openDetail()));
+  for(let i=0;i<NW;i++){
     const x=-4200+srand(i*1.3)*8400, z=-4600+srand(i*2.7)*6200;
     W.box(x,0.30,z,34+srand(i*3.9)*70,0.5,20+srand(i*5.1)*38,(i%2)?a:b);
+    /* A CREST, on the sun's side only. The note above is right that swell drawn
+       much lighter than the water reads as pack ice - so this is not lighter water,
+       it is the dawn catching one edge: a thin warm lip on the face turned toward
+       the sun, and nothing at all on the face turned away. */
+    if(srand(i*3.3)>0.55){
+      const w=26+srand(i*4.7)*44;
+      const cz=z-9-srand(i*6.1)*7;
+      W.box(x+Math.sin(OPEN_SUN.az)*4,0.62,cz,w,0.22,3.2,
+        RGB(mixHex(0x6f8898,0xe8cfa8,0.30+srand(i*8.3)*0.45)));
+    }
   }
   /* THE CAPES. Twelve miles of bay mouth is sixty-three thousand feet and would
      read as open sea, so the mouth is compressed to what the eye needs: two low
@@ -10971,7 +11226,7 @@ function buildOpeningShips(root){
    spoken over it, and which set it belongs to. Positions in the SPACE set are in
    globe units (the Earth is 1000); positions in the SEA set are in feet. */
 const OPEN_SHOTS=[
-  {set:"space",t:6.0,
+  {set:"space",t:6.0,ease:"smooth",roll:0.03,
    from:[2900,1500,3400],to:[2050,1050,2400],look:[0,0,0],look2:[0,0,0],
    say:"In the winter of 1606, three small ships dropped down the Thames for a coast most Englishmen could not have found on a map."},
   {set:"space",t:6.5,
@@ -10981,19 +11236,19 @@ const OPEN_SHOTS=[
      tall about a centre at y 57, so to fill three fifths of a 52-degree frame the
      camera wants to be about 260 feet off her and pointed at that centre - not at
      the waterline, which is what left her a smudge at the bottom of the picture. */
-  {set:"sea",t:6.5,
+  {set:"sea",t:6.5,ease:"settle",roll:-0.018,
    from:[330,124,700],to:[248,96,384],look:[-16,57,215],look2:[-8,57,120],
    say:"South first, by the Canaries and the Indies, and then north along a strange coast until the water shoaled."},
-  {set:"sea",t:5.0,
+  {set:"sea",t:5.0,ease:"slowIn",roll:-0.035,
    /* the look target used to jump 2,500 feet ahead during this shot, so the
       camera "raced past" ships that were ninety degrees off the lens and never
       appeared. It tracks them past the beam and only then releases forward. */
    from:[252,98,392],to:[84,60,-640],look:[0,57,110],look2:[0,52,-620],
    say:"Land was descried at four this morning."},
-  {set:"sea",t:8.0,
+  {set:"sea",t:8.0,ease:"settle",roll:0.022,
    from:[84,60,-640],to:[-40,150,-2380],look:[0,52,-620],look2:[-40,60,-3290],
    say:"The ships are standing into the Chesapeake, between two capes that had no English names yesterday, while the gentlemen argue over where they will plant the fort."},
-  {set:"sea",t:6.0,title:true,
+  {set:"sea",t:6.0,title:true,ease:"settle",
    from:[-40,150,-2380],to:[-70,172,-2560],look:[-40,60,-3290],look2:[-45,58,-3300],
    say:"Below deck, in the dark and the stink, men still trade the old rumours."}
 ];
@@ -11042,7 +11297,8 @@ function playOpening(onDone){
   OPEN.on=true;OPEN.onDone=onDone||null;OPEN.t=0;OPEN.shot=-1;
   const sc=new THREE.Scene();
   sc.background=new THREE.Color(0x05070c);
-  if(!OPEN_FOG)OPEN_FOG=new THREE.Fog(0x9fb4bd,500,3100);
+  /* the haze takes the horizon's own colour now the sky has one */
+  if(!OPEN_FOG)OPEN_FOG=new THREE.Fog(0x8f8069,500,3100);
   const c=new THREE.PerspectiveCamera(52,1,0.5,40000);
   OPEN.sc=sc;OPEN.cam=c;
   /* space */
@@ -11051,14 +11307,31 @@ function playOpening(onDone){
   space.add(new THREE.AmbientLight(lin(0x8899aa),0.55));
   const sun=new THREE.DirectionalLight(lin(0xfff0d8),1.15);
   sun.position.copy(llv(18,28,4000));space.add(sun);
-  /* sea */
+  /* ---- THE SEA SET IS BUILT LATE, ON PURPOSE ----
+     The expensive half of this cutscene is the water: a sky dome, cloud, a glitter
+     path, swell. None of it is needed until shot three, twelve seconds in - and by
+     then the space shots have been rendering long enough to say what this machine
+     can actually do.
+
+     That matters because GFX.tier is no help here. It starts at "high" for
+     everybody and only moves after several seconds of PLAY, which have not happened
+     when the cutscene begins. The honest number is the frame time in front of us, so
+     the space shots take it, openDetail() reports it, and the sea is built to fit.
+     A phone that is struggling gets a thinner sea instead of a slide show, and a
+     desktop gets everything. */
   const seaSet=new THREE.Group();seaSet.visible=false;sc.add(seaSet);
-  buildOpenSea(seaSet);buildOpeningShips(seaSet);
-  seaSet.add(new THREE.HemisphereLight(lin(0xc9d8de),lin(0x3a4a52),0.62));
-  const sun2=new THREE.DirectionalLight(lin(0xffe6bd),0.90);
-  sun2.position.set(600,1500,400);seaSet.add(sun2);
-  const fill2=new THREE.DirectionalLight(lin(0xa9c2d2),0.24);
-  fill2.position.set(-700,400,-550);seaSet.add(fill2);
+  let seaBuilt=false;
+  function buildSeaNow(){
+    if(seaBuilt)return;
+    seaBuilt=true;
+    buildOpenSea(seaSet);buildOpeningShips(seaSet);
+    seaSet.add(new THREE.HemisphereLight(lin(0xd2dde2),lin(0x44545c),0.80));
+    /* the light comes from where the sky says it does - see OPEN_SUN */
+    const sun2=new THREE.DirectionalLight(lin(0xffe0b4),1.05);
+    sun2.position.copy(OPEN_SUN.dir).multiplyScalar(9000);seaSet.add(sun2);
+    const fill2=new THREE.DirectionalLight(lin(0xa9c2d2),0.24);
+    fill2.position.set(-700,400,-550);seaSet.add(fill2);
+  }
 
   $("cine").classList.add("on");
   $("cineSkip").style.display="";
@@ -11072,7 +11345,19 @@ function playOpening(onDone){
 
   const V=new THREE.Vector3(),L=new THREE.Vector3();
   let last=performance.now();
-  function shotAt(s,k){
+  /* ---- EASING ----
+     Every move in this cutscene was a straight lerp, which means the camera starts
+     at full speed and stops dead - the two things a real camera cannot do. A crane
+     eases out of rest and settles into its mark, and a whip pan accelerates. One
+     curve per shot, and the default is a smoothstep, which is the crane. */
+  const EASE={
+    smooth:function(k){return k*k*(3-2*k);},
+    slowIn:function(k){return k*k*k;},                 /* the run at the ships */
+    settle:function(k){return 1-Math.pow(1-k,2.6);},   /* arriving somewhere */
+    linear:function(k){return k;}
+  };
+  function shotAt(s,kRaw){
+    const k=(EASE[s.ease]||EASE.smooth)(Math.max(0,Math.min(1,kRaw)));
     /* a shot is either given plain xyz or as lat/lon/altitude on the globe */
     if(s.fromLL){
       const a=llv(s.fromLL[0],s.fromLL[1],GLOBE_R*s.fromLL[2]);
@@ -11114,6 +11399,24 @@ function playOpening(onDone){
       return;
     }
     OPEN.t+=dt;
+    /* MEASURE, while the cheap half is on screen. Twenty frames of the space shots is
+       plenty to tell a desktop from a Chromebook, and the answer is wanted BEFORE the
+       sea is built rather than after it has already dropped frames. */
+    if(!OPEN_Q.measured&&OPEN.shot>=0&&dt>0.0005){
+      OPEN_Q.n++;OPEN_Q.sum+=dt;
+      if(OPEN_Q.n>=20){
+        const ms=(OPEN_Q.sum/OPEN_Q.n)*1000;
+        /* RETUNED against a real measurement. A machine holding vsync on a 60 Hz
+           panel reports about 16.7 ms, and this thresholded 0.80 at anything over
+           18 - so a desktop that was perfectly happy measured 18.9 and got dropped
+           to four fifths detail for no reason. The bands are frame RATES now, named,
+           with the healthy case left alone: under 49 fps starts trimming. */
+        OPEN_Q.scale=(ms>34)?0.32:(ms>25)?0.55:(ms>20.5)?0.80:1;
+        OPEN_Q.measured=true;
+        if(window.console)console.log("opening: "+ms.toFixed(1)+
+          " ms/frame in space -> detail x"+OPEN_Q.scale);
+      }
+    }
     /* advance the shot */
     let s=OPEN_SHOTS[OPEN.shot];
     if(OPEN.shot<0||OPEN.t>=s.t){
@@ -11129,8 +11432,9 @@ function playOpening(onDone){
       }
       s=OPEN_SHOTS[OPEN.shot];
       const inSpace=(s.set==="space");
+      if(!inSpace)buildSeaNow();          /* first time only, at the measured detail */
       space.visible=inSpace;seaSet.visible=!inSpace;
-      sc.background.set(inSpace?0x05070c:0x9fb4bd);
+      sc.background.set(inSpace?0x05070c:0x8f8069);
       /* HAZE, and it is doing real work. Without it the capes - three thousand
          feet up-scene, and there is no curvature on a flat sea - were in frame
          during the mid-ocean shot, so the crossing was played within sight of
@@ -11152,8 +11456,16 @@ function playOpening(onDone){
       }
       if(s.title)$("openTitle").classList.add("on");
     }
-    shotAt(s,Math.min(1,OPEN.t/s.t));
-    c.position.copy(V);c.lookAt(L);
+    const kk=Math.min(1,OPEN.t/s.t);
+    shotAt(s,kk);
+    c.position.copy(V);
+    /* A SLOW ROLL. A camera hand-held off a crane is never perfectly level, and a
+       degree or two of drift over a six-second shot is the difference between a
+       render and a shot. Applied through the up-vector, because lookAt rebuilds
+       the orientation from it. */
+    const rl=(s.roll||0)*(0.35+0.65*kk);
+    c.up.set(Math.sin(rl),Math.cos(rl),0);
+    c.lookAt(L);
     /* the globe turns, slowly, because a still planet looks like a poster */
     if(s.set==="space")space.rotation.y+=dt*0.012;
     renderer.render(sc,c);
@@ -13477,7 +13789,17 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    list nobody finishes is a list nobody reads.
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
-  {when:"3 August 2026 · latest",
+  {when:"4 August 2026 · latest",
+   head:"The opening, rebuilt",
+   lines:[
+     "It is the first thing anybody sees, so it has been taken apart and put back together.",
+     "THE SKY. The ocean shots played against a flat fill of one blue-grey — the largest surface in the frame, doing no work at all. There is a real dawn sky now: cool overhead, warm along the horizon, and brightest in the sun’s own quarter, with cloud lit from underneath because at four in the morning the interesting side of a cloud is its bottom.",
+     "THE WATER. A low sun lays a road of broken light across a sea, and that one thing is what makes water look like water. It is there now, running from the horizon back toward you, and the swell catches the dawn on its crests — a thin warm lip on the faces turned toward the sun and nothing at all on the faces turned away.",
+     "THE EARTH. The planet had no weather on it, which made it a globe in a study rather than the world. It has cloud now, banded the way the real thing is — heavy on the equator, thin over the horse latitudes — and the ring of air around it falls off through three depths instead of stopping at an edge. The star field has a Milky Way through it and a couple of dozen stars far brighter than the rest.",
+     "THE CAMERA. Every move was a straight line, which means it started at full speed and stopped dead — the two things a real camera cannot do. Each shot now has its own curve: the crane eases out of rest and settles onto its mark, and the run past the ships accelerates. There is a degree or two of roll drifting through the long shots, and a vignette, because the corners of a real lens fall off.",
+     "AND IT MEASURES YOUR MACHINE BEFORE IT SPENDS ANYTHING. The expensive half is the water, and none of it is needed for the first twelve seconds. So the opening shots in space time themselves, and the sea is then built to fit what they found — a slower device gets a thinner sea instead of a slide show, and a fast one gets everything. On this machine the sky, cloud, glitter and six ships come to a millisecond a frame and about half the draw budget."
+   ]},
+  {when:"3 August 2026",
    head:"Her curves, her coast, and everything below decks",
    lines:[
      "<b>The people, overhauled</b>",
@@ -13834,7 +14156,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-0314-375eb7c";
+const BUILD="20260804-0743-65c3d00";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
