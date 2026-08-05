@@ -6145,6 +6145,7 @@ function disposeWorld(){
      pinned thirty-six dead figures against collection, and anything that later walked
      CROWD without checking the world would have touched them. */
   CROWD.length=0;
+  CH1_IDLE.length=0;      /* same reason: these hold figures from the old world */
   /* the instanced shadows lived under worldRoot and went with it */
   shadowMesh=null;SHADOW_CASTERS.length=0;
   ARROWS.length=0;FALLING.length=0;
@@ -6822,7 +6823,7 @@ function animate(){
     cam.lookAt(CAMLOCK.look);
     renderer.render(scene,cam);return;
   }
-  updateBell(dt);updateFalling(dt);updateJump(dt);updateCrowd(dt);
+  updateBell(dt);updateFalling(dt);updateJump(dt);updateCrowd(dt);updateCh1Idles(dt);
   /* The deck under you plus whatever the jump has added - set every frame, not
      only while walking, or a jump from standstill would never leave the ground.
      Not during a cutscene: those place the player deliberately, and overwriting
@@ -13749,6 +13750,113 @@ let CROWD_HITS=[];
    Each entry keeps what a task needs: the figure, where he started, what he is doing,
    and which way the work faces. */
 let CROWD=[];
+/* ========== AND WHAT THE MEN ABOARD ARE DOING ==========
+   Chapter I gets the ATTEND and the WORK of the shore system and deliberately NOT the
+   walking. Three reasons, and the first two are load-bearing:
+
+   1. blocked() READS THE PLAYER'S DECK, NOT THE SUBJECT'S. Measured at the main hatch:
+      false with the player in the hold, the tween or the main deck, true from the
+      castles. So a man on the tween deck, tested while you stand on the forecastle, is
+      told about the wrong floor. It is the same trap the shadow code documents. A ship
+      walking system needs a level-aware collider that does not exist yet.
+   2. A SHIP HAS HOLES IN THE FLOOR BY DESIGN. The beach has capeBlocked and nowhere to
+      fall; the main hatch is an open shaft, and a man walked across it goes down it.
+   3. Three of these eleven - the sailor, the clerk and the gentleman - are men the
+      chapter REQUIRES you to question, and the objective is now gated on asking all
+      three. A Company Clerk who wanders off is worse for the player than one who stands
+      still. The beach crowd are ambience with lines; these three are content.
+   Nobody moves, so no collider is consulted and nothing can fall anywhere.
+
+   THE MAN IN IRONS IS EXCLUDED, and this is not a nicety. The old pose sites la/ra/ll/rl
+   are the SAME OBJECTS as shoulderL/shoulderR/hipL/hipR - verified by identity, not
+   assumed - so writing an arm animation would overwrite the folded, shackled pose he was
+   given, and a man held below in the ballast for weeks would start waving. Anyone with
+   `sat` keeps exactly the pose he was built with.
+
+   Each idle is relative to the pose the man was PLACED in, not absolute, so a bespoke
+   attitude survives having a motion added on top of it. */
+const CH1_IDLE_KIND={
+  sailor:  {k:"look",   r:0.55},          /* watching the weather and the boatswain */
+  clerk:   {k:"work",   r:1.9, a:0.30},   /* writing */
+  gent:    {k:"sway",   r:0.50,a:0.035},  /* shifting his weight, uncomfortable */
+  boy:     {k:"fidget", r:2.60,a:0.22},   /* a boy */
+  sick:    {k:"sway",   r:0.90,a:0.075},  /* at the rail, and not well */
+  hunt:    {k:"still"},                   /* a chaplain stands still */
+  cooper:  {k:"work",   r:2.30,a:0.55},   /* driving a hoop */
+  cook:    {k:"work",   r:1.50,a:0.40},   /* stirring */
+  snore:   {k:"breathe",r:0.55,a:0.030},  /* asleep, and only that */
+  helmsman:{k:"still"}                    /* both hands on the staff */
+};
+let CH1_IDLE=[];
+function registerCh1Idles(){
+  CH1_IDLE.length=0;
+  for(let i=0;i<npcMeshes.length;i++){
+    const r=npcMeshes[i], n=r.npc, m=r.mesh;
+    if(!m||!n||!m.userData||!m.userData.parts)continue;
+    if(n.sat)continue;                    /* he keeps the pose he was given */
+    const p=m.userData.parts;
+    CH1_IDLE.push({id:n.id,mesh:m,p:p,face:m.rotation.y,seed:i+1,
+      kind:CH1_IDLE_KIND[n.id]||{k:"look",r:0.6},
+      base:{laX:p.la?p.la.rotation.x:0, raX:p.ra?p.ra.rotation.x:0,
+            neckY:p.neck?p.neck.rotation.y:0,
+            bodyX:p.body?p.body.rotation.x:0}});
+  }
+  return CH1_IDLE.length;
+}
+function ease(o,axis,to,dt,rate){
+  if(!o)return;
+  o.rotation[axis]+=(to-o.rotation[axis])*Math.min(1,dt*(rate||5));
+}
+function updateCh1Idles(dt){
+  if(CURRENT_WORLD!=="ch1")return;
+  if(!CH1_IDLE.length){ if(!npcMeshes.length)return; registerCh1Idles(); }
+  const named=(typeof activeSpot!=="undefined"&&activeSpot)?activeSpot.id:null;
+  const px=player?player.position.x:0, pz=player?player.position.z:0;
+  for(let i=0;i<CH1_IDLE.length;i++){
+    const c=CH1_IDLE[i], p=c.p, b=c.base, m=c.mesh;
+    if(!m.parent)continue;                /* the world was torn down under us */
+    const attend=(named===c.id)||(dlg&&dlg.npc&&dlg.npc.id===c.id);
+    if(attend){
+      /* HE STOPS AND LOOKS AT YOU. Triggered by the Speak button naming him - the same
+         selection the button uses, so what he does and what it says cannot disagree. */
+      const want=Math.atan2(px-m.position.x,pz-m.position.z);
+      let d=want-m.rotation.y;
+      while(d>Math.PI)d-=Math.PI*2;
+      while(d<-Math.PI)d+=Math.PI*2;
+      m.rotation.y+=Math.max(-2.4*dt,Math.min(2.4*dt,d));
+      ease(p.la,"x",b.laX,dt,6);ease(p.ra,"x",b.raX,dt,6);
+      ease(p.neck,"y",0,dt,6);ease(p.body,"x",b.bodyX,dt,5);
+      continue;
+    }
+    /* back to where he was placed, then get on with it */
+    let d2=c.face-m.rotation.y;
+    while(d2>Math.PI)d2-=Math.PI*2;
+    while(d2<-Math.PI)d2+=Math.PI*2;
+    m.rotation.y+=Math.max(-1.6*dt,Math.min(1.6*dt,d2));
+    const K2=c.kind, t=animT*(K2.r||1)+c.seed*1.7, w=Math.sin(t);
+    if(K2.k==="look"){
+      ease(p.neck,"y",Math.sin(animT*0.5+c.seed)*0.55,dt,3);
+      ease(p.la,"x",b.laX+w*0.06,dt,4);ease(p.ra,"x",b.raX-w*0.06,dt,4);
+    } else if(K2.k==="work"){
+      ease(p.ra,"x",b.raX-0.35-w*(K2.a||0.3),dt,9);
+      ease(p.la,"x",b.laX-0.10+w*(K2.a||0.3)*0.35,dt,6);
+      ease(p.neck,"y",b.neckY,dt,3);
+    } else if(K2.k==="sway"){
+      ease(p.body,"x",b.bodyX+w*(K2.a||0.04),dt,3);
+      ease(p.la,"x",b.laX+w*0.08,dt,3);ease(p.ra,"x",b.raX-w*0.08,dt,3);
+    } else if(K2.k==="fidget"){
+      ease(p.ra,"x",b.raX+w*(K2.a||0.2),dt,10);
+      ease(p.la,"x",b.laX-w*(K2.a||0.2)*0.7,dt,10);
+      ease(p.neck,"y",Math.sin(animT*1.1+c.seed)*0.4,dt,4);
+    } else if(K2.k==="breathe"){
+      ease(p.body,"x",b.bodyX+w*(K2.a||0.03),dt,2);
+    } else {                                /* still: hold the placed pose */
+      ease(p.la,"x",b.laX,dt,3);ease(p.ra,"x",b.raX,dt,3);
+      ease(p.neck,"y",b.neckY,dt,3);ease(p.body,"x",b.bodyX,dt,3);
+    }
+  }
+}
+
 /* ========== WHAT THE MEN ASHORE ARE DOING ==========
    Thirty-six men stood in fixed poses like furniture. Now each has an errand: he works
    where he was placed, walks a little way toward the thing his task concerns, works
@@ -15944,7 +16052,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-0115";
+const BUILD="20260805-0122";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
