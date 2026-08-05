@@ -6390,7 +6390,7 @@ function initRenderer(){
   renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
   scene=new THREE.Scene();
   scene.background=new THREE.Color(0x9fb4bd);
-  scene.fog=new THREE.Fog(0xa8bcc4,220,1150);
+  scene.fog=new THREE.Fog(0xa8bcc4,200,860);   /* < cam.far 900; see SKY_DAY */
   cam=new THREE.PerspectiveCamera(56,1,0.5,900);
   /* The camera must be IN the graph, or nothing parented to it is ever drawn.
      three.js walks descendants of `scene` only. Without this line the whole
@@ -6833,6 +6833,7 @@ function animate(){
     renderer.render(scene,cam);return;
   }
   IDLE_T+=dt;
+  strayCheck();
   updateBell(dt);updateFalling(dt);updateJump(dt);updateCrowd(dt);updateNpcIdles(dt);
   /* The deck under you plus whatever the jump has added - set every frame, not
      only while walking, or a jump from standstill would never leave the ground.
@@ -12961,7 +12962,17 @@ function playOpening(onDone){
    a dune ridge behind it, then the pine woods the arrows came out of.
    The ground is a height function - collision is sampled from it directly,
    never raycast against the mesh. */
-const CAPE={SEA:66, BEACH:20, WOOD:-16, EDGE:430, TREE:-40};
+/* ROAM is how far the party may straggle from the landing, and it replaces a square.
+   EDGE was 430 tested per-axis, which is a box 860 feet across - so at its corners a
+   player stood 610 feet out, where every built thing on this beach is inside ninety and
+   there is nothing whatever around him. Circular now, and measured from the camp rather
+   than the origin.
+   THE NUMBER HAS A REASON, which is the story-conscious half. Percy has the party
+   attacked on the evening of the 26th "when wee were going abroad", and they were ashore
+   under orders in country they had been in for one afternoon. Men did not wander off
+   alone; the ones who did got hurt. So the limit is a sentry's word, not a wall - and the
+   guard party is already standing on that line. */
+const CAPE={SEA:66, BEACH:20, WOOD:-16, EDGE:430, TREE:-40, ROAM:250, WARN:200};
 function capeGround(x,z){
   let y;
   if(z>CAPE.SEA)                       y=-2.6-(z-CAPE.SEA)*0.02;      /* sea floor */
@@ -13025,6 +13036,8 @@ function capeVert(x,z,y){
 }
 function capeBlocked(x,z){
   if(Math.abs(x)>CAPE.EDGE||z<-CAPE.EDGE||z>CAPE.SEA+10)return true;
+  /* the sentries. Circular, so the corners cannot be walked to. */
+  if(Math.hypot(x-CAPE_MARK.x,z-CAPE_MARK.z)>CAPE.ROAM)return true;
   if(capeGround(x,z)<0.30)return true;                 /* you do not wade out */
   for(let i=0;i<colliders.length;i++){
     const c=colliders[i];
@@ -14004,6 +14017,31 @@ function updateNpcIdles(dt){
   }
 }
 
+/* ---- HE IS TOLD BEFORE HE IS STOPPED ----
+   An invisible wall teaches a player that the world is small. A sentry turning him back
+   teaches him that the company is in hostile country and under orders, which is the same
+   boundary doing work for the chapter instead of against it.
+   Two ranges: a hail as he passes WARN, and the sentries themselves at ROAM. Throttled,
+   because a man walking the line would otherwise be shouted at once a frame. */
+let STRAY_T=0, STRAY_SAID=false;
+function strayCheck(){
+  if(CURRENT_WORLD!=="ch2"||!player||paused)return;
+  const d=Math.hypot(player.position.x-CAPE_MARK.x,player.position.z-CAPE_MARK.z);
+  const now=IDLE_T;
+  if(d<CAPE.WARN-25){STRAY_SAID=false;return;}
+  if(d>=CAPE.ROAM-6){
+    if(now-STRAY_T>7){
+      STRAY_T=now;
+      toast("\u201cFar enough. Nobody past the sentries \u2014 they had us here at dusk and they will again.\u201d");
+    }
+    return;
+  }
+  if(!STRAY_SAID&&d>=CAPE.WARN){
+    STRAY_SAID=true;STRAY_T=now;
+    toast("A sentry whistles you back. You are getting a long way from the party.");
+  }
+}
+
 /* ========== WHAT THE MEN ASHORE ARE DOING ==========
    Thirty-six men stood in fixed poses like furniture. Now each has an errand: he works
    where he was placed, walks a little way toward the thing his task concerns, works
@@ -14478,7 +14516,7 @@ function buildThinSite(root,key){
   const site=SITES[key], T=SITE_TERRAIN[key];
   const G=function(x,z){return siteGround(key,x,z);};
   scene.background=new THREE.Color(T.sky);
-  scene.fog=new THREE.Fog(T.fog,260,1000);
+  scene.fog=new THREE.Fog(T.fog,240,860);      /* < cam.far 900; see SKY_DAY */
   WORLD.ground=G; WORLD.sea=0;
   WORLD.blocked=function(x,z){return Math.hypot(x,z)>430||G(x,z)<-0.6;};
   const SPAN=900,N=4,CH_=SPAN/N,DIV=12;
@@ -15185,7 +15223,16 @@ const AMBUSH_LEN=((ARMS.matchlock&&ARMS.matchlock.reload)||38)+8;
    in a visible band. */
 /* Authored a little deeper and more saturated than the target, because ACES
    lifts midtones: a measured 0x808080 leaves the framebuffer at 0x939393. */
-const SKY_DAY={bg:0xbec4bb,fog:0xbec4bb,near:220,far:1150,hemi:0.58,sun:0.86,sunC:0xffe6bd,
+/* ---- FOG MUST FINISH BEFORE THE CAMERA CLIPS, AND IT DID NOT ----
+   cam.far is 900. Every fog setting in this file had far at 1000 or 1150, so geometry
+   between 900 and 1150 was CUT AWAY by the clip plane while still only part-hazed - the
+   far country did not recede, it stopped existing, and walking outward moved that edge
+   with you. Reported as the setting falling apart if you walk too far, and in daylight
+   only, which fits: dusk's far is 520 and was never affected.
+   860 leaves forty feet of margin, so the last thing the eye can resolve is fully the
+   colour of the air before the plane reaches it. This costs NOTHING - it is haze doing
+   the work instead of triangles, which is the whole point of the fix. */
+const SKY_DAY={bg:0xbec4bb,fog:0xbec4bb,near:200,far:860,hemi:0.58,sun:0.86,sunC:0xffe6bd,
   top:0x35688f, hor:0xbec4bb};
 const SKY_DUSK={bg:0x8a5a3a,fog:0x8a5a3a,near:70,far:520,hemi:0.20,sun:0.16,sunC:0xff9b5e,
   top:0x141c28, hor:0x8a5a3a};
@@ -15376,7 +15423,7 @@ function endAmbush(){
 }
 registerWorld("ch2",function(root){
   scene.background=new THREE.Color(0x9dbccb);
-  scene.fog=new THREE.Fog(0xa9c3cd,240,1000);
+  scene.fog=new THREE.Fog(0xa9c3cd,230,860);   /* < cam.far 900; see SKY_DAY */
   WORLD.ground=capeGround;
   WORLD.sea=0;                            /* the Chesapeake, for splashes */
   WORLD.blocked=capeBlocked;
@@ -16474,7 +16521,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-1025";
+const BUILD="20260805-1047";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
