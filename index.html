@@ -13730,8 +13730,21 @@ function crowdEq(kind,i){
 const TASK_POSE={shallop:"stoop",cross:"stoop",stores:"stoop",smith:"stoop",
   surgeon:"stand",guard:"stand",idle:"stand",drum:"stand",boys:"stand"};
 let CROWD_HITS=[];
+/* ---- THE MEN ASHORE ARE ARTICULATED NOW, AND THIS IS THE REGISTRY ----
+   They used to be posed and then baked flat - one merged mesh each, on the stated
+   grounds that "nobody on this beach has to move again". That was true and it is not
+   any more: a baked man cannot walk, cannot turn to face you, and famously could not
+   even be made to fall over when he was shot (see the note in the punishment cutscene,
+   which had to cut away to his mates instead).
+   MEASURED COST, because the baking was there for a reason and the reason was real:
+   14 meshes a man against 1, so 36 men go from 36 draw calls to 504. Triangles are
+   unchanged at 968 either way - this buys nothing in geometry and costs only draws.
+   Each entry keeps what a task needs: the figure, where he started, what he is doing,
+   and which way the work faces. */
+let CROWD=[];
 function buildShoreParty(root){
   CROWD_HITS.length=0;
+  CROWD.length=0;
   let count=0;
   SHORE_TASKS.forEach(function(grp){
     const pose=TASK_POSE[grp.task]||"stand";
@@ -13777,8 +13790,8 @@ function buildShoreParty(root){
       man.updateMatrixWorld(true);
       const bb=new THREE.Box3().setFromObject(man);
       man.position.y+=gy-bb.min.y;
-      /* posed, then baked flat: nobody on this beach has to move again */
-      root.add(bakeFigure(man));
+      /* ARTICULATED, not baked. See the note on CROWD above for the measured cost. */
+      root.add(man);
       /* No collider. Thirty-four of them made the strand a maze and walled
          several men off from being spoken to at all - and a player walking
          through a crowd is a far smaller sin than a player unable to reach it. */
@@ -13786,8 +13799,12 @@ function buildShoreParty(root){
          unshootable - these men left npcMeshes and stopped existing as far as
          the ball was concerned. They need no mesh to be hit, only a position. */
       const nm=grp.names[i], nid="crowd_"+nm.replace(/\s+/g,"_");
-      CROWD_HITS.push({x:px,y:gy+3.78,z:pz,r:2.16,
-        name:nm,id:nid,crowd:true,stooped:(pose!=="stand")});
+      const hit={x:px,y:gy+3.78,z:pz,r:2.16,
+        name:nm,id:nid,crowd:true,stooped:(pose!=="stand")};
+      CROWD_HITS.push(hit);
+      CROWD.push({mesh:man,id:nid,name:nm,task:grp.task,pose:pose,
+        homeX:px,homeZ:pz,workFace:face,seed:count+1,hit:hit,
+        base:man.position.y-gy});   /* how far the plant lifted him off the ground */
       /* Every man ashore can be spoken to. Most have a line about the work,
          which is what a man on a beach would give you. Interactables are plain
          objects and their labels only render when you are close, so thirty-four
@@ -15773,7 +15790,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-0052";
+const BUILD="20260805-0105";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
