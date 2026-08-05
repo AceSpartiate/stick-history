@@ -13800,7 +13800,14 @@ const CH1_IDLE_KIND={
   cooper:  {k:"work",   r:2.30,a:0.55},   /* driving a hoop */
   cook:    {k:"work",   r:1.50,a:0.40},   /* stirring */
   snore:   {k:"breathe",r:0.55,a:0.030},  /* asleep, and only that */
-  helmsman:{k:"still"}                    /* both hands on the staff */
+  helmsman:{k:"still"},                   /* both hands on the staff */
+  /* CHAPTER II'S NAMED MEN. Four of the five were taking the default because this table
+     was written for Chapter I and they are npcMeshes too - so the man whose stated role
+     is "keeps an account" was gazing about instead of writing. */
+  percy:   {k:"work",   r:1.70,a:0.28},   /* keeps an account */
+  newport: {k:"look",   r:0.40},          /* master of the fleet, surveying his beach */
+  archer:  {k:"look",   r:0.50},          /* of the shore party */
+  kendall: {k:"still"}                    /* a soldier, and no seaman */
 };
 /* Named NPCs in EITHER chapter - Kendall and the shore leaders are npcMeshes too, and
    deleting the old swing above would have left them frozen. Not gated on the world. */
@@ -13894,6 +13901,11 @@ function updateNpcIdles(dt){
 const CROWD_FOCUS={shallop:[-46,44],cross:[28,-6],stores:[-64,58],guard:[0,null],
   smith:[-20,30]};
 const CROWD_SPEED=3.4;          /* ft a second: a working man's walk, not a march */
+/* SOME WORK CANNOT BE LEFT. A surgeon does not stroll off from the man he is dressing,
+   a drummer beats where he is told to stand, a smith is at his anvil, and three men
+   holding a cross upright while it is set cannot any of them wander away from it. These
+   stay put and perform on the spot; everyone else keeps the errand. */
+const CROWD_STAY={surgeon:1,drum:1,smith:1,cross:1};
 /* A WALK CYCLE, and the knees are the reason it needs a bob. Bending a knee shortens
    the leg, so a figure whose root height is fixed lifts its own feet off the sand - the
    fault the build comment already records for posed men, measured at up to two feet.
@@ -13915,17 +13927,52 @@ function crowdWalk(p,ph,amp){
 /* A REPEATED ACTION, per task, out of phase per man so a row of them is not a chorus
    line. Small - these are read at twenty feet in daylight, and a big motion at that
    distance reads as a glitch rather than as work. */
+/* ---- A MOTION FOR EVERY TASK, WHICH IT DID NOT HAVE ----
+   SHORE_TASKS defines TEN kinds of work and this branched on three, so cross, camp,
+   idle, surgeon, drum and boys all fell through to "lifting and stowing" - nineteen of
+   the thirty-six men, including a drummer miming a crate and eight idlers who are
+   standing about by definition. Audited by listing every task against the branch it
+   actually took, which is the only way this sort of gap shows up: nothing errors, every
+   man moves, and they are all doing the wrong thing. */
 function crowdWork(p,t,task,seed){
   const w=Math.sin(t*2.1+seed*1.7);
   if(task==="shallop"||task==="smith"){        /* sawing, or striking */
     if(p.shoulderR)p.shoulderR.rotation.x=-0.85+w*0.62;
     if(p.elbowR)p.elbowR.rotation.x=-0.45-Math.abs(w)*0.45;
     if(p.shoulderL)p.shoulderL.rotation.x=-0.55+w*0.30;
+  } else if(task==="drum"){                    /* both sticks, and quick */
+    const d=Math.sin(t*7.5+seed);
+    if(p.shoulderR)p.shoulderR.rotation.x=-1.05+d*0.30;
+    if(p.shoulderL)p.shoulderL.rotation.x=-1.05-d*0.30;
+    if(p.elbowR)p.elbowR.rotation.x=-1.15-Math.abs(d)*0.30;
+    if(p.elbowL)p.elbowL.rotation.x=-1.15-Math.abs(-d)*0.30;
+  } else if(task==="cross"){                   /* holding it up while it is set */
+    if(p.shoulderL)p.shoulderL.rotation.x=-1.95+w*0.10;
+    if(p.shoulderR)p.shoulderR.rotation.x=-1.95-w*0.10;
+    if(p.elbowL)p.elbowL.rotation.x=-0.55;
+    if(p.elbowR)p.elbowR.rotation.x=-0.55;
+  } else if(task==="surgeon"){                 /* stooped over a man, hands low */
+    if(p.shoulderL)p.shoulderL.rotation.x=-0.95+w*0.16;
+    if(p.shoulderR)p.shoulderR.rotation.x=-1.05-w*0.20;
+    if(p.elbowL)p.elbowL.rotation.x=-1.30;
+    if(p.elbowR)p.elbowR.rotation.x=-1.35-Math.abs(w)*0.18;
+    if(p.neck)p.neck.rotation.y=0;
   } else if(task==="guard"){                   /* watching the treeline */
     if(p.neck)p.neck.rotation.y=Math.sin(t*0.45+seed)*0.55;
     if(p.shoulderL)p.shoulderL.rotation.x=-0.12;
     if(p.shoulderR)p.shoulderR.rotation.x=-0.12;
-  } else {                                     /* lifting and stowing */
+  } else if(task==="boys"){                    /* errands, and never still */
+    const f=Math.sin(t*3.4+seed*2.1);
+    if(p.shoulderR)p.shoulderR.rotation.x=-0.30+f*0.40;
+    if(p.shoulderL)p.shoulderL.rotation.x=-0.30-f*0.34;
+    if(p.neck)p.neck.rotation.y=Math.sin(t*1.5+seed)*0.60;
+  } else if(task==="idle"||task==="camp"){      /* standing about, and talking */
+    if(p.neck)p.neck.rotation.y=Math.sin(t*0.55+seed*1.3)*0.62;
+    if(p.shoulderL)p.shoulderL.rotation.x=-0.10+w*0.09;
+    if(p.shoulderR)p.shoulderR.rotation.x=-0.10-w*0.09;
+    if(p.elbowL)p.elbowL.rotation.x=-0.22;
+    if(p.elbowR)p.elbowR.rotation.x=-0.22;
+  } else {                                     /* stores: lifting and stowing */
     if(p.shoulderL)p.shoulderL.rotation.x=-0.50+w*0.34;
     if(p.shoulderR)p.shoulderR.rotation.x=-0.50-w*0.34;
     if(p.elbowL)p.elbowL.rotation.x=-0.60-Math.abs(w)*0.25;
@@ -13971,6 +14018,7 @@ function updateCrowd(dt){
       crowdWork(p,IDLE_T,c.task,c.seed);
       const d=crowdAim(c,c.homeX+Math.sin(c.workFace)*10,c.homeZ+Math.cos(c.workFace)*10);
       m.rotation.y+=Math.max(-1.4*dt,Math.min(1.4*dt,d))*0.5;
+      if(c.t<=0&&CROWD_STAY[c.task]){c.t=4+srand(c.seed*2.3+IDLE_T)*4;continue;}
       if(c.t<=0){
         /* pick the other end of the errand */
         const f=CROWD_FOCUS[c.task];
@@ -16071,7 +16119,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-0131";
+const BUILD="20260805-0139";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
