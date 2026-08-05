@@ -276,5 +276,83 @@ else:
     else:
         ok("the staged pair agrees too")
 
+print("\n11. Persisted state agrees with the save whitelist")
+# `saveBlob()` lists every persisted key BY HAND and `applyBlob()` reads them back
+# BY HAND. So a new key on S is dropped silently unless it is added in both places -
+# and the failure only shows when a player resumes, which no test does. This is the
+# class of bug that costs a chapter's outcome and looks like nothing at all.
+#
+# Two directions, because both are real:
+#   written but not saved   - the outcome vanishes on resume
+#   saved but not applied   - it is written to storage and never read back, which is
+#                             worse, because the save LOOKS complete
+#
+# Anything genuinely per-session goes on TRANSIENT below, with a reason. That list is
+# the whole point: it forces the question to be answered once, in writing, instead of
+# being answered by accident every time somebody adds a field.
+
+def body_of(src, name):
+    """the balanced-brace body of `function name(){...}`, or None"""
+    i = src.find("function " + name + "(")
+    if i < 0: return None
+    j = src.find("{", i)
+    if j < 0: return None
+    d = 0
+    for k in range(j, len(src)):
+        c = src[k]
+        if c == "{": d += 1
+        elif c == "}":
+            d -= 1
+            if d == 0: return src[j:k + 1]
+    return None
+
+# per-session only, never persisted - each one needs a reason to be on this list
+#
+# THIS LIST STARTED WITH FIVE GUESSES ON IT AND THREE WERE WRONG, WHICH IS THE
+# argument for the check existing. Two of them were silencing real bugs: S.spoke is
+# documented in the file as "the high-water mark: once a man has been asked out he
+# stays asked out" - the exact opposite of re-derivable - and S.councilWarned is read
+# back at the muster. Two more named keys that do not exist at all. So: nothing goes
+# on this list that has not been READ IN THE FILE, and the reason quotes the code.
+TRANSIENT = {}
+
+blob = body_of(s, "saveBlob")
+appl = body_of(s, "applyBlob")
+if blob is None or appl is None:
+    bad("saveBlob() or applyBlob() not found - the save format cannot be checked")
+else:
+    saved   = set(re.findall(r"\bS\.([A-Za-z_$][\w$]*)", blob))
+    applied = set(re.findall(r"\bS\.([A-Za-z_$][\w$]*)\s*=", appl))
+    # every place the game WRITES state: S.x = / S.x[...] = / S.x.y = / S.x.push(
+    written = set()
+    for m in re.finditer(r"\bS\.([A-Za-z_$][\w$]*)\s*(?:=[^=]|\[|\.\w+\s*=[^=]|\.(?:push|pop|shift|unshift|splice|add|delete|set)\s*\()", s):
+        written.add(m.group(1))
+    # assignments inside applyBlob are the RESTORE, not gameplay state creation
+    written -= applied
+
+    lost = sorted(w for w in written if w not in saved and w not in TRANSIENT)
+    deaf = sorted(k for k in saved if k not in applied)
+
+    if lost:
+        bad("%d state key(s) are written but NOT in saveBlob - they vanish on resume:\n"
+            "        %s\n"
+            "        add each to saveBlob() AND applyBlob(), or to TRANSIENT in this check with a reason"
+            % (len(lost), ", ".join("S." + k for k in lost)))
+    else:
+        ok("every written state key is persisted (%d keys, %d declared transient)"
+           % (len(saved), len(TRANSIENT)))
+
+    if deaf:
+        bad("%d key(s) are SAVED but never restored by applyBlob - written to storage and "
+            "never read back:\n        %s" % (len(deaf), ", ".join("S." + k for k in deaf)))
+    else:
+        ok("every saved key is read back by applyBlob")
+
+    # And the version must not be bumped casually: a mismatch discards the save.
+    mv = re.search(r"const SAVE_VERSION\s*=\s*(\d+)", s)
+    if mv:
+        ok("SAVE_VERSION is %s - extending the whitelist needs no bump, applyBlob defaults "
+           "every missing key" % mv.group(1))
+
 print("\n" + ("PASS" if not fail else "FAILED %d check(s)" % len(fail)))
 sys.exit(0 if not fail else 1)

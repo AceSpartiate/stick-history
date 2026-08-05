@@ -961,6 +961,12 @@ function saveBlob(){
     unlocked:Array.from(S.unlocked), paletteUnlocked:Array.from(S.paletteUnlocked),
     codexKeys:Array.from(S.codexKeys), faces:Array.from(S.faces),
     codex:S.codex, insight:S.insight, met:S.met, flawless:S.flawless, talkErr:S.talkErr,
+    /* THE HIGH-WATER MARK, and it has to survive a reload or it is not one. `npcDone`
+       latches a man as finished once every beat of his is closed, because a gated beat
+       can open LATER and a purely computed answer would flip back to false and shut an
+       assessment that was already open. Dropping it here did exactly that across a
+       resume: the man un-finished himself and the quiz gate closed behind the player. */
+    spoke:S.spoke,
     equip:S.equip, voicePref:S.voicePref,
     items:S.items, itemAt:S.itemAt, incidents:S.incidents, chartSeen:S.chartSeen,
     survey:S.survey,
@@ -968,6 +974,14 @@ function saveBlob(){
     boxOpened:!!S.boxOpened, smithRecognised:!!S.smithRecognised,
     heardKendall:!!S.heardKendall, reportedKendall:S.reportedKendall,
     ambushFired:!!S.ambushFired, ambushShots:S.ambushShots||0,
+    /* THE COUNCIL. `endCouncil` sets both of these and THEN calls checkpoint(), so the
+       save was being written a line after the facts and dropping them both. Without
+       councilDone the chart offers the council again on resume, which re-runs the scene
+       and re-awards its insight. And councilWarned cannot be recomputed later: it is
+       whether you held the water or the farming finding AT THE MOMENT the site was
+       chosen, which is the whole thing the muster reads back. Learn either of them
+       afterwards and a recomputed answer would claim you saw it coming when you did not. */
+    councilDone:!!S.councilDone, councilWarned:!!S.councilWarned,
     ambushDone:(typeof AMBUSH!=="undefined")?!!AMBUSH.done:false,
     shipNote:!!S.shipNote, chapterDone:!!S.chapterDone, firedGun:!!S.firedGun,
     /* every chapter the player has ever set foot in, so none of them can be
@@ -986,6 +1000,7 @@ function applyBlob(d){
     S.faces=new Set(d.faces||[]);
     S.codex=d.codex||[];S.insight=d.insight||{};S.met=d.met||{};
     S.flawless=d.flawless||{};S.talkErr=d.talkErr||{};
+    S.spoke=d.spoke||{};
     if(d.equip)S.equip=d.equip;
     if(!S.equip.dye)S.equip.dye={torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"};
     if(d.voicePref)S.voicePref=d.voicePref;
@@ -996,6 +1011,7 @@ function applyBlob(d){
     S.boxOpened=!!d.boxOpened;S.smithRecognised=!!d.smithRecognised;
     S.heardKendall=!!d.heardKendall;S.reportedKendall=d.reportedKendall||null;
     S.ambushFired=!!d.ambushFired;S.ambushShots=d.ambushShots||0;
+    S.councilDone=!!d.councilDone;S.councilWarned=!!d.councilWarned;
     S.shipNote=!!d.shipNote;S.chapterDone=!!d.chapterDone;S.firedGun=!!d.firedGun;
     /* An older save has no `reached`. Rather than lock such a player out of the
        chapter picker, infer it: they have at least reached the chapter they were
@@ -16521,7 +16537,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-1047";
+const BUILD="20260805-1406";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
