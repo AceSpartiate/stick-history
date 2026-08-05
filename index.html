@@ -6138,6 +6138,13 @@ function disposeWorld(){
      their materials; drop the references so the next world builds fresh ones */
   fxRoot=null;POOL.smoke=null;POOL.trace=null;POOL.impacts=null;POOL.arrows=null;
   CROWD_HITS.length=0;
+  /* CROWD too, and it was leaking: it is filled by buildShoreParty and was only
+     emptied there, so standing in Chapter I the registry still held all thirty-six
+     men from the beach - references into a world that had been torn down. The world
+     guard in updateCrowd meant nothing animated, so nothing looked wrong; it simply
+     pinned thirty-six dead figures against collection, and anything that later walked
+     CROWD without checking the world would have touched them. */
+  CROWD.length=0;
   /* the instanced shadows lived under worldRoot and went with it */
   shadowMesh=null;SHADOW_CASTERS.length=0;
   ARROWS.length=0;FALLING.length=0;
@@ -15937,7 +15944,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-0109";
+const BUILD="20260805-0115";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
