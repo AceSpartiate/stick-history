@@ -14039,6 +14039,47 @@ const CROWD_FOCUS={shallop:[-46,44],cross:[28,-6],stores:[-64,58],guard:[0,null]
    Eight idlers standing about and three men in the camp should shift their feet within
    their own ground, not march across the strand. A radius, not a point. */
 const CROWD_ROAM={idle:9,camp:6};
+
+/* ---- TWO STATIONS, AND MEN STANDING ROUND THEM RATHER THAN BESIDE THEM ----
+   Reported off a screenshot: the party all face the same way, where real workers would
+   encircle the thing, and a working party has TWO places - where the tools and stock are,
+   and the work itself - with men going between them.
+
+   Both faults come from one decision. workFace was computed ONCE at build time as the
+   bearing from a man to his task's focus. For a party strung out in a line with the focus
+   well off to one side, every one of those bearings is nearly the same - so they all face
+   the same way, and none of them faces the work from his own side of it.
+
+   So: a task can have station A and station B, each with a radius. A man takes a place on
+   the RING round whichever station he is at - his own angle, hashed off his seed, so the
+   party distributes itself - and he faces INWARD, live, at the station rather than along a
+   bearing frozen at build time. Then he works, and walks to the other station, and works
+   there.
+
+   The stations are all real geometry, deliberately: the shallop drawn up on the sand, the
+   stores landed off the boats, the camp. Nothing here is a coordinate I chose because it
+   looked about right - that mistake is one commit old.
+     shallop  the boat  <->  the stores, where the stock and tools are
+     stores   the casks <->  the camp, carrying them up
+     boys     the camp  <->  the boat, running between the two
+   NOT every task. A sentry keeps his own post and walks his own beat toward the wood; the
+   cross party, the smith, the surgeon and the drummer cannot leave what they are doing;
+   idlers and the camp party have no second place to be. That is nine men with two
+   stations, five keeping a beat, and the rest where they were - which is the "many, not
+   all" the report asked for. */
+const CROWD_STATIONS={
+  shallop:{a:[-46,44],ar:9.5, b:[-66,46],br:7.5},
+  stores: {a:[-66,46],ar:6.5, b:[-8,22], br:9.0},
+  boys:   {a:[-8,22], ar:7.5, b:[-46,44],br:11.0}
+};
+/* A place on the ring, walked inshore until it is on land. The ring is the whole point of
+   encircling and the clamp is why it does not put a man in the sea - which is exactly what
+   happened to six casks one commit ago when I placed geometry without one. */
+function ringSpot(sx,sz,r,ang){
+  let x=sx+Math.sin(ang)*r, z=sz+Math.cos(ang)*r, e=0;
+  while(capeBlocked(x,z)&&e<26){z-=1.4;e++;}
+  return [x,z];
+}
 const CROWD_SPEED=3.4;          /* ft a second: a working man's walk, not a march */
 /* SOME WORK CANNOT BE LEFT. A surgeon does not stroll off from the man he is dressing,
    a drummer beats where he is told to stand, a smith is at his anvil, and three men
@@ -14155,11 +14196,27 @@ function updateCrowd(dt){
     if(c.st==="work"){
       if(p.body)p.body.rotation.x+=(c.tip-p.body.rotation.x)*Math.min(1,dt*4);
       crowdWork(p,IDLE_T,c.task,c.seed);
-      const d=crowdAim(c,c.homeX+Math.sin(c.workFace)*10,c.homeZ+Math.cos(c.workFace)*10);
-      m.rotation.y+=Math.max(-1.4*dt,Math.min(1.4*dt,d))*0.5;
+      /* FACE THE WORK FROM WHERE HE IS STANDING. If he has a station he turns to it, so
+         a ring of men all look inward at the same thing from their own sides. Only a man
+         with no station falls back to the bearing frozen at build time. */
+      const aimX=(c.stX!==undefined)?c.stX:c.homeX+Math.sin(c.workFace)*10;
+      const aimZ=(c.stX!==undefined)?c.stZ:c.homeZ+Math.cos(c.workFace)*10;
+      const d=crowdAim(c,aimX,aimZ);
+      m.rotation.y+=Math.max(-1.4*dt,Math.min(1.4*dt,d))*0.9;
       if(c.t<=0&&CROWD_STAY[c.task]){c.t=4+srand(c.seed*2.3+IDLE_T)*4;continue;}
       if(c.t<=0){
         /* pick the other end of the errand */
+        const st=CROWD_STATIONS[c.task];
+        if(st){
+          /* to the other station, and to HIS OWN place on the ring round it */
+          c.at=(c.at==="b")?"a":"b";
+          const S2=(c.at==="a")?{p:st.a,r:st.ar}:{p:st.b,r:st.br};
+          const sp=ringSpot(S2.p[0],S2.p[1],S2.r,c.ring);
+          c.toX=sp[0];c.toZ=sp[1];
+          c.stX=S2.p[0];c.stZ=S2.p[1];      /* what he will turn to face when he arrives */
+          c.out=!c.out;c.st="walk";
+          continue;
+        }
         const f=CROWD_FOCUS[c.task], roam=CROWD_ROAM[c.task];
         let fx=c.homeX+Math.sin(c.workFace)*14, fz=c.homeZ+Math.cos(c.workFace)*14;
         if(f){fx=f[0];fz=(f[1]===null)?CAPE.TREE:f[1];}
@@ -14187,7 +14244,17 @@ function updateCrowd(dt){
     const dx=c.toX-m.position.x, dz=c.toZ-m.position.z;
     const len=Math.hypot(dx,dz);
     if(len<0.9){
-      c.st="work";c.t=3+srand(c.seed*11.3+IDLE_T)*6;c.ph=0;
+      /* HOW LONG HE STOPS, and it has to answer to how far he walked. The stores party
+         haul from the casks to the camp, sixty-six feet, which is nineteen seconds each
+         way at a working man's pace - against a three-to-nine second stop, that put four
+         of the five in transit at any moment and left the stores looking abandoned. A man
+         carrying a cask up a beach spends longer at each end than that. Dwell scales with
+         the leg he just walked: roughly half the journey, so a long haul earns a long
+         stop and a short shuffle stays brisk. */
+      const leg=Math.hypot(c.toX-c.homeX,c.toZ-c.homeZ);
+      c.st="work";
+      c.t=3+srand(c.seed*11.3+IDLE_T)*4+Math.min(14,leg*0.22);
+      c.ph=0;
       continue;
     }
     const step=Math.min(len,CROWD_SPEED*dt);
@@ -14274,6 +14341,9 @@ function buildShoreParty(root){
            working can put him back without calling poseFigure again mid-play */
         tip:(parts&&parts.body)?parts.body.rotation.x:0,
         st:"work", t:2+srand(count*3.1)*5, ph:0, it:null,
+        /* his own place on the ring, so a party spreads round the work instead of
+           queueing along one side of it */
+        ring:srand(count*4.31+1.7)*Math.PI*2, at:"a", stX:undefined, stZ:undefined,
         /* where the work is: he walks between his own spot and a place a little way
            toward the thing he is already facing, so the errand has a direction that
            agrees with what he was built to be doing */
@@ -16341,7 +16411,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-0959";
+const BUILD="20260805-1010";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
