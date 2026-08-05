@@ -625,8 +625,9 @@
   <div class="modal" id="mLash">
     <div class="parchment deckle sheet" data-read>
       <div class="seal noRead">judge</div>
-      <div class="kicker">The Boatswain's Reckoning</div>
+      <div class="kicker" id="lashKicker">The Boatswain's Reckoning</div>
       <h3 id="lashTitle"></h3>
+      <div class="explain" id="lashLead"></div>
       <div class="rk-count" id="lashCount"></div>
       <div class="npc-line" id="lashQ"></div>
       <textarea id="lashInput" placeholder="Write your answer…"></textarea>
@@ -8817,7 +8818,7 @@ function seizedAtTheMast(){
   knock=null;
   result(false,"Seized at the Mast",
     "Your wrists are lashed about the mainmast and the whip is fetched. Newport asked no questions and will hear no answers - a gun fired in this anchorage needs no explaining to him.",
-    ["No trial, no defence"],function(){openLashes();});
+    ["No trial, no defence"],function(){openLashes("gun");});
 }
 
 /* ========== CAPTAIN ========== */
@@ -8831,7 +8832,7 @@ function openCaptain(){
 function endPersuade(){
   const c=CH.captain;$("mDlg").classList.remove("on");
   if(dlg.trust>=c.need)result(true,"Released",c.pass,["Try the casks again"],function(){setPaused(false);});
-  else result(false,"Condemned",c.fail,[],openLashes);
+  else result(false,"Condemned",c.fail,[],function(){openLashes("theft");});
 }
 
 
@@ -8963,17 +8964,69 @@ function clearHangRope(){if(HANG_ROPE){scene.remove(HANG_ROPE);HANG_ROPE=null;}}
 
 /* ========== LASHES ========== */
 let lash=null;
-function pickLashes(){
-  const ok=CH.lashPool.filter(function(q){
+/* ---- THERE IS MORE THAN ONE WAY TO EARN A FLOGGING ----
+   And the text only ever described one of them. Three ways exist:
+
+     gun    fired the ship's piece in the anchorage        seizedAtTheMast
+     theft  caught at the rations, then failed the Captain endPersuade
+     shot   put a ball into a man of the company           Chapter II, at the tree
+
+   All three arrived at one modal that said "The Boatswain's Reckoning" and asked
+   whatever the shuffle turned up, and the front-loaded question was hard-coded to
+   id==="cannon" - so a man flogged for theft was asked to account for a gun he had
+   never fired, and a man flogged on a beach in Virginia was answering to a boatswain
+   who was not there. Each cause now carries its own kicker, its own opening line, and
+   the id of the question it must answer first. */
+/* `mast` says whether openLashes should STAGE the scene itself. beginFlogging sets
+   plevel to MAIN, stands the player at the mainmast and locks the camera to deck
+   coordinates - correct aboard and nonsense ashore, where it would teleport a man onto
+   a ship that is anchored half a mile off and lock the camera onto her deck. Chapter II
+   has already staged its own scene at the tree by the time this opens, so it stages
+   nothing and only asks. */
+const LASH_CAUSE={
+  gun:{kicker:"The Boatswain's Reckoning",first:"cannon",mast:true,
+    lead:"You fired the ship's piece in a crowded anchorage. The boatswain has the whip, and the master will have his answers first."},
+  theft:{kicker:"The Boatswain's Reckoning",first:"tally",mast:true,
+    lead:"You were taken with your hand in the Company's rations, and the Captain was not satisfied. The whip is fetched, and you will answer while it is."},
+  shot:{kicker:"Judgement on the Strand",first:"shot",mast:false,ashore:true,
+    lead:"You put a ball into a man of this company. There is no boatswain here and no mast to tie you to \u2014 only the tree, and Captain Kendall, and what you can say for yourself."},
+  plain:{kicker:"The Boatswain's Reckoning",first:null,mast:true,
+    lead:"You are to answer for yourself while the whip does its work."}
+};
+/* THE POOL BELONGS TO THE CHAPTER YOU ARE IN. It used to read CH.lashPool, and CH is
+   Chapter I's data object - so a flogging on the beach at Cape Henry asked about
+   Roanoke, the Virginia Company's investors and a note in the ship's rations. Resolved
+   through chapterOf(), which is the same accessor the HUD, the guide and the objective
+   list already use and which falls a survey site back to its parent chapter. CH.lashPool
+   stays as the fallback so a world without a bank of its own is never left with none. */
+function lashPool(){
+  let c=null;
+  try{c=chapterOf(CURRENT_WORLD);}catch(e){c=null;}
+  return (c&&c.lashPool&&c.lashPool.length)?c.lashPool:CH.lashPool;
+}
+function pickLashes(cause){
+  const cz=LASH_CAUSE[cause]||LASH_CAUSE.plain;
+  const ok=lashPool().filter(function(q){
     try{return q.when?!!q.when():true;}catch(e){return false;}
   });
-  /* if you fired the gun, you answer for the gun */
-  const first=ok.filter(function(q){return q.id==="cannon";});
-  const rest=shuffle(ok.filter(function(q){return q.id!=="cannon";}));
-  const out=first.concat(rest).slice(0,3);
-  return out;
+  /* you answer for what you actually did, first */
+  const first=cz.first?ok.filter(function(q){return q.id===cz.first;}):[];
+  const rest=shuffle(ok.filter(function(q){return !cz.first||q.id!==cz.first;}));
+  return first.concat(rest).slice(0,3);
 }
-function openLashes(){lash={i:0,wrong:0,set:pickLashes()};beginFlogging();$("mLash").classList.add("on");setPaused(true);renderLash();}
+/* `cause` is one of the LASH_CAUSE keys. It is guarded because this is handed straight
+   to result() as a callback in two places, and result calls its callback with its own
+   argument - so a bare openLashes would arrive here holding a button index. */
+function openLashes(cause){
+  const key=(typeof cause==="string"&&LASH_CAUSE[cause])?cause:"plain";
+  const cz=LASH_CAUSE[key];
+  lash={i:0,wrong:0,cause:key,set:pickLashes(key)};
+  const k=$("lashKicker"),l=$("lashLead");
+  if(k)k.textContent=cz.kicker;
+  if(l)l.textContent=cz.lead;
+  if(cz.mast!==false)beginFlogging();
+  $("mLash").classList.add("on");setPaused(true);renderLash();
+}
 function renderLash(){
   const set=lash.set,Q=set[lash.i];
   $("lashTitle").textContent="Lash "+(lash.i+1)+" of "+set.length;
@@ -8994,8 +9047,26 @@ function submitLash(){
   $("lashSubmit").onclick=function(){lash.i++;if(lash.i>=set.length)endLashes();else renderLash();};
 }
 function endLashes(){
-  if(lash&&lash.wrong>=lash.set.length){drownEnding();return;}
+  const cz=LASH_CAUSE[(lash&&lash.cause)||"plain"]||LASH_CAUSE.plain;
+  /* Every answer wrong used to drown you wherever you were standing. Drowning is a
+     death for a man lashed at a mainmast with the sea alongside; ashore at Cape Henry
+     there is no water to put him in, so the shore path simply ends and the count is
+     what he carries. */
+  /* AND THE SET HAS TO BE LONG ENOUGH FOR "ALL WRONG" TO MEAN ANYTHING. Chapter I
+     always had at least three fair questions so this never arose; Chapter II gates most
+     of its bank on the drill, and a man who somehow earns a flogging before taking it
+     draws a set of one - where a single wrong answer would be a total failure. Two is
+     the floor for the worst outcome. */
+  if(lash&&lash.set.length>=2&&lash.wrong>=lash.set.length&&!cz.ashore){drownEnding();return;}
   $("mLash").classList.remove("on");endFlogging();
+  if(cz.ashore){
+    const bad=(lash&&lash.set.length>=2&&lash.wrong>=lash.set.length);
+    result(!bad,bad?"Cut down, and none the wiser":"Cut down",
+      bad?"You are cut down having answered for nothing, and the men who carried you back say very little. The count stands against your name, and so does the fact that you could not account for it."
+         :"You are cut down. Bloodied, and able to say why - which is the only part of this the Captain will remember. The drill goes on, and you are put back into it.",
+      ["Back to the strand"],function(){setPaused(false);});
+    return;
+  }
   result(true,"It is done","The flogging ends. Bloodied but wiser, you are thrown back among the men - free to try the casks once more.",["Try the casks again"],function(){setPaused(false);});
 }
 
@@ -11373,8 +11444,8 @@ function shotAMan(who,off,radius){
       result(false,lashes+" Lashes at the Tree",
         "He will carry that in his side for the rest of the voyage, and you will carry the count. "+
         "Discipline in this company was not a fine or a warning; it was a man tied to something solid and struck a stated number of times, in front of everyone, so the number was the lesson. "+
-        "This is recorded.",
-        ["No ink","Recorded: a man wounded"],function(){setPaused(false);});
+        "This is recorded — and Captain Kendall means to hear you account for it.",
+        ["No ink","Recorded: a man wounded"],function(){openLashes("shot");});
     }
   });
 }
@@ -15007,6 +15078,61 @@ const CHAPTERS=[
    ready:true,world:"ch2",
    /* one unit to the foot ashore, and a pace is about two and a half feet */
    pace:2.5, near:9,
+   /* ---- WHAT THE TREE ASKS YOU ----
+      Chapter II had no bank at all: pickLashes read CH.lashPool, which is Chapter I's,
+      so a man flogged on the beach at Cape Henry was asked about Roanoke, the Virginia
+      Company's investors, and a note hidden in the ship's rations - none of which is
+      what he had just been taught or had just done.
+      EVERY QUESTION HERE IS ANSWERABLE FROM CHAPTER II AS IT IS ACTUALLY BUILT. The
+      fort-site survey belongs to a later phase, so nothing asks about Archer's Hope or
+      the island - a player who has not surveyed cannot answer for a choice he was never
+      offered, and an assessment that punishes that is not an assessment. The gates are
+      the exact insight titles the chapter grants. */
+   lashPool:[
+    {id:"shot",when:null,
+     q:"You put a ball into a man of this company. Say plainly why that is worse here than it would be in England.",
+     need:[["thirty","few","fewer","small","number","hand","every man","short","no more","replace","cannot spare","one less"],
+           ["no doctor","no surgeon","no help","no law","no prison","no court","alone","far","supply","relief","month","ship","no one coming"]],
+     model:"Because there are about thirty of us and no more coming for months. Every man ashore is a man who digs, watches or carries, and there is no surgeon to mend him and no prison to put me in. In England he would be replaced and I would be tried. Here he cannot be replaced and there is no court but the Captain.",
+     wrongWhy:"Two things make it worse here. The company is tiny and cannot spare a man - there is no one to replace him and no surgeon to save him. And there is no law within three thousand miles except the Captain's own, so the punishment is whatever he decides it is."},
+    {id:"motions",when:function(){return S.insight["The Six Motions"];},
+     q:"Name the six motions of loading a caliver, and say why the order cannot be changed.",
+     need:[["powder","charge"],["ball","shot"],["ram","rod","home"],["prime","pan"],
+           ["order","sequence","out of order","miss","skip","left out","wrong order","each","before","after"]],
+     model:"Charge with powder, drop the ball, seat a wad, ram it home, prime the pan, then present and give fire. The order cannot change because each motion depends on the one before it: powder before ball, ball before ramming, and priming last so the pan is not shaken out. Leave one out and the piece either does not fire or fires in your face.",
+     wrongWhy:"The six are: powder, ball, wad, ram, prime, present and give fire. The order matters because every motion depends on the last one - and a motion left out means the piece fails to go off, or goes off when you are not ready for it."},
+    {id:"match",when:function(){return S.insight["Why the Match Matters"];},
+     q:"The match must be kept burning the whole time you load. Give two reasons that is dangerous.",
+     need:[["powder","charge","flask","horn","pan","prime","spark","blow up","explode","set off","alight","fire"],
+           ["night","dark","see","seen","show","give away","betray","reveal","glow","light","enemy","ambush","hide"]],
+     model:"First, you are handling loose powder with a lit cord in the same two hands - a spark in the flask or the pan and it goes off while you are loading it. Second, a burning match can be seen and smelled in the dark, so it tells anyone watching exactly where you are and that you are armed.",
+     wrongWhy:"The two dangers are the powder and the giveaway. A lit cord next to an open powder flask can set the charge off in your hands - and at night the glow shows an enemy where you are standing before you have seen him at all."},
+    {id:"rain",when:function(){return S.insight["A Matchlock in the Rain"];},
+     q:"Why might a bow have served this company better than a matchlock?",
+     need:[["rain","wet","damp","weather","wind","water"],
+           ["bow","arrow","string","no match","works","still","useless","dead","fail","cannot fire","will not"]],
+     model:"Because rain or wind kills a matchlock outright - the match goes out and the priming will not catch, and then it is a heavy stick. A bow has nothing to keep alight, needs no powder we cannot replace, and shoots as often as a man can draw it. In wet weather the people already living here were better armed than we were.",
+     wrongWhy:"Weather is the answer. Damp or wind puts the match out and spoils the priming, and a matchlock that will not fire is useless. A bow has no flame to lose, needs no powder, and shoots far faster - so in the rain the Powhatan were the better armed."},
+    {id:"caliver",when:function(){return S.insight["The Matchlock Caliver"];},
+     q:"A trained man fires a caliver once or twice a minute. What does that mean for how the company must fight?",
+     need:[["one","two","1","2","slow","rate","minute","few","once","twice"],
+           ["together","volley","rank","line","turn","cover","group","all at once","reload","while","protect","support","alone"]],
+     model:"It means no man can fight alone with one. A minute is a long time to stand reloading, so the pieces have to be fired together in a volley and the men must cover each other while they load - or be given something else to hold at close quarters. A single firer is defenceless the moment he has fired.",
+     wrongWhy:"One or two shots a minute means a man is helpless while reloading. The answer is that they must fight together - firing in volleys and covering each other - because a lone firer has one shot and then a minute of nothing."},
+    {id:"capehenry",when:function(){return S.insight["Cape Henry"];},
+     q:"What happened at Cape Henry on 26 April 1607, and how did the day end?",
+     need:[["land","landed","ashore","first","arriv","cape henry"],
+           ["cross","service","pray","prayer","thanks","named"],
+           ["attack","attacked","fight","fought","wound","arrow","shot at","ambush","set upon","drove"]],
+     model:"The English came ashore for the first time, set up a cross and held a service of thanks, and named the cape for the King's son. That same evening they were attacked by the people whose country it was, and men were wounded.",
+     wrongWhy:"Three things belong in the answer: the first landing, the cross and the service of thanks, and the attack that same evening. The day began with a ceremony claiming the place and ended with the English discovering it was not empty."},
+    {id:"box",when:function(){return S.insight["The Seven Named in the Box"];},
+     q:"The Company sent the names of the council sealed in a box, not to be opened until landfall. Why do you think they did that?",
+     need:[["seal","sealed","secret","closed","hidden","not open","unopened","box"],
+           ["quarrel","argue","fight","mutin","plot","challenge","dispute","authority","obey","undermine","crossing","voyage","at sea","command","power"]],
+     model:"So that nobody knew who would hold authority until the voyage was over. Four months at sea is long enough for men who dislike the choice to plot against it, and a council named in London could have been undermined or overthrown before it ever governed. Sealed, there was nothing to quarrel with until they were ashore.",
+     wrongWhy:"The point is the crossing itself. Naming the council in London would have given the malcontents four months at sea to work against it - so the names were kept sealed, and there was no authority to challenge until there was land under it."}
+   ],
    intro:function(){
      return "The ships are anchored inside the capes and the boats are down. About thirty of you are put ashore on a low sandy point, in the afternoon of the same day you first descried this country. There is a cross to set up, a shallop to be got out of the hold in pieces and put together again, and stores to be landed while the light holds. Captain Kendall has been ordered to prove the pieces before dark, and every man ashore is to learn the drill. Nobody has opened the sealed box yet.";
    },
@@ -15532,7 +15658,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-0003";
+const BUILD="20260805-0027";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
