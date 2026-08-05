@@ -2653,6 +2653,15 @@ function updateJump(dt){
 }
 let npcMeshes=[],interactables=[],colliders=[],CANNONS=[],CONSORTS=[],bellMesh=null;
 let paused=false,moveVec={x:0,y:0},animT=0,activeSpot=null,running=false,guideT=0,labelTick=0;
+/* ---- animT IS NOT A CLOCK, AND IDLES NEED ONE ----
+   animT is the PLAYER'S GAIT PHASE: it advances dt*10 while he walks, dt*17 while he
+   runs and dt*1.4 while he stands still. That is right for swinging his own arms and
+   wrong for anything else, and the idle systems were built on it - so every man aboard
+   and ashore stirred, wrote and hammered SEVEN TIMES FASTER when the player started
+   walking and twelve times faster when he ran. Reported as glitchy movement, and it was
+   half the cause.
+   IDLE_T is a plain monotonic second count. Nothing else may be used for an idle. */
+let IDLE_T=0;
 /* what the action button currently READS, so the prompt can be refreshed whenever
    it goes stale rather than only when the selected spot happens to change */
 let PROMPT_HTML="";
@@ -6823,7 +6832,8 @@ function animate(){
     cam.lookAt(CAMLOCK.look);
     renderer.render(scene,cam);return;
   }
-  updateBell(dt);updateFalling(dt);updateJump(dt);updateCrowd(dt);updateCh1Idles(dt);
+  IDLE_T+=dt;
+  updateBell(dt);updateFalling(dt);updateJump(dt);updateCrowd(dt);updateNpcIdles(dt);
   /* The deck under you plus whatever the jump has added - set every frame, not
      only while walking, or a jump from standstill would never leave the ground.
      Not during a cutscene: those place the player deliberately, and overwriting
@@ -6866,12 +6876,17 @@ function animate(){
   const amp=moving?0.75:0.06,sw=Math.sin(animT)*amp;
   if(playerParts){playerParts.la.rotation.x=sw;playerParts.ra.rotation.x=-sw;
     playerParts.ll.rotation.x=-sw;playerParts.rl.rotation.x=sw;}
-  if((labelTick&3)===0){
-    for(let i=0;i<npcMeshes.length;i++){
-      const p=npcMeshes[i].mesh.userData.parts,sw2=Math.sin(animT*0.3+i*1.7)*0.10;
-      p.la.rotation.x=sw2;p.ra.rotation.x=-sw2;
-    }
-  }
+  /* ---- THE OLD NPC ARM SWING IS GONE, AND IT WAS THE OTHER HALF OF THE GLITCH ----
+     It stood here:
+         if((labelTick&3)===0){ ... p.la.rotation.x=sw2; p.ra.rotation.x=-sw2; }
+     A HARD ASSIGNMENT to the same two joints the idle system eases, on EVERY npcMesh,
+     and only on every fourth frame. So the arms got three frames of smooth easing and
+     then a snap back to this value, over and over - which is exactly what "glitchy"
+     looks like. Two systems owning one joint is the fault; there is one owner now.
+     It was also reaching the man in irons. His shackled pose sets la and ra explicitly,
+     and this overwrote them every fourth frame, so his arms have been wobbling since
+     long before the idle system existed. Excluding him from the registry did nothing
+     while this remained. Now he is genuinely still. */
 
   const px=player.position.x,py=player.position.y,pz=player.position.z;
   const below=(plevel<=LVL.TWEEN);
@@ -13787,13 +13802,16 @@ const CH1_IDLE_KIND={
   snore:   {k:"breathe",r:0.55,a:0.030},  /* asleep, and only that */
   helmsman:{k:"still"}                    /* both hands on the staff */
 };
+/* Named NPCs in EITHER chapter - Kendall and the shore leaders are npcMeshes too, and
+   deleting the old swing above would have left them frozen. Not gated on the world. */
 let CH1_IDLE=[];
+let CH1_SAT_COUNT=0;
 function registerCh1Idles(){
-  CH1_IDLE.length=0;
+  CH1_IDLE.length=0;CH1_SAT_COUNT=0;
   for(let i=0;i<npcMeshes.length;i++){
     const r=npcMeshes[i], n=r.npc, m=r.mesh;
     if(!m||!n||!m.userData||!m.userData.parts)continue;
-    if(n.sat)continue;                    /* he keeps the pose he was given */
+    if(n.sat){CH1_SAT_COUNT++;continue;}  /* he keeps the pose he was given */
     const p=m.userData.parts;
     CH1_IDLE.push({id:n.id,mesh:m,p:p,face:m.rotation.y,seed:i+1,
       kind:CH1_IDLE_KIND[n.id]||{k:"look",r:0.6},
@@ -13807,9 +13825,10 @@ function ease(o,axis,to,dt,rate){
   if(!o)return;
   o.rotation[axis]+=(to-o.rotation[axis])*Math.min(1,dt*(rate||5));
 }
-function updateCh1Idles(dt){
-  if(CURRENT_WORLD!=="ch1")return;
-  if(!CH1_IDLE.length){ if(!npcMeshes.length)return; registerCh1Idles(); }
+function updateNpcIdles(dt){
+  if(!npcMeshes.length){CH1_IDLE.length=0;return;}
+  /* re-register when the cast changes, which is how a world switch shows up here */
+  if(CH1_IDLE.length!==npcMeshes.length-CH1_SAT_COUNT)registerCh1Idles();
   const named=(typeof activeSpot!=="undefined"&&activeSpot)?activeSpot.id:null;
   const px=player?player.position.x:0, pz=player?player.position.z:0;
   for(let i=0;i<CH1_IDLE.length;i++){
@@ -13833,9 +13852,9 @@ function updateCh1Idles(dt){
     while(d2>Math.PI)d2-=Math.PI*2;
     while(d2<-Math.PI)d2+=Math.PI*2;
     m.rotation.y+=Math.max(-1.6*dt,Math.min(1.6*dt,d2));
-    const K2=c.kind, t=animT*(K2.r||1)+c.seed*1.7, w=Math.sin(t);
+    const K2=c.kind, t=IDLE_T*(K2.r||1)+c.seed*1.7, w=Math.sin(t);
     if(K2.k==="look"){
-      ease(p.neck,"y",Math.sin(animT*0.5+c.seed)*0.55,dt,3);
+      ease(p.neck,"y",Math.sin(IDLE_T*0.5+c.seed)*0.55,dt,3);
       ease(p.la,"x",b.laX+w*0.06,dt,4);ease(p.ra,"x",b.raX-w*0.06,dt,4);
     } else if(K2.k==="work"){
       ease(p.ra,"x",b.raX-0.35-w*(K2.a||0.3),dt,9);
@@ -13847,7 +13866,7 @@ function updateCh1Idles(dt){
     } else if(K2.k==="fidget"){
       ease(p.ra,"x",b.raX+w*(K2.a||0.2),dt,10);
       ease(p.la,"x",b.laX-w*(K2.a||0.2)*0.7,dt,10);
-      ease(p.neck,"y",Math.sin(animT*1.1+c.seed)*0.4,dt,4);
+      ease(p.neck,"y",Math.sin(IDLE_T*1.1+c.seed)*0.4,dt,4);
     } else if(K2.k==="breathe"){
       ease(p.body,"x",b.bodyX+w*(K2.a||0.03),dt,2);
     } else {                                /* still: hold the placed pose */
@@ -13949,7 +13968,7 @@ function updateCrowd(dt){
     }
     if(c.st==="work"){
       if(p.body)p.body.rotation.x+=(c.tip-p.body.rotation.x)*Math.min(1,dt*4);
-      crowdWork(p,animT,c.task,c.seed);
+      crowdWork(p,IDLE_T,c.task,c.seed);
       const d=crowdAim(c,c.homeX+Math.sin(c.workFace)*10,c.homeZ+Math.cos(c.workFace)*10);
       m.rotation.y+=Math.max(-1.4*dt,Math.min(1.4*dt,d))*0.5;
       if(c.t<=0){
@@ -13974,7 +13993,7 @@ function updateCrowd(dt){
     const dx=c.toX-m.position.x, dz=c.toZ-m.position.z;
     const len=Math.hypot(dx,dz);
     if(len<0.9){
-      c.st="work";c.t=3+srand(c.seed*11.3+animT)*6;c.ph=0;
+      c.st="work";c.t=3+srand(c.seed*11.3+IDLE_T)*6;c.ph=0;
       continue;
     }
     const step=Math.min(len,CROWD_SPEED*dt);
@@ -16052,7 +16071,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-0122";
+const BUILD="20260805-0131";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
