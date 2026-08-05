@@ -7614,7 +7614,7 @@ $("dlgLeave").onclick=function(){leaveDialogue();};
 function leaveDialogue(){$("mDlg").classList.remove("on");$("dlgLeave").style.display="none";setPaused(false);
   if(chapterReady())toast("You have learned enough. The scrivener's desk awaits.");}
 function meters(){
-  if(dlg.mode==="persuade"){
+  if(dlg.mode==="persuade"||dlg.mode==="council"){
     $("dlgMeter").style.width=Math.round(100*dlg.trust/dlg.npc.need)+"%";
     $("dlgProgress").textContent="His patience";$("dlgRapport").textContent="";return;
   }
@@ -7684,7 +7684,12 @@ function renderBeat(){
   dlg.order.forEach(function(idx){
     const c=b.choices[idx];
     const el=document.createElement("button");
-    const shut=c.needs&&!S.insight[c.needs];
+    /* EVIDENCE GATES A CHOICE THE WAY AN INSIGHT DOES. `evid` is a survey key -
+       "archers.berth" - and it is the council's whole mechanic: you may only cite what
+       you actually went and found. Same treatment as a missing insight, which is the
+       point: SHOWN and disabled, with the reason, so a locked argument tells a player
+       where to go rather than silently not existing. */
+    const shut=(c.needs&&!S.insight[c.needs])||(c.evid&&!found(c.evid));
     el.className="choice"+(dlg.spent[idx]?" spent":"")+(shut?" shut":"")+(c.fair?" fair":"");
     el.textContent=c.t;
     if(shut){
@@ -7717,12 +7722,20 @@ function pick(idx,c,el,conceded){
   $("dlgLine").textContent=(conceded&&c.concede)?c.concede:c.reply;
   const sh=document.querySelector("#mDlg .sheet");if(sh)sh.scrollTop=0;
 
-  if(dlg.mode==="persuade"){
+  if(dlg.mode==="persuade"||dlg.mode==="council"){
     if(c.wise)dlg.trust++;
+    /* THIS BRANCH RETURNS BEFORE THE LINE THAT AWARDS c.insight, and it never mattered
+       until now: the Captain's persuasion beats carry no insights at all - checked, zero
+       of them. The council's arguments carry five, and all five were being silently
+       dropped. Found by running the scene end to end and reading back what the player
+       actually held afterwards, which is the only way a silent drop shows up. */
+    if(c.insight)grantInsight(c.insight,c.ink);
     dlg.beat++;dlg.order=null;
     contBtn(dlg.beat>=dlg.npc.beats.length?"Await his judgement":"Go on",function(){
       dlg.busy=false;
-      if(dlg.beat>=dlg.npc.beats.length)endPersuade();else renderBeat();
+      if(dlg.beat>=dlg.npc.beats.length){
+        if(dlg.mode==="council")endCouncil();else endPersuade();
+      } else renderBeat();
     });
     return;
   }
@@ -9060,6 +9073,114 @@ function buildHangRope(tx,ty,tz,limbY,neckY){
   return m;
 }
 function clearHangRope(){if(HANG_ROPE){scene.remove(HANG_ROPE);HANG_ROPE=null;}}
+
+/* One place that records an insight. This exact five-line shape - set the flag, pay the
+   ink, push it into the codex if it is not already there, refresh the counter - is
+   inlined at five separate sites in this file, and check 6 caught me about to write a
+   sixth by calling a grantInsight() that did not exist. It does now. The five older
+   sites still have their copies; converting them is a tidy-up, not a fix, and is left
+   for a pass that can re-test each one. */
+function grantInsight(n,ink){
+  if(!n||!n.b)return false;
+  if(S.insight[n.b])return false;
+  S.insight[n.b]=true;
+  S.ink+=(ink===undefined?10:ink);
+  if(S.codexKeys&&!S.codexKeys.has(n.b)){S.codexKeys.add(n.b);S.codex.push(n);}
+  updateInk();
+  return true;
+}
+
+/* ========== THE COUNCIL: ARGUE FROM WHAT YOU WENT AND SAW ==========
+   BUILD_PLAN phase 6, and the design's two commitments are the whole scene:
+
+     "You may only cite what you actually surveyed."
+     "And you can be right and still lose."
+
+   Both are load-bearing. The first is why every argument below carries an `evid` key
+   into S.survey.found - a man who never tasted the water at the island cannot raise its
+   brackishness, and the locked line says so rather than vanishing. The second is why
+   THE ISLAND IS CHOSEN NO MATTER WHAT YOU SAY.
+
+   That is not a cynical joke, it is the record. Much of the company preferred Archer's
+   Hope; Edward Maria Wingfield, elected president, overruled them, and the reason is one
+   the player can go and find for himself: a ship could not lie against the bank there.
+   Good ground you cannot supply is not a colony. So a player who correctly identifies
+   Jamestown Island as a deathtrap and is overruled anyway has learned something far
+   truer than one rewarded for the right answer - and the game records that he was right,
+   which is what the muster is for.
+
+   Budget +0, as designed: pure UI over ground already built. No new geometry. */
+const COUNCIL={
+  id:"wingfield",name:"Master Wingfield",voice:"male",role:"president of the council",
+  eq:{skin:"english",palette:"company",cloak:"cloak_weathered",torso:"torso_merchant",
+      accessory:"none_acc",head:"head_capotain",build:"build_normal",face:"shrewd",
+      dye:{torso:"company",breech:"slate",stock:"ink",cloak:"lostcolony",head:"ink"}},
+  beats:[
+   {npc:"\u201cWe are ordered by the Company to choose a seat for the fort, and to choose it before the ships are wanted elsewhere. You have been up the river. Where would you have us plant?\u201d",
+    choices:[
+     {t:"Archer's Hope. The best ground I have set foot on.",evid:"archers.ground",
+      gate:"You have not walked that ground.",wise:true,ink:6,
+      reply:"\u201cHalf the company says the same, and says it loudly. Then give me your reason \u2014 and I will hear only what you saw with your own eyes.\u201d"},
+     {t:"The island up the river. A ship may lie hard against the bank there.",evid:"james.depth",
+      gate:"You have not sounded the island.",wise:true,ink:6,
+      reply:"\u201cThat is the argument that will carry the day, and you may not care for where it leads. Say the rest of what you found.\u201d"},
+     {t:"Point Comfort, where the deep channel runs close in.",evid:"comfort.depth",
+      gate:"You have not sounded Point Comfort.",wise:true,ink:5,
+      reply:"\u201cDeep water, and not a drop to drink. Say the rest of what you found.\u201d"},
+     {t:"Anywhere at all. Four months aboard, and the men want off the ships.",wise:false,
+      reply:"\u201cThen you have nothing, and I will hear from a man who went and looked.\u201d"}
+    ]},
+   {npc:"\u201cNow the reason. Plainly, and only what you saw yourself.\u201d",
+    choices:[
+     {t:"Archer's Hope is shoal. Nothing can be landed there off a ship's side.",
+      evid:"archers.berth",gate:"You have not sounded that bank.",wise:true,ink:9,
+      insight:{g:"known",b:"Why Jamestown Was Chosen",s:"The company largely preferred Archer's Hope for its ground and fresh water, but a ship could not lie against its bank. Jamestown Island was chosen because a vessel could be moored to the trees and unloaded - supply, not health, decided the site."},
+      reply:"\u201cYou have put your finger on it, and you have argued yourself out of the place you wanted. We cannot victual a town we cannot reach.\u201d"},
+     {t:"The island's water is already brackish, and it is only May.",
+      evid:"james.water",gate:"You have not tasted the water there.",wise:true,ink:10,
+      insight:{g:"known",b:"The Water at Jamestown",s:"The river at Jamestown Island was already brackish in May and would grow worse through the summer, when the salt pushed further up. The settlers drank it anyway, and the sickness that followed was not bad luck."},
+      reply:"\u201cThen we shall dig a well.\u201d He says it as a man closing a subject, not answering one."},
+     {t:"It is marsh, and nobody lives there \u2014 in a country where every good acre is farmed.",
+      evid:"james.ground",gate:"You have not walked the island.",wise:true,ink:10,
+      insight:{g:"known",b:"The Island Nobody Farmed",s:"Jamestown Island was uninhabited in a country that was not empty. The Powhatan farmed the good ground and left the marsh - so the site being available was evidence against it, not for it."},
+      reply:"\u201cYou think the naturals left it out of ignorance.\u201d A pause. \u201cI think you may be right, and I think it will not change my mind.\u201d"},
+     {t:"Point Comfort has no fresh water at all, for all its deep channel.",
+      evid:"comfort.ground",gate:"You have not walked Point Comfort.",wise:true,ink:7,
+      reply:"\u201cAgreed, and that is Point Comfort finished. Which leaves two.\u201d"},
+     {t:"At Point Comfort you can see clean out of the bay \u2014 and so can anything coming in.",
+      evid:"comfort.sea",gate:"You have not looked to the sea there.",wise:true,ink:7,
+      insight:{g:"known",b:"Seen From the Sea",s:"Point Comfort commanded the entrance to the bay, which cut both ways: the English could see a Spanish sail coming, and a Spanish sail could see them. The fort was placed up a river partly to be hidden from the sea."},
+      reply:"\u201cThe Spanish. Yes. That is the one argument the Company would read twice.\u201d"},
+     {t:"The ground hardly matters. We are told to plant, so let us plant.",wise:false,
+      reply:"\u201cIt is the only thing that matters, and in a year you will know it.\u201d"}
+    ]}
+  ]
+};
+function openCouncil(){
+  const c=COUNCIL;
+  dlg={npc:c,beat:0,mode:"council",trust:0,mistakes:0,order:null,spent:{},busy:false,
+    canLeave:false,said:[]};
+  $("dlgName").innerHTML=c.name+"<small>"+c.role+"</small>";
+  drawPortrait(c.eq);$("dlgLeave").style.display="none";
+  openModal("mDlg");setPaused(true);renderBeat();
+}
+function endCouncil(){
+  $("mDlg").classList.remove("on");
+  S.councilDone=true;
+  /* what he decides does not depend on you, and that IS the lesson. What DOES depend on
+     you is whether the record shows you saw it coming - read back at the muster. */
+  const warned=!!(S.insight["The Water at Jamestown"]||S.insight["The Island Nobody Farmed"]);
+  S.councilWarned=warned;
+  grantInsight({g:"known",b:"Overruled",
+    s:"The site was chosen by the president of the council, not by vote. A colonist could be right about the ground and still be overruled - authority in the colony did not rest on evidence."});
+  checkpoint("the council has chosen");
+  result(true,"The Island",
+    "\u201cWe plant on the island.\u201d Wingfield does not put it to a vote, because it is not his to put. "+
+    "\u201cA ship may be moored to the trees there and emptied over her side. That is the whole of it.\u201d"+
+    (warned?" He does not say that you were wrong, and he does not pretend you were. It is written down that you said it."
+           :" Nobody in the room has been up the island to say otherwise, and so nobody does."),
+    ["Recorded: the seat of the fort"],function(){setPaused(false);});
+}
 
 /* ========== LASHES ========== */
 let lash=null;
@@ -14757,6 +14878,28 @@ function openChart(){
   document.querySelectorAll("#mapGloss .chartGo").forEach(function(b){
     b.onclick=function(){travelTo(b.dataset.site);};
   });
+  /* ---- AND THIS IS WHERE THE COUNCIL IS CALLED ----
+     The chart is already the one place in the chapter where choosing happens - it is how
+     you pick a site, and it is what tells you the daylight you are spending to look at
+     one. So it is also where you say you have seen enough.
+     Appended after the render rather than woven into the site-list template, which is one
+     expression and should stay one.
+     DISABLED, NOT HIDDEN, until you have surveyed something - the same rule the council's
+     own arguments follow, and for the same reason: a button that says why it is shut
+     sends a player somewhere, and a missing button teaches nothing. */
+  if(siteOf(CURRENT_WORLD)&&!S.councilDone){
+    const anyFound=!!(S.survey&&S.survey.found&&Object.keys(S.survey.found).length);
+    const cb=document.createElement("button");
+    cb.className="btn copper wide mt";
+    cb.id="chartCouncil";
+    cb.innerHTML="Call the council"+
+      '<small style="display:block;font-size:.72rem;opacity:.8">'+
+      (anyFound?"You have been and looked. Say so, while it is still open."
+               :"You have surveyed nothing. There is nothing you could tell them.")+"</small>";
+    cb.disabled=!anyFound;
+    $("mapGloss").appendChild(cb);
+    cb.onclick=function(){$("mMap").classList.remove("on");openCouncil();};
+  }
   drawChart(spec);
   setPaused(true);
   /* recorded per world, so a chapter's objective list can ask whether the
@@ -16119,7 +16262,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-0139";
+const BUILD="20260805-0645";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
