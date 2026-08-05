@@ -14019,8 +14019,26 @@ function updateNpcIdles(dt){
    there is nothing to plan, and a state each man can evaluate in nine lines costs
    nothing across thirty-six of them. When this grows into skirmishes the states will
    grow - fire, take cover, fall back - and the shape stays the same. */
+/* ---- WHERE THE ERRAND GOES, AND THE THREE FAULTS FOUND BY MEASURING IT ----
+   Reported as men wandering aimlessly, and they were. FOURTEEN of the thirty-six had no
+   entry in this table, so the destination fell back to "fourteen feet in the direction
+   he happens to face" - and for every one of those tasks the face computation defaults
+   to looking at (0,20), the middle of the beach. So camp, idle and boys all set off
+   toward the same arbitrary patch of sand and came back. Sampled: (-5,27) to (3,15),
+   (-2,20) to (13,20), (36,30) to (23,26). Nothing there in any case.
+
+   smith:[-20,30] IS GONE. I invented that coordinate; the smith actually stands at
+   (-30,14), eighteen feet away, so the entry was wrong as well as made up. He is in
+   CROWD_STAY and never used it, which is the only reason it did no harm.
+
+   boys GET A REAL ERRAND - the camp at (-8,22) - because running errands is what they
+   are for, and an errand needs somewhere to arrive. */
 const CROWD_FOCUS={shallop:[-46,44],cross:[28,-6],stores:[-64,58],guard:[0,null],
-  smith:[-20,30]};
+  boys:[-8,22]};
+/* AND SOME MEN HAVE NOWHERE TO GO, WHICH IS NOT THE SAME AS HAVING A DESTINATION.
+   Eight idlers standing about and three men in the camp should shift their feet within
+   their own ground, not march across the strand. A radius, not a point. */
+const CROWD_ROAM={idle:9,camp:6};
 const CROWD_SPEED=3.4;          /* ft a second: a working man's walk, not a march */
 /* SOME WORK CANNOT BE LEFT. A surgeon does not stroll off from the man he is dressing,
    a drummer beats where he is told to stand, a smith is at his anvil, and three men
@@ -14142,9 +14160,16 @@ function updateCrowd(dt){
       if(c.t<=0&&CROWD_STAY[c.task]){c.t=4+srand(c.seed*2.3+IDLE_T)*4;continue;}
       if(c.t<=0){
         /* pick the other end of the errand */
-        const f=CROWD_FOCUS[c.task];
+        const f=CROWD_FOCUS[c.task], roam=CROWD_ROAM[c.task];
         let fx=c.homeX+Math.sin(c.workFace)*14, fz=c.homeZ+Math.cos(c.workFace)*14;
         if(f){fx=f[0];fz=(f[1]===null)?CAPE.TREE:f[1];}
+        else if(roam){
+          /* a few steps round his own ground. Hashed on his seed and the clock so two
+             men do not shuffle in step, and so it is not re-rolled every frame. */
+          const a=srand(c.seed*3.7+Math.floor(IDLE_T*0.11))*Math.PI*2;
+          const r=2.5+srand(c.seed*9.1+Math.floor(IDLE_T*0.13))*roam;
+          fx=c.homeX+Math.sin(a)*r;fz=c.homeZ+Math.cos(a)*r;
+        }
         if(c.out){c.toX=c.homeX;c.toZ=c.homeZ;}
         else{
           /* a little way toward the work, not all the way onto it */
@@ -15422,6 +15447,60 @@ registerWorld("ch2",function(root){
      tents in this period were the preserve of officers, which is exactly why the
      captain's chart lives under the captain's canvas. */
   buildCamp(P,-8,22);
+  /* ---- THREE PARTIES WERE WORKING ON AIR, AND THIS IS WHAT THEY NEEDED ----
+     Measured by counting prop vertices standing above the sand within ten feet of each
+     party. The camp had 572, the shallop 106, the cross 32 - and:
+         stores  0 vertices, nearest prop 12.7 ft
+         drum    0 vertices, nearest prop 17.2 ft
+         smith   47 vertices, nearest prop 7.4 ft
+     Five men were miming lifting and stowing with nothing to lift, a drummer was
+     beating a drum that did not exist, and a smith was striking at open sand. The
+     motions were right; there was simply nothing under them.
+     NO COLLIDERS on any of this. A prop you can walk through is a far smaller fault
+     than a prop that walls a man off from being spoken to - which has already happened
+     twice on this beach, once to the Ship's Cook and once to two men left standing in
+     the surf. These sit where men are working, so they get no solid() at all. */
+  const cask=RGB(0x6a4f2c), hoopC=RGB(0x3f3220), crate=RGB(0x7a6039), iron=RGB(0x33333a);
+  /* ---- AND THE STORES HAVE TO BE CLAMPED, EXACTLY AS THE MEN ARE ----
+     First attempt put all six of these in the sea, at ground -0.20 to -0.58, and a
+     screenshot of teal water with crates floating in it is what caught it.
+     Two reasons, and the second one also invalidated my measurement. The strand along
+     x=-66 stops being walkable at z=48. And buildShoreParty CLAMPS anyone unreachable up
+     the beach - `while(capeBlocked(px,pz))pz-=2.5` - so the stores party is not at the
+     table's z 50..60 at all, it is at z 45..48. I measured "nothing within 12.7 ft" from
+     the table coordinates rather than from where the men actually ended up, so the
+     distance was wrong even though the conclusion happened to be right.
+     So these walk inshore until they are on land, by the same rule and for the same
+     reason, rather than by me picking a number that looked about right. */
+  const ashore=function(x,z){
+    let e=0;
+    while(capeBlocked(x,z)&&e<40){z-=1.5;e++;}
+    return z;
+  };
+  for(let i=0;i<4;i++){
+    const sx=-70+i*2.0;
+    const sz=ashore(sx,46.5+(i%2)*1.4);
+    const sy=capeGround(sx,sz);
+    P.oct(sx,sz,sy+0.1,sy+2.0,2.0,2.0,2.0,2.0,0.18,cask,hoopC);
+  }
+  {
+    const cxa=-62.5, cza=ashore(cxa,46.0), cya=capeGround(cxa,cza);
+    P.box(cxa,cya+1.0,cza,3.4,2.0,2.6,crate);
+    P.box(cxa+0.4,cya+2.4,cza+0.5,2.8,0.8,2.2,crate);
+  }
+  /* THE DRUM, on its side by the drummer at (18,10) - a drum is head, shell and hoops */
+  {
+    const dx=18.9,dz=10.8,dy=capeGround(dx,dz);
+    P.oct(dx,dz,dy+0.1,dy+1.7,2.2,2.2,2.2,2.2,0.10,RGB(0xb8a06a),RGB(0x8d7748));
+    P.box(dx,dy+0.9,dz,2.35,0.22,2.35,hoopC);
+  }
+  /* THE SMITH'S BLOCK: an anvil on a stump, at (-30,14) where he actually stands */
+  {
+    const ax=-30.0,az=15.4,ay=capeGround(ax,az);
+    P.oct(ax,az,ay,ay+1.7,2.3,2.3,2.1,2.1,0.14,RGB(0x6b5433),RGB(0x4a3a22));
+    P.box(ax,ay+2.0,az,1.9,0.55,0.8,iron);
+    P.box(ax+0.95,ay+2.05,az,1.0,0.42,0.6,iron);
+  }
   const chartX=-8, chartZ=24.6;
   interactables.push({id:"capechart",label:"The Captain's Chart",
     x:chartX,z:chartZ,y:capeGround(chartX,chartZ),
@@ -16262,7 +16341,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-0645";
+const BUILD="20260805-0959";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
