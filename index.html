@@ -14067,11 +14067,58 @@ const CROWD_ROAM={idle:9,camp:6};
    idlers and the camp party have no second place to be. That is nine men with two
    stations, five keeping a beat, and the rest where they were - which is the "many, not
    all" the report asked for. */
+/* ---- A STATION HAS A SHAPE, BECAUSE A BOAT IS NOT A POST ----
+   Reported: too many workstations sit on top of each other when the party is working the
+   same thing, and the shallop is big enough for places all round it. Both true, and the
+   ring I built was worse than crowded - it was wrong.
+   The shallop's own collider is solid(-46,44,5.0,15.0): ten feet across and THIRTY long.
+   A circle of radius 9.5 about its centre puts a man at (-46,53.5), which is inside the
+   hull. A circle cannot describe a boat.
+   So a station carries HALF-EXTENTS, and places run round the offset RECTANGLE - down both
+   sides and across both ends. For the shallop that perimeter is about a hundred feet, so
+   six carpenters stand sixteen feet apart instead of jostling on one arc.
+   AND THE PLACES ARE DEALT BY SLOT, NOT BY HASH. A hashed angle can put three men in the
+   same twenty degrees by chance, which is the clustering complained about. Each man knows
+   his index within his own party and takes (slot+0.5)/slots of the way round, so an even
+   spread is guaranteed rather than hoped for. A little jitter keeps it from looking set
+   out with a ruler. */
 const CROWD_STATIONS={
-  shallop:{a:[-46,44],ar:9.5, b:[-66,46],br:7.5},
-  stores: {a:[-66,46],ar:6.5, b:[-8,22], br:9.0},
-  boys:   {a:[-8,22], ar:7.5, b:[-46,44],br:11.0}
+  /* centre, half-extents of the THING, and how far off it a man stands */
+  shallop:{a:[-46,44],ah:[5.0,15.0],as:2.6,  b:[-66,46],bh:[5.0,2.5],bs:2.4},
+  stores: {a:[-66,46],ah:[5.0,2.5],as:2.4,   b:[-8,22], bh:[6.0,5.0],bs:2.8},
+  boys:   {a:[-8,22], ah:[6.0,5.0],as:2.8,   b:[-46,44],bh:[5.0,15.0],bs:2.6}
 };
+/* A place on the offset rectangle at t in [0,1). If that place is in the water it SLIDES
+   ALONG THE PERIMETER to the nearest one that is not.
+   It must never translate inshore, which is what the first version did, and that walked a
+   man standing off the stern - the shallop's stern is at z=59, in the shallows - up to
+   thirty-six feet in -z, STRAIGHT THROUGH THE HULL he was working on. Measured: ninety
+   samples of men standing inside the thing, and two of the stores party clamped onto the
+   same square foot. Sliding keeps a man outside the object, which is the whole point of
+   giving the station a shape. */
+function perimSpot(cx,cz,hx,hz,stand,t){
+  const ax=hx+stand, az=hz+stand, per=4*(ax+az);
+  const at=function(tt){
+    let d=(((tt%1)+1)%1)*per,x,z;
+    if(d<2*az){x=ax;z=-az+d;}
+    else if((d-=2*az)<2*ax){z=az;x=ax-d;}
+    else if((d-=2*ax)<2*az){x=-ax;z=az-d;}
+    else {d-=2*az;x=-ax+d;z=-az;}
+    return [cx+x,cz+z];
+  };
+  for(let k=0;k<=16;k++){
+    const p=at(t+k/32);
+    if(!capeBlocked(p[0],p[1]))return p;
+    if(k){const q=at(t-k/32);if(!capeBlocked(q[0],q[1]))return q;}
+  }
+  return at(t);
+}
+/* HE FACES THE NEAREST PART OF THE THING, not its centre. Standing off the bow of a
+   thirty-foot boat and turning to its middle would have him looking along it rather than
+   at it; the nearest point on the rectangle is square on to the side he is working. */
+function nearestOnRect(px,pz,cx,cz,hx,hz){
+  return [Math.max(cx-hx,Math.min(cx+hx,px)),Math.max(cz-hz,Math.min(cz+hz,pz))];
+}
 /* A place on the ring, walked inshore until it is on land. The ring is the whole point of
    encircling and the clamp is why it does not put a man in the sea - which is exactly what
    happened to six casks one commit ago when I placed geometry without one. */
@@ -14199,8 +14246,11 @@ function updateCrowd(dt){
       /* FACE THE WORK FROM WHERE HE IS STANDING. If he has a station he turns to it, so
          a ring of men all look inward at the same thing from their own sides. Only a man
          with no station falls back to the bearing frozen at build time. */
-      const aimX=(c.stX!==undefined)?c.stX:c.homeX+Math.sin(c.workFace)*10;
-      const aimZ=(c.stX!==undefined)?c.stZ:c.homeZ+Math.cos(c.workFace)*10;
+      let aimX,aimZ;
+      if(c.stC){
+        const np=nearestOnRect(m.position.x,m.position.z,c.stC[0],c.stC[1],c.stH[0],c.stH[1]);
+        aimX=np[0];aimZ=np[1];
+      } else {aimX=c.homeX+Math.sin(c.workFace)*10;aimZ=c.homeZ+Math.cos(c.workFace)*10;}
       const d=crowdAim(c,aimX,aimZ);
       m.rotation.y+=Math.max(-1.4*dt,Math.min(1.4*dt,d))*0.9;
       if(c.t<=0&&CROWD_STAY[c.task]){c.t=4+srand(c.seed*2.3+IDLE_T)*4;continue;}
@@ -14208,12 +14258,13 @@ function updateCrowd(dt){
         /* pick the other end of the errand */
         const st=CROWD_STATIONS[c.task];
         if(st){
-          /* to the other station, and to HIS OWN place on the ring round it */
+          /* to the other station, and to HIS OWN place on the perimeter of it */
           c.at=(c.at==="b")?"a":"b";
-          const S2=(c.at==="a")?{p:st.a,r:st.ar}:{p:st.b,r:st.br};
-          const sp=ringSpot(S2.p[0],S2.p[1],S2.r,c.ring);
+          const S2=(c.at==="a")?{p:st.a,h:st.ah,s:st.as}:{p:st.b,h:st.bh,s:st.bs};
+          const t=(c.slot+0.5)/Math.max(1,c.slots)+(srand(c.seed*6.13)-0.5)*0.06;
+          const sp=perimSpot(S2.p[0],S2.p[1],S2.h[0],S2.h[1],S2.s,t);
           c.toX=sp[0];c.toZ=sp[1];
-          c.stX=S2.p[0];c.stZ=S2.p[1];      /* what he will turn to face when he arrives */
+          c.stC=S2.p;c.stH=S2.h;            /* the thing he will turn to when he arrives */
           c.out=!c.out;c.st="walk";
           continue;
         }
@@ -14343,7 +14394,10 @@ function buildShoreParty(root){
         st:"work", t:2+srand(count*3.1)*5, ph:0, it:null,
         /* his own place on the ring, so a party spreads round the work instead of
            queueing along one side of it */
-        ring:srand(count*4.31+1.7)*Math.PI*2, at:"a", stX:undefined, stZ:undefined,
+        at:"a", stC:null, stH:null,
+        /* his index within his own party, and how many of them there are - filled below.
+           Dealing places by slot is what guarantees the spread. */
+        slot:0, slots:1,
         /* where the work is: he walks between his own spot and a place a little way
            toward the thing he is already facing, so the errand has a direction that
            agrees with what he was built to be doing */
@@ -14361,6 +14415,15 @@ function buildShoreParty(root){
       CROWD[CROWD.length-1].it=interactables[interactables.length-1];
       count++;
     }
+  });
+  /* WHO IS THE THIRD MAN OF SIX. Counted after the build, because a task's size is not
+     known until its whole group has been placed. */
+  const per={};
+  CROWD.forEach(function(c){per[c.task]=(per[c.task]||0)+1;});
+  const seen={};
+  CROWD.forEach(function(c){
+    c.slot=(seen[c.task]=(seen[c.task]===undefined?0:seen[c.task]+1));
+    c.slots=per[c.task];
   });
   return count;
 }
@@ -16411,7 +16474,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-1010";
+const BUILD="20260805-1025";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
