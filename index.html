@@ -610,8 +610,11 @@
     </div>
   </div>
 
+  <!-- data-read: this panel tells the player the rule of the minigame - wait for the
+       quartermaster, three out of three, one slip and you are caught - and it was the
+       one piece of player-facing instruction in either chapter with no way to hear it. -->
   <div class="modal mid" id="mSteal">
-    <div class="parchment deckle sheet">
+    <div class="parchment deckle sheet" data-read>
       <div class="kicker">By the Ration Casks</div>
       <h3>Take the Extra Rations</h3>
       <p>Wait for the quartermaster to look away. Tap <b>Take</b> when the marker is in the green. It must be <b>three out of three</b> — one slip and a hand closes on your collar.</p>
@@ -721,8 +724,12 @@
     </div>
   </div>
 
+  <!-- data-read: this is the objective and the goals list - what the player is
+       supposed to be DOING. For a pupil who cannot read it, it is the most important
+       text in the game, and it had no reader. Found by checking the live DOM: a source
+       scan said it had one, because the window it searched ran on into the next modal. -->
   <div class="modal mid" id="mPause">
-    <div class="parchment deckle sheet" style="max-width:330px">
+    <div class="parchment deckle sheet" style="max-width:330px" data-read>
       <h3 class="center">Your Task</h3>
       <div id="pauseObj"></div>
       <button class="btn wide mt" id="pauseResume">Resume</button>
@@ -8276,17 +8283,47 @@ function attachReaders(root){
     const b=document.createElement("button");
     b.className="sayBtn wide";
     b.innerHTML="&#9835; Read aloud";
-    b.onclick=function(e){e.stopPropagation();readPanel(el,true);};
+    b.onclick=function(e){e.stopPropagation();
+      if(saying()){stopSaying();return;}
+      readPanel(el,true);syncSayBtns();};
     el.insertBefore(b,el.firstChild);
   }
+  startSayBtnWatch();
 }
 /* speak a panel when it appears, for the ones where that is the right default */
 function autoRead(el){
   if(!el)return;
   if(el.getAttribute&&el.getAttribute("data-read")==="auto")readPanel(el,false);
 }
+/* ---- READ WHAT IS ON SCREEN, NOT WHAT WAS SAID LAST ----
+   sayAgain spoke LAST_SAID, which is whatever went through speak() most recently
+   regardless of whether it is still in front of you. Reported exactly as: press read
+   aloud and it reads the previous chunk of text, the one no longer visible.
+   It happens because the dialogue panel carries TWO read controls - the one
+   attachReaders adds, which reads the panel's own DOM and is always right, and #dlgSay,
+   which called this. Both wear a musical note. Press the wrong one after the panel has
+   moved on and you hear the last thing spoken instead of the thing you are looking at.
+   So: find the topmost thing actually on screen that has readable text and read THAT.
+   LAST_SAID stays as the fallback, because it is still the right answer when the reason
+   you pressed the button is that you half-heard a line of narration and there is no
+   panel open at all. */
+function visibleReadHost(){
+  const mods=document.querySelectorAll(".modal.on");
+  for(let i=mods.length-1;i>=0;i--){          /* last opened sits on top */
+    const h=mods[i].querySelector("[data-read]");
+    if(h&&readableText(h))return h;
+  }
+  for(const k in screens){
+    if(!screens[k]||!screens[k].classList.contains("on"))continue;
+    const h=screens[k].querySelector("[data-read]");
+    if(h&&readableText(h))return h;
+  }
+  return null;
+}
 function sayAgain(){
-  if(!LAST_SAID)return;
+  const h=visibleReadHost();
+  if(h){readPanel(h,true);return;}
+  if(!LAST_SAID){if(SPEECH_OK)toast("There is nothing here to read.");return;}
   if(!VOICE_ON)setVoiceOn(true);
   speak(LAST_SAID.text,LAST_SAID.kind,LAST_SAID.who,true);
 }
@@ -8306,6 +8343,45 @@ function setVoiceOn(on){
 }
 function hushVoice(){
   SAY_Q.length=0;SAY_ON=false;SAYING=null;try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}}
+/* ---- STOPPING A READING IS NOT THE SAME AS TURNING NARRATION OFF ----
+   The only way to silence a reading in progress was setVoiceOn(false), which mutes the
+   whole feature, toasts "Narration muted." and leaves it muted - so a pupil who pressed
+   read aloud on a long document and wanted it to stop had to disable narration and then
+   remember to turn it back on. Nobody remembers.
+   The read-aloud button is a toggle now: while it is speaking, the same button that
+   started it stops it, and narration stays ON for the next thing. That is the pattern
+   every media control in the world uses, which is the whole argument for it. */
+function saying(){
+  if(SAY_ON||SAY_Q.length)return true;
+  try{return !!(window.speechSynthesis&&window.speechSynthesis.speaking);}catch(e){return false;}
+}
+function stopSaying(){
+  SAY_Q.length=0;SAY_ON=false;SAYING=null;
+  try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
+  syncSayBtns();
+}
+/* The label has to follow the speech, and speech ends on its own - so this is polled
+   rather than pushed. Every 320ms, and only while there is anything to change. */
+let SAY_BTN_TIMER=null, SAY_BTN_WAS=false;
+function syncSayBtns(){
+  const on=saying();
+  const b=document.querySelectorAll(".sayBtn");
+  for(let i=0;i<b.length;i++){
+    const el=b[i];
+    if(el.tagName!=="BUTTON")continue;         /* the no-speech note is a div */
+    const wide=el.classList.contains("wide");
+    el.innerHTML=on?(wide?"&#9632; Stop reading":"&#9632;")
+                   :(wide?"&#9835; Read aloud":"&#9835;");
+    el.title=on?"Stop reading":"Read aloud";
+  }
+  SAY_BTN_WAS=on;
+}
+function startSayBtnWatch(){
+  if(SAY_BTN_TIMER||!SPEECH_OK)return;
+  SAY_BTN_TIMER=setInterval(function(){
+    if(saying()!==SAY_BTN_WAS)syncSayBtns();
+  },320);
+}
 
 /* ========== CUTSCENE DIRECTOR ==========
    A cutscene is data: camera moves, narration, sound, actors walking on.
@@ -9633,7 +9709,9 @@ if(!SPEECH_OK){
 /* Say it again. Useful for a line half-heard, and it is the only way to hear
    the documents at all - those are never narrated automatically because they
    run long and a player is usually reading them at their own pace. */
-$("dlgSay").onclick=function(e){e.stopPropagation();sayAgain();};
+$("dlgSay").onclick=function(e){e.stopPropagation();
+  if(saying()){stopSaying();return;}
+  sayAgain();syncSayBtns();};
 
 $("pauseTitle").onclick=function(){
   /* Continue was only evaluated once at boot, so a player who saved and then
@@ -15695,7 +15773,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-0041";
+const BUILD="20260805-0052";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
