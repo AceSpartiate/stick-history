@@ -6815,7 +6815,7 @@ function animate(){
     cam.lookAt(CAMLOCK.look);
     renderer.render(scene,cam);return;
   }
-  updateBell(dt);updateFalling(dt);updateJump(dt);
+  updateBell(dt);updateFalling(dt);updateJump(dt);updateCrowd(dt);
   /* The deck under you plus whatever the jump has added - set every frame, not
      only while walking, or a jump from standstill would never leave the ground.
      Not during a cutscene: those place the player deliberately, and overwriting
@@ -13742,6 +13742,142 @@ let CROWD_HITS=[];
    Each entry keeps what a task needs: the figure, where he started, what he is doing,
    and which way the work faces. */
 let CROWD=[];
+/* ========== WHAT THE MEN ASHORE ARE DOING ==========
+   Thirty-six men stood in fixed poses like furniture. Now each has an errand: he works
+   where he was placed, walks a little way toward the thing his task concerns, works
+   there, and comes back - and if you get close enough that the Speak button names him,
+   he stops what he is doing and turns to look at you.
+
+   THE ERRAND'S DIRECTION IS NOT INVENTED. buildShoreParty already computes which way
+   each man faces, from the thing his task is about - the shallop, the cross, the boats,
+   the treeline. The walk goes toward that same point, so nobody wanders off on business
+   the level does not contain, and no new geometry was needed to give the beach purpose.
+
+   THREE STATES AND NO PLANNER. work, walk, attend. A planner would be the wrong tool:
+   there is nothing to plan, and a state each man can evaluate in nine lines costs
+   nothing across thirty-six of them. When this grows into skirmishes the states will
+   grow - fire, take cover, fall back - and the shape stays the same. */
+const CROWD_FOCUS={shallop:[-46,44],cross:[28,-6],stores:[-64,58],guard:[0,null],
+  smith:[-20,30]};
+const CROWD_SPEED=3.4;          /* ft a second: a working man's walk, not a march */
+/* A WALK CYCLE, and the knees are the reason it needs a bob. Bending a knee shortens
+   the leg, so a figure whose root height is fixed lifts its own feet off the sand - the
+   fault the build comment already records for posed men, measured at up to two feet.
+   Rather than solve for the lowest foot every frame across thirty-six men, the cycle
+   carries a small counter-bob, which is also what a walk looks like. */
+function crowdWalk(p,ph,amp){
+  const s=Math.sin(ph);
+  if(p.hipL)p.hipL.rotation.x= s*0.60*amp;
+  if(p.hipR)p.hipR.rotation.x=-s*0.60*amp;
+  if(p.kneeL)p.kneeL.rotation.x=-Math.max(0,-s)*0.85*amp-0.04;
+  if(p.kneeR)p.kneeR.rotation.x=-Math.max(0, s)*0.85*amp-0.04;
+  if(p.shoulderL)p.shoulderL.rotation.x=-s*0.40*amp;
+  if(p.shoulderR)p.shoulderR.rotation.x= s*0.40*amp;
+  if(p.elbowL)p.elbowL.rotation.x=-0.22-Math.abs(s)*0.22*amp;
+  if(p.elbowR)p.elbowR.rotation.x=-0.22-Math.abs(s)*0.22*amp;
+  if(p.ankleL)p.ankleL.rotation.x= s*0.18*amp;
+  if(p.ankleR)p.ankleR.rotation.x=-s*0.18*amp;
+}
+/* A REPEATED ACTION, per task, out of phase per man so a row of them is not a chorus
+   line. Small - these are read at twenty feet in daylight, and a big motion at that
+   distance reads as a glitch rather than as work. */
+function crowdWork(p,t,task,seed){
+  const w=Math.sin(t*2.1+seed*1.7);
+  if(task==="shallop"||task==="smith"){        /* sawing, or striking */
+    if(p.shoulderR)p.shoulderR.rotation.x=-0.85+w*0.62;
+    if(p.elbowR)p.elbowR.rotation.x=-0.45-Math.abs(w)*0.45;
+    if(p.shoulderL)p.shoulderL.rotation.x=-0.55+w*0.30;
+  } else if(task==="guard"){                   /* watching the treeline */
+    if(p.neck)p.neck.rotation.y=Math.sin(t*0.45+seed)*0.55;
+    if(p.shoulderL)p.shoulderL.rotation.x=-0.12;
+    if(p.shoulderR)p.shoulderR.rotation.x=-0.12;
+  } else {                                     /* lifting and stowing */
+    if(p.shoulderL)p.shoulderL.rotation.x=-0.50+w*0.34;
+    if(p.shoulderR)p.shoulderR.rotation.x=-0.50-w*0.34;
+    if(p.elbowL)p.elbowL.rotation.x=-0.60-Math.abs(w)*0.25;
+    if(p.elbowR)p.elbowR.rotation.x=-0.60-Math.abs(w)*0.25;
+  }
+  /* the legs go still and slightly apart, which is how a man stands to work */
+  if(p.hipL)p.hipL.rotation.x=0;if(p.hipR)p.hipR.rotation.x=0;
+  if(p.kneeL)p.kneeL.rotation.x=-0.06;if(p.kneeR)p.kneeR.rotation.x=-0.06;
+}
+function crowdAim(c,tx,tz){          /* the shortest way round to a heading */
+  const want=Math.atan2(tx-c.mesh.position.x,tz-c.mesh.position.z);
+  let d=want-c.mesh.rotation.y;
+  while(d>Math.PI)d-=Math.PI*2;
+  while(d<-Math.PI)d+=Math.PI*2;
+  return d;
+}
+function updateCrowd(dt){
+  if(!CROWD.length||CURRENT_WORLD!=="ch2")return;
+  const px=player?player.position.x:0, pz=player?player.position.z:0;
+  const named=(typeof activeSpot!=="undefined"&&activeSpot)?activeSpot.id:null;
+  for(let i=0;i<CROWD.length;i++){
+    const c=CROWD[i], m=c.mesh;
+    if(!m)continue;
+    const p=m.userData&&m.userData.parts;
+    if(!p)continue;
+    c.t-=dt;
+    /* ---- ATTEND. The Speak button naming him IS the player addressing him, so that
+       is the trigger - the same selection the button uses, so what he does and what
+       the button says can never disagree. */
+    const attend=(named===c.id)||(dlg&&dlg.npc&&dlg.npc.id===c.id);
+    if(attend){
+      const d=crowdAim(c,px,pz);
+      m.rotation.y+=Math.max(-2.6*dt,Math.min(2.6*dt,d));
+      /* he stands up out of his work to look at you */
+      if(p.body)p.body.rotation.x+=(0-p.body.rotation.x)*Math.min(1,dt*5);
+      crowdWork(p,0,"guard",c.seed);       /* still, hands down, watching */
+      if(p.neck)p.neck.rotation.y+=(0-p.neck.rotation.y)*Math.min(1,dt*6);
+      c.st="work";c.t=Math.max(c.t,1.2);   /* and he does not walk off mid-sentence */
+      continue;
+    }
+    if(c.st==="work"){
+      if(p.body)p.body.rotation.x+=(c.tip-p.body.rotation.x)*Math.min(1,dt*4);
+      crowdWork(p,animT,c.task,c.seed);
+      const d=crowdAim(c,c.homeX+Math.sin(c.workFace)*10,c.homeZ+Math.cos(c.workFace)*10);
+      m.rotation.y+=Math.max(-1.4*dt,Math.min(1.4*dt,d))*0.5;
+      if(c.t<=0){
+        /* pick the other end of the errand */
+        const f=CROWD_FOCUS[c.task];
+        let fx=c.homeX+Math.sin(c.workFace)*14, fz=c.homeZ+Math.cos(c.workFace)*14;
+        if(f){fx=f[0];fz=(f[1]===null)?CAPE.TREE:f[1];}
+        if(c.out){c.toX=c.homeX;c.toZ=c.homeZ;}
+        else{
+          /* a little way toward the work, not all the way onto it */
+          const k=0.22+srand(c.seed*7.7)*0.16;
+          c.toX=c.homeX+(fx-c.homeX)*k;
+          c.toZ=c.homeZ+(fz-c.homeZ)*k;
+          let esc=0;
+          while(capeBlocked(c.toX,c.toZ)&&esc<24){c.toZ-=2.0;esc++;}
+        }
+        c.out=!c.out;c.st="walk";
+      }
+      continue;
+    }
+    /* ---- WALK ---- */
+    const dx=c.toX-m.position.x, dz=c.toZ-m.position.z;
+    const len=Math.hypot(dx,dz);
+    if(len<0.9){
+      c.st="work";c.t=3+srand(c.seed*11.3+animT)*6;c.ph=0;
+      continue;
+    }
+    const step=Math.min(len,CROWD_SPEED*dt);
+    const nx=m.position.x+dx/len*step, nz=m.position.z+dz/len*step;
+    if(capeBlocked(nx,nz)){c.st="work";c.t=2;continue;}   /* never wade */
+    m.position.x=nx;m.position.z=nz;
+    const gy=capeGround(nx,nz);
+    c.ph+=dt*CROWD_SPEED*1.55;
+    m.position.y=gy+c.base-Math.abs(Math.sin(c.ph))*0.07;
+    if(p.body)p.body.rotation.x+=(0-p.body.rotation.x)*Math.min(1,dt*4);
+    crowdWalk(p,c.ph,1);
+    const d=crowdAim(c,c.toX,c.toZ);
+    m.rotation.y+=Math.max(-3.0*dt,Math.min(3.0*dt,d));
+    /* the ball and the label follow the man, not the spot he was built on */
+    if(c.hit){c.hit.x=nx;c.hit.z=nz;c.hit.y=gy+3.78;}
+    if(c.it){c.it.x=nx;c.it.z=nz;c.it.y=gy;}
+  }
+}
 function buildShoreParty(root){
   CROWD_HITS.length=0;
   CROWD.length=0;
@@ -13802,9 +13938,18 @@ function buildShoreParty(root){
       const hit={x:px,y:gy+3.78,z:pz,r:2.16,
         name:nm,id:nid,crowd:true,stooped:(pose!=="stand")};
       CROWD_HITS.push(hit);
+      const parts=man.userData&&man.userData.parts;
       CROWD.push({mesh:man,id:nid,name:nm,task:grp.task,pose:pose,
         homeX:px,homeZ:pz,workFace:face,seed:count+1,hit:hit,
-        base:man.position.y-gy});   /* how far the plant lifted him off the ground */
+        base:man.position.y-gy,   /* how far the plant lifted him off the ground */
+        /* the tip his posed stoop gave him, so walking can straighten him up and
+           working can put him back without calling poseFigure again mid-play */
+        tip:(parts&&parts.body)?parts.body.rotation.x:0,
+        st:"work", t:2+srand(count*3.1)*5, ph:0, it:null,
+        /* where the work is: he walks between his own spot and a place a little way
+           toward the thing he is already facing, so the errand has a direction that
+           agrees with what he was built to be doing */
+        toX:px, toZ:pz, out:false});
       /* Every man ashore can be spoken to. Most have a line about the work,
          which is what a man on a beach would give you. Interactables are plain
          objects and their labels only render when you are close, so thirty-four
@@ -13814,6 +13959,8 @@ function buildShoreParty(root){
         lines:SHORE_SAYS[nm]||["\u201cThere is work enough. Mind yourself.\u201d"]};
       interactables.push({id:nid,label:nm,x:px,z:pz,y:gy,
         lvl:LVL.MAIN,r:9,action:"idle",data:npc});
+      /* held so the label and the Speak button follow him as he walks */
+      CROWD[CROWD.length-1].it=interactables[interactables.length-1];
       count++;
     }
   });
@@ -15790,7 +15937,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-0105";
+const BUILD="20260805-0109";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
