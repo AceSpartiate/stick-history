@@ -4913,7 +4913,7 @@ window.addEventListener("keydown",function(e){
    Firing ends it, which is what was asked for and is also the chapter's whole
    argument: the shot leaves you with an empty piece and your hands full, and
    getting the cursor back in your face is a fair way to be told so. */
-const AIM={on:false,ads:0,adsWant:0,pending:0,denied:false};
+const AIM={on:false,ads:0,adsWant:0,pending:0,denied:false,byHold:false};
 /* radians per pixel of mouse travel. 0.0021 puts a full turn at about three
    thousand pixels, which is the middle of the range every shooter ships at;
    leaning into the sights slows it by nearly half, because the view has narrowed
@@ -4922,6 +4922,22 @@ const AIM_SENS=0.0021;
 function aimEligible(){
   return INPUT==="kbm"&&gunInHands()&&gunEarned()&&gunReady()
     &&!GUN.active&&!RELOAD.on&&!paused&&!anyModalOpen()
+    &&!(typeof CS!=="undefined"&&CS.active)&&!(typeof LESSON!=="undefined"&&LESSON.on)
+    &&screens.scene.classList.contains("on");
+}
+/* ---- LOOKING IS NOT AIMING ----
+   aimEligible above requires gunInHands() && gunEarned() && gunReady(), so the mouse
+   could only ever take the view while the player held a loaded matchlock. Turning your
+   own character is not a shooting privilege, and that is what was reported: hold the
+   right button, expect the cursor to go and the view to follow the mouse, and nothing
+   happened unless you were armed.
+   So the HOLD asks this - the same guard with the three gun tests removed - while ADS
+   still asks aimEligible, because leaning into sights you do not carry would mean
+   nothing. Everything else about the capture is unchanged: the request is still
+   `pending` until pointerlockchange confirms it, and a refusal still hands back
+   drag-to-look for the session. */
+function lookEligible(){
+  return INPUT==="kbm"&&!paused&&!anyModalOpen()
     &&!(typeof CS!=="undefined"&&CS.active)&&!(typeof LESSON!=="undefined"&&LESSON.on)
     &&screens.scene.classList.contains("on");
 }
@@ -4955,6 +4971,7 @@ function aimOn(){
 }
 function aimOff(){
   AIM.pending=0;
+  AIM.byHold=false;   /* Esc, a tab-out or a modal all end the hold as far as we know */
   if(!AIM.on)return;
   AIM.on=false;AIM.adsWant=0;
   document.body.classList.remove("aiming");
@@ -4989,11 +5006,26 @@ window.addEventListener("mousemove",function(e){
   LOOK_AT=performance.now();     /* so the drill's camera nudge yields to you */
 });
 window.addEventListener("mousedown",function(e){
+  if(e.button===2){
+    e.preventDefault();
+    /* HOLD RIGHT TO TAKE THE VIEW. If the pointer is not captured yet, ask for it -
+       and remember that the HOLD is what asked, so releasing gives it back. If some
+       other path captured it, byHold stays false and the release below leaves it
+       alone rather than yanking the cursor into a player's face mid-drill. */
+    if(!AIM.on){
+      if(!AIM.pending&&!AIM.denied&&lookEligible()){AIM.byHold=true;setAim(true);}
+    }
+    if(aimEligible()||AIM.on)AIM.adsWant=1;   /* and it still leans into the sights */
+    return;
+  }
   if(!AIM.on)return;
-  if(e.button===2){AIM.adsWant=1;e.preventDefault();return;}
   if(e.button===0){tryFire();e.preventDefault();}
 });
-window.addEventListener("mouseup",function(e){if(e.button===2)AIM.adsWant=0;});
+window.addEventListener("mouseup",function(e){
+  if(e.button!==2)return;
+  AIM.adsWant=0;
+  if(AIM.byHold){AIM.byHold=false;setAim(false);}
+});
 /* eased in animate, so the lean is a movement rather than a jump */
 function updateAim(dt){
   /* asked and heard nothing back: treat silence as a refusal */
@@ -15500,7 +15532,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260804-2359";
+const BUILD="20260805-0003";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
