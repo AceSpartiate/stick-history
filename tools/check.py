@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Pre-flight checks for index.html.
 
@@ -31,7 +31,7 @@ js = "\n".join(blocks)
 # with no Node, or a commit hook running anywhere but this desk, lost every
 # check rather than one. Skip loudly instead.
 if shutil.which("node") is None:
-    print("  skip  node not on PATH — syntax unchecked (install Node.js to enable)")
+    print("  skip  node not on PATH â€” syntax unchecked (install Node.js to enable)")
 else:
     with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
         f.write(js); tmp = f.name
@@ -353,6 +353,61 @@ else:
     if mv:
         ok("SAVE_VERSION is %s - extending the whitelist needs no bump, applyBlob defaults "
            "every missing key" % mv.group(1))
+
+print("\n12. A consequence is banked the moment it is earned")
+# Reported from play: fire a cannon by accident, refresh the page, and it never happened.
+# Checkpoints are at boundaries BY DESIGN, so anything earned between two of them lived
+# only in memory. The rule now is an asymmetry - progress waits for a boundary, a
+# consequence does not - and this is what stops the rule from quietly rotting.
+#
+# Every write to a key that records something AGAINST the player must be followed closely
+# by incur() or saveGame(). Closely, because these are one-or-two-line mutations; a save
+# five lines later is usually a different branch.
+
+AGAINST = r"firedGun|shotAMan|killedAMan|corrections|incidents|talkErr|ambushFired|ambushShots|pending"
+# where the save format itself is written, and where a run is deliberately wiped
+# newRun AND resetRun both exist and both deliberately wipe the record
+EXEMPT_FN = ("saveBlob", "applyBlob", "newRun", "resetRun", "musterCode",
+             "readMuster", "applyMuster")
+
+lines = s.split("\n")
+def fn_at(i):
+    """the nearest preceding top-level function name"""
+    for j in range(i, -1, -1):
+        m = re.match(r"function\s+([A-Za-z_$][\w$]*)", lines[j])
+        if m:
+            return m.group(1)
+    return "?"
+
+unbanked = []
+for i, ln in enumerate(lines):
+    if not re.search(r"\bS\.(%s)\s*(=[^=]|\+\+|\+=|\.push\()" % AGAINST, ln):
+        continue
+    if fn_at(i) in EXEMPT_FN:
+        continue
+    # `if(!S.incidents)S.incidents=[]` is a lazy initialiser, not a consequence. It
+    # records nothing against anybody and forcing a save on it would be noise.
+    if re.search(r"if\s*\(\s*!\s*S\.\w+\s*\)\s*S\.\w+\s*=\s*(\[\]|\{\})", ln):
+        continue
+    window = "\n".join(lines[i:i + 4])
+    if re.search(r"\bincur\(|\bsaveGame\(|\bcheckpoint\(", window):
+        continue
+    unbanked.append("line %d in %s(): %s" % (i + 1, fn_at(i), ln.strip()[:78]))
+
+if unbanked:
+    bad("%d consequence write(s) are not banked - a refresh erases them:\n        %s\n"
+        "        follow each with incur(\"why\"), or add the function to EXEMPT_FN here"
+        % (len(unbanked), "\n        ".join(unbanked)))
+else:
+    ok("every write against the player is followed by incur/saveGame")
+
+# and the unserved-punishment half, which is the part that is easy to drop
+if re.search(r"S\.pending\s*=\s*\{", s) and "function resumePenalty" in s \
+   and re.search(r"resumePenalty\(\)", s.split("function resumePenalty")[0] +
+                 s.split("function resumePenalty")[1]):
+    ok("an unserved punishment is recorded and resumed")
+else:
+    bad("S.pending is set but never resumed - a refresh mid-punishment serves none of it")
 
 print("\n" + ("PASS" if not fail else "FAILED %d check(s)" % len(fail)))
 sys.exit(0 if not fail else 1)

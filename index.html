@@ -981,6 +981,8 @@ function saveBlob(){
     boxOpened:!!S.boxOpened, smithRecognised:!!S.smithRecognised,
     heardKendall:!!S.heardKendall, reportedKendall:S.reportedKendall,
     ambushFired:!!S.ambushFired, ambushShots:S.ambushShots||0,
+    /* an unserved punishment. Without this a refresh mid-flogging serves none of it. */
+    pending:S.pending||null,
     /* THE COUNCIL. `endCouncil` sets both of these and THEN calls checkpoint(), so the
        save was being written a line after the facts and dropping them both. Without
        councilDone the chart offers the council again on resume, which re-runs the scene
@@ -1018,6 +1020,7 @@ function applyBlob(d){
     S.boxOpened=!!d.boxOpened;S.smithRecognised=!!d.smithRecognised;
     S.heardKendall=!!d.heardKendall;S.reportedKendall=d.reportedKendall||null;
     S.ambushFired=!!d.ambushFired;S.ambushShots=d.ambushShots||0;
+    S.pending=d.pending||null;
     S.councilDone=!!d.councilDone;S.councilWarned=!!d.councilWarned;
     S.shipNote=!!d.shipNote;S.chapterDone=!!d.chapterDone;S.firedGun=!!d.firedGun;
     /* An older save has no `reached`. Rather than lock such a player out of the
@@ -1072,13 +1075,46 @@ function newRun(){
   S.boxOpened=false;S.smithRecognised=false;
   S.survey={days:surveyBudget(),found:{},visited:{}};
   S.heardKendall=false;S.reportedKendall=null;
-  S.ambushFired=false;S.ambushShots=0;
+  S.ambushFired=false;S.ambushShots=0;S.pending=null;
   S.shipNote=false;S.chapterDone=false;S.firedGun=false;
   S.reached={ch1:true};
   S.corrections=0;S.reckTries=0;S.chartSeen={};
   if(typeof AMBUSH!=="undefined")AMBUSH.done=false;
 }
 /* named so the player knows what a checkpoint is: a boundary, not an autosave */
+/* ---- YOU CANNOT REFRESH YOUR WAY OUT OF THE RECORD ----
+   Reported from play: fire a cannon by accident, decide you would rather not answer for
+   it, refresh the page, and it never happened. That worked because checkpoints are at
+   boundaries by design - "a bad run stays recoverable at a sensible point" - and a
+   consequence earned BETWEEN two boundaries lived only in memory until the next one.
+
+   The fix is an ASYMMETRY, not continuous saving, because continuous saving would throw
+   away the reason checkpoints exist. Progress is still banked at sensible boundaries.
+   A CONSEQUENCE IS BANKED THE INSTANT IT IS EARNED. Convenience waits; the record does
+   not. That is also the honest reading of what this game is about - the muster roll asks
+   what you did, and "I closed the tab" is not an answer anybody in 1607 had.
+
+   Two halves, and the second is the one that is easy to miss:
+     the FLAG must be durable  - incur() writes it through to storage at once
+     the PUNISHMENT must resume - or a player refreshes past the flogging itself and
+                                  keeps the flag with none of the consequence, which is
+                                  most of what he was trying to dodge
+   S.pending carries the second. openLashes sets it and endLashes clears it, so every
+   punishment routed through them is refresh-proof - including ones not written yet,
+   which is the point of putting it there rather than at the three call sites. */
+function incur(why){
+  /* the caller has already mutated S; this makes it true outside this tab */
+  try{saveGame();}catch(e){}
+  return why;
+}
+function resumePenalty(){
+  if(!S||!S.pending||!S.pending.lash)return;
+  const c=S.pending.lash;
+  /* a beat, so the punishment does not open on top of a chapter still building itself */
+  setTimeout(function(){
+    try{if(S.pending&&S.pending.lash&&typeof openLashes==="function")openLashes(c);}catch(e){}
+  },900);
+}
 function checkpoint(why){
   if(saveGame())toast("Progress kept \u2014 "+(why||"checkpoint")+".");
 }
@@ -7860,6 +7896,7 @@ function pick(idx,c,el,conceded){
     });
   } else {
     dlg.mistakes++;S.corrections++;S.talkErr[dlg.npc.id]=dlg.mistakes;dlg.spent[idx]=true;
+    incur("a correction");
     dlg.tries=(dlg.tries||0)+1;
     meters();
     $("dlgRapport").textContent=(dlg.tries===1)?"That will cost you some of it":
@@ -9057,6 +9094,7 @@ function updateFx(dt){
 function fireCannon(d){
   if(S.firedGun){toast("The guns are secured. You have done enough.");return;}
   S.firedGun=true;S.corrections+=2;
+  incur("fired a gun");        /* the reported exploit: this was memory-only until now */
   boom();
   /* muzzle flash */
   flash={mesh:new THREE.Mesh(new THREE.SphereGeometry(2.6*K,8,6),
@@ -9537,6 +9575,10 @@ function openLashes(cause){
   const k=$("lashKicker"),l=$("lashLead");
   if(k)k.textContent=cz.kicker;
   if(l)l.textContent=cz.lead;
+  /* OWED THE MOMENT IT IS ORDERED. Written through before a single lash is drawn, so
+     closing the tab here resumes the flogging rather than escaping it. */
+  S.pending={lash:key};
+  incur("lashes ordered: "+key);
   if(cz.mast!==false)beginFlogging();
   $("mLash").classList.add("on");setPaused(true);renderLash();
 }
@@ -9553,7 +9595,7 @@ function submitLash(){
   if(ans.length<12){$("lashFeedback").innerHTML="<div class='explain'>Write a full sentence - the boatswain wants a real answer.</div>";return;}
   const a=ans.toLowerCase();
   const ok=Q.need.every(function(g){return g.some(function(k){return a.indexOf(k)>=0;});});
-  if(!ok){S.corrections++;lash.wrong++;}
+  if(!ok){S.corrections++;lash.wrong++;incur("a wrong answer under the lash");}
   $("lashFeedback").innerHTML=ok?"<div class='explain good'><b>Accepted.</b> "+Q.model+"</div>"
     :"<div class='explain'><b>Not quite.</b> "+Q.wrongWhy+"<br><br><i>A fuller answer:</i> "+Q.model+"</div>";
   $("lashSubmit").textContent=(lash.i>=set.length-1)?"Endure the last":"Next lash";
@@ -9561,6 +9603,8 @@ function submitLash(){
 }
 function endLashes(){
   const cz=LASH_CAUSE[(lash&&lash.cause)||"plain"]||LASH_CAUSE.plain;
+  /* served, however it ended - drowning included, which returns early below */
+  S.pending=null;incur("lashes served");
   /* Every answer wrong used to drown you wherever you were standing. Drowning is a
      death for a man lashed at a mainmast with the sea alongside; ashore at Cape Henry
      there is no water to put him in, so the shore path simply ends and the count is
@@ -9712,7 +9756,7 @@ function renderRK(){
   });
   rkCount();  const sh=document.querySelector("#mReck .sheet");if(sh)sh.scrollTop=0;
 }
-function rkAns(ok){rk.ans[rk.pos]=ok;if(ok)rk.correct++;else S.corrections++;rk.pos++;
+function rkAns(ok){rk.ans[rk.pos]=ok;if(ok)rk.correct++;else {S.corrections++;incur("a wrong answer at the muster");}rk.pos++;
   if(rk.pos>=RECK_ASK)rkEnd();else renderRK();}
 function rkEnd(){
   $("mReck").classList.remove("on");
@@ -10289,6 +10333,7 @@ function openIntro(worldId){
 function beginWorld(worldId){
   useContent(worldId);           /* the chapter's own content, before anything reads CH */
   try{paintShell();}catch(e){}   /* the era on the shell can move when a chapter is reached */
+  try{resumePenalty();}catch(e){} /* an unserved flogging follows you across a refresh */
   /* Setting foot in a chapter opens it for good. Recorded on the CHAPTER's own
      world id, not on worldId, so arriving at a survey site does not quietly
      invent a chapter that was never played. */
@@ -11530,7 +11575,7 @@ function giveFire(){
       knock={vx:0,vz:0,t:0};camKick=0.10;
       toast("She burst at the breech \u2014 far too much powder. Your hand is numb and the piece is fouled open. Charge her again, and watch the green.");
     });
-    S.corrections=(S.corrections||0)+1;
+    S.corrections=(S.corrections||0)+1;incur("a correction");
     /* Cleared HERE and not left to done(), whose reset only runs inside the taught
        drill. Outside it the recovery is startReload(), which decides between a
        six-second re-prime and the full thirty-eight by asking whether ball, wad
@@ -11826,6 +11871,7 @@ function shotAMan(who,off,radius){
   S.incidents.push({kind:killed?"killed":"wounded",who:who.name,world:CURRENT_WORLD});
   S.shotAMan=true;
   if(killed)S.killedAMan=true;
+  incur(killed?"killed a man":"shot a man");   /* AFTER both, or the second escapes */
   if(GUN.active)closeDrill();
   setItemState("matchlock","stowed");
   refreshPlayer();refreshGunHud();
@@ -15729,6 +15775,7 @@ function endAmbush(){
   ARROWS.length=0;
   S.ambushFired=AMBUSH.fired;
   S.ambushShots=AMBUSH.shots;
+  incur("the ambush is on the record");
   /* Recorded for the muster roll, and rewarded with nothing. Whether you got a
      shot away did not decide this and the game should not pretend it did. */
   const body=AMBUSH.fired
@@ -16932,7 +16979,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260807-1553";
+const BUILD="20260807-1604";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
