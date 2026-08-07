@@ -1984,11 +1984,27 @@ function reckPool(){
   /* A CHAPTER WITHOUT A MUSTER IS NOT AN ERROR, it is an unfinished chapter. This used to
      read CH.reck.q unguarded, which was safe only because CH was always Chapter I. */
   if(!CH.reck||!CH.reck.q)return [];
-  return CH.reck.q.filter(function(q){
-    if(!q.need)return true;
-    for(let i=0;i<q.need.length;i++)if(S.insight[q.need[i]])return true;
-    return false;
-  });
+  return CH.reck.q.filter(fairToAsk);
+}
+/* ---- FAIRNESS HAS TWO KINDS OF EVIDENCE NOW, BECAUSE CHAPTER TWO DOES ----
+   A question is only fair if the player had the chance to learn its subject. In Chapter I
+   that chance is always a CONVERSATION, so the gate reads S.insight and nothing else.
+   Chapter II is built the other way round: its argument is the site, and the way you learn
+   the site is by SURVEYING it - tasting the water at Jamestown, sounding the channel off
+   Point Comfort, walking the ground at Archer's Hope. Those land in S.survey.found, which
+   this gate could not see, so an evidence-based chapter had no way to ask an evidence-based
+   question.
+   `evid` therefore gates on findings exactly as `need` gates on insights, and the council
+   already uses that same word for the same idea - you may only argue from what you went and
+   found. One question may carry either or both; holding EITHER kind opens it, because a
+   pupil who reached the same conclusion by a different road has still earned the question.
+   An item with neither is common knowledge for the chapter and always fair. */
+function fairToAsk(q){
+  if(!q)return false;
+  if(!q.need&&!q.evid)return true;
+  if(q.need)for(let i=0;i<q.need.length;i++)if(S.insight[q.need[i]])return true;
+  if(q.evid)for(let i=0;i<q.evid.length;i++)if(found(q.evid[i]))return true;
+  return false;
 }
 /* ---- WHAT OPENS THE ASSESSMENT: BREADTH, NOT A COUNT ----
    Twice I gated this on a count and twice the count was the wrong quantity. First it
@@ -16979,7 +16995,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260807-1604";
+const BUILD="20260807-1615";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
