@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Stick History — Jamestown</title>
+<title>Stick History</title>   <!-- the arc is appended by paintShell(); see ARCS -->
 <!-- Add to Home Screen. On a phone this is what turns a link into something that
      opens fullscreen with no address bar and no browser chrome eating the top of
      the screen - which on a game played in portrait is a third of the viewport.
@@ -518,8 +518,8 @@
     <div>
       <canvas id="titleCanvas" width="200" height="190"></canvas>
       <h1>Stick History</h1>
-      <div class="sub">Jamestown</div>
-      <div class="yr">CHAPTER I · 1606–1607</div>
+      <div class="sub" id="mnArc">Jamestown</div>
+      <div class="yr" id="mnYr">CHAPTER I · 1606–1607</div>
       <div id="inapp"></div>
       <div class="menu">
         <button class="btn wide" id="btnContinue" style="display:none">Continue</button>
@@ -806,8 +806,8 @@
     <div id="cineFade"></div>
     <div id="openTitle">
       <div class="ot1">Stick History</div>
-      <div class="ot2">Jamestown</div>
-      <div class="ot3">Chapter I &middot; The Crossing</div>
+      <div class="ot2" id="otArc">Jamestown</div>
+      <div class="ot3" id="otCh">Chapter I &middot; The Crossing</div>
     </div>
   </div>
 
@@ -10033,6 +10033,7 @@ function openIntro(worldId){
 }
 function beginWorld(worldId){
   useContent(worldId);           /* the chapter's own content, before anything reads CH */
+  try{paintShell();}catch(e){}   /* the era on the shell can move when a chapter is reached */
   /* Setting foot in a chapter opens it for good. Recorded on the CHAPTER's own
      world id, not on worldId, so arriving at a survey site does not quietly
      invent a chapter that was never played. */
@@ -15984,6 +15985,57 @@ CONTENT.ch2={
   unlocks:[]
 };
 
+/* ---- THIS GAME IS UNITED STATES HISTORY, AND THE SHELL SAID JAMESTOWN ----
+   The tab title, the menu subtitle and the opening card all read "Jamestown", hard-typed,
+   with the year line stuck at CHAPTER I. That is right for the first arc and wrong for the
+   subject: Jamestown is arc one of a course that runs to Reconstruction, and a pupil who
+   reaches the Civil War should not be looking at a title screen about Virginia in 1607.
+
+   So the shell READS THE ARC the player has reached. One owner, one table.
+
+   AN ARC IS DECLARED BY ITS CHAPTERS, NOT GUESSED AT HERE. It would be easy to write the
+   whole span out now - Revolution at chapter XI, the Civil War at XIX - and every one of
+   those numbers would be invented, which is the habit this project spends its time
+   undoing. A chapter says which arc it belongs to and the table says what that arc is
+   called; nothing here claims to know how many chapters the Revolution takes.
+   `arc` defaults to the first entry, which is correct for every chapter that exists today.
+   A chapter of a LATER arc must declare its own, and the day one does, this comment is
+   where to look. */
+const ARCS=[
+  {k:"jamestown",label:"Jamestown",yrs:"1606\u20131616"}
+];
+function arcOf(c){
+  const k=(c&&c.arc)||ARCS[0].k;
+  for(let i=0;i<ARCS.length;i++)if(ARCS[i].k===k)return ARCS[i];
+  return ARCS[0];
+}
+/* THE FURTHEST CHAPTER THE PLAYER HAS REACHED, and it must work on the TITLE SCREEN -
+   which is shown before any world has begun, so S.reached is still empty for somebody
+   coming back to a save. Fall through to the save on disk in that case, or a returning
+   player is greeted by chapter one for ever. */
+function furthestChapter(){
+  let r=(S&&S.reached&&Object.keys(S.reached).length)?S.reached:null;
+  if(!r){const d=loadedSave();r=(d&&d.reached)||null;}
+  let best=null;
+  for(let i=0;i<CHAPTERS.length;i++){
+    const c=CHAPTERS[i];
+    if(!c.world)continue;
+    if(r&&r[c.world])best=c;
+  }
+  return best||CHAPTERS[0];
+}
+/* Writes every place the shell names the era. Called at load, and again whenever a world
+   begins, because finishing a chapter can move the arc. */
+function paintShell(){
+  const c=furthestChapter(), a=arcOf(c);
+  const set=function(id,t){const e=document.getElementById(id);if(e)e.textContent=t;};
+  set("mnArc",a.label);
+  set("mnYr","CHAPTER "+c.n+" \u00b7 "+(c.yr||a.yrs));
+  set("otArc",a.label);
+  set("otCh","Chapter "+c.n+" \u00b7 "+c.t);
+  try{document.title="Stick History \u2014 "+a.label;}catch(e){}
+}
+
 /* ========== ADMIN ========== *//* ========== ADMIN ========== */
 const CHAPTERS=[
   /* Percy: "The six and twentieth day of Aprill, about foure a clocke in the
@@ -15991,7 +16043,7 @@ const CHAPTERS=[
      first light; the landing party goes ashore later the same day. So Chapter I
      is the morning and Chapter II is the afternoon of 26 April - the same date,
      in order, and no reordering needed. The James River is three weeks away. */
-  {n:"I",t:"The Crossing",d:"Aboard the Susan Constant \u2014 the bay mouth, dawn, 26 April 1607",
+  {n:"I",yr:"1606–1607",t:"The Crossing",d:"Aboard the Susan Constant \u2014 the bay mouth, dawn, 26 April 1607",
    ready:true,world:"ch1",
    /* four walkable decks, so the HUD names the deck rather than the chapter */
    decks:true, pace:K, near:9*K,
@@ -16038,7 +16090,7 @@ const CHAPTERS=[
        "<p>The boats are going down. Thirty men are to be put ashore on the southern cape this afternoon \u2014 the same day you first saw this country \u2014 to set up a cross and prove the pieces before dark. The sealed box is still shut.</p>"+
        "<p class='note'>Your figure now wears what you earned: the weathered traveller's cloak and the muted grey of the Lost Colony. Spend your Ink in the Wardrobe, then go ashore.</p>"}},
 
-  {n:"II",t:"Landfall",d:"Cape Henry \u2014 ashore that afternoon, 26 April 1607",
+  {n:"II",yr:"1607",t:"Landfall",d:"Cape Henry \u2014 ashore that afternoon, 26 April 1607",
    ready:true,world:"ch2",
    /* one unit to the foot ashore, and a pace is about two and a half feet */
    pace:2.5, near:9,
@@ -16139,11 +16191,14 @@ const CHAPTERS=[
      body:"<p>Two men wounded, a cross standing in sand that will not hold it through a winter, and seven names read out of a box that crossed an ocean shut.</p>"+
        "<p>One of the seven has been in irons since the Canaries. Another heard his own name read an hour after complaining that nobody had shown a warrant, and within the year the other six will have him shot. Neither of those is a story anybody on this beach can see yet.</p>"+
        "<p class='note'>Chapter II complete. Upstream is the marshy peninsula they will choose, the fort, and the Powhatan whose homeland this already is. Those are chapters still to come.</p>"}},
-  {n:"III",t:"First Contact",d:"The Powhatan homeland, 1607",ready:false},
-  {n:"IV",t:"Smith & the Record",d:"The fort and the woods, 1607-09",ready:false},
-  {n:"V",t:"The Starving Time",d:"The besieged fort, winter 1609-10",ready:false},
-  {n:"VI",t:"The Golden Leaf",d:"The tobacco fields, 1610-16",ready:false}
+  {n:"III",yr:"1607",t:"First Contact",d:"The Powhatan homeland, 1607",ready:false},
+  {n:"IV",yr:"1607–09",t:"Smith & the Record",d:"The fort and the woods, 1607-09",ready:false},
+  {n:"V",yr:"1609–10",t:"The Starving Time",d:"The besieged fort, winter 1609-10",ready:false},
+  {n:"VI",yr:"1610–16",t:"The Golden Leaf",d:"The tobacco fields, 1610-16",ready:false}
 ];
+/* The title screen is shown before any world begins, so it needs painting once here.
+   Safe at this point and not one line earlier: CHAPTERS is closed above. */
+paintShell();
 function unlockEverything(){
   Object.keys(COSMETICS).forEach(function(k){S.unlocked.add(k);});
   Object.keys(PALETTES).forEach(function(k){S.paletteUnlocked.add(k);});
@@ -16622,7 +16677,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260807-0953";
+const BUILD="20260807-0956";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
