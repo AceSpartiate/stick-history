@@ -1285,7 +1285,19 @@ function readMusterCode(txt){
    screen uses this and cannot drift. */
 const SMITH_EQ={skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
   accessory:"none_acc",head:"none_head",build:"build_normal",face:"smith"};
-const CH={
+/* ---- `let`, NOT `const`, AND THAT ONE WORD WAS THE WHOLE WALL ----
+   This held Chapter I's content and was bound once, for ever. Measured from Chapter II by
+   object identity: `CH.reck` was THE SAME ARRAY OBJECT as from Chapter I - the same
+   thirty-five questions about Roanoke and the charter, the same `CH.targets`, the same
+   three crewmen - while the player stood on a beach at Cape Henry.
+   It never showed, for one reason only: `openReckoning` has a single call site, the
+   scrivener's desk, which is aboard the ship. Put a desk ashore and Chapter II starts
+   examining the player on Chapter I. That is the same fault already found and fixed in the
+   lashes, sitting unfired in the assessment.
+   CHAPTERS[] owns chapter IDENTITY - numeral, title, date, world - and CLAUDE.md says as
+   much. Nothing owned chapter CONTENT. Now CONTENT does, and this is a `let` so it can be
+   swapped into by `useContent()` when a world begins. */
+let CH={
  intro:"Four months and more at sea are behind you. Land was descried at four this morning, and the ships are standing into the Chesapeake between two capes that had no English names yesterday, low green country on either hand, while the gentlemen argue over where they will plant the fort. Below deck, in the dark and the stink, men still trade the old rumours - of a colony that vanished, and of a Company that promised them gold. You are hungry, and the provisions are stowed in the hold.",
  obj:"Question the crew - all three of them, until they have nothing left to tell you - and read the Charter that lies in the great cabin. The scrivener sits with you only when you have done all four, and then he asks six questions drawn from a great many, some of them off a chart. What is hidden in the hold is not required, but a man who has found it answers more easily. Press the menu at any time to see how you stand.",
 
@@ -1884,6 +1896,39 @@ CH.targets=(function(){
   k.push(CH.steal.note.b);k.push(CH.charter.insight.b);
   return k.filter(function(v,i,a){return a.indexOf(v)===i;});
 })();
+/* ---- ONE OWNER FOR CHAPTER CONTENT ----
+   Chapter I under its own name, and a registry keyed by world id. A chapter with no entry
+   falls back to Chapter I rather than to undefined, because a missing entry should read as
+   an unfinished chapter and not as a crash. */
+const CH1=CH;
+const CONTENT={ch1:CH1};
+function useContent(worldId){
+  const c=CONTENT[worldId];
+  CH=c||CH1;
+  return !!c;
+}
+/* ---- TARGETS ARE WALKED OUT OF THE CONTENT, WHATEVER SHAPE IT IS ----
+   Chapter I's targets were walked out of `npcs[].beats[].choices[].insight.b`, which is
+   right and is why its goals list cannot drift from its dialogue. Chapter II's people are a
+   DIFFERENT SHAPE - `lines` and `authority` rather than `beats` - so a walk written against
+   Chapter I's field names would silently find nothing and report a chapter with no subjects.
+   So walk for the THING rather than for the path to it: any `insight:{b:...}` anywhere below
+   the node, however it is nested. Shape-agnostic, so Chapter III cannot break it by being
+   built differently again. */
+function collectInsights(node,out,depth){
+  out=out||[];depth=depth||0;
+  if(!node||typeof node!=="object"||depth>8)return out;
+  if(node.insight&&typeof node.insight.b==="string"&&out.indexOf(node.insight.b)<0)
+    out.push(node.insight.b);
+  if(typeof node.b==="string"&&node.g&&out.indexOf(node.b)<0)out.push(node.b);
+  if(Array.isArray(node)){for(let i=0;i<node.length;i++)collectInsights(node[i],out,depth+1);}
+  else for(const k in node){
+    if(k==="insight")continue;                 /* already taken, and it has no children */
+    const v=node[k];
+    if(v&&typeof v==="object")collectInsights(v,out,depth+1);
+  }
+  return out;
+}
 function insightCount(){let n=0;CH.targets.forEach(function(k){if(S.insight[k])n++;});return n;}
 /* ---- HOW MANY, AND WHEN HE WILL ASK ----
    Derived once. Six of them, two may be wrong: sixty-seven per cent, which is about
@@ -1893,6 +1938,9 @@ function insightCount(){let n=0;CH.targets.forEach(function(k){if(S.insight[k])n
 const RECK_ASK=6, RECK_ALLOW=2, RECK_MAPS=2;
 /* A question is only fair if you have had the chance to learn its subject. */
 function reckPool(){
+  /* A CHAPTER WITHOUT A MUSTER IS NOT AN ERROR, it is an unfinished chapter. This used to
+     read CH.reck.q unguarded, which was safe only because CH was always Chapter I. */
+  if(!CH.reck||!CH.reck.q)return [];
   return CH.reck.q.filter(function(q){
     if(!q.need)return true;
     for(let i=0;i<q.need.length;i++)if(S.insight[q.need[i]])return true;
@@ -9984,6 +10032,7 @@ function openIntro(worldId){
   show("intro");
 }
 function beginWorld(worldId){
+  useContent(worldId);           /* the chapter's own content, before anything reads CH */
   /* Setting foot in a chapter opens it for good. Recorded on the CHAPTER's own
      world id, not on worldId, so arriving at a survey site does not quietly
      invent a chapter that was never played. */
@@ -15899,6 +15948,42 @@ const CAPE_DOC={
   insight:{g:"known",b:"Cape Henry",s:"The English first landed at Cape Henry on 26 April 1607, set up a cross and held a service. That same evening they were attacked; Gabriel Archer was shot through both hands and a sailor wounded."}
 };
 
+/* ---- CHAPTER TWO'S CONTENT, UNDER ITS OWN NAME AT LAST ----
+   Registered here rather than beside CH1 because it refers to CAPE_PEOPLE and CAPE_DOC,
+   which are declared above this line. `beginWorld` runs long after either.
+
+   `npcs` IS DELIBERATELY EMPTY, and that is the honest entry rather than a lazy one.
+   The muster's gate counts `CH.npcs` and asks `npcDone(id)`, which walks `n.beats`;
+   Chapter II's people carry `lines` and `authority` instead, so handing CAPE_PEOPLE to
+   that gate would not raise the wrong number - it would ask a question of a shape that
+   cannot answer. They are exposed as `people` for whatever asks next, and the beach places
+   them itself and always has: they stand ashore today while CH.npcs held three crewmen,
+   which is the proof that nothing ashore reads it.
+
+   `reck:null` says plainly that Chapter II has no muster yet. `reckPool` now guards for it,
+   so a chapter without one reads as unfinished instead of throwing. */
+CONTENT.ch2={
+  people:CAPE_PEOPLE,
+  npcs:[],
+  charter:CAPE_DOC,
+  reck:null,
+  /* walked out of the content, so it cannot drift from what the chapter can actually
+     teach - and walked by SHAPE, so Chapter II's different dialogue form is no obstacle.
+     MEASURED, not assumed, because the first version of this walked only the people and
+     the document and returned ONE subject for a whole chapter. Where Chapter II's
+     insights actually come from:
+       CAPE_DOC        1  Percy on the cross and the attack
+       COUNCIL         4  the site argument, which is the chapter's spine
+       SEALED_INSIGHT  1  the box that must be read before any boat leaves this beach
+       CAPE_PEOPLE     0  they are line-speakers with no insight to grant
+       SITES surveys   0  a survey grants a FINDING, in S.survey.found, not an insight
+     Six. Declared above this line at 9178 and 15188, so referring to them here is safe -
+     the reverse would be a temporal-dead-zone read, fatal at load and invisible after,
+     which is exactly what check 9 watches for. */
+  targets:collectInsights([CAPE_PEOPLE,CAPE_DOC,COUNCIL,SEALED_INSIGHT]),
+  unlocks:[]
+};
+
 /* ========== ADMIN ========== *//* ========== ADMIN ========== */
 const CHAPTERS=[
   /* Percy: "The six and twentieth day of Aprill, about foure a clocke in the
@@ -16537,7 +16622,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260805-1406";
+const BUILD="20260807-0953";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
