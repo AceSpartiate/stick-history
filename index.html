@@ -8343,7 +8343,14 @@ function speechText(t){
 }
 function chunkForSpeech(t){
   const out=[];
-  const sentences=speechText(t).split(/(?<=[.!?\u201d\u2019])\s+/);
+  /* "1. This shows that..." splits after the item number, so the number is spoken as its
+     own utterance and lands as a stutter before every question. A bare number and a full
+     stop is not a sentence; glue it to the one it belongs to. */
+  const sentences=speechText(t).split(/(?<=[.!?\u201d\u2019])\s+/)
+    .reduce(function(a,p){
+      if(a.length&&/^\s*\d+\.\s*$/.test(a[a.length-1]))a[a.length-1]+=" "+p;
+      else a.push(p);
+      return a;},[]);
   for(let i=0;i<sentences.length;i++){
     let piece=sentences[i].trim();
     if(!piece)continue;
@@ -8459,6 +8466,17 @@ function readableText(el){
      So a container can opt its buttons IN with data-readopts, and the flag
      inherits down the walk. One attribute on the options list rather than a
      change at every site that builds an option. */
+  /* ---- NARRATION, NOT A SCREEN READER ----
+     The choices were spoken as four labels end to end, each given a full stop. That is a
+     wall of text and it is how assistive software reads a page; it is not how a person
+     reads options aloud. A person numbers them.
+     The number is joined with a COLON on purpose. chunkForSpeech splits into utterances at
+     . ! and ?, so "One. Their survival..." would be torn into two utterances and land as a
+     stutter. A colon is not a split point, so the choice stays one utterance - and every
+     engine pauses at a colon anyway, which is the beat we wanted. The full stop already on
+     the end of each choice is what separates one from the next.
+     It also helps everyone, not only somebody who needs it read: a pupil can hold "three"
+     while the fourth is still being spoken. */
   const parts=[];
   (function walk(node,opts){
     for(let i=0;i<node.childNodes.length;i++){
@@ -8467,19 +8485,42 @@ function readableText(el){
       if(c.nodeType!==1)continue;
       const tag=c.tagName;
       if(c.classList&&(c.classList.contains("sayBtn")||c.classList.contains("noRead")))continue;
-      const inOpts=opts||!!(c.dataset&&c.dataset.readopts!==undefined);
+      /* an object rather than a flag, because it carries the running count down the walk */
+      const inOpts=opts||((c.dataset&&c.dataset.readopts!==undefined)?{n:0}:null);
       if(tag==="BUTTON"){
         if(!inOpts)continue;
         /* full stopped, so the voice pauses between one choice and the next
            instead of running them together into a single sentence */
-        const t=(c.textContent||"").replace(/\s+/g," ").trim();
-        if(t)parts.push(/[.?!]$/.test(t)?t:t+".");
+        /* THE CHOICE CARRIES ITS OWN LETTER AND IT WAS BEING GLUED TO THE WORDS.
+           The markup is <span class="ltr">A</span> followed by the text, so textContent
+           ran them together and every option in the game has been read as "Aemployees of
+           a company", "Bservants of the Crown". That predates the numbering - it is what
+           a pupil using this has actually been hearing.
+           So take the letter out and say it as a label. And say THE LETTER rather than a
+           number of my own: the buttons are lettered on screen, so a pupil hears exactly
+           what they can see and can hold "C" while D is still being read. The word-number
+           stays as the fallback for any option list that has no letter. */
+        const ltr=c.querySelector?c.querySelector(".ltr"):null;
+        let t=(c.textContent||"").replace(/\s+/g," ").trim();
+        let tag2="";
+        if(ltr){
+          tag2=(ltr.textContent||"").replace(/\s+/g," ").trim();
+          t=t.slice(tag2.length).trim();          /* the letter leads the textContent */
+        }
+        if(t){
+          inOpts.n++;
+          if(!tag2){
+            const num=(typeof ONES!=="undefined"&&ONES[inOpts.n])?ONES[inOpts.n]:String(inOpts.n);
+            tag2=num.charAt(0).toUpperCase()+num.slice(1);
+          }
+          parts.push(tag2+": "+(/[.?!]$/.test(t)?t:t+"."));
+        }
         continue;
       }
       if(tag==="SCRIPT"||tag==="STYLE"||tag==="CANVAS")continue;
       walk(c,inOpts);
     }
-  })(el,false);
+  })(el,null);
   return parts.join(" ").replace(/\s+([.,;:!?])/g,"$1");
 }
 function readPanel(el,force){
@@ -16808,7 +16849,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260807-1056";
+const BUILD="20260807-1146";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
