@@ -8121,9 +8121,37 @@ function voiceByName(nm){
   for(let i=0;i<v.length;i++)if(v[i].name===nm)return v[i];
   return null;
 }
+/* ---- NOT EVERY VOICE IN THE LIST IS A VOICE YOU WOULD PUT IN FRONT OF A CHILD ----
+   The old code took the FIRST name matching a gender hint in list order, with no notion of
+   quality. On Windows that lands on David and there is little to choose from. On the
+   platforms this game actually has to run on - a pupil's iPhone or Android - the list is
+   long, ordered arbitrarily, and on macOS/iOS it contains NOVELTY voices: Zarvox,
+   Deranged, Bubbles, Bahh, Trinoids, Whisper. "Bad News" is a real system voice that
+   intones everything like a funeral. Any of them could win a name match and would be
+   precisely the reported complaint, only worse.
+   So: score them. Bar the novelties outright, prefer the enhanced and neural voices the
+   platform ships (Siri, Google, Natural, Premium), and prefer a network voice where one
+   exists because those are the good ones. */
+const VOICE_BAR=/zarvox|deranged|bubbles|bahh|trinoids|whisper|bells|boing|cellos|good news|bad news|jester|organ|superstar|wobble|albert|fred|junior|ralph|kathy|princess|hysterical|pipe organ|eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|novelty|eloquence|espeak/i;
+const VOICE_PLUS=/siri|premium|enhanced|neural|natural|online|google/i;
+function voiceScore(x){
+  let n=0;
+  if(VOICE_BAR.test(x.name))return -100;
+  if(VOICE_PLUS.test(x.name))n+=6;
+  if(x.localService===false)n+=3;      /* network voices are the good ones where offered */
+  if(/en[-_]GB/i.test(x.lang))n+=2;    /* the chapter is English and so are the speakers */
+  else if(/^en/i.test(x.lang))n+=1;
+  if(x.default)n+=1;
+  return n;
+}
 function pickVoices(){
-  const v=voiceList();
+  let v=voiceList();
   if(!v.length)return;
+  /* best first, so the tiered search below finds the best MATCH rather than the first one.
+     A copy, because getVoices() hands back a live list on some engines. */
+  v=v.slice().filter(function(x){return voiceScore(x)>-100;})
+     .sort(function(a,b){return voiceScore(b)-voiceScore(a);});
+  if(!v.length)v=voiceList();          /* everything was barred: better odd than silent */
   /* prefer British English, then any English, then whatever exists */
   const tiers=[
     function(x){return /en[-_]GB/i.test(x.lang);},
@@ -8228,9 +8256,68 @@ function voiceWatchdog(){
    starting when the last ends. Short utterances are reliable, the queue survives
    any length of text, and cancel() happens once at the start rather than between
    pieces. */
+/* ---- SPEAK THE WORDS, NOT THE CHARACTERS ----
+   Reported as robotic and abrasive. Some of that is the platform - Chrome on Windows gets
+   three SAPI voices and they are what they are - but a great deal of it was what we were
+   handing the engine, and in a HISTORY game it is handing it the worst case constantly:
+
+     "1607"        read as "one thousand six hundred and seven", every single time
+     "1607-09"     read as a subtraction
+     "Chapter II"  read as "Chapter Eye Eye"
+     "\u2014"          an em dash, which most engines either skip or stumble over
+     "\u00b7"          the middot in the year line, read aloud as "dot" or worse
+
+   A date is the one thing this game says more than any other. Fixing it is the single
+   largest audible improvement available without leaving the Web Speech API - and leaving it
+   is not on the table, because the game must run from one file with no network.
+
+   Done in chunkForSpeech so there is ONE place it happens and everything that speaks goes
+   through it. */
+const ONES=["zero","one","two","three","four","five","six","seven","eight","nine"];
+const TEENS=["ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen",
+  "eighteen","nineteen"];
+const TENS=["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
+function twoWords(n){
+  if(n<10)return ONES[n];
+  if(n<20)return TEENS[n-10];
+  const t=TENS[Math.floor(n/10)], o=n%10;
+  return o?(t+"-"+ONES[o]):t;
+}
+/* A YEAR IS SAID IN TWO HALVES, which is how a person says it: sixteen oh seven, not one
+   thousand six hundred and seven. 1600 is "sixteen hundred". */
+function yearWords(y){
+  const hh=Math.floor(y/100), tt=y%100;
+  if(tt===0)return twoWords(hh)+" hundred";
+  if(tt<10)return twoWords(hh)+" oh "+ONES[tt];
+  return twoWords(hh)+" "+twoWords(tt);
+}
+const ROMAN={I:"One",II:"Two",III:"Three",IV:"Four",V:"Five",VI:"Six",VII:"Seven",
+  VIII:"Eight",IX:"Nine",X:"Ten",XI:"Eleven",XII:"Twelve",XIII:"Thirteen",XIV:"Fourteen",
+  XV:"Fifteen",XVI:"Sixteen",XVII:"Seventeen",XVIII:"Eighteen",XIX:"Nineteen",XX:"Twenty"};
+function speechText(t){
+  let x=String(t);
+  /* a chapter numeral is a number, not a row of letters */
+  x=x.replace(/\b(Chapter|CHAPTER)\s+([IVX]+)\b/g,function(m,w,r){
+    return (ROMAN[r.toUpperCase()])?(w+" "+ROMAN[r.toUpperCase()]):m;});
+  /* a span of years, before the single-year rule can take the first half */
+  x=x.replace(/\b(1[4-9]\d{2})\s*[-\u2013\u2014]\s*(\d{2})\b/g,function(m,a,b){
+    const y=parseInt(a,10), c=Math.floor(y/100)*100+parseInt(b,10);
+    return yearWords(y)+" to "+yearWords(c);});
+  x=x.replace(/\b(1[4-9]\d{2})\s*[-\u2013\u2014]\s*(1[4-9]\d{2})\b/g,function(m,a,b){
+    return yearWords(parseInt(a,10))+" to "+yearWords(parseInt(b,10));});
+  /* and a single year. Bounded to 1400-1999 so no other number is touched. */
+  x=x.replace(/\b(1[4-9]\d{2})\b/g,function(m,a){return yearWords(parseInt(a,10));});
+  /* punctuation the engines handle badly. A comma buys the pause the dash was drawing. */
+  x=x.replace(/\s*[\u2014\u2013]\s*/g,", ");
+  x=x.replace(/\s*\u00b7\s*/g,", ");
+  x=x.replace(/&/g," and ");
+  /* an ellipsis reads as three separate stops on some engines */
+  x=x.replace(/\u2026|\.\.\./g,", ");
+  return x.replace(/\s+/g," ").replace(/\s+([.,;:!?])/g,"$1").trim();
+}
 function chunkForSpeech(t){
   const out=[];
-  const sentences=String(t).split(/(?<=[.!?\u201d\u2019])\s+/);
+  const sentences=speechText(t).split(/(?<=[.!?\u201d\u2019])\s+/);
   for(let i=0;i<sentences.length;i++){
     let piece=sentences[i].trim();
     if(!piece)continue;
@@ -16677,7 +16764,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260807-0956";
+const BUILD="20260807-1017";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
