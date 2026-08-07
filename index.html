@@ -8134,11 +8134,29 @@ function voiceByName(nm){
    exists because those are the good ones. */
 const VOICE_BAR=/zarvox|deranged|bubbles|bahh|trinoids|whisper|bells|boing|cellos|good news|bad news|jester|organ|superstar|wobble|albert|fred|junior|ralph|kathy|princess|hysterical|pipe organ|eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|novelty|eloquence|espeak/i;
 const VOICE_PLUS=/siri|premium|enhanced|neural|natural|online|google/i;
+/* ---- THE GOOD VOICES ARE THE NETWORK ONES, AND THEY ARE NOT ALWAYS THERE ----
+   speechSynthesis marks a voice localService:false when the audio is synthesised on a
+   server - Google's voices in Chrome, Microsoft's Natural and Online voices in Edge. Those
+   are the ones that do not sound robotic, and they are free: the browser owns the
+   connection, so nothing here needs a key, a fetch, or a line of CDN. The single-file
+   property is untouched.
+   THE CATCH IS THE FAILURE MODE. A network voice with no network does not degrade - it
+   produces NOTHING, and speechSynthesis reports it late or not at all. For an accessibility
+   feature that is the worst outcome available: the pupil who needs the words read is the
+   one who gets silence, on the school wifi, in the middle of a lesson.
+   So the good voices are preferred hard when we are online and BARRED OUTRIGHT when we are
+   not - and because navigator.onLine only says "attached to a network", not "the internet
+   answers", there is a second line of defence in sayPump that demotes them for real. */
+let NET_VOICE_OK=true;
+function netVoicesUsable(){return NET_VOICE_OK&&(navigator.onLine!==false);}
 function voiceScore(x){
   let n=0;
   if(VOICE_BAR.test(x.name))return -100;
+  if(x.localService===false){
+    if(!netVoicesUsable())return -100;  /* offline: it would play silence */
+    n+=8;                               /* online: this is the whole improvement */
+  }
   if(VOICE_PLUS.test(x.name))n+=6;
-  if(x.localService===false)n+=3;      /* network voices are the good ones where offered */
   if(/en[-_]GB/i.test(x.lang))n+=2;    /* the chapter is English and so are the speakers */
   else if(/^en/i.test(x.lang))n+=1;
   if(x.default)n+=1;
@@ -8178,6 +8196,14 @@ function pickVoices(){
   }
 }
 function pickVoice(){return VOICE_SET.narrator||null;}
+/* Walking out of wifi mid-chapter must change the choice, not stop the reading. */
+(function(){
+  const again=function(){try{NET_VOICE_OK=(navigator.onLine!==false);pickVoices();}catch(e){}};
+  if(window.addEventListener){
+    window.addEventListener("online",again,false);
+    window.addEventListener("offline",again,false);
+  }
+})();
 /* a stable per-speaker offset, so two men do not sound like the same man */
 /* Every speaker aboard in 1607 is a man - the first English women reached
    Virginia in 1608, and that absence is itself worth a player noticing. The
@@ -8343,7 +8369,23 @@ function sayPump(){
     if(item.voice)u.voice=item.voice;
     /* onerror matters as much as onend, or one bad piece stalls the whole queue */
     u.onend=function(){sayPump();};
-    u.onerror=function(){sayPump();};
+    /* AND navigator.onLine LIES. It reports a network adapter, not a reachable internet -
+       a school wifi that has dropped its uplink still reads as online. If a NETWORK voice
+       actually fails, that is the ground truth: demote every network voice for the rest of
+       the session, re-pick, and say this piece again with a local one. Once only, or a
+       voice that fails for some other reason would loop.
+       This is what makes the online/offline split safe to make at all. */
+    u.onerror=function(){
+      const wasNet=!!(item.voice&&item.voice.localService===false);
+      if(wasNet&&!item.retried){
+        NET_VOICE_OK=false;
+        try{pickVoices();}catch(e){}
+        item.retried=true;
+        item.voice=VOICE_SET[item.kind]||VOICE_SET.narrator||null;
+        SAY_Q.unshift(item);
+      }
+      sayPump();
+    };
     window.speechSynthesis.speak(u);
     /* Chrome occasionally leaves the engine paused after a cancel */
     if(window.speechSynthesis.paused)window.speechSynthesis.resume();
@@ -8385,7 +8427,9 @@ function speak(text,kind,who,force){
     const v=VOICE_SET[k]||null;
     const pieces=chunkForSpeech(clean);
     for(let i=0;i<pieces.length;i++)
-      SAY_Q.push({text:pieces[i],pitch:pitch,rate:rate,voice:v});
+      /* kind travels with the piece so a demoted retry re-picks the RIGHT local voice
+         rather than dropping every speaker onto the narrator's */
+      SAY_Q.push({text:pieces[i],pitch:pitch,rate:rate,voice:v,kind:k});
     /* SYNCHRONOUS, deliberately. iOS - which is what a WKWebView and every
        iPhone or iPad is running - only permits speech that begins inside the
        user gesture that asked for it. The 60ms delay I had here as a Chrome
@@ -16764,7 +16808,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260807-1017";
+const BUILD="20260807-1056";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
