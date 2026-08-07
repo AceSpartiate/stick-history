@@ -2038,7 +2038,21 @@ function reckMissing(){
   return m;
 }
 function reckReady(){return reckSources();}
-function chapterReady(){return reckSources()>=reckNeed()&&reckPool().length>=RECK_ASK;}
+/* ---- A CHAPTER SAYS WHEN ITS OWN PAPER MAY BE SAT ----
+   The rule above is Chapter I's and is written into the shape of Chapter I: question every
+   man aboard, read the Charter. Chapter II has no men to question in that sense - its
+   people are line-speakers, its npcs list is deliberately empty - and its evidence is
+   ground you walked. Counting CH.npcs there returns "0 of 1" and means nothing.
+   So a chapter may carry ready(), returning {ok, missing}. The default remains Chapter I's
+   count, so nothing existing changes, and Chapter III declares its own without touching
+   this function. The pool test stays outside either branch because it is not a rule about
+   the chapter - it is the assessment refusing to draw six questions out of four. */
+function chapterGate(){
+  if(CH.ready)return CH.ready();
+  const miss=reckMissing();
+  return {ok:reckSources()>=reckNeed(), missing:miss};
+}
+function chapterReady(){return chapterGate().ok&&reckPool().length>=RECK_ASK;}
 
 const screens={};["title","intro","scene","wardrobe","codex","ending"].forEach(function(id){screens[id]=$(id);});
 let backTo="title";
@@ -9717,7 +9731,10 @@ function openReckoning(){
      five-question assessment out of a pool that might hold two. Nothing reaches it
      wrongly today; the second call site added will. */
   if(!chapterReady()){
-    toast("The scrivener will not sit with you yet. Still to ask: "+reckMissing().join("; ")+".");
+    const g=chapterGate();
+    const owed=(g.missing&&g.missing.length)?g.missing:["more of this place than you have seen"];
+    toast((CH.reck&&CH.reck.lockLine)||"The scrivener will not sit with you yet. Still to ask: "
+      +owed.join("; ")+".");
     return;
   }
   const R=CH.reck;
@@ -15479,6 +15496,27 @@ function openChart(){
     $("mapGloss").appendChild(cb);
     cb.onclick=function(){$("mMap").classList.remove("on");openCouncil();};
   }
+  /* ---- AND WHERE THE PAPER IS SAT ----
+     Chapter I has the scrivener's desk, a thing you walk to in the great cabin. There is no
+     desk on this beach and inventing one would be furniture standing in the sand. The
+     chapter's administrative acts already happen at the Captain's chart - it is where the
+     council is called from - so the muster belongs there too, and it needs no geometry, no
+     reachability check, and no new interactable.
+     It appears only once the council has chosen, because the muster asks what you made of
+     the decision and there is no decision yet. */
+  if(siteOf(CURRENT_WORLD)&&S.councilDone&&CH.reck&&CH.reck.q){
+    const ready=chapterReady();
+    const rb=document.createElement("button");
+    rb.className="btn copper wide mt";
+    rb.id="chartReck";
+    rb.innerHTML=(CH.reck.kick||"The muster")+
+      '<small style="display:block;font-size:.72rem;opacity:.8">'+
+      (ready?"Account for what you saw and what was done with it."
+            :"Not yet \u2014 you have seen too little of this country to be asked about it.")+"</small>";
+    rb.disabled=!ready;
+    $("mapGloss").appendChild(rb);
+    rb.onclick=function(){$("mMap").classList.remove("on");openReckoning();};
+  }
   drawChart(spec);
   setPaused(true);
   /* recorded per world, so a chapter's objective list can ask whether the
@@ -16285,7 +16323,149 @@ CONTENT.ch2={
   people:CAPE_PEOPLE,
   npcs:[],
   charter:CAPE_DOC,
-  reck:null,
+  /* ---- CHAPTER II'S MUSTER ----
+     Gated on `evid` - survey findings - rather than on conversations, because that is how
+     this chapter is learned. A pupil who never left the beach is asked the few items that
+     are common knowledge for the chapter and nothing else, which is the fair-question rule
+     doing exactly what it does in Chapter I, through the other door.
+     Two map items, both on the `capes` renderer that already exists: the bay, the river and
+     the three sites. That is Chapter II's whole argument in one picture, and RECK_MAPS asks
+     for two a paper.
+     Every stem below is answerable from the record. Where the record is thin the item asks
+     what the EVIDENCE supports rather than what happened, which is the honest question
+     anyway and the one the assessment is actually for. */
+  reck:{seal:"records",kick:"The Muster at the Cape",title:"Account for the Landing",
+    lockLine:"Not yet. You have seen too little of this country to be asked about it \u2014 go and look, and hold the council.",
+    q:[
+    /* ---- the site argument, which is the spine ---- */
+    {stim:"A ship must be able to lie close enough to a bank to load and unload without boats, and to be defended from the shore.",
+     evid:["james.depth","comfort.depth"],
+     q:"Deep water hard against the bank mattered MOST because it -",
+     o:["let ships moor to the trees and supply the settlement directly",
+        "made the river easier for small boats to cross",
+        "kept the drinking water fresher through the summer",
+        "proved the ground ashore would drain well"],a:0},
+
+    {stim:"The ground at Archer's Hope was black and the timber stood sixty feet and straight. Half the company would have settled there.",
+     evid:["archers.ground","archers.berth"],
+     q:"Good ground was NOT enough to settle Archer's Hope chiefly because -",
+     o:["the water was too shoal for a ship to lie against the bank",
+        "the Powhatan had already built a town on the site",
+        "it lay too close to the open sea to be defended",
+        "the timber there was unsuitable for building"],a:0},
+
+    {stim:"The water at Jamestown ran brackish, and the island was low and marshy.",
+     evid:["james.water","james.ground"],
+     q:"Which is the BEST reason a marshy site with brackish water was still chosen?",
+     o:["The qualities that made it defensible and easy to supply outweighed what it lacked",
+        "The colonists did not notice the marsh until the following year",
+        "The Company's orders required a marsh for growing rice",
+        "It was the only land not already claimed by another nation"],a:0},
+
+    {stim:"The Powhatan farmed a great deal of the better ground along the river. They had not settled this island.",
+     need:["The Island Nobody Farmed"],
+     evid:["james.ground"],
+     q:"A careful historian would treat the empty island as -",
+     o:["evidence about the land's quality, since people who knew it had chosen not to use it",
+        "proof that the region was almost entirely uninhabited",
+        "a sign the Powhatan were unable to clear heavy timber",
+        "unconnected to whether the site would support a settlement"],a:0},
+
+    /* ---- the maps ---- */
+    {stim:"The map shows the bay, the river running west from it, and three possible sites. X stands on the open cape facing the Atlantic; Y lies well up the river; Z lies far inland at the head of navigation.",
+     map:"capes",
+     q:"The Company ordered a site well up a navigable river. Which BEST explains that order?",
+     o:["A site up the river was harder for Spanish warships to find and to reach",
+        "A site up the river was closer to the fishing grounds",
+        "A site up the river had already been surveyed by England",
+        "A site up the river was required by treaty with the Powhatan"],a:0},
+
+    {stim:"The map shows the capes, the channel, and the ground the party walked. The fleet came in between the capes on 26 April and did not settle for more than two weeks.",
+     map:"capes",
+     evid:["comfort.sea","archers.berth"],
+     q:"Using the map, the fortnight between landing and settling is BEST explained by the fact that the party -",
+     o:["was looking for a site that met several requirements at once, and few places met them all",
+        "was waiting for a second fleet to arrive from England",
+        "had been forbidden to land until the sealed orders were opened",
+        "was lost, and could not find the river mouth"],a:0},
+
+    /* ---- authority, and being right and losing anyway ---- */
+    {stim:"The names of the council were sealed in a box in London and read out at Cape Henry. The men aboard did not choose them, and did not know them until that hour.",
+     need:["The Seven Named in the Box"],
+     q:"This arrangement shows that authority in the colony rested on -",
+     o:["the Company's decision in London, not on the colonists' consent",
+        "an election held among the colonists at sea",
+        "seniority, with the oldest man taking command",
+        "the ship's master, who commanded ashore as well as afloat"],a:0},
+
+    {stim:"A colonist argues at the council that the water at Jamestown will not serve. The site is chosen anyway.",
+     need:["Why Jamestown Was Chosen"],
+     q:"What does this BEST show about how the colony was governed?",
+     o:["Being correct about the evidence did not decide the outcome; the president's authority did",
+        "The council never considered the quality of the water",
+        "Colonists had no opinions about where to settle",
+        "The decision was taken by majority vote of all the men"],a:0},
+
+    /* ---- Cape Henry itself ---- */
+    {stim:"On 26 April 1607 the party came ashore at Cape Henry, set up a cross, and heard a service. That same evening they were attacked; Gabriel Archer was shot through both hands and a sailor, Matthew Morton, was badly wounded.",
+     need:["Cape Henry"],
+     q:"Taken together, the cross and the attack on the same day BEST show that -",
+     o:["the English claimed the land on the day they arrived, and the people already there contested it",
+        "the Powhatan had agreed in advance to the English landing",
+        "the English landing was unopposed and peaceful",
+        "the cross was raised in response to the attack"],a:0},
+
+    {stim:"The English had been ashore less than a day when they were attacked.",
+     need:["Cape Henry"],
+     q:"Which is the MOST careful conclusion to draw from how quickly it happened?",
+     o:["This was inhabited country whose people were watching, not empty land",
+        "The Powhatan attacked all strangers on sight as a matter of custom",
+        "The English had done something on that first day to provoke it",
+        "The attack proves the Powhatan knew the English intended to stay"],a:0},
+
+    /* ---- reading evidence, which is the transferable skill ---- */
+    {stim:"You may argue at the council only from places you actually went and looked at.",
+     q:"This rule reflects a real principle of historical work, which is that -",
+     o:["a claim is only as strong as the evidence the person making it actually has",
+        "only eyewitnesses may ever be quoted about the past",
+        "an argument is stronger when it is made more forcefully",
+        "the first account written of an event is always the correct one"],a:0},
+
+    {stim:"A student writes: 'Jamestown was a bad site, so choosing it was obviously a mistake by foolish men.'",
+     q:"The BEST correction to this statement is that -",
+     o:["the site met the requirements they were given; its costs appeared later and were not all foreseeable",
+        "the site was in fact an excellent one in every respect",
+        "the colonists had no choice of site at all",
+        "the Company never issued any instructions about the site"],a:0},
+
+    {stim:"Point Comfort lies low and inside the capes, where the deep channel runs close in.",
+     evid:["comfort.depth","comfort.ground"],
+     q:"A site at Point Comfort would have been strongest for -",
+     o:["shipping, since deep water lay close to the shore",
+        "farming, since the ground there was the richest in the bay",
+        "concealment, since it could not be seen from the sea",
+        "fresh water, since no salt reached it"],a:0},
+
+    {stim:"A place that can be seen from the open sea can also be seen by an enemy's ships.",
+     need:["Seen From the Sea"],
+     evid:["comfort.sea"],
+     q:"For a colony that expected Spanish attack, being visible from the sea was chiefly a problem because it -",
+     o:["told an enemy exactly where the settlement was, and how to reach it",
+        "made the site colder through the winter months",
+        "prevented English ships from finding the colony",
+        "meant the ground could not be farmed"],a:0}
+  ]},
+  /* Chapter II is ready when it has been LOOKED AT and the decision has been made. Three
+     findings rather than all nine, because the muster asks what you made of the evidence
+     and not whether you exhausted it - and a player who surveys one site thoroughly has
+     done the historian's work as much as one who dabbles at three. */
+  ready:function(){
+    const miss=[];
+    const n=(S.survey&&S.survey.found)?Object.keys(S.survey.found).length:0;
+    if(n<3)miss.push("more of this country than you have seen ("+n+" of 3 findings)");
+    if(!S.councilDone)miss.push("the council, which has not yet chosen");
+    return {ok:!miss.length, missing:miss};
+  },
   /* walked out of the content, so it cannot drift from what the chapter can actually
      teach - and walked by SHAPE, so Chapter II's different dialogue form is no obstacle.
      MEASURED, not assumed, because the first version of this walked only the people and
@@ -16995,7 +17175,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260807-1615";
+const BUILD="20260807-1734";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
