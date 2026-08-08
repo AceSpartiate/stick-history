@@ -69,7 +69,27 @@
   /* The title figure is a fixed 200x190 canvas and the menu sits under it, so on a
      short window the bottom of the menu goes off the screen - measured at 640x400,
      where the wardrobe and notes buttons were both below the fold. */
-  @media (max-height:560px){ #titleCanvas{height:120px} }
+  /* ---- THE TITLE SCREEN HAS TO FIT A PHONE, AND IT DID NOT ----
+     Measured at 280x550: the figure's top sat at -2px, clipped off the top of the screen and
+     overlapping the layout buttons by 69px, because the stack - figure, title, subtitle, year,
+     three buttons, blurb - is simply taller than the viewport. Giving the blurb its clearance
+     from the absolute footer buttons (see #title .tag) used the last of the slack, so the two
+     faults have to be solved together rather than one at a time.
+     So at phone heights the type comes down with the figure. Nothing is hidden: a child who
+     opens this on a phone should see the same screen as everybody else, only smaller. */
+  @media (max-height:560px){
+    /* DERIVED, NOT NUDGED. The layout row is absolute and ends at y=67, so the figure's
+       top must reach 67 - it began at 10. That is +57px of push. The blurb had only 20px of
+       clearance left above the footer buttons, so the push has to be PAID FOR out of the
+       figure's own height: margin M and height H must satisfy M >= 57 and M + H <= 108.
+       58 and 48 satisfy both with 10px to spare, measured. */
+    #titleCanvas{height:48px}
+
+    #title h1{font-size:2.05rem}
+    #title .sub{font-size:1.02rem;margin:.05em 0 .1em}
+    #title .yr{font-size:.7rem;margin-bottom:.7em}
+    #title .tag{margin-top:.7em;margin-bottom:3.4em;font-size:.74rem}
+  }
   @media (max-height:460px){ #titleCanvas{display:none} }
   #stale{position:fixed;left:0;right:0;bottom:0;z-index:60;display:none;gap:.8em;
     align-items:center;justify-content:center;flex-wrap:wrap;padding:.7em 1em;
@@ -114,7 +134,13 @@
   #title .yr{color:rgba(224,218,187,.55);letter-spacing:.3em;font-size:.76rem;margin-bottom:1.2em}
   #title canvas{display:block;margin:0 auto .8em;border-radius:8px}
   #title .menu{display:flex;flex-direction:column;gap:.6em;max-width:280px;margin:0 auto}
-  #title .tag{margin:1.3em auto 0;color:rgba(224,218,187,.4);font-size:.8rem;font-style:italic;max-width:330px}
+  /* THE BOTTOM MARGIN IS LOAD-BEARING, NOT SPACING. #btnWipe and #btnNotes are
+     position:absolute at bottom:14px, so they are out of flow and this text ran straight
+     underneath them - at phone width the sentence that explains what the game IS was
+     overlapped and partly unreadable, on the first screen anybody sees. Found by playtest
+     at 280px, not by reading the CSS. The clearance is the buttons' own height plus their
+     offset, so it holds wherever they wrap. */
+  #title .tag{margin:1.3em auto 3.9em;color:rgba(224,218,187,.4);font-size:.8rem;font-style:italic;max-width:330px}
   /* Shown only inside an app's built-in browser. A link opened from Messenger or
      Instagram runs in a WebView with no speech engine, so the read-aloud simply
      does nothing - and a player has no way to know that is the app's fault and
@@ -17366,7 +17392,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260808-0234";
+const BUILD="20260808-1014";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
