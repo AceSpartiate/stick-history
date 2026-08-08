@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Pre-flight checks for index.html.
 
@@ -31,7 +31,7 @@ js = "\n".join(blocks)
 # with no Node, or a commit hook running anywhere but this desk, lost every
 # check rather than one. Skip loudly instead.
 if shutil.which("node") is None:
-    print("  skip  node not on PATH â€” syntax unchecked (install Node.js to enable)")
+    print("  skip  node not on PATH — syntax unchecked (install Node.js to enable)")
 else:
     with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
         f.write(js); tmp = f.name
