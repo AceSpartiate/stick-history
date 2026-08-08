@@ -1149,7 +1149,13 @@ function insightReg(){
   };
   try{
     CH.npcs.forEach(walk);
-    add(CH.steal.note); add(CH.charter.insight);
+    /* NOT EVERY CHAPTER HAS EVERY PART. Chapter I has a stolen note and a Charter;
+       Chapter II has a document and no theft at all. This threw on CH.steal ashore,
+       musterBlob threw with it, and musterCode caught it and returned null - so the
+       CLASSROOM PASS silently did not exist for Chapter II. Silent, because the only
+       report of the failure was a null return nobody was checking. */
+    if(CH.steal&&CH.steal.note)add(CH.steal.note);
+    if(CH.charter&&CH.charter.insight)add(CH.charter.insight);
     walk(typeof SERJEANT!=="undefined"?SERJEANT:null);
     if(typeof CAPE_DOC!=="undefined")add(CAPE_DOC.insight);
     if(typeof SEALED_INSIGHT!=="undefined")add(SEALED_INSIGHT);
@@ -1162,8 +1168,14 @@ function insightReg(){
 /* every id the game can record as "met", in a stable order */
 function metReg(){
   const ids=[];
-  CH.npcs.forEach(function(n){ids.push(n.id);});
-  CH.idlers.forEach(function(n){ids.push(n.id);});
+  /* A CHAPTER NEED NOT HAVE EVERY KIND OF PERSON. Chapter I has npcs and idlers aboard;
+     Chapter II has neither in that sense - its people are CAPE_PEOPLE below. CH.idlers was
+     undefined ashore and threw, which took metReg, then musterBlob, then musterCode with
+     it - so the classroom pass returned null for Chapter II and said nothing about why.
+     Same fault as CH.steal one function up: a registry must survive a chapter shaped
+     differently from the one it was written for. */
+  (CH.npcs||[]).forEach(function(n){ids.push(n.id);});
+  (CH.idlers||[]).forEach(function(n){ids.push(n.id);});
   if(typeof CAPE_PEOPLE!=="undefined")CAPE_PEOPLE.forEach(function(n){ids.push(n.id);});
   ids.push("kendall");
   if(typeof SHORE_TASKS!=="undefined")
@@ -7356,7 +7368,12 @@ function refreshPlayer(){
    Keyboard: WASD to move, Q/E or drag to turn, Space/E to act, Esc to back out. */
 const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes"];
 function anyModalOpen(){for(let i=0;i<MODALS.length;i++)if($(MODALS[i]).classList.contains("on"))return true;return false;}
-function closeAllModals(){for(let i=0;i<MODALS.length;i++)$(MODALS[i]).classList.remove("on");if(steal)steal.running=false;}
+function closeAllModals(){
+  for(let i=0;i<MODALS.length;i++)$(MODALS[i]).classList.remove("on");
+  if(steal)steal.running=false;
+  /* a sentence left lit on a panel shut mid-reading is still lit when it reopens */
+  try{clearSayMark();}catch(e){}
+}
 
 let stickId=null,stickO={x:0,y:0},input={x:0,y:0};
 const joy=$("joy"),joyKnob=$("joyKnob"),tMove=$("touchMove"),tLook=$("touchLook");
@@ -9794,15 +9811,26 @@ function rkAns(ok){rk.ans[rk.pos]=ok;if(ok)rk.correct++;else {S.corrections++;in
 function rkEnd(){
   $("mReck").classList.remove("on");
   const R=CH.reck,passed=rk.correct>=(RECK_ASK-RECK_ALLOW);
+  /* ---- A PAPER MUST ALWAYS END IN A VERDICT ----
+     This read R.pass.title with no guard, one line after the paper was hidden. Chapter I's
+     reck carries pass/fail prose; Chapter II's did not, so the throw landed with the modal
+     already shut and the result never opened - a pupil answered six questions and was told
+     NOTHING, which is worse than having no assessment at all. The prose is authored below
+     for Chapter II, and this is the belt as well as the braces: a chapter that forgets it
+     still gets a verdict rather than silence. */
+  const PASS=R.pass||{title:"The Record Stands",
+    body:"You answered for what you saw, and the account holds."};
+  const FAIL=R.fail||{title:"Not Yet",
+    body:"The account does not yet hold. Go back over the ground and come again."};
   $("resSeal").textContent=passed?"\u2713":"\u2715";
   $("resSeal").style.background=passed?"radial-gradient(circle at 35% 30%,#5c9d8e,#2f5b50)":"radial-gradient(circle at 35% 30%,#a34638,#6d271d)";
   $("resKick").textContent=passed?"The Record Stands":"Not Yet";
-  $("resTitle").textContent=(passed?R.pass.title:R.fail.title)+"  ("+rk.correct+"/"+RECK_ASK+")";
-  $("resBody").textContent=passed?R.pass.body:R.fail.body;
+  $("resTitle").textContent=(passed?PASS.title:FAIL.title)+"  ("+rk.correct+"/"+RECK_ASK+")";
+  $("resBody").textContent=passed?PASS.body:FAIL.body;
   const rw=$("resReward");rw.innerHTML="";
   if(passed){
     S.ink+=20;S.chapterDone=true;
-    CH.unlocks.forEach(function(u){
+    (CH.unlocks||[]).forEach(function(u){
       const s=document.createElement("span");s.className="tagpill";
       if(u.k==="palette"){
         S.paletteUnlocked.add(u.v);S.equip.palette=u.v;
@@ -16448,6 +16476,13 @@ CONTENT.ch2={
      anyway and the one the assessment is actually for. */
   reck:{seal:"records",kick:"The Muster at the Cape",title:"Account for the Landing",
     lockLine:"Not yet. You have seen too little of this country to be asked about it \u2014 go and look, and hold the council.",
+    /* The verdict is about the RECORD, not about whether the colony survived - it did not,
+       not in the way anybody hoped, and no answer a pupil gives changes that. What their
+       answers change is whether the account of it is honest. */
+    pass:{title:"The Account Holds",
+      body:"You went and looked before you argued, and you can say what you saw and what was done with it. The site was chosen over your head all the same. That is the record, and it now reads true."},
+    fail:{title:"The Account Does Not Hold",
+      body:"You have signed your name to things you did not go and see. Go back over the ground \u2014 the water, the berth, the ground itself \u2014 and come again. A witness who cannot say how he knows is no witness."},
     q:[
     /* ---- the site argument, which is the spine ---- */
     {stim:"A ship must be able to lie close enough to a bank to load and unload without boats, and to be defended from the shore.",
@@ -17331,7 +17366,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260808-0217";
+const BUILD="20260808-0234";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
