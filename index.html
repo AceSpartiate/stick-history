@@ -16453,7 +16453,51 @@ CONTENT.ch2={
      o:["told an enemy exactly where the settlement was, and how to reach it",
         "made the site colder through the winter months",
         "prevented English ships from finding the colony",
-        "meant the ground could not be farmed"],a:0}
+        "meant the ground could not be farmed"],a:0},
+
+    /* ---- THE MEN'S OWN WORDS, AND NOT THE TIDY ONES ----
+       Every quotation below is real, attributed, and dated, in the spelling it was
+       printed in. That is the whole value of it: a pupil who meets "meere famine" in
+       Percy's own hand is not being told the colony suffered, they are reading a man
+       say so, and no summary of mine can do that work for them.
+       NOTHING HERE IS SOFTENED. The colony chose a marsh and men died of it; the
+       company dug for gold while the food ran out; and Percy called the people whose
+       country it was Savages and likened them to beasts. The last of those is the most
+       important item in this bank, and the question turns the lens where it belongs -
+       onto the man holding the pen. A source that insults its subject is still evidence,
+       but of the writer first. That is the skill this whole game is for, and it is also
+       the only honest way to put such a line in front of a child: not hidden, not
+       endorsed, examined. */
+    {stim:"George Percy, who was there, wrote of that summer: \u201cThere were never Englishmen left in a forreigne Countrey in such miserie as wee were in this new discovered Virginia.\u201d He records men dying of \u201cSwellings, Flixes, Burning Fevers\u201d and, for the most part, of \u201cmeere famine.\u201d",
+     q:"Read against the choice of site, Percy's account BEST supports which conclusion?",
+     o:["The qualities that made the site defensible and easy to supply did nothing to make it healthy or fed",
+        "The colonists were struck by an illness that had nothing to do with where they settled",
+        "The site was chosen carelessly by men who were given no instructions",
+        "Percy is exaggerating, since no other colonist mentions hardship"],a:0},
+
+    {stim:"John Smith wrote of the colony's first months that \u201cthere was no talke, no hope, nor worke, but dig gold, wash gold, refine gold, loade gold.\u201d",
+     need:["Gold in Virginia","Profit or Perish"],
+     q:"Smith's complaint matters MOST because it describes -",
+     o:["labour being spent on a hoped-for profit instead of on food and defence",
+        "a successful gold industry that later collapsed",
+        "the colonists refusing to obey the Company's written instructions",
+        "an argument among the council about who should be president"],a:0},
+
+    {stim:"Percy describes the attack at Cape Henry on the evening of 26 April 1607: the \u201cSavages\u201d came \u201ccreeping upon all foure, from the Hills, like Beares, with their Bowes in their mouthes,\u201d and wounded Captain Gabriel Archer in both hands and a sailor in two places.",
+     need:["Cape Henry"],
+     q:"A historian reading Percy's wording would say it is strongest evidence about -",
+     o:["how Percy saw the Powhatan, since calling them beasts describes the writer more than the men he fought",
+        "how the Powhatan actually moved and fought, since Percy was an eyewitness",
+        "the Powhatan's own reasons for attacking, which Percy explains",
+        "nothing at all, because a biased source cannot be used"],a:0},
+
+    {stim:"The same paragraph is the only account of who was hurt, and Archer's wounded hands appear in other records too.",
+     need:["Cape Henry"],
+     q:"So what should a historian do with a source whose language is plainly hostile?",
+     o:["Use it carefully for what it witnessed, while treating its judgements as the writer's own",
+        "Discard it entirely, since a hostile writer cannot report facts",
+        "Accept all of it, since the writer was present and the others were not",
+        "Use it only where another source repeats it word for word"],a:0}
   ]},
   /* Chapter II is ready when it has been LOOKED AT and the decision has been made. Three
      findings rather than all nine, because the muster asks what you made of the evidence
@@ -17175,7 +17219,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260807-1734";
+const BUILD="20260808-0038";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
