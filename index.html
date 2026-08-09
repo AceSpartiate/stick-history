@@ -9674,6 +9674,16 @@ function grantInsight(n,ink){
    Budget +0, as designed: pure UI over ground already built. No new geometry. */
 const COUNCIL={
   id:"wingfield",name:"Master Wingfield",voice:"male",role:"president of the council",
+  /* ---- DECLARED, NOT GRANTED IN CODE ----
+     This was written inline inside endCouncil, so it existed for the player and was
+     INVISIBLE to collectInsights - which can only walk what is written down. Chapter II's
+     target list came out at six when the chapter can teach seven, and the progress count
+     quietly understated itself by one.
+     The rule this restores: an insight is DATA belonging to the thing that teaches it. A
+     grant in code is a fact the registry cannot see, and every derived list - targets, the
+     goals readout, the Atlas link - is wrong by exactly that much and says nothing. */
+  outcome:{g:"known",b:"Overruled",
+    s:"The site was chosen by the president of the council, not by vote. A colonist could be right about the ground and still be overruled - authority in the colony did not rest on evidence."},
   eq:{skin:"english",palette:"company",cloak:"cloak_weathered",torso:"torso_merchant",
       accessory:"none_acc",head:"head_capotain",build:"build_normal",face:"shrewd",
       dye:{torso:"company",breech:"slate",stock:"ink",cloak:"lostcolony",head:"ink"}},
@@ -9733,8 +9743,7 @@ function endCouncil(){
      you is whether the record shows you saw it coming - read back at the muster. */
   const warned=!!(S.insight["The Water at Jamestown"]||S.insight["The Island Nobody Farmed"]);
   S.councilWarned=warned;
-  grantInsight({g:"known",b:"Overruled",
-    s:"The site was chosen by the president of the council, not by vote. A colonist could be right about the ground and still be overruled - authority in the colony did not rest on evidence."});
+  grantInsight(COUNCIL.outcome);   /* declared on COUNCIL, so the registry can see it */
   checkpoint("the council has chosen");
   result(true,"The Island",
     "\u201cWe plant on the island.\u201d Wingfield does not put it to a vote, because it is not his to put. "+
@@ -18082,7 +18091,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1657";
+const BUILD="20260809-1722";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
