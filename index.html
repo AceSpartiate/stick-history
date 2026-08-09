@@ -16208,74 +16208,118 @@ CHART_ART.bay=function(c,spec){  const g=c.getContext("2d"), W=c.width, H=c.heig
 CHART_ART.james=function(c,spec){
   const g=c.getContext("2d"), W=c.width, H=c.height;
   const X=function(u){return u*W;}, Y=function(v){return v*H;};
-  const poly=function(pts,fill,stroke,lw){
+  /* ---- REDRAWN IN THE HOUSE TECHNIQUE, WHICH IT WAS IGNORING ----
+     The first version was polygons of straight lines and fonts fixed in pixels, and it read
+     as clip-art. The chart already in this file uses fourteen quadraticCurveTo calls and
+     sizes its type as a fraction of the canvas width. Straight segments and mis-scaled
+     lettering ARE the "drawn in MS Paint" look, and neither was a judgement call - both were
+     me not looking at how the existing chart works before drawing beside it.
+     coast() runs a smooth curve through its points using midpoints as anchors, so a shore
+     bends the way an engraver's would. Type is W-relative throughout. */
+  const coast=function(pts,close,fill,stroke,lw){
     g.beginPath();
-    pts.forEach(function(p,i){i?g.lineTo(X(p[0]),Y(p[1])):g.moveTo(X(p[0]),Y(p[1]));});
-    g.closePath();
+    g.moveTo(X(pts[0][0]),Y(pts[0][1]));
+    for(let k=0;k<pts.length-1;k++){
+      const a=pts[k], b=pts[k+1];
+      const mx=(a[0]+b[0])/2, my=(a[1]+b[1])/2;
+      g.quadraticCurveTo(X(a[0]),Y(a[1]),X(mx),Y(my));
+    }
+    const last=pts[pts.length-1];
+    g.quadraticCurveTo(X(last[0]),Y(last[1]),X(last[0]),Y(last[1]));
+    if(close)g.closePath();
     if(fill){g.fillStyle=fill;g.fill();}
     if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1;g.stroke();}
   };
-  const PAPER="#e6dcbe", WATER="#9db9c4", DEEP="#7ea0b0",
-        LAND="#cfc199", MARSH="#b9bd92", INK="#4a3a22";
+  const PAPER="#e6dcbe", WATER="#a8c0ca", DEEP="#7fa2b2",
+        LAND="#d3c69f", MARSH="#b6bb90", INK="#4a3a22";
   g.fillStyle=PAPER;g.fillRect(0,0,W,H);
 
-  /* the river, filling the lower half and widening downstream to the east */
-  poly([[0,0.46],[0.30,0.44],[0.62,0.47],[1,0.44],[1,1],[0,1]],WATER);
-  /* the deep channel, hard against the island's western shore */
-  poly([[0.10,0.62],[0.20,0.56],[0.26,0.62],[0.24,0.86],[0.12,0.90]],DEEP);
+  /* the river, its north shore bending as a shore does */
+  coast([[-0.02,0.470],[0.14,0.442],[0.32,0.436],[0.50,0.452],[0.68,0.440],
+         [0.86,0.428],[1.02,0.440],[1.02,1.04],[-0.02,1.04]],true,WATER);
+  /* the deep channel hard against the island's western shore */
+  coast([[0.105,0.640],[0.155,0.575],[0.225,0.585],[0.255,0.660],
+         [0.238,0.815],[0.150,0.880],[0.098,0.800]],true,DEEP);
 
   /* the mainland, north bank */
-  poly([[0,0],[1,0],[1,0.44],[0.62,0.47],[0.30,0.44],[0,0.46]],LAND);
-  /* the back creeks and marsh between island and mainland */
-  poly([[0.22,0.50],[0.50,0.485],[0.72,0.52],[0.70,0.565],[0.48,0.535],[0.24,0.545]],MARSH);
+  coast([[-0.02,-0.04],[1.02,-0.04],[1.02,0.440],[0.86,0.428],[0.68,0.440],
+         [0.50,0.452],[0.32,0.436],[0.14,0.442],[-0.02,0.470]],true,LAND);
+  /* the back river and marish */
+  coast([[0.215,0.508],[0.34,0.487],[0.50,0.484],[0.64,0.500],[0.735,0.527],
+         [0.700,0.572],[0.56,0.544],[0.40,0.532],[0.245,0.548]],true,MARSH);
 
   /* JAMES ILE */
-  poly([[0.205,0.575],[0.30,0.545],[0.45,0.535],[0.60,0.555],[0.70,0.585],
-        [0.735,0.645],[0.68,0.715],[0.55,0.755],[0.40,0.765],[0.28,0.735],
-        [0.215,0.685],[0.19,0.625]],LAND,INK,1.1);
-  /* the neck of sand, joining it to the mainland at the west end */
-  poly([[0.205,0.575],[0.19,0.625],[0.145,0.60],[0.125,0.52],[0.165,0.485],[0.20,0.50]],
-       LAND,INK,1.1);
+  coast([[0.205,0.578],[0.29,0.545],[0.40,0.532],[0.52,0.538],[0.63,0.560],
+         [0.715,0.596],[0.740,0.650],[0.690,0.712],[0.575,0.752],[0.44,0.768],
+         [0.315,0.748],[0.228,0.700],[0.190,0.630]],true,LAND,INK,W*0.0022);
+  /* the necke of sand */
+  coast([[0.205,0.578],[0.188,0.628],[0.146,0.606],[0.122,0.528],[0.160,0.486],
+         [0.203,0.502]],true,LAND,INK,W*0.0022);
+
+  /* marish tufts along the island's north edge, the way a chart shows soft ground */
+  g.strokeStyle="#7f8a5c";g.lineWidth=W*0.0013;
+  for(let k=0;k<9;k++){
+    const u=0.27+k*0.048, v=0.556+((k%3)-1)*0.006;
+    g.beginPath();
+    g.moveTo(X(u),Y(v));g.lineTo(X(u),Y(v-0.016));
+    g.moveTo(X(u-0.008),Y(v));g.lineTo(X(u-0.008),Y(v-0.011));
+    g.moveTo(X(u+0.008),Y(v));g.lineTo(X(u+0.008),Y(v-0.011));
+    g.stroke();
+  }
+  /* woodland on the mainland, as little trees */
+  g.strokeStyle="#5d6b3e";g.lineWidth=W*0.0016;
+  for(let k=0;k<11;k++){
+    const u=0.09+((k*7)%11)*0.078, v=0.14+((k*5)%7)*0.036;
+    g.beginPath();
+    g.moveTo(X(u),Y(v));g.lineTo(X(u),Y(v-0.030));
+    g.moveTo(X(u-0.010),Y(v-0.018));g.lineTo(X(u),Y(v-0.036));
+    g.lineTo(X(u+0.010),Y(v-0.018));
+    g.stroke();
+  }
 
   /* the fort: a triangle at the west end, hard by the deep water */
-  g.strokeStyle="#8f3f2f";g.lineWidth=1.6;
+  g.strokeStyle="#8f3f2f";g.lineWidth=W*0.0026;
   g.beginPath();
-  g.moveTo(X(0.255),Y(0.615));g.lineTo(X(0.305),Y(0.640));g.lineTo(X(0.252),Y(0.668));
+  g.moveTo(X(0.258),Y(0.616));g.lineTo(X(0.312),Y(0.642));g.lineTo(X(0.254),Y(0.672));
   g.closePath();g.stroke();
 
-  /* the lettering, in the manner of the chart it comes from */
+  /* the lettering, sized off the canvas as the other chart does */
   g.fillStyle=INK;g.textAlign="left";
-  g.font="italic 15px 'IM Fell English', Georgia, serif";
-  g.fillText("James Ile",X(0.40),Y(0.655));
-  g.font="italic 13px 'IM Fell English', Georgia, serif";
-  g.fillText("the necke of land",X(0.055),Y(0.475));
-  g.fillText("Paspahegh",X(0.12),Y(0.22));
-  g.fillText("the back river & marish",X(0.44),Y(0.508));
+  g.font="italic "+Math.round(W*0.026)+"px Georgia, serif";
+  g.fillText("James Ile",X(0.415),Y(0.660));
+  g.font="italic "+Math.round(W*0.021)+"px Georgia, serif";
+  g.fillText("the necke",X(0.048),Y(0.470));
+  g.fillText("Paspahegh",X(0.115),Y(0.255));
+  g.fillText("the back river & marish",X(0.395),Y(0.512));
   g.textAlign="center";
-  g.fillText("The Kings River",X(0.62),Y(0.885));
+  g.fillText("The Kings River",X(0.615),Y(0.905));
   g.textAlign="left";
-  g.font="italic 11.5px 'IM Fell English', Georgia, serif";
+  g.font="italic "+Math.round(W*0.018)+"px Georgia, serif";
   g.fillStyle="#3d5a68";
-  g.fillText("deep water \u2014 a ship may ryde",X(0.045),Y(0.955));
-  g.fillText("close, and moore to the trees",X(0.045),Y(0.985));
+  g.fillText("deep water \u2014 a ship may ryde",X(0.040),Y(0.952));
+  g.fillText("close, and moore to the trees",X(0.040),Y(0.982));
   g.fillStyle="#8f3f2f";
-  g.fillText("the fort",X(0.315),Y(0.612));
+  g.fillText("the fort",X(0.325),Y(0.612));
 
   /* north, because this is turned from Smith's west-up original */
-  g.strokeStyle=INK;g.lineWidth=1;
-  g.beginPath();g.moveTo(X(0.94),Y(0.22));g.lineTo(X(0.94),Y(0.09));g.stroke();
-  g.beginPath();g.moveTo(X(0.915),Y(0.125));g.lineTo(X(0.94),Y(0.085));
-  g.lineTo(X(0.965),Y(0.125));g.closePath();g.fillStyle=INK;g.fill();
-  g.textAlign="center";g.font="italic 12px 'IM Fell English', Georgia, serif";
-  g.fillText("N",X(0.94),Y(0.255));
+  g.strokeStyle=INK;g.lineWidth=W*0.0016;
+  g.beginPath();g.moveTo(X(0.945),Y(0.215));g.lineTo(X(0.945),Y(0.085));g.stroke();
+  g.beginPath();g.moveTo(X(0.922),Y(0.122));g.lineTo(X(0.945),Y(0.080));
+  g.lineTo(X(0.968),Y(0.122));g.closePath();g.fillStyle=INK;g.fill();
+  g.textAlign="center";g.font="italic "+Math.round(W*0.020)+"px Georgia, serif";
+  g.fillText("N",X(0.945),Y(0.258));
 
-  /* the "you are here" mark, so this behaves like every other chart */
+  /* the "you are here" mark */
   if(spec&&typeof spec.x==="number"){
-    g.strokeStyle="#8f3f2f";g.lineWidth=2;
-    g.beginPath();g.arc(X(spec.x),Y(spec.y),7,0,Math.PI*2);g.stroke();
-    g.beginPath();g.moveTo(X(spec.x)-11,Y(spec.y));g.lineTo(X(spec.x)+11,Y(spec.y));
-    g.moveTo(X(spec.x),Y(spec.y)-11);g.lineTo(X(spec.x),Y(spec.y)+11);g.stroke();
+    const r=W*0.013;
+    g.strokeStyle="#8f3f2f";g.lineWidth=W*0.0032;
+    g.beginPath();g.arc(X(spec.x),Y(spec.y),r,0,Math.PI*2);g.stroke();
+    g.beginPath();
+    g.moveTo(X(spec.x)-r*1.6,Y(spec.y));g.lineTo(X(spec.x)+r*1.6,Y(spec.y));
+    g.moveTo(X(spec.x),Y(spec.y)-r*1.6);g.lineTo(X(spec.x),Y(spec.y)+r*1.6);
+    g.stroke();
   }
+
 };
 function drawChart(spec,into){
   const c=$(into||"mapCanvas");
@@ -18548,7 +18592,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1901";
+const BUILD="20260809-1907";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
