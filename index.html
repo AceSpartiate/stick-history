@@ -15925,8 +15925,8 @@ const CHARTS={
       "Gabriel Archer argued for this place and a good many of the company agreed with him. "+
       "Wingfield overruled them all, and not on account of the ground \u2014 it was that a ship cannot lie against this bank."},
   james:{kick:"Jamestown Island \u00b7 the chart, weighted with a stone",
-    title:"The King's River",
-    x:0.612,y:0.462,
+    title:"James Ile",
+    art:"james", x:0.28,y:0.645,
     gloss:"<b>You are here:</b> a low island joined to the north bank by a neck of sand, some forty miles up from the capes. "+
       "Far enough inland that a Spanish sail would be seen coming, and deep water hard against the trees. "+
       "Nobody lives on it, in a country whose good ground is farmed \u2014 and the reason nobody lives on it is the reason you are asked to taste the water."},
@@ -16182,6 +16182,100 @@ CHART_ART.bay=function(c,spec){  const g=c.getContext("2d"), W=c.width, H=c.heig
   g.moveTo(mx+r,my-r);g.lineTo(mx-r,my+r);g.stroke();
   g.strokeStyle="rgba(143,47,40,.45)";g.lineWidth=1.4;
   g.beginPath();g.arc(mx,my,r*2.1,0,Math.PI*2);g.stroke();
+};
+
+/* ---- JAMES ILE, AFTER SMITH'S MAP OF VIRGINIA (ENGRAVED 1612) ----
+   FROM THE RECORD:
+     The island lies against the NORTH bank of the river, some forty miles up from the capes.
+     It is low and marshy, roughly three miles long and under a mile across.
+     It is joined to the mainland by a NECK OF SAND at its western end - in 1607 a peninsula,
+       not an island proper; the neck washed away later and the name outlived the fact.
+     Back creeks and marsh separate it from the mainland along the north side.
+     The deep channel runs hard against its western shore - the ships moored TO THE TREES,
+       which is the single fact that decided the site and is why the fort stands where it does.
+     The fort is at the west end, close to that water, and it is a TRIANGLE.
+     Paspahegh country lies west and north of the neck. It was not empty land.
+
+   ONE DELIBERATE DEPARTURE, and it is worth knowing: SMITH'S MAP IS DRAWN WITH WEST AT THE
+   TOP, not north - which is how the rivers fan out on the original and why it looks strange
+   to a modern eye. This is drawn NORTH UP, because a child reading it has one map convention
+   and it is not Smith's. The shape and the relationships are his; the rotation is ours, and
+   saying so is cheaper than a footnote.
+
+   Generalised, not traced: this is a flat-colour reading of the geography at the scale the
+   panel can show, in the same spirit as the coastline. Where the record does not fix a
+   detail, the detail is not drawn. */
+CHART_ART.james=function(c,spec){
+  const g=c.getContext("2d"), W=c.width, H=c.height;
+  const X=function(u){return u*W;}, Y=function(v){return v*H;};
+  const poly=function(pts,fill,stroke,lw){
+    g.beginPath();
+    pts.forEach(function(p,i){i?g.lineTo(X(p[0]),Y(p[1])):g.moveTo(X(p[0]),Y(p[1]));});
+    g.closePath();
+    if(fill){g.fillStyle=fill;g.fill();}
+    if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1;g.stroke();}
+  };
+  const PAPER="#e6dcbe", WATER="#9db9c4", DEEP="#7ea0b0",
+        LAND="#cfc199", MARSH="#b9bd92", INK="#4a3a22";
+  g.fillStyle=PAPER;g.fillRect(0,0,W,H);
+
+  /* the river, filling the lower half and widening downstream to the east */
+  poly([[0,0.46],[0.30,0.44],[0.62,0.47],[1,0.44],[1,1],[0,1]],WATER);
+  /* the deep channel, hard against the island's western shore */
+  poly([[0.10,0.62],[0.20,0.56],[0.26,0.62],[0.24,0.86],[0.12,0.90]],DEEP);
+
+  /* the mainland, north bank */
+  poly([[0,0],[1,0],[1,0.44],[0.62,0.47],[0.30,0.44],[0,0.46]],LAND);
+  /* the back creeks and marsh between island and mainland */
+  poly([[0.22,0.50],[0.50,0.485],[0.72,0.52],[0.70,0.565],[0.48,0.535],[0.24,0.545]],MARSH);
+
+  /* JAMES ILE */
+  poly([[0.205,0.575],[0.30,0.545],[0.45,0.535],[0.60,0.555],[0.70,0.585],
+        [0.735,0.645],[0.68,0.715],[0.55,0.755],[0.40,0.765],[0.28,0.735],
+        [0.215,0.685],[0.19,0.625]],LAND,INK,1.1);
+  /* the neck of sand, joining it to the mainland at the west end */
+  poly([[0.205,0.575],[0.19,0.625],[0.145,0.60],[0.125,0.52],[0.165,0.485],[0.20,0.50]],
+       LAND,INK,1.1);
+
+  /* the fort: a triangle at the west end, hard by the deep water */
+  g.strokeStyle="#8f3f2f";g.lineWidth=1.6;
+  g.beginPath();
+  g.moveTo(X(0.255),Y(0.615));g.lineTo(X(0.305),Y(0.640));g.lineTo(X(0.252),Y(0.668));
+  g.closePath();g.stroke();
+
+  /* the lettering, in the manner of the chart it comes from */
+  g.fillStyle=INK;g.textAlign="left";
+  g.font="italic 15px 'IM Fell English', Georgia, serif";
+  g.fillText("James Ile",X(0.40),Y(0.655));
+  g.font="italic 13px 'IM Fell English', Georgia, serif";
+  g.fillText("the necke of land",X(0.055),Y(0.475));
+  g.fillText("Paspahegh",X(0.12),Y(0.22));
+  g.fillText("the back river & marish",X(0.44),Y(0.508));
+  g.textAlign="center";
+  g.fillText("The Kings River",X(0.62),Y(0.885));
+  g.textAlign="left";
+  g.font="italic 11.5px 'IM Fell English', Georgia, serif";
+  g.fillStyle="#3d5a68";
+  g.fillText("deep water \u2014 a ship may ryde",X(0.045),Y(0.955));
+  g.fillText("close, and moore to the trees",X(0.045),Y(0.985));
+  g.fillStyle="#8f3f2f";
+  g.fillText("the fort",X(0.315),Y(0.612));
+
+  /* north, because this is turned from Smith's west-up original */
+  g.strokeStyle=INK;g.lineWidth=1;
+  g.beginPath();g.moveTo(X(0.94),Y(0.22));g.lineTo(X(0.94),Y(0.09));g.stroke();
+  g.beginPath();g.moveTo(X(0.915),Y(0.125));g.lineTo(X(0.94),Y(0.085));
+  g.lineTo(X(0.965),Y(0.125));g.closePath();g.fillStyle=INK;g.fill();
+  g.textAlign="center";g.font="italic 12px 'IM Fell English', Georgia, serif";
+  g.fillText("N",X(0.94),Y(0.255));
+
+  /* the "you are here" mark, so this behaves like every other chart */
+  if(spec&&typeof spec.x==="number"){
+    g.strokeStyle="#8f3f2f";g.lineWidth=2;
+    g.beginPath();g.arc(X(spec.x),Y(spec.y),7,0,Math.PI*2);g.stroke();
+    g.beginPath();g.moveTo(X(spec.x)-11,Y(spec.y));g.lineTo(X(spec.x)+11,Y(spec.y));
+    g.moveTo(X(spec.x),Y(spec.y)-11);g.lineTo(X(spec.x),Y(spec.y)+11);g.stroke();
+  }
 };
 function drawChart(spec,into){
   const c=$(into||"mapCanvas");
@@ -18430,7 +18524,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1852";
+const BUILD="20260809-1855";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
