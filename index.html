@@ -314,7 +314,7 @@
     text-transform:uppercase;color:var(--copper);background:rgba(90,72,40,.10);
     border:1px solid rgba(90,72,40,.22)}
   .atDrawer>summary::-webkit-details-marker{display:none}
-  .atDrawer>summary::after{content:"be";opacity:.6;flex:none;transition:transform .18s}
+  .atDrawer>summary::after{content:"▾";opacity:.6;flex:none;transition:transform .18s}
   .atDrawer[open]>summary::after{transform:rotate(180deg)}
   .atDrawer>summary small{margin-left:auto;flex:none;opacity:.55;letter-spacing:0;
     text-transform:none;font-family:'EB Garamond',serif}
@@ -17925,6 +17925,27 @@ function atlasGroups(){
   old.sort(byYear); nw.sort(byYear);
   return [["The Passage",pass],["The Old World",old],["The New World",nw]];
 }
+/* ---- A CHOSEN PLACE SAYS MORE ----
+   A row in a list gets one line, or the list is unreadable. But a place you have actually
+   gone to should tell you why you are looking at it - so selecting a town adds its own
+   entry from the globe underneath the dated line, and the two together are the whole story:
+   WHEN it mattered, and WHAT it was.
+     1561  Havana
+     The treasure fleets begin gathering here under convoy.        <- the year's event
+     Where the treasure fleets gathered - and why a colony north    <- the place itself
+     of it worried Spain.
+   Collapsed again when deselected, so the list does not silently grow as it is read. */
+function atlasSay(btn,it,selected){
+  const sm=btn.querySelector("small"); if(!sm)return;
+  const wn=ATLAS_WHEN[it.id];
+  const c=(it.k==="city")?GLOBE_CITY.filter(function(x){return x.n===it.id;})[0]:null;
+  let body=(wn?wn.e:(it.d||""));
+  if(selected){
+    if(c&&c.d&&c.d!==body)body+='<br><span style="opacity:.8">'+c.d+"</span>";
+    if(it.k==="route"&&it.d)body=it.d;
+  }
+  sm.innerHTML=body;
+}
 function atlasOpenFor(it){return !it.need||!!S.insight[it.need];}
 /* ---- THE ATLAS IS THE GLOBE NOW ----
    It was a flat canvas because a sphere hides half of itself and labels on one need
@@ -18084,8 +18105,20 @@ function openAtlas(){
     const yr=wn?("<i style='font-style:normal;opacity:.7'>"+wn.y+"</i>  "):"";
     b.innerHTML="<b>"+yr+it.n+"</b><small>"+(open?body:"You have not met this yet.")+"</small>";
     if(open)b.onclick=function(){
+      /* ---- SELECTING MUST NOT REBUILD THE LIST ----
+         It used to call openAtlas(), which tears the list down and builds it again - and a
+         fresh <details> returns to its DEFAULT open state, so opening The New World and
+         then clicking a town in it slammed the drawer shut under your finger. Reported as
+         "it closes all the menus", and that is exactly what it did.
+         Nothing about the rows changes on selection except which one is lit and how much it
+         says, so only those are touched. The drawers are never rebuilt and keep whatever
+         the reader left them at. */
       ATLAS_SEL=(ATLAS_SEL&&ATLAS_SEL.id===it.id)?null:it;
-      openAtlas();
+      [].forEach.call(document.querySelectorAll("#atlasList .atRow"),function(x){
+        x.classList.remove("sel");});
+      if(ATLAS_SEL)b.classList.add("sel");
+      atlasSay(b,it,ATLAS_SEL&&ATLAS_SEL.id===it.id);
+      drawAtlas();
     };
     dd.appendChild(b);
    });
@@ -18337,7 +18370,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1826";
+const BUILD="20260809-1831";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
