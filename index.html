@@ -15924,6 +15924,14 @@ const CHARTS={
     gloss:"<b>You are here:</b> a creek off the north bank, some miles above the river's mouth. "+
       "Gabriel Archer argued for this place and a good many of the company agreed with him. "+
       "Wingfield overruled them all, and not on account of the ground \u2014 it was that a ship cannot lie against this bank."},
+  tobacco:{kick:"The tobacco ground \u00b7 a planter's sketch",
+    title:"The Tobacco Ground",
+    art:"tobacco", x:0.760,y:0.700,
+    gloss:"<b>Why the fields walk upriver:</b> tobacco spends ground in three or four years, "+
+      "so a planter cannot stay put. Every holding is long, narrow and touches the water, "+
+      "because a hogshead weighs half a ton and is rolled to a landing rather than carted. "+
+      "The land the crop walks onto is Powhatan land, and that is the whole quarrel of the "+
+      "years after this map."},
   powhatan:{kick:"The Powhatan country \u00b7 as Smith set it down",
     title:"Werowocomoco and the Two Rivers",
     art:"powhatan", x:0.40,y:0.246,
@@ -16821,6 +16829,133 @@ CHART_ART.cape=function(c,spec){
   PEN.scaleBar(g,X,Y,0.560,0.930,0.230,6,"Leagues",INK,W);
   PEN.cartouche(g,X,Y,0.300,0.032,0.360,0.150,INK,
     "The Mouth of the Bay","betweene the two capes","26 April 1607",W);
+
+  if(spec&&typeof spec.x==="number"){
+    const r=W*0.013;
+    g.strokeStyle="#8f3f2f";g.lineWidth=W*0.0032;
+    g.beginPath();g.arc(X(spec.x),Y(spec.y),r,0,Math.PI*2);g.stroke();
+    g.beginPath();
+    g.moveTo(X(spec.x)-r*1.6,Y(spec.y));g.lineTo(X(spec.x)+r*1.6,Y(spec.y));
+    g.moveTo(X(spec.x),Y(spec.y)-r*1.6);g.lineTo(X(spec.x),Y(spec.y)+r*1.6);
+    g.stroke();
+  }
+};
+
+/* ---- THE TOBACCO GROUND, 1610-1616 ----
+   FROM THE RECORD, and this chart's whole job is to make one causal chain visible:
+     Rolfe plants Spanish seed about 1612 and the first cargo goes home in 1614. Within a few
+       years tobacco IS the colony - it is what pays, so it is what everyone grows.
+     TOBACCO EXHAUSTS GROUND IN THREE OR FOUR YEARS. That is not a detail, it is the engine of
+       everything that follows: a planter cannot stay put, so the crop walks upriver looking
+       for new land, and the land it walks onto is Powhatan land. The fields on this chart are
+       drawn getting NEWER as they go west, because that is what actually happened.
+     The holdings are long and narrow with a river frontage each, because a hogshead weighs
+       half a ton and nobody carts it overland - it is rolled to a landing and put aboard.
+       That shape is not decoration; it is the economics drawn on the ground.
+     The seats named are those standing by about 1616: Kecoughtan at the mouth, Jamestown,
+       Bermuda Hundred at the Appomattox, Henrico furthest up.
+   WHAT IS NOT CLAIMED: exact bounds for any holding. The pattern is certain, the surveys are
+   not, so the strips are drawn as a pattern and no lot carries a name it did not have. */
+CHART_ART.tobacco=function(c,spec){
+  const g=c.getContext("2d"), W=c.width, H=c.height;
+  const X=function(u){return u*W;}, Y=function(v){return v*H;};
+  const coast=function(pts0,close,fill,stroke,lw){
+    const pts=PEN.wobble(pts0);
+    g.beginPath();g.moveTo(X(pts[0][0]),Y(pts[0][1]));
+    for(let k=0;k<pts.length-1;k++){
+      const a=pts[k],b=pts[k+1],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;
+      g.quadraticCurveTo(X(a[0]),Y(a[1]),X(mx),Y(my));
+    }
+    const L=pts[pts.length-1];
+    g.quadraticCurveTo(X(L[0]),Y(L[1]),X(L[0]),Y(L[1]));
+    if(close)g.closePath();
+    if(fill){g.fillStyle=fill;g.fill();}
+    if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1;g.stroke();}
+    return pts;
+  };
+  const WATER="rgba(146,176,190,0.32)", LAND="rgba(198,178,132,0.36)",
+        INK="#4a3a22", LEAF="rgba(122,142,86,0.55)";
+  PEN.paper(g,W,H);
+  g.fillStyle=LAND;g.fillRect(0,0,W,H);
+
+  /* the river, winding down from the falls in the west to the bay in the east */
+  const nBank=[[-0.02,0.520],[0.10,0.470],[0.22,0.500],[0.34,0.442],[0.46,0.472],
+               [0.58,0.424],[0.70,0.452],[0.82,0.406],[1.02,0.428]];
+  const sBank=[[1.02,0.582],[0.82,0.560],[0.70,0.606],[0.58,0.578],[0.46,0.626],
+               [0.34,0.596],[0.22,0.654],[0.10,0.624],[-0.02,0.672]];
+  const river=coast(nBank.concat(sBank),true,WATER);
+  PEN.seaRule(g,X,Y,nBank.concat(sBank),W,H,0.020,"rgba(70,104,124,0.32)",W*0.0010);
+  PEN.hatch(g,X,Y,PEN.wobble(nBank),-1,0.020,0.016,"rgba(74,58,34,0.66)",W*0.0015);
+  PEN.hatch(g,X,Y,PEN.wobble(sBank.slice().reverse()),1,0.020,0.016,"rgba(74,58,34,0.66)",W*0.0015);
+
+  /* ---- THE HOLDINGS ----
+     Long, narrow, and every one of them touching the water. Drawn newer to the west: the
+     eastern lots are worn and pale, the western ones freshly cleared and dark, which is the
+     crop walking upriver in search of ground it has not spent. */
+  const lot=function(u,north,wide,depth,vigour){
+    const bank=north?(0.470+0.030*Math.sin(u*9.1)):(0.598+0.030*Math.sin(u*9.1));
+    const dir=north?-1:1;
+    const x0=u-wide/2, x1=u+wide/2, yEdge=bank, yBack=bank+dir*depth;
+    g.strokeStyle="rgba(74,58,34,0.55)";g.lineWidth=W*0.0013;
+    g.beginPath();
+    g.moveTo(X(x0),Y(yEdge));g.lineTo(X(x0),Y(yBack));
+    g.lineTo(X(x1),Y(yBack));g.lineTo(X(x1),Y(yEdge));
+    g.stroke();
+    /* the rows, which is how a field was shown */
+    g.strokeStyle="rgba(122,142,86,"+(0.30+0.45*vigour).toFixed(2)+")";
+    g.lineWidth=W*0.0012;
+    const rows=6;
+    for(let r=1;r<rows;r++){
+      const yy=yEdge+dir*depth*(r/rows);
+      g.beginPath();g.moveTo(X(x0+0.004),Y(yy));g.lineTo(X(x1-0.004),Y(yy));g.stroke();
+    }
+    /* the landing: a short jetty into the water */
+    g.strokeStyle=INK;g.lineWidth=W*0.0018;
+    g.beginPath();
+    g.moveTo(X(u),Y(yEdge));g.lineTo(X(u),Y(yEdge-dir*0.026));g.stroke();
+  };
+  for(let k=0;k<9;k++){
+    const u=0.075+k*0.098;
+    lot(u,true,0.072,0.150+0.02*Math.sin(k),1-k/9);
+    lot(u+0.045,false,0.072,0.150+0.02*Math.cos(k),1-k/9);
+  }
+
+  /* the seats standing by about 1616 */
+  const seat=function(u,v,name,align){
+    g.fillStyle="#6b5a34";
+    g.beginPath();g.arc(X(u),Y(v),W*0.0085,0,Math.PI*2);g.fill();
+    g.strokeStyle="#6b5a34";g.lineWidth=W*0.0018;
+    g.beginPath();g.arc(X(u),Y(v),W*0.0155,0,Math.PI*2);g.stroke();
+    g.fillStyle=INK;g.textAlign=align||"left";
+    g.font="italic "+Math.round(W*0.021)+"px Georgia, serif";
+    g.fillText(name,X(u)+(align==="right"?-W*0.024:W*0.024),Y(v)+W*0.007);
+  };
+  seat(0.085,0.330,"Henrico");
+  seat(0.300,0.700,"Bermuda Hundred");
+  seat(0.545,0.318,"Shirley Hundred");
+  seat(0.760,0.700,"James Towne");
+  seat(0.955,0.330,"Kecoughtan","right");
+
+  /* soundings: the river is the road, and it must be deep enough to carry a ship */
+  const SND="#3d5a68";
+  [[0.16,0.545,4],[0.30,0.560,5],[0.44,0.530,5],[0.58,0.510,6],
+   [0.72,0.520,6],[0.86,0.480,7]].forEach(function(p){
+    PEN.sounding(g,X,Y,p[0],p[1],p[2],W,SND);});
+
+  g.fillStyle="#3d5a68";g.textAlign="center";
+  g.font="italic "+Math.round(W*0.022)+"px Georgia, serif";
+  g.fillText("The Kings River",X(0.50),Y(0.556));
+  g.fillStyle=INK;g.textAlign="left";
+  g.font="italic "+Math.round(W*0.018)+"px Georgia, serif";
+  g.fillText("newe ground, lately cleared",X(0.030),Y(0.900));
+  g.textAlign="right";
+  g.fillText("ground spent, three yeares in leafe",X(0.968),Y(0.900));
+  g.textAlign="left";
+
+  PEN.rose(g,X,Y,0.075,0.150,W*0.036,INK);
+  PEN.scaleBar(g,X,Y,0.400,0.930,0.220,6,"Leagues",INK,W);
+  PEN.cartouche(g,X,Y,0.330,0.030,0.360,0.150,INK,
+    "The Tobacco Ground","along the Kings River","1610 \u2014 1616",W);
 
   if(spec&&typeof spec.x==="number"){
     const r=W*0.013;
@@ -18593,7 +18728,7 @@ const CHAPTER_PLACE={
   "III":{la:37.5,lo:-77.0,d:1450,chart:"powhatan",w:"the Powhatan homeland, upriver"},
   "IV": {la:37.21,lo:-76.78,d:1400,chart:"james",w:"the fort on the island, and the woods behind it"},
   "V":  {la:37.21,lo:-76.78,d:1400,chart:"james",w:"the same fort, the winter it nearly ended"},
-  "VI": {la:37.4,lo:-77.2,d:1450,chart:null,   w:"the tobacco ground up the river"}
+  "VI": {la:37.4,lo:-77.2,d:1450,chart:"tobacco",w:"the tobacco ground up the river"}
 };
 function atlasGroups(){
   const pass=[],old=[],nw=[];
@@ -19125,7 +19260,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-2039";
+const BUILD="20260809-2045";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
