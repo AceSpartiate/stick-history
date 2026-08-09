@@ -13340,10 +13340,41 @@ function buildGlobe(root){
     }
     blockOn(base,up,east,north,U*0.5,U*0.5,U*3.4*tall,roof);   /* the tower */
   });
+  /* ---- THE POLES WERE SPIKING, AND THE QUADS THERE WERE NOT QUADS ----
+     Reported from the cutscene as white spikes fanning out of the top of the world.
+     At i=0 la0 is exactly 90, so llv() returns THE SAME POINT for both A and B - every
+     quad in the top row had two coincident vertices and was a degenerate sliver. Same at
+     the bottom row. Slivers z-fight against each other, and because the colour is sampled
+     per face at differing longitudes, each one took a slightly different tone: a starburst.
+     Raising the mesh to 300x180 made it worse, because it made more slivers.
+     Two fixes, and both are needed:
+       the polar rows emit TRIANGLES, a proper fan to the pole, with no repeated vertex
+       the polar rows take ONE colour, sampled once, so a cap reads as a cap and not a wheel
+     Winding is not derived by hand - the triangle is emitted through triOutward, which dots
+     its own normal against the outward radial and flips it if it is wrong. Today has been a
+     long lesson in what an unchecked winding costs. */
+  function triOutward(p,q,r,cc){
+    const u=[q.x-p.x,q.y-p.y,q.z-p.z], v=[r.x-q.x,r.y-q.y,r.z-q.z];
+    const n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+    const m=[(p.x+q.x+r.x)/3,(p.y+q.y+r.y)/3,(p.z+q.z+r.z)/3];
+    const P0=[p.x,p.y,p.z],Q0=[q.x,q.y,q.z],R0=[r.x,r.y,r.z];
+    if(n[0]*m[0]+n[1]*m[1]+n[2]*m[2]>=0)g.tri(P0,Q0,R0,cc);
+    else g.tri(R0,Q0,P0,cc);
+  }
+  const capN=col(90,0), capS=col(-90,0);
   for(let i=0;i<RING;i++){
     const la0=90-i*(180/RING), la1=90-(i+1)*(180/RING);
+    const topRow=(i===0), botRow=(i===RING-1);
     for(let j=0;j<SEG;j++){
       const lo0=-180+j*(360/SEG), lo1=-180+(j+1)*(360/SEG);
+      if(topRow){
+        triOutward(llv(90,0,GLOBE_R),llv(la1,lo0,GLOBE_R),llv(la1,lo1,GLOBE_R),capN);
+        continue;
+      }
+      if(botRow){
+        triOutward(llv(-90,0,GLOBE_R),llv(la0,lo1,GLOBE_R),llv(la0,lo0,GLOBE_R),capS);
+        continue;
+      }
       const A=llv(la0,lo0,GLOBE_R),B=llv(la0,lo1,GLOBE_R);
       const C=llv(la1,lo1,GLOBE_R),D=llv(la1,lo0,GLOBE_R);
       g.quad4([A.x,A.y,A.z],[D.x,D.y,D.z],[C.x,C.y,C.z],[B.x,B.y,B.z],
@@ -17792,7 +17823,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1439";
+const BUILD="20260809-1529";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
