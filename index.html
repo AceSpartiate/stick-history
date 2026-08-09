@@ -17794,6 +17794,64 @@ const ATLAS_ITEMS=[
     ATLAS_ITEMS.push({k:"city",id:c.n,n:c.n,need:null});
   });
 })();
+/* ---- TWO WORLDS, AND EACH IN THE ORDER IT HAPPENED ----
+   Asked for the Old World and the New listed separately and ordered by when each place
+   became important. The split is not decoration: in 1607 it is how the men on that ship
+   understood the map, and the two lists read as two different arguments.
+   THE OLD WORLD list is a trade route being closed and worked around - Constantinople falls
+   and Europe starts looking for a way round it; Lisbon finds one; Rome divides what is found;
+   Seville banks it.
+   THE NEW WORLD list is a single unbroken sentence: Santo Domingo, Mexico, Cusco, Potosi,
+   Havana - a century of Spanish silver - and then Roanoke fails and Jamestown is founded
+   twenty years later by people who knew that. Read top to bottom it explains why anybody
+   thought this voyage was worth making, WITHOUT a word of narration.
+   The year is when the place became important TO THIS STORY, not when it was founded. */
+const ATLAS_WHEN={
+  "Constantinople":{w:"old",y:1453,e:"Falls to the Ottomans. Europe begins hunting a sea road east."},
+  "Beijing":{w:"old",y:1421,e:"Ming capital, and the largest economy on earth."},
+  "Cairo":{w:"old",y:1460,e:"The overland route east, and its cost."},
+  "Timbuktu":{w:"old",y:1470,e:"Gold and scholarship on the Niger, known in Europe by rumour."},
+  "Benin City":{w:"old",y:1485,e:"Portuguese reach a walled capital whose bronze work astonishes them."},
+  "Mbanza Kongo":{w:"old",y:1491,e:"The Kongo court enters a century of contact with Portugal."},
+  "Rome":{w:"old",y:1494,e:"The Pope divides the New World between Spain and Portugal."},
+  "Lisbon":{w:"old",y:1498,e:"Da Gama reaches India. The sea road east is open."},
+  "Goa":{w:"old",y:1510,e:"Portuguese India - the eastern trade Europe already has."},
+  "Malacca":{w:"old",y:1511,e:"The strait every spice cargo passes through."},
+  "Seville":{w:"old",y:1503,e:"The Casa de Contratacion. Every treasure fleet unloads here."},
+  "Manila":{w:"old",y:1571,e:"Spanish silver from America begins buying Chinese silk."},
+  "Agra":{w:"old",y:1571,e:"The Mughal court, richer than any crown in Europe."},
+  "Isfahan":{w:"old",y:1598,e:"Safavid Persia rebuilds its capital in these very years."},
+  "Amsterdam":{w:"old",y:1602,e:"The Dutch East India Company. England's rival for the carrying trade."},
+  "Kyoto":{w:"old",y:1603,e:"Four years into the Tokugawa peace, and closing to outsiders."},
+  "Moscow":{w:"old",y:1605,e:"Russia falls into its Time of Troubles."},
+  "Bristol":{w:"old",y:1600,e:"The western port, and the Newfoundland fishery's home."},
+  "London":{w:"old",y:1606,e:"The Company gets its charter and sells the shares."},
+  "Paris":{w:"old",y:1606,e:"France is two years from the St Lawrence."},
+  "Plymouth":{w:"old",y:1606,e:"The last English harbour many of these men will see."},
+
+  "Santo Domingo":{w:"new",y:1496,e:"The oldest European city in the Americas."},
+  "Mexico City":{w:"new",y:1521,e:"Tenochtitlan falls. What Spain got, and what England hopes for."},
+  "Cusco":{w:"new",y:1533,e:"The Inca capital taken - seventy years before this voyage."},
+  "Potosí":{w:"new",y:1545,e:"Silver found. Worked by forced Andean labour, it pays for Spain's wars."},
+  "Havana":{w:"new",y:1561,e:"The treasure fleets begin gathering here under convoy."},
+  "Cartagena":{w:"new",y:1586,e:"Drake sacks it. Spain fortifies against the English."},
+  "Roanoke":{w:"new",y:1587,e:"A colony is left here. Nobody aboard knows what became of them."},
+  "Jamestown":{w:"new",y:1607,e:"Not yet. In three weeks there will be a fort."}
+};
+function atlasGroups(){
+  const pass=[],old=[],nw=[];
+  ATLAS_ITEMS.forEach(function(it){
+    if(it.k==="route"){pass.push(it);return;}
+    const w=ATLAS_WHEN[it.id];
+    (w&&w.w==="new"?nw:old).push(it);
+  });
+  const byYear=function(a,b){
+    const ya=(ATLAS_WHEN[a.id]||{}).y||9999, yb=(ATLAS_WHEN[b.id]||{}).y||9999;
+    return ya-yb;
+  };
+  old.sort(byYear); nw.sort(byYear);
+  return [["The Passage",pass],["The Old World",old],["The New World",nw]];
+}
 function atlasOpenFor(it){return !it.need||!!S.insight[it.need];}
 function drawAtlas(){
   const cv=$("atlasCanvas"); if(!cv)return;
@@ -17843,7 +17901,12 @@ function drawAtlas(){
 }
 function openAtlas(){
   const host=$("atlasList");host.innerHTML="";
-  ATLAS_ITEMS.forEach(function(it){
+  atlasGroups().forEach(function(grp){
+   if(!grp[1].length)return;
+   const h=document.createElement("div");
+   h.className="kicker";h.style.cssText="margin:.9em 0 .2em";h.textContent=grp[0];
+   host.appendChild(h);
+   grp[1].forEach(function(it){
     const open=atlasOpenFor(it);
     const b=document.createElement("button");
     b.className="atRow"+((ATLAS_SEL&&ATLAS_SEL.id===it.id)?" sel":"");
@@ -17853,12 +17916,16 @@ function openAtlas(){
       const c=GLOBE_CITY.filter(function(x){return x.n===it.id;})[0];
       body=c?c.d:"";
     }
-    b.innerHTML="<b>"+it.n+"</b><small>"+(open?body:"You have not met this yet.")+"</small>";
+    const wn=ATLAS_WHEN[it.id];
+    if(wn&&open)body=wn.e;
+    const yr=wn?("<i style='font-style:normal;opacity:.7'>"+wn.y+"</i>  "):"";
+    b.innerHTML="<b>"+yr+it.n+"</b><small>"+(open?body:"You have not met this yet.")+"</small>";
     if(open)b.onclick=function(){
       ATLAS_SEL=(ATLAS_SEL&&ATLAS_SEL.id===it.id)?null:it;
       openAtlas();
     };
     host.appendChild(b);
+   });
   });
   drawAtlas();
   $("mAtlas").classList.add("on");
@@ -18107,7 +18174,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1725";
+const BUILD="20260809-1728";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
