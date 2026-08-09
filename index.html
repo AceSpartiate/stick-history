@@ -69,27 +69,6 @@
   /* The title figure is a fixed 200x190 canvas and the menu sits under it, so on a
      short window the bottom of the menu goes off the screen - measured at 640x400,
      where the wardrobe and notes buttons were both below the fold. */
-  /* ---- THE TITLE SCREEN HAS TO FIT A PHONE, AND IT DID NOT ----
-     Measured at 280x550: the figure's top sat at -2px, clipped off the top of the screen and
-     overlapping the layout buttons by 69px, because the stack - figure, title, subtitle, year,
-     three buttons, blurb - is simply taller than the viewport. Giving the blurb its clearance
-     from the absolute footer buttons (see #title .tag) used the last of the slack, so the two
-     faults have to be solved together rather than one at a time.
-     So at phone heights the type comes down with the figure. Nothing is hidden: a child who
-     opens this on a phone should see the same screen as everybody else, only smaller. */
-  @media (max-height:560px){
-    /* DERIVED, NOT NUDGED. The layout row is absolute and ends at y=67, so the figure's
-       top must reach 67 - it began at 10. That is +57px of push. The blurb had only 20px of
-       clearance left above the footer buttons, so the push has to be PAID FOR out of the
-       figure's own height: margin M and height H must satisfy M >= 57 and M + H <= 108.
-       58 and 48 satisfy both with 10px to spare, measured. */
-    #titleCanvas{height:48px}
-
-    #title h1{font-size:2.05rem}
-    #title .sub{font-size:1.02rem;margin:.05em 0 .1em}
-    #title .yr{font-size:.7rem;margin-bottom:.7em}
-    #title .tag{margin-top:.7em;margin-bottom:3.4em;font-size:.74rem}
-  }
   @media (max-height:460px){ #titleCanvas{display:none} }
   #stale{position:fixed;left:0;right:0;bottom:0;z-index:60;display:none;gap:.8em;
     align-items:center;justify-content:center;flex-wrap:wrap;padding:.7em 1em;
@@ -141,6 +120,26 @@
      at 280px, not by reading the CSS. The clearance is the buttons' own height plus their
      offset, so it holds wherever they wrap. */
   #title .tag{margin:1.3em auto 3.9em;color:rgba(224,218,187,.4);font-size:.8rem;font-style:italic;max-width:330px}
+
+  /* ---- THE TITLE SCREEN HAS TO FIT A PHONE, AND THE OVERRIDES HAD TO COME AFTER ----
+     Measured at 280x550: the figure sat at -2px, clipped off the top of the display and
+     lying across the layout row. Three fixes in a row moved it by exactly ZERO pixels, and
+     the reason was not the values - it was WHERE THIS BLOCK LIVED. It sat at line 72, above
+     every rule it was trying to override, and a media query adds NO SPECIFICITY. So:
+       #title canvas{margin:0 auto .8em}  (1-0-1) beat  #titleCanvas{margin-top}  (1-0-0)
+       #title{padding:22px}               later in source beat an earlier #title{padding-top}
+     Hence margin-top computing to 0px while height from the same block applied - the tell
+     that named the fault. An override block belongs AFTER what it overrides, and must match
+     the selector it is fighting, not a weaker one.
+     padding-top reserves the layout row's own height so the figure starts below it. */
+  @media (max-height:560px){
+    #title{padding-top:76px}
+    #title canvas{height:64px;margin:0 auto .5em}
+    #title h1{font-size:2.05rem}
+    #title .sub{font-size:1.02rem;margin:.05em 0 .1em}
+    #title .yr{font-size:.7rem;margin-bottom:.7em}
+    #title .tag{margin:.7em auto 3.4em;font-size:.74rem}
+  }
   /* Shown only inside an app's built-in browser. A link opened from Messenger or
      Instagram runs in a WebView with no speech engine, so the read-aloud simply
      does nothing - and a player has no way to know that is the app's fault and
@@ -17392,7 +17391,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260808-1014";
+const BUILD="20260809-0100";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
