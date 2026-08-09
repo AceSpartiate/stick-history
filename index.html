@@ -294,8 +294,14 @@
     border:1px solid rgba(176,141,62,.38);background:rgba(24,20,14,.42);
     color:rgba(231,218,187,.72)}
   #btnNotes:active{background:rgba(176,141,62,.28)}
-  #atlasCanvas{width:100%;height:auto;display:block;border-radius:6px;
-    border:1px solid rgba(90,72,40,.35);background:#0d1a28}
+  #atlasStage{position:relative;border-radius:6px;overflow:hidden;
+    border:1px solid rgba(90,72,40,.35);background:#05080e}
+  #atlasCanvas{width:100%;height:auto;display:block}
+  #atlasLabels{position:absolute;inset:0;pointer-events:none}
+  #atlasLabels span{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;
+    font-family:'IM Fell English SC',Georgia,serif;font-size:11px;color:#efe4c6;
+    text-shadow:0 1px 3px #000,0 0 7px #000;opacity:.85}
+  #atlasLabels span.sel{color:#ffd9a0;font-size:13px;opacity:1}
   .atRow{display:block;width:100%;text-align:left;margin:.32em 0;padding:.5em .7em;
     border:1px solid rgba(90,72,40,.28);border-radius:7px;background:rgba(255,250,235,.42);
     font-family:'EB Garamond',serif;font-size:.9rem;color:var(--ink);cursor:pointer}
@@ -774,7 +780,8 @@
     <div class="parchment deckle sheet" style="max-width:520px">
       <div class="kicker">Where this happened</div>
       <h3>The Atlas</h3>
-      <canvas id="atlasCanvas" width="900" height="470"></canvas>
+      <div id="atlasStage"><canvas id="atlasCanvas" width="900" height="470"></canvas>
+        <div id="atlasLabels"></div></div>
       <div id="atlasList" data-read></div>
       <button class="btn ghost wide mt" id="atlasClose">Back</button>
     </div>
@@ -17853,51 +17860,93 @@ function atlasGroups(){
   return [["The Passage",pass],["The Old World",old],["The New World",nw]];
 }
 function atlasOpenFor(it){return !it.need||!!S.insight[it.need];}
-function drawAtlas(){
-  const cv=$("atlasCanvas"); if(!cv)return;
-  const g=cv.getContext("2d"), W=cv.width, H=cv.height;
-  const X=function(lo){return (lo+180)/360*W;}, Y=function(la){return (90-la)/180*H;};
-  g.fillStyle="#14263a";g.fillRect(0,0,W,H);
-  /* the land, straight off the same mask the globe uses */
-  const cw=W/GLOBE_MASK_W, ch=H/GLOBE_MASK_H;
-  for(let r=0;r<GLOBE_MASK_H;r++){
-    const la=89.75-r*0.5;
-    for(let c=0;c<GLOBE_MASK_W;c++){
-      const lo=-179.75+c*0.5;
-      if(!globeMaskAt(la,lo))continue;
-      const k=globeKind(la,lo);
-      g.fillStyle=(k==="i")?"#dfe8ee":(k==="s")?"#a99263":"#4a6b3a";
-      g.fillRect(c*cw,r*ch,cw+0.6,ch+0.6);
-    }
-  }
-  /* rivers */
-  g.strokeStyle="rgba(90,160,205,.85)";g.lineWidth=1.4;
-  GLOBE_RIVER.forEach(function(rv){
-    g.beginPath();
-    rv.p.forEach(function(p,i){i?g.lineTo(X(p[1]),Y(p[0])):g.moveTo(X(p[1]),Y(p[0]));});
-    g.stroke();
-  });
-  /* the track, when it is the selection or nothing is selected */
-  const showTrack=(!ATLAS_SEL||ATLAS_SEL.id==="track");
-  if(showTrack&&typeof ATLAS_TRACK!=="undefined"){
-    g.strokeStyle=(ATLAS_SEL&&ATLAS_SEL.id==="track")?"#e04b34":"rgba(192,57,43,.75)";
-    g.lineWidth=(ATLAS_SEL&&ATLAS_SEL.id==="track")?3:2;
-    g.beginPath();
-    ATLAS_TRACK.forEach(function(p,i){i?g.lineTo(X(p[1]),Y(p[0])):g.moveTo(X(p[1]),Y(p[0]));});
-    g.stroke();
-  }
-  /* towns, with their names - the whole reason this is flat */
-  g.font="12px 'IM Fell English SC', Georgia, serif";
+/* ---- THE ATLAS IS THE GLOBE NOW ----
+   It was a flat canvas because a sphere hides half of itself and labels on one need
+   projecting. Both objections are answered here rather than avoided: the globe gets its own
+   scene and camera in the panel, and the labels are DOM spans laid over the canvas at the
+   projected screen position of each town - which is the machinery the globe's own marks have
+   wanted since they were built.
+   Selecting a place FLIES to it. The camera orbits at a distance and the target direction is
+   the place's own surface normal, so a choice is a turn of the world rather than a jump -
+   which is the whole point of doing this on a sphere instead of a plate.
+   Built ONCE and kept: buildGlobe is 250ms and a hundred thousand triangles, so it is made on
+   first open and reused. The render loop runs only while the panel is up. */
+const A3={on:false,ready:false,ren:null,scene:null,cam:null,
+  dir:new THREE.Vector3(0.2,0.35,1).normalize(),
+  tgt:new THREE.Vector3(0.2,0.35,1).normalize(),
+  d:3400,td:3400,raf:0};
+function atlasInit(){
+  if(A3.ready)return true;
+  const cv=$("atlasCanvas"); if(!cv||typeof THREE==="undefined")return false;
+  try{
+    A3.ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:false});
+    A3.ren.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+    if(typeof gradeRenderer==="function")gradeRenderer(A3.ren);
+    A3.scene=new THREE.Scene();
+    A3.cam=new THREE.PerspectiveCamera(38,cv.width/cv.height,50,20000);
+    const hemi=new THREE.HemisphereLight(0xbcd2e8,0x2a2a26,0.85);
+    A3.scene.add(hemi);
+    const sun=new THREE.DirectionalLight(0xfff2d8,0.95);
+    sun.position.set(1,0.5,0.9).multiplyScalar(5000);
+    A3.scene.add(sun);
+    const root=new THREE.Group();
+    buildGlobe(root);
+    A3.scene.add(root);
+    A3.ready=true;
+    return true;
+  }catch(e){A3.ready=false;return false;}
+}
+function atlasLookAt(lat,lon,dist){
+  A3.tgt=llv(lat,lon,1).normalize();
+  A3.td=dist||1750;
+}
+function atlasWide(){A3.td=3400;}
+function atlasLabels(){
+  const host=$("atlasLabels"), cv=$("atlasCanvas");
+  if(!host||!cv)return;
+  const W=cv.clientWidth||cv.width, H=cv.clientHeight||cv.height;
+  let html="";
+  const v=new THREE.Vector3();
   GLOBE_CITY.forEach(function(ct){
-    const x=X(ct.lo), y=Y(ct.la);
+    const p=llv(ct.la,ct.lo,GLOBE_R*1.01);
+    /* only the near face: a label on the back of the world is the thing that made a
+       sphere look wrong for a reference in the first place */
+    if(p.clone().normalize().dot(A3.dir)<0.15)return;
+    v.copy(p).project(A3.cam);
+    if(v.z>1)return;
+    const x=(v.x*0.5+0.5)*W, y=(-v.y*0.5+0.5)*H;
+    if(x<-40||x>W+40||y<-20||y>H+20)return;
     const sel=(ATLAS_SEL&&ATLAS_SEL.k==="city"&&ATLAS_SEL.id===ct.n);
-    g.fillStyle=(ct.k==="o")?"#d98a4a":"#e8dcc0";
-    g.fillRect(x-2.5,y-2.5,5,5);
-    if(sel){g.strokeStyle="#e04b34";g.lineWidth=2;g.strokeRect(x-5,y-5,10,10);}
-    g.fillStyle=sel?"#ffe9b8":"rgba(232,220,192,.82)";
-    g.textAlign=(x>W-90)?"right":"left";
-    g.fillText(ct.n,(x>W-90)?x-6:x+6,y-5);
+    /* when zoomed out only the story pair is named, or the sphere is a wall of text */
+    if(!sel&&A3.d>2600&&ct.k!=="o")return;
+    html+='<span class="'+(sel?"sel":"")+'" style="left:'+x.toFixed(0)+"px;top:"+
+          y.toFixed(0)+'px">'+ct.n+"</span>";
   });
+  host.innerHTML=html;
+}
+function atlasFrame(){
+  if(!A3.on||!A3.ready){A3.raf=0;return;}
+  A3.dir.lerp(A3.tgt,0.075).normalize();
+  A3.d+=(A3.td-A3.d)*0.075;
+  A3.cam.position.copy(A3.dir).multiplyScalar(A3.d);
+  A3.cam.lookAt(0,0,0);
+  A3.ren.render(A3.scene,A3.cam);
+  atlasLabels();
+  A3.raf=requestAnimationFrame(atlasFrame);
+}
+function atlasStop(){A3.on=false;if(A3.raf)cancelAnimationFrame(A3.raf);A3.raf=0;}
+function drawAtlas(){
+  /* the flat draw is gone; the globe is the map. Kept as the one entry point the rest of
+     the panel calls, so nothing else had to learn a new name. */
+  if(!atlasInit())return;
+  A3.on=true;
+  if(ATLAS_SEL&&ATLAS_SEL.k==="city"){
+    const c=GLOBE_CITY.filter(function(x){return x.n===ATLAS_SEL.id;})[0];
+    if(c)atlasLookAt(c.la,c.lo,1650);
+  } else if(ATLAS_SEL&&ATLAS_SEL.k==="route"){
+    atlasLookAt(30,-45,3100);          /* the whole Atlantic, so the passage fits */
+  } else atlasWide();
+  if(!A3.raf)A3.raf=requestAnimationFrame(atlasFrame);
 }
 function openAtlas(){
   const host=$("atlasList");host.innerHTML="";
@@ -17985,7 +18034,7 @@ if(/(^|[?&#])admin\b/i.test(location.search+location.hash)){
   if(ab)ab.style.display="inline-flex";
 }
 $("btnNotes").onclick=openNotes;
-$("atlasClose").onclick=function(){$("mAtlas").classList.remove("on");};
+$("atlasClose").onclick=function(){$("mAtlas").classList.remove("on");atlasStop();};
 $("notesClose").onclick=function(){$("mNotes").classList.remove("on");};
 $("btnChapters").onclick=function(){toastMenu("");openChapters();};
 /* The Chapters button only exists once there is somewhere to go back TO. On a
@@ -18174,7 +18223,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1728";
+const BUILD="20260809-1738";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
