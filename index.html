@@ -4690,9 +4690,18 @@ function buildHoldLevel(root){
       const a0=(i/N)*Math.PI*2, a1=((i+1)/N)*Math.PI*2;
       const s0=Math.sin(a0)*rr*rH, c0=Math.cos(a0)*rr*rH;
       const s1=Math.sin(a1)*rr*rH, c1=Math.cos(a1)*rr*rH;
-      HG.tri([cx,cy,cz+len/2],[cx+s0,cy+c0,cz+len/2],[cx+s1,cy+c1,cz+len/2],
+      /* ---- AND THE HEADS WERE INVERTED TOO, WHICH IS WHY THE ENDS STAYED OPEN ----
+         Reversing the staves left the ends see-through, and it is the same fault in the
+         same ring. x=sin(a), y=cos(a) sweeps CLOCKWISE viewed from +z, so a fan wound
+         centre,a0,a1 gives a normal of sin(a0-a1) - negative, pointing back INTO the cask.
+         Both caps had it, each in its own direction, which is why both ends were open.
+         The two orders are simply exchanged. The SHADING stays with its own end: 0.86 on
+         the after head and 0.44 on the forward one, so the barrel is still lit from the
+         same side it always was. Winding and shading are different things and it would be
+         easy to swap both by accident here. */
+      HG.tri([cx,cy,cz+len/2],[cx+s1,cy+c1,cz+len/2],[cx+s0,cy+c0,cz+len/2],
         RGB(shadeHex(col,0.86)));
-      HG.tri([cx,cy,cz-len/2],[cx+s1,cy+c1,cz-len/2],[cx+s0,cy+c0,cz-len/2],
+      HG.tri([cx,cy,cz-len/2],[cx+s0,cy+c0,cz-len/2],[cx+s1,cy+c1,cz-len/2],
         RGB(shadeHex(col,0.44)));
     }
   };
@@ -17431,7 +17440,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1233";
+const BUILD="20260809-1240";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
