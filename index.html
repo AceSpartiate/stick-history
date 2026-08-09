@@ -15946,7 +15946,7 @@ const CHARTS={
       "into this bay must pass \u2014 which is the argument for it, and the argument against it."},
   ch2:{kick:"Cape Henry \u00b7 the Captain\u2019s chart, spread on a chest",
     title:"The Mouth of the Bay",
-    x:0.72,y:0.552,
+    art:"cape", x:0.475,y:0.668,
     gloss:"<b>You are here:</b> the southern cape at the mouth of the Chesapeake, named this month for the King\u2019s eldest son. "+
       "The northern cape across the water is Cape Charles, for his second. Neither had these names three weeks ago. "+
       "The fleet will not stay: there is no depth here for the ships and no cover from the sea. "+
@@ -16709,6 +16709,118 @@ CHART_ART.powhatan=function(c,spec){
   PEN.scaleBar(g,X,Y,0.055,0.905,0.240,6,"Leagues",INK,W);
   PEN.cartouche(g,X,Y,0.615,0.028,0.355,0.150,INK,
     "The Powhatan","and the two rivers","as wee were shewn",W);
+
+  if(spec&&typeof spec.x==="number"){
+    const r=W*0.013;
+    g.strokeStyle="#8f3f2f";g.lineWidth=W*0.0032;
+    g.beginPath();g.arc(X(spec.x),Y(spec.y),r,0,Math.PI*2);g.stroke();
+    g.beginPath();
+    g.moveTo(X(spec.x)-r*1.6,Y(spec.y));g.lineTo(X(spec.x)+r*1.6,Y(spec.y));
+    g.moveTo(X(spec.x),Y(spec.y)-r*1.6);g.lineTo(X(spec.x),Y(spec.y)+r*1.6);
+    g.stroke();
+  }
+};
+
+/* ---- CAPE HENRY, 26 APRIL 1607 ----
+   FROM THE RECORD:
+     The southern of the two capes at the mouth of the Chesapeake, named this month for the
+       King's eldest son. Cape Charles lies opposite, some twelve miles north across the mouth.
+     Low sand and pine, not cliff - Percy describes fair meadows and goodly tall trees.
+     The deep channel runs in between the capes; it is the door to the whole bay, and it is
+       why a fleet could enter at all.
+     THE CROSS was set up here on the 24th, and the first service held. Chapter II is this
+       ground, and the cross is the one built thing on it.
+     They were attacked here that same evening, going aboard. The chart does not draw the
+       fight - a chart is not a battle plan - but Paspahegh country lies west, and the shore
+       is not empty in this game or in the record.
+   Drawn with the same hand as the others: wobbled ink, hatched shores, ruled sea, toned
+   paper, a rose, a cartouche, soundings in fathoms and a scale in leagues. */
+CHART_ART.cape=function(c,spec){
+  const g=c.getContext("2d"), W=c.width, H=c.height;
+  const X=function(u){return u*W;}, Y=function(v){return v*H;};
+  const coast=function(pts0,close,fill,stroke,lw){
+    const pts=PEN.wobble(pts0);
+    g.beginPath();g.moveTo(X(pts[0][0]),Y(pts[0][1]));
+    for(let k=0;k<pts.length-1;k++){
+      const a=pts[k],b=pts[k+1],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;
+      g.quadraticCurveTo(X(a[0]),Y(a[1]),X(mx),Y(my));
+    }
+    const L=pts[pts.length-1];
+    g.quadraticCurveTo(X(L[0]),Y(L[1]),X(L[0]),Y(L[1]));
+    if(close)g.closePath();
+    if(fill){g.fillStyle=fill;g.fill();}
+    if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1;g.stroke();}
+    return pts;
+  };
+  const WATER="rgba(146,176,190,0.32)", LAND="rgba(198,178,132,0.36)", INK="#4a3a22";
+  PEN.paper(g,W,H);
+
+  /* everything is water until land is laid over it - the capes are two arms into the sea */
+  g.fillStyle=WATER;g.fillRect(0,0,W,H);
+  PEN.seaRule(g,X,Y,[[-0.02,-0.04],[1.02,-0.04],[1.02,1.04],[-0.02,1.04]],
+    W,H,0.026,"rgba(70,104,124,0.30)",W*0.0010);
+
+  /* CAPE HENRY, the southern arm, reaching north-east into the mouth */
+  const capeH=coast([[-0.02,0.980],[-0.02,0.700],[0.10,0.690],[0.22,0.700],[0.34,0.676],
+    [0.44,0.640],[0.52,0.594],[0.575,0.545],[0.60,0.585],[0.565,0.645],[0.495,0.700],
+    [0.40,0.746],[0.28,0.786],[0.16,0.848],[0.06,0.930],[0.02,0.995]],true,LAND,INK,W*0.0022);
+  /* CAPE CHARLES, the northern arm, coming down to meet it */
+  const capeC=coast([[0.62,-0.04],[1.02,-0.04],[1.02,0.145],[0.94,0.150],[0.86,0.185],
+    [0.79,0.235],[0.745,0.290],[0.700,0.262],[0.745,0.198],[0.805,0.135],[0.700,0.075],
+    [0.640,0.020]],true,LAND,INK,W*0.0022);
+
+  PEN.hatch(g,X,Y,capeH,1,0.026,0.016,"rgba(74,58,34,0.72)",W*0.0017);
+  PEN.hatch(g,X,Y,capeC,-1,0.024,0.016,"rgba(74,58,34,0.68)",W*0.0017);
+
+  /* pine and low wood along the cape, which is what Percy saw */
+  g.strokeStyle="#5d6b3e";g.fillStyle="#5d6b3e";g.lineWidth=W*0.0016;
+  const tree=function(u,v,h){
+    g.beginPath();
+    g.moveTo(X(u),Y(v-h*0.35));g.lineTo(X(u-h*0.34),Y(v));g.lineTo(X(u+h*0.34),Y(v));
+    g.closePath();g.fill();
+    g.beginPath();g.moveTo(X(u),Y(v));g.lineTo(X(u),Y(v+h*0.22));g.stroke();
+  };
+  for(let k=0;k<10;k++)tree(0.045+((k*5)%10)*0.045, 0.845+((k*3)%4)*0.038, 0.038);
+
+  /* THE CROSSE, set up on the 24th */
+  g.strokeStyle="#8f3f2f";g.lineWidth=W*0.0030;
+  g.beginPath();
+  g.moveTo(X(0.475),Y(0.640));g.lineTo(X(0.475),Y(0.700));
+  g.moveTo(X(0.452),Y(0.660));g.lineTo(X(0.498),Y(0.660));
+  g.stroke();
+
+  /* the soundings: deep in the channel between the capes, shoaling onto both shores */
+  const SND="#3d5a68";
+  [[0.660,0.400,12],[0.700,0.470,11],[0.755,0.360,14],[0.620,0.310,9],
+   [0.560,0.420,8],[0.480,0.480,7],[0.395,0.545,5],[0.300,0.600,4],
+   [0.640,0.560,9],[0.740,0.620,7],[0.845,0.480,10],[0.900,0.330,6],
+   [0.190,0.620,3],[0.110,0.600,2]
+  ].forEach(function(p){PEN.sounding(g,X,Y,p[0],p[1],p[2],W,SND);});
+
+  /* lettering */
+  g.fillStyle=INK;g.textAlign="left";
+  g.font="italic "+Math.round(W*0.026)+"px Georgia, serif";
+  g.fillText("Cape Henry",X(0.115),Y(0.760));
+  g.fillText("Cape Charles",X(0.815),Y(0.098));
+  g.font="italic "+Math.round(W*0.021)+"px Georgia, serif";
+  g.fillStyle="#3d5a68";
+  g.fillText("Chesupioc Bay",X(0.135),Y(0.360));
+  g.fillText("The Maine Sea",X(0.760),Y(0.850));
+  g.fillStyle="#8f3f2f";
+  g.font="italic "+Math.round(W*0.018)+"px Georgia, serif";
+  g.fillText("the crosse sett up",X(0.400),Y(0.616));
+  g.fillStyle=INK;
+  g.font="italic "+Math.round(W*0.018)+"px Georgia, serif";
+  g.fillText("Paspahegh country, westward",X(0.030),Y(0.680));
+
+  PEN.rose(g,X,Y,0.115,0.155,W*0.040,INK);
+  g.fillStyle=INK;g.textAlign="center";
+  g.font="italic "+Math.round(W*0.019)+"px Georgia, serif";
+  g.fillText("N",X(0.115),Y(0.250));
+
+  PEN.scaleBar(g,X,Y,0.560,0.930,0.230,6,"Leagues",INK,W);
+  PEN.cartouche(g,X,Y,0.300,0.032,0.360,0.150,INK,
+    "The Mouth of the Bay","betweene the two capes","26 April 1607",W);
 
   if(spec&&typeof spec.x==="number"){
     const r=W*0.013;
@@ -18552,6 +18664,18 @@ function atlasInit(){
     const root=new THREE.Group();
     buildGlobe(root);
     A3.scene.add(root);
+    /* AND THE CONTEXT CAN BE TAKEN AWAY. Two live WebGL contexts - the world's and this
+       one - is within every browser's limit, but a backgrounded tab or a driver reset can
+       still drop one, and a dropped context is a black canvas for ever after. Rebuild on
+       restore rather than leaving the player with a dead panel. */
+    cv.addEventListener("webglcontextlost",function(e){
+      e.preventDefault();A3.ready=false;A3.on=false;
+      if(A3.raf)cancelAnimationFrame(A3.raf);A3.raf=0;
+    },false);
+    cv.addEventListener("webglcontextrestored",function(){
+      A3.ready=false;A3.ren=null;
+      if(atlasInit()){A3.on=true;if(!A3.raf)A3.raf=requestAnimationFrame(atlasFrame);}
+    },false);
     A3.ready=true;
     return true;
   }catch(e){A3.ready=false;return false;}
@@ -18634,6 +18758,16 @@ function atlasShowGlobe(){
   if(gc)gc.style.display="block";
   if(ch)ch.style.display="none";
   if(lb)lb.style.display="block";
+  /* ---- A SHOWN GLOBE MUST BE A TURNING GLOBE ----
+     Reported: after looking at a chart the map sometimes goes black. A WebGL canvas keeps
+     whatever was last drawn into it and NOTHING ELSE - so the moment the loop is not running
+     while the globe is visible, you are looking at a blank buffer rather than at a fault in
+     the scene. Every path that shows the globe now guarantees the loop, instead of three
+     separate call sites each remembering to. */
+  if(A3.ready){
+    A3.on=true;
+    if(!A3.raf)A3.raf=requestAnimationFrame(atlasFrame);
+  }
 }
 function atlasShowChart(spec){
   const gc=$("atlasCanvas"), ch=$("atlasChart"), lb=$("atlasLabels");
@@ -18991,7 +19125,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-2035";
+const BUILD="20260809-2039";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
