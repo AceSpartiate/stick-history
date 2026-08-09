@@ -16099,10 +16099,22 @@ function drawQuizMap(kind){
 }
 /* `into` added so the Atlas can borrow this. Defaulted, so every existing call is
    untouched - the chart panel does not know or care that it now has a second customer. */
-function drawChart(spec,into){
-  const c=$(into||"mapCanvas");
-  if(!c)return;
-  const g=c.getContext("2d"), W=c.width, H=c.height;
+/* ---- ONE CHART, HARDCODED, WEARING FIVE NAMES ----
+   drawChart read exactly TWO fields off its spec - x and y - and drew the same picture every
+   time. Cape Henry and Jamestown Island were the identical bay with the "you are here" dot
+   moved and different prose beneath it. That was fine while a chart was a prop on a table;
+   it is the blocker the moment a chapter wants its own ground.
+   So the DRAWING is split from the DISPATCH. CHART_ART holds renderers; a spec names one with
+   `art`, defaulting to the bay so every existing chart is untouched. Adding Jamestown Island
+   - the real island, the neck of sand, the channel hard against the bank, the fort - becomes
+   writing CHART_ART.james and setting art:"james" on a spec. drawChart never changes again.
+
+   This is the SPLIT ONLY. No new artwork is invented here, because the close-ups have to be
+   drawn from the record - John Smith's Map of Virginia, engraved 1612, is the primary source
+   for exactly this ground and is public domain - and guessing a coastline is the one thing
+   this project does not do. The seam is now in the right place for that work to land. */
+const CHART_ART={};
+CHART_ART.bay=function(c,spec){  const g=c.getContext("2d"), W=c.width, H=c.height;
   const X=function(u){return u*W;}, Y=function(v){return v*H;};
   g.clearRect(0,0,W,H);
   /* the paper */
@@ -16170,6 +16182,12 @@ function drawChart(spec,into){
   g.moveTo(mx+r,my-r);g.lineTo(mx-r,my+r);g.stroke();
   g.strokeStyle="rgba(143,47,40,.45)";g.lineWidth=1.4;
   g.beginPath();g.arc(mx,my,r*2.1,0,Math.PI*2);g.stroke();
+};
+function drawChart(spec,into){
+  const c=$(into||"mapCanvas");
+  if(!c)return;
+  const art=CHART_ART[(spec&&spec.art)||"bay"]||CHART_ART.bay;
+  art(c,spec);
 }
 /* ---- going and finding out, which costs a day ---- */
 function doSurvey(d){
@@ -18412,7 +18430,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1848";
+const BUILD="20260809-1852";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
