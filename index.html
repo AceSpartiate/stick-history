@@ -10492,7 +10492,19 @@ function openCodex(){
     if(!items.length){const e=document.createElement("div");e.className="cx-empty";
       e.textContent="Nothing recorded yet - question the crew.";wrap.appendChild(e);}
     items.forEach(function(it){const d=document.createElement("div");d.className="cx-entry";
-      d.innerHTML="<b>"+it.b+"</b><span>"+it.s+"</span>";wrap.appendChild(d);});
+      d.innerHTML="<b>"+it.b+"</b><span>"+it.s+"</span>";
+      /* a finding that is ABOUT somewhere offers to show it. Only when the Atlas would
+         actually open there - a button that does nothing teaches less than no button. */
+      const pl=NOTE_PLACE[it.b], ai=pl?atlasItemById(pl):null;
+      if(ai&&atlasOpenFor(ai)){
+        const sb=document.createElement("button");
+        sb.className="btn ghost wide mt noRead";
+        sb.style.cssText="font-size:.78rem;padding:.3em .6em";
+        sb.textContent="Show me on the Atlas";
+        sb.onclick=function(){openAtlasAt(pl);};
+        d.appendChild(sb);
+      }
+      wrap.appendChild(d);});
     host.appendChild(wrap);
   });
 }
@@ -17711,6 +17723,38 @@ const ATLAS_TRACK=[
    when it has not, because a list of everything handed over at the start is a reference
    book - whereas a map that fills in as you go is a record of where YOU have been. */
 let ATLAS_SEL=null;
+/* ---- WHICH FINDINGS HAVE A PLACE ----
+   The Notes are where a pupil READS and the Atlas is where they LOOK, and the link runs one
+   way on purpose: a finding offers to show itself on the map, rather than the map carrying a
+   second copy of the writing. Two indexes of the same material is how a codex rots.
+   Not every finding has a place, and that is the point of a table rather than a guess: "The
+   Hidden Tally" happens in a ledger and belongs nowhere on a globe, while "The Water at
+   Jamestown" is ABOUT somewhere and should say so. */
+const NOTE_PLACE={
+  "The Roanoke Colony":"Roanoke", "Why Roanoke Was Abandoned":"Roanoke",
+  "What Was Found at Roanoke":"Roanoke", "The Fate of Roanoke":"Roanoke",
+  "Roanoke and the Supply Problem":"Roanoke",
+  "The Virginia Company":"London", "Colonists as Company Servants":"London",
+  "Profit or Perish":"London", "What the Charter Actually Says":"London",
+  "Reading a Document's Purpose":"London",
+  "Gold in Virginia":"Potos\u00ed", "What the Gentlemen Bought":"Potos\u00ed",
+  "Why Jamestown Was Chosen":"Jamestown", "The Water at Jamestown":"Jamestown",
+  "The Island Nobody Farmed":"Jamestown", "Seen From the Sea":"Jamestown",
+  "Overruled":"Jamestown",
+  "Cape Henry":"track", "The Seven Named in the Box":"track"
+};
+function atlasItemById(id){
+  for(let i=0;i<ATLAS_ITEMS.length;i++)if(ATLAS_ITEMS[i].id===id)return ATLAS_ITEMS[i];
+  return null;
+}
+function openAtlasAt(id){
+  const it=atlasItemById(id);
+  if(!it||!atlasOpenFor(it))return false;
+  ATLAS_SEL=it;
+  closeAllModals();
+  openAtlas();
+  return true;
+}
 const ATLAS_ITEMS=[
   {k:"route", id:"track", n:"The Outward Passage, 1606-07",
    d:"South first to the Canaries, then west with the trade winds to the Indies, and only then north along the coast. Four months and more, for a place that lies due west of England.",
@@ -18038,7 +18082,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1636";
+const BUILD="20260809-1657";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
