@@ -7416,6 +7416,43 @@ function chapterOf(id){
        per-character estimate is easily close enough to keep two lines of text apart,
        which is the only job it has. Padding covers the error. */
 const LBL_PAD=3, LBL_STEP=7, LBL_LIFT_MAX=76;   /* 76 = two 34px stacks, so three fit */
+/* ---- LIFT AND STACK, AS AN ALGORITHM RATHER THAN A ROUTINE ----
+   placeLabels solved label collision for the ship's interactables the hard way - sort by
+   priority, then lift each label until it clears everything already seated, giving up past
+   a cap. That reasoning is worth more than the function it lives in, and the Atlas needed
+   exactly it: towns crowd on a sphere the moment you zoom in, and Jamestown was sitting on
+   Roanoke.
+   So the SEATING is extracted and takes plain rectangles: {cx, cy, w, h, pri, d}. It knows
+   nothing about DOM, decks or globes. Each entry comes back with a `top`, or seated:false if
+   it could not be placed inside the lift cap - which is the honest answer for a label with
+   nowhere to go, and better than drawing it over another one.
+   placeLabels itself is NOT migrated onto this yet, deliberately: it works, it was derived
+   by measurement, and rewriting live code at the end of a long session is how the careful
+   work of a day gets undone. That migration is a small, safe job with a fresh head, and
+   until it happens this comment is the pointer to it. */
+function seatLabels(items,pad,step,maxLift){
+  pad=(pad===undefined)?LBL_PAD:pad;
+  step=step||LBL_STEP;
+  maxLift=maxLift||LBL_LIFT_MAX;
+  const q=items.slice().sort(function(a,b){
+    return ((a.pri||0)-(b.pri||0))||((a.d||0)-(b.d||0));
+  });
+  const put=[];
+  q.forEach(function(e){
+    let lift=0; e.seated=false;
+    while(lift<=maxLift){
+      const top=e.cy-lift, l=e.cx-e.w/2, r=e.cx+e.w/2, t=top-e.h, b=top;
+      let clash=false;
+      for(let k=0;k<put.length;k++){
+        const p=put[k];
+        if(l<p.r+pad&&r>p.l-pad&&t<p.b+pad&&b>p.t-pad){clash=true;break;}
+      }
+      if(!clash){put.push({l:l,r:r,t:t,b:b});e.top=top;e.seated=true;return;}
+      lift+=step;
+    }
+  });
+  return q;
+}
 function placeLabels(q,best){
   q.sort(function(a,b){
     const ap=(a.it===best?-1:a.pri), bp=(b.it===best?-1:b.pri);
@@ -17905,22 +17942,31 @@ function atlasLabels(){
   const host=$("atlasLabels"), cv=$("atlasCanvas");
   if(!host||!cv)return;
   const W=cv.clientWidth||cv.width, H=cv.clientHeight||cv.height;
-  let html="";
-  const v=new THREE.Vector3();
+  const v=new THREE.Vector3(), items=[];
   GLOBE_CITY.forEach(function(ct){
     const p=llv(ct.la,ct.lo,GLOBE_R*1.01);
     /* only the near face: a label on the back of the world is the thing that made a
        sphere look wrong for a reference in the first place */
-    if(p.clone().normalize().dot(A3.dir)<0.15)return;
+    const face=p.clone().normalize().dot(A3.dir);
+    if(face<0.15)return;
     v.copy(p).project(A3.cam);
     if(v.z>1)return;
     const x=(v.x*0.5+0.5)*W, y=(-v.y*0.5+0.5)*H;
     if(x<-40||x>W+40||y<-20||y>H+20)return;
     const sel=(ATLAS_SEL&&ATLAS_SEL.k==="city"&&ATLAS_SEL.id===ct.n);
-    /* when zoomed out only the story pair is named, or the sphere is a wall of text */
     if(!sel&&A3.d>2600&&ct.k!=="o")return;
-    html+='<span class="'+(sel?"sel":"")+'" style="left:'+x.toFixed(0)+"px;top:"+
-          y.toFixed(0)+'px">'+ct.n+"</span>";
+    /* PRIORITY DECIDES WHO KEEPS THE GOOD SEAT. The chosen town first, then the story
+       pair, then whatever faces the camera most squarely - so when two collide it is
+       never the one the player just asked for that gets lifted away. */
+    items.push({cx:x,cy:y,w:(ct.n.length*(sel?6.6:5.6))+10,h:sel?15:13,
+      pri:sel?0:(ct.k==="o"?1:2), d:1-face, txt:ct.n, sel:sel});
+  });
+  const seated=seatLabels(items,3,7,54);
+  let html="";
+  seated.forEach(function(e){
+    if(!e.seated)return;                 /* nowhere to put it: better absent than doubled */
+    html+='<span class="'+(e.sel?"sel":"")+'" style="left:'+e.cx.toFixed(0)+"px;top:"+
+          e.top.toFixed(0)+'px">'+e.txt+"</span>";
   });
   host.innerHTML=html;
 }
@@ -18223,7 +18269,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1738";
+const BUILD="20260809-1751";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
