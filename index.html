@@ -16212,6 +16212,91 @@ CHART_ART.bay=function(c,spec){  const g=c.getContext("2d"), W=c.width, H=c.heig
    Generalised, not traced: this is a flat-colour reading of the geography at the scale the
    panel can show, in the same spirit as the coastline. Where the record does not fix a
    detail, the detail is not drawn. */
+/* ---- THE PEN, THE PAPER AND THE HATCHING ----
+   Reported: the charts should look hand drawn, made with the tools of the time. Flat vector
+   fills with a clean one-pixel outline read as modern however good the geography is, because
+   NOTHING IN 1607 COULD DRAW A PERFECT CURVE. What makes a chart of this date look like one
+   is the tooling, and four things carry almost all of it:
+
+     THE LINE WOBBLES. A quill on damp rag paper wanders. Every coast point is nudged by a
+       hash of its own position - deterministic, so the same chart every time, but no two
+       stretches of shore are alike and no line is mathematically smooth.
+     THE SHORE IS HATCHED. Short ticks struck out from the coast into the water is THE
+       convention of the period; it is how an engraver said "this edge is land". More than any
+       other single mark, its absence is what made these read as clip art.
+     THE PAPER IS NOT ONE COLOUR. Rag paper mottles and darkens at the edges. A little tone
+       and a vignette, and the flatness goes.
+     A ROSE, NOT AN ARROW. A north arrow is a modern convention. A chart of this date carries
+       a compass rose, and it is the ornament a period map is most recognised by.
+
+   These live once and both charts use them, so a third chart inherits the whole hand. */
+const PEN={};
+PEN.jit=function(u,v,k){                 /* a repeatable wander, in chart units */
+  const h=Math.sin((u*127.1+v*311.7+k*74.7))*43758.5453;
+  return (h-Math.floor(h)-0.5)*0.016;
+};
+PEN.wobble=function(pts){
+  return pts.map(function(p,i){
+    return [p[0]+PEN.jit(p[0],p[1],i), p[1]+PEN.jit(p[1],p[0],i+17)];
+  });
+};
+/* ticks struck outward from a shore. `side` is +1 or -1 for which way the water lies. */
+PEN.hatch=function(g,X,Y,pts,side,len,step,col,lw){
+  g.strokeStyle=col;g.lineWidth=lw;
+  for(let i=0;i<pts.length-1;i++){
+    const a=pts[i], b=pts[i+1];
+    const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy)||1;
+    const nx=-dy/L*side, ny=dx/L*side;
+    const n=Math.max(1,Math.round(L/step));
+    for(let k=0;k<n;k++){
+      const t=(k+0.5)/n, ux=a[0]+dx*t, uy=a[1]+dy*t;
+      const l=len*(0.62+0.38*Math.abs(PEN.jit(ux,uy,k)*140));
+      g.beginPath();
+      g.moveTo(X(ux),Y(uy));
+      g.lineTo(X(ux+nx*l),Y(uy+ny*l));
+      g.stroke();
+    }
+  }
+};
+PEN.paper=function(g,W,H){
+  g.fillStyle="#e7ddbf";g.fillRect(0,0,W,H);
+  /* mottling: a scatter of very pale blots, the way rag paper takes ink unevenly */
+  for(let k=0;k<190;k++){
+    const u=((k*97)%1000)/1000, v=((k*61)%997)/997;
+    const r=W*(0.006+0.020*Math.abs(PEN.jit(u,v,k)*130));
+    g.fillStyle=(k%3)?"rgba(150,128,86,0.045)":"rgba(255,248,224,0.055)";
+    g.beginPath();g.arc(u*W,v*H,r,0,Math.PI*2);g.fill();
+  }
+  /* and the edges darken, as a sheet handled for four hundred years does */
+  const vg=g.createRadialGradient(W*0.5,H*0.5,H*0.20,W*0.5,H*0.5,H*0.86);
+  vg.addColorStop(0,"rgba(90,70,40,0)");
+  vg.addColorStop(1,"rgba(90,70,40,0.20)");
+  g.fillStyle=vg;g.fillRect(0,0,W,H);
+};
+PEN.rose=function(g,X,Y,u,v,r,ink){
+  g.save();
+  g.strokeStyle=ink;g.lineWidth=r*0.055;
+  g.beginPath();g.arc(X(u),Y(v),r,0,Math.PI*2);g.stroke();
+  g.beginPath();g.arc(X(u),Y(v),r*0.62,0,Math.PI*2);g.stroke();
+  for(let k=0;k<8;k++){
+    const a=k*Math.PI/4, big=(k%2===0);
+    const R=big?r:r*0.66, w=big?r*0.20:r*0.13;
+    const px=X(u)+Math.sin(a)*R, py=Y(v)-Math.cos(a)*R;
+    const qx=X(u)+Math.sin(a+Math.PI/2)*w, qy=Y(v)-Math.cos(a+Math.PI/2)*w;
+    const rx=X(u)+Math.sin(a-Math.PI/2)*w, ry=Y(v)-Math.cos(a-Math.PI/2)*w;
+    g.beginPath();g.moveTo(px,py);g.lineTo(qx,qy);g.lineTo(rx,ry);g.closePath();
+    g.fillStyle=big?ink:"rgba(74,58,34,0.45)";g.fill();
+  }
+  /* the fleur that marks north, kept simple enough to read small */
+  g.fillStyle=ink;
+  g.beginPath();
+  g.moveTo(X(u),Y(v)-r*1.34);
+  g.lineTo(X(u)-r*0.16,Y(v)-r*1.02);
+  g.lineTo(X(u)+r*0.16,Y(v)-r*1.02);
+  g.closePath();g.fill();
+  g.restore();
+};
+
 CHART_ART.james=function(c,spec){
   const g=c.getContext("2d"), W=c.width, H=c.height;
   const X=function(u){return u*W;}, Y=function(v){return v*H;};
@@ -16223,7 +16308,8 @@ CHART_ART.james=function(c,spec){
      me not looking at how the existing chart works before drawing beside it.
      coast() runs a smooth curve through its points using midpoints as anchors, so a shore
      bends the way an engraver's would. Type is W-relative throughout. */
-  const coast=function(pts,close,fill,stroke,lw){
+  const coast=function(pts0,close,fill,stroke,lw){
+    const pts=PEN.wobble(pts0);          /* no line in 1607 was mathematically smooth */
     g.beginPath();
     g.moveTo(X(pts[0][0]),Y(pts[0][1]));
     for(let k=0;k<pts.length-1;k++){
@@ -16236,10 +16322,11 @@ CHART_ART.james=function(c,spec){
     if(close)g.closePath();
     if(fill){g.fillStyle=fill;g.fill();}
     if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1;g.stroke();}
+    return pts;
   };
-  const PAPER="#e6dcbe", WATER="#a8c0ca", DEEP="#7fa2b2",
+  const WATER="#a8c0ca", DEEP="#7fa2b2",
         LAND="#d3c69f", MARSH="#b6bb90", INK="#4a3a22";
-  g.fillStyle=PAPER;g.fillRect(0,0,W,H);
+  PEN.paper(g,W,H);
 
   /* the river, its north shore bending as a shore does */
   /* FAULT 3: the shore ran nearly straight across the whole width, so the top of the chart
@@ -16290,6 +16377,18 @@ CHART_ART.james=function(c,spec){
          [0.168,0.458],[0.176,0.486],[0.190,0.520],[0.208,0.548],[0.212,0.572]],
         true,LAND,INK,W*0.0022);
 
+  /* THE HATCHING, struck outward from the island into the water - the mark that says
+     "this edge is land" on every chart of this century */
+  PEN.hatch(g,X,Y,PEN.wobble([[0.205,0.578],[0.250,0.548],[0.292,0.590],[0.348,0.534],
+    [0.408,0.562],[0.468,0.524],[0.534,0.556],[0.596,0.536],[0.658,0.566],[0.714,0.592],
+    [0.752,0.640],[0.736,0.694],[0.688,0.712],[0.632,0.700],[0.588,0.760],[0.512,0.726],
+    [0.446,0.778],[0.382,0.734],[0.320,0.762],[0.262,0.714],[0.222,0.706],[0.194,0.658],
+    [0.192,0.612],[0.205,0.578]]),-1,0.030,0.014,"rgba(74,58,34,0.80)",W*0.0019);
+  /* and the mainland shore, hatched into the river */
+  PEN.hatch(g,X,Y,PEN.wobble([[0.00,0.474],[0.09,0.446],[0.18,0.464],[0.27,0.430],
+    [0.37,0.448],[0.46,0.422],[0.56,0.452],[0.66,0.426],[0.75,0.454],[0.86,0.424],
+    [1.00,0.446]]),1,0.026,0.016,"rgba(74,58,34,0.70)",W*0.0017);
+
   /* marish tufts along the island's north edge, the way a chart shows soft ground */
   g.strokeStyle="#7f8a5c";g.lineWidth=W*0.0013;
   for(let k=0;k<9;k++){
@@ -16339,13 +16438,12 @@ CHART_ART.james=function(c,spec){
   g.fillStyle="#8f3f2f";
   g.fillText("the fort",X(0.325),Y(0.612));
 
-  /* north, because this is turned from Smith's west-up original */
-  g.strokeStyle=INK;g.lineWidth=W*0.0016;
-  g.beginPath();g.moveTo(X(0.945),Y(0.215));g.lineTo(X(0.945),Y(0.085));g.stroke();
-  g.beginPath();g.moveTo(X(0.922),Y(0.122));g.lineTo(X(0.945),Y(0.080));
-  g.lineTo(X(0.968),Y(0.122));g.closePath();g.fillStyle=INK;g.fill();
-  g.textAlign="center";g.font="italic "+Math.round(W*0.020)+"px Georgia, serif";
-  g.fillText("N",X(0.945),Y(0.258));
+  /* a ROSE, not an arrow - and it still marks north, because this is turned from Smith's
+     west-up original */
+  PEN.rose(g,X,Y,0.905,0.175,W*0.042,INK);
+  g.fillStyle=INK;g.textAlign="center";
+  g.font="italic "+Math.round(W*0.019)+"px Georgia, serif";
+  g.fillText("N",X(0.905),Y(0.268));
 
   /* the "you are here" mark */
   if(spec&&typeof spec.x==="number"){
@@ -16382,7 +16480,8 @@ CHART_ART.james=function(c,spec){
 CHART_ART.powhatan=function(c,spec){
   const g=c.getContext("2d"), W=c.width, H=c.height;
   const X=function(u){return u*W;}, Y=function(v){return v*H;};
-  const coast=function(pts,close,fill,stroke,lw){
+  const coast=function(pts0,close,fill,stroke,lw){
+    const pts=PEN.wobble(pts0);
     g.beginPath();g.moveTo(X(pts[0][0]),Y(pts[0][1]));
     for(let k=0;k<pts.length-1;k++){
       const a=pts[k],b=pts[k+1],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;
@@ -16394,9 +16493,9 @@ CHART_ART.powhatan=function(c,spec){
     if(fill){g.fillStyle=fill;g.fill();}
     if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1;g.stroke();}
   };
-  const PAPER="#e6dcbe", WATER="#a8c0ca", LAND="#d3c69f", INK="#4a3a22";
-  g.fillStyle=PAPER;g.fillRect(0,0,W,H);
-  g.fillStyle=LAND;g.fillRect(0,0,W,H);
+  const WATER="#a8c0ca", LAND="#d3c69f", INK="#4a3a22";
+  PEN.paper(g,W,H);
+  g.fillStyle="rgba(211,198,159,0.85)";g.fillRect(0,0,W,H);
 
   /* the Pamunkey, north, widening to the bay */
   /* THE TWO RIVERS WERE PARALLEL RIBBONS OF THE SAME WIDTH and read as a road diagram.
@@ -16412,6 +16511,13 @@ CHART_ART.powhatan=function(c,spec){
   /* the bay itself, east */
   coast([[0.955,-0.04],[1.04,-0.04],[1.04,1.04],[0.94,1.04],[0.968,0.72],
          [0.945,0.40],[0.972,0.14]],true,WATER);
+
+  /* both river shores hatched, so the water reads as water */
+  PEN.hatch(g,X,Y,PEN.wobble([[0.00,0.360],[0.14,0.352],[0.30,0.376],[0.46,0.352],
+    [0.62,0.332],[0.78,0.322],[1.00,0.316]]),-1,0.024,0.015,"rgba(74,58,34,0.72)",W*0.0017);
+  PEN.hatch(g,X,Y,PEN.wobble([[0.00,0.688],[0.14,0.724],[0.30,0.700],[0.46,0.744],
+    [0.62,0.722],[0.78,0.756],[1.00,0.742]]),1,0.024,0.015,"rgba(74,58,34,0.72)",W*0.0017);
+  PEN.rose(g,X,Y,0.905,0.135,W*0.036,INK);
 
   /* woodland on the neck between the rivers */
   g.strokeStyle="#5d6b3e";g.lineWidth=W*0.0015;
@@ -18746,7 +18852,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-2011";
+const BUILD="20260809-2026";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
