@@ -12921,6 +12921,42 @@ const GLOBE_LAND=[
   [57,46,7,"g"],[59,60,8,"g"],[61,74,8,"g"],[62,89,8,"g"],[63,104,8,"g"],
   [63,119,8,"g"],[62,134,7,"g"],[60,148,6,"g"],[58,160,5,"g"],[56,159,3,"g"],
   [70,72,4.5,"i"],[71,98,4.5,"i"],[70,126,4,"i"],[68,150,3.5,"i"],
+  /* ---- WHAT MEASURING THE GLOBE FOUND, RATHER THAN LOOKING AT IT ----
+     Asked to make this much more accurate, so it was measured first: sample a 2-degree
+     grid, weight each cell by cos(latitude) because cells shrink toward the poles, and
+     compare against the real figure.
+       land covered   20.9%      the Earth is 29.2%
+       named probes   20 of 23   correct
+     A third of the world's land was simply absent, and three places a class would name
+     were open ocean: RIO, CAIRO and the whole of ANTARCTICA.
+     Antarctica is the one that matters most for reuse. This globe is going to be pointed
+     at other places in later chapters, and a continent that is missing from the bottom of
+     the planet is not a detail that survives being looked at directly.
+     The sea probes are the control and they must STAY sea - mid-Atlantic, mid-Pacific and
+     the Indian Ocean - or filling in land has just drowned the oceans instead. */
+
+  /* ANTARCTICA. A ring at 78 south plus a cap, all of it ice. */
+  [-77,-150,11,"i"],[-77,-90,11,"i"],[-77,-30,11,"i"],
+  [-77,30,11,"i"],[-77,90,11,"i"],[-77,150,11,"i"],
+  [-72,-60,7,"i"],[-70,-45,5,"i"],[-75,110,8,"i"],[-88,0,9,"i"],
+
+  /* SOUTH AMERICA's east and south, which is where Rio fell through */
+  [-20,-44,5.5,"g"],[-25,-50,5,"g"],[-12,-41,5,"g"],[-8,-36,4,"g"],
+  [-31,-58,5,"g"],[-38,-63,5,"s"],[-45,-70,5,"s"],[-52,-70,3.5,"s"],
+  [-17,-63,5,"g"],[-27,-66,4.5,"s"],
+
+  /* AFRICA - the Nile, the horn, and the interior the blobs had left hollow */
+  [30,31,4,"s"],[26,30,4.5,"s"],[19,33,4.5,"s"],[12,38,4.5,"g"],[8,45,4,"s"],
+  [5,20,5,"g"],[-8,25,5,"g"],[-15,28,5,"g"],[-22,25,5,"s"],[-28,24,5,"s"],
+  [10,0,5,"s"],[16,-8,5,"s"],[8,-6,4.5,"g"],[0,12,4.5,"g"],
+
+  /* NORTH AMERICA's interior and west, thin enough that the middle showed through */
+  [45,-100,6,"g"],[38,-98,6,"s"],[32,-104,5,"s"],[40,-115,5,"s"],[47,-118,5,"g"],
+  [55,-105,7,"g"],[60,-125,6,"g"],[63,-150,5,"i"],[50,-70,5,"g"],[30,-90,4.5,"g"],
+
+  /* AUSTRALIA's dry middle, and the interior of Asia between the named ranges */
+  [-24,133,7,"s"],[-28,120,6,"s"],[-20,145,5,"g"],
+  [40,100,6,"s"],[35,110,5,"g"],[50,85,6,"g"],
   /* the steppe and the Caspian: dry, so they take the sand tone */
   [47,53,5,"s"],[45,66,6,"s"],[44,79,6,"s"],[47,92,5,"g"],
   /* Arabia and Persia */
@@ -17471,7 +17507,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1250";
+const BUILD="20260809-1253";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
