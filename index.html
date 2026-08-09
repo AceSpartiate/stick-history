@@ -1580,7 +1580,7 @@ let CH={
  /* ---- ambient crew: flavour only, to make the ship feel inhabited ---- */
  idlers:[
   {id:"boy",name:"Ship's Boy",voice:"male",role:"runs the errands",lvl:2,pos:[2,-20],face:2.6,
-   eq:{skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"head_cap",build:"build_normal",face:"eager"},
+   eq:{skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"head_cap",build:"build_normal",face:"eager",boy:true},
    lines:["\u201cMind yourself - cook's got a temper and a ladle, and he's quick with both.\u201d",
      "\u201cI counted the rats one night. There's more of them than us. I stopped counting.\u201d",
      "\u201cSixth week of ship's biscuit. I dream about bread. Actual bread, with a crust on it.\u201d",
@@ -2341,6 +2341,8 @@ function mat(hex){if(!MATS[hex]){MATS[hex]=new THREE.MeshLambertMaterial({color:
    scales it by FIG_SCALE too, which is how the grounded matchlock came to be
    fifteen feet long) and crowdMan. */
 const FIG_SCALE=2.916;
+/* a boy's crown at 4.72 ft against a man's 5.49 - see buildFigure */
+const BOY_SCALE=0.86;
 /* feet -> figure-local, for anything world-sized built inside a figure */
 const FIG_FT=1/FIG_SCALE;
 
@@ -2680,7 +2682,21 @@ function buildFigureRaw(eq){
 function buildFigure(eq){
   const wrap=new THREE.Group();
   const inner=buildFigureRaw(eq);
-  inner.scale.setScalar(FIG_SCALE);
+  /* ---- A SHIP'S BOY SHOULD BE A BOY ----
+     Asked, and he was not: every boy in the game carried build:"build_normal" and stood the
+     full height of a grown man - the Ship's Boy aboard, and Samuell Collier, Nathaniel
+     Peacock and Richard Mutton ashore, all three of whom are real names off the muster roll.
+     Four boys, four adults.
+     DERIVED, not picked. An adult figure's crown sits at 5.49 ft here (FIG_SCALE 2.916,
+     chosen so the eye lands 0.49 below the crown). Ship's boys were roughly twelve to
+     sixteen, and a boy of that age in 1607 - fed on what the hold carries - stands nearer
+     4 ft 8 than a modern child of the same age. 0.86 puts the crown at 4.72 ft and the
+     difference reads instantly when he is standing beside a man, which is the whole point:
+     the muster says a hundred and four MEN AND BOYS, and a player should be able to see
+     which is which without being told.
+     One place, because buildFigure is the only place scale is applied - so the portrait,
+     the world figure and the baked crowd copy all inherit it and cannot drift apart. */
+  inner.scale.setScalar(FIG_SCALE*((eq&&eq.boy)?BOY_SCALE:1));
   wrap.add(inner);
   wrap.userData.parts=inner.userData.parts;
   /* the wrapper yaws, the inner group tips. Keeping those on two different objects
@@ -14557,7 +14573,7 @@ function crowdEq(kind,i){
     torso:"torso_buffcoat",accessory:"none_acc",head:"head_cap",build:"build_normal",
     face:crowdFace("soldier",i),
     dye:{torso:"slate",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"}};
-  if(kind==="boy")return {skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
+  if(kind==="boy")return {boy:true,skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
     accessory:"none_acc",head:"none_head",build:"build_normal",face:crowdFace("boy",i),
     dye:{torso:"ink",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"}};
   return {skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
@@ -17507,7 +17523,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1253";
+const BUILD="20260809-1256";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
