@@ -294,6 +294,15 @@
     border:1px solid rgba(176,141,62,.38);background:rgba(24,20,14,.42);
     color:rgba(231,218,187,.72)}
   #btnNotes:active{background:rgba(176,141,62,.28)}
+  #atlasCanvas{width:100%;height:auto;display:block;border-radius:6px;
+    border:1px solid rgba(90,72,40,.35);background:#0d1a28}
+  .atRow{display:block;width:100%;text-align:left;margin:.32em 0;padding:.5em .7em;
+    border:1px solid rgba(90,72,40,.28);border-radius:7px;background:rgba(255,250,235,.42);
+    font-family:'EB Garamond',serif;font-size:.9rem;color:var(--ink);cursor:pointer}
+  .atRow.sel{border-color:var(--copper);background:rgba(197,138,42,.16)}
+  .atRow b{display:block;font-family:'IM Fell English SC',serif;letter-spacing:.02em}
+  .atRow small{display:block;opacity:.78;line-height:1.4;margin-top:.15em}
+  .atRow[disabled]{opacity:.5;cursor:default;font-style:italic}
   .pnote{margin:0 0 1.05em}
   .pnote h4{margin:0 0 .18em;font-family:'IM Fell English SC',serif;font-size:.95rem;
     letter-spacing:.02em;color:var(--gold)}
@@ -592,6 +601,9 @@
         <button class="btn ghost wide" id="btnWardrobe1">Wardrobe</button>
         <button class="btn ghost wide" id="btnChapters" style="display:none">Chapters</button>
         <button class="btn ghost wide" id="btnCodex1">Historian's Notes</button>
+        <!-- Appears only once a voyage has been begun. Before that there is nowhere on it
+             the player has been, and a map of places you have not seen is a textbook. -->
+        <button class="btn ghost wide" id="btnAtlas" style="display:none">The Atlas</button>
         <button class="btn ghost wide" id="btnAdmin" style="display:none;opacity:.6;font-size:.9rem">Admin</button>
       </div>
       <div class="tag">Aboard a reconstruction of the Susan Constant. Question the crew, and prove what you learned to earn what your figure wears.</div>
@@ -751,6 +763,20 @@
       <div id="adminMsg" style="min-height:1.4em;text-align:center;font-style:italic;font-size:.9rem;color:var(--oxblood);margin-top:.4em"></div>
       <button class="btn wide mt" id="adminGo">Unlock</button>
       <button class="btn ghost wide mt" id="adminCancel">Back</button>
+    </div>
+  </div>
+
+  <!-- THE ATLAS. Flat, not the globe: a sphere is right for a cutscene and wrong for a
+       thing you read, because half of it is always facing away and labels on it need
+       projection machinery the game does not have. On a canvas the same data draws in two
+       dimensions and a label is just fillText. -->
+  <div class="modal mid" id="mAtlas">
+    <div class="parchment deckle sheet" style="max-width:520px">
+      <div class="kicker">Where this happened</div>
+      <h3>The Atlas</h3>
+      <canvas id="atlasCanvas" width="900" height="470"></canvas>
+      <div id="atlasList" data-read></div>
+      <button class="btn ghost wide mt" id="atlasClose">Back</button>
     </div>
   </div>
 
@@ -7524,7 +7550,7 @@ function refreshPlayer(){
 /* ========== CONTROLS ==========
    Left half of the screen is a floating stick; right half turns the view.
    Keyboard: WASD to move, Q/E or drag to turn, Space/E to act, Esc to back out. */
-const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes"];
+const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes","mAtlas"];
 function anyModalOpen(){for(let i=0;i<MODALS.length;i++)if($(MODALS[i]).classList.contains("on"))return true;return false;}
 function closeAllModals(){
   for(let i=0;i<MODALS.length;i++)$(MODALS[i]).classList.remove("on");
@@ -10602,6 +10628,7 @@ $("btnContinue").onclick=function(){
 };
 /* the button only exists if there is something to continue */
 function refreshContinue(){
+  try{refreshAtlasBtn();}catch(e){}
   const b=$("btnContinue");
   if(b)b.style.display=hasSave()?"block":"none";
 }
@@ -10706,6 +10733,12 @@ function beginWorld(worldId){
 $("btnEnter").onclick=function(){beginWorld(INTRO_WORLD);};
 $("btnWardrobe1").onclick=function(){backTo="title";openWardrobe();};
 $("btnCodex1").onclick=function(){backTo="title";openCodex();};
+$("btnAtlas").onclick=function(){openAtlas();};
+/* shown once there is a run to have a map OF - the same test Continue uses */
+function refreshAtlasBtn(){
+  const b=$("btnAtlas");
+  if(b)b.style.display=(hasSave()||(S.reached&&Object.keys(S.reached).length))?"block":"none";
+}
 /* Back to the ENDING, not to the title. Spending the Ink you were just awarded is
    the obvious next thing to do at the end of a chapter, and sending the player to
    the main menu afterwards threw away the screen carrying the route into Chapter
@@ -13305,7 +13338,8 @@ function buildGlobe(root){
      and Nevis in the Leewards, Mona off Puerto Rico, then the Florida channel north to the
      capes. Drawn in red and laid slightly higher than the rivers so it reads over both land
      and sea. */
-  const GLOBE_TRACK=[
+  const GLOBE_TRACK=ATLAS_TRACK;
+  const _unused_track=[
     [51.4,0.4],[50.9,1.4],[49.5,-5.0],[44.0,-9.5],[36.0,-12.0],
     [28.1,-15.4],[24.0,-22.0],[19.0,-33.0],[16.0,-45.0],[15.4,-55.0],
     [15.4,-61.4],[17.2,-62.6],[18.1,-67.9],[20.5,-72.0],[25.0,-76.5],
@@ -17655,6 +17689,112 @@ const PATCH_NOTES=[
      "A misfire no longer costs you the whole load. If only the pan failed, you prime her again."
    ]}
 ];
+/* the passage itself, out here so both the globe and the atlas draw the SAME line - two
+   copies of a route would drift the moment either was corrected */
+const ATLAS_TRACK=[
+  [51.4,0.4],[50.9,1.4],[49.5,-5.0],[44.0,-9.5],[36.0,-12.0],
+  [28.1,-15.4],[24.0,-22.0],[19.0,-33.0],[16.0,-45.0],[15.4,-55.0],
+  [15.4,-61.4],[17.2,-62.6],[18.1,-67.9],[20.5,-72.0],[25.0,-76.5],
+  [29.0,-79.5],[32.5,-78.0],[35.5,-75.5],[36.9,-76.0]
+];
+/* ---- THE ATLAS ----
+   Everything here is data that already existed and could not be seen: the Natural Earth
+   mask, the twenty-nine towns with their notes, the rivers, and the track the fleet
+   actually sailed. In the cutscene they go past in eight seconds. Here they can be read.
+
+   FLAT, AND DELIBERATELY. A globe hides half of itself and needs projected labels; a plate
+   carree canvas shows the whole world at once and a label is fillText. Equirectangular
+   distorts the poles badly, which for a story that happens between 15 and 55 north costs
+   nothing and buys a map a child can read.
+
+   GATED THE WAY THE SOURCES ARE. An entry opens when the player has met it, and says so
+   when it has not, because a list of everything handed over at the start is a reference
+   book - whereas a map that fills in as you go is a record of where YOU have been. */
+let ATLAS_SEL=null;
+const ATLAS_ITEMS=[
+  {k:"route", id:"track", n:"The Outward Passage, 1606-07",
+   d:"South first to the Canaries, then west with the trade winds to the Indies, and only then north along the coast. Four months and more, for a place that lies due west of England.",
+   need:null},
+  {k:"city", id:"Jamestown", n:"Jamestown", need:"Why Jamestown Was Chosen"},
+  {k:"city", id:"Roanoke", n:"Roanoke", need:"The Roanoke Colony"},
+  {k:"city", id:"London", n:"London", need:null},
+  {k:"city", id:"Seville", n:"Seville", need:null},
+  {k:"city", id:"Havana", n:"Havana", need:null},
+  {k:"city", id:"Constantinople", n:"Constantinople", need:null},
+  {k:"city", id:"Beijing", n:"Beijing", need:null},
+  {k:"city", id:"Mbanza Kongo", n:"Mbanza Kongo", need:null},
+  {k:"city", id:"Potos\u00ed", n:"Potos\u00ed", need:null}
+];
+function atlasOpenFor(it){return !it.need||!!S.insight[it.need];}
+function drawAtlas(){
+  const cv=$("atlasCanvas"); if(!cv)return;
+  const g=cv.getContext("2d"), W=cv.width, H=cv.height;
+  const X=function(lo){return (lo+180)/360*W;}, Y=function(la){return (90-la)/180*H;};
+  g.fillStyle="#14263a";g.fillRect(0,0,W,H);
+  /* the land, straight off the same mask the globe uses */
+  const cw=W/GLOBE_MASK_W, ch=H/GLOBE_MASK_H;
+  for(let r=0;r<GLOBE_MASK_H;r++){
+    const la=89.75-r*0.5;
+    for(let c=0;c<GLOBE_MASK_W;c++){
+      const lo=-179.75+c*0.5;
+      if(!globeMaskAt(la,lo))continue;
+      const k=globeKind(la,lo);
+      g.fillStyle=(k==="i")?"#dfe8ee":(k==="s")?"#a99263":"#4a6b3a";
+      g.fillRect(c*cw,r*ch,cw+0.6,ch+0.6);
+    }
+  }
+  /* rivers */
+  g.strokeStyle="rgba(90,160,205,.85)";g.lineWidth=1.4;
+  GLOBE_RIVER.forEach(function(rv){
+    g.beginPath();
+    rv.p.forEach(function(p,i){i?g.lineTo(X(p[1]),Y(p[0])):g.moveTo(X(p[1]),Y(p[0]));});
+    g.stroke();
+  });
+  /* the track, when it is the selection or nothing is selected */
+  const showTrack=(!ATLAS_SEL||ATLAS_SEL.id==="track");
+  if(showTrack&&typeof ATLAS_TRACK!=="undefined"){
+    g.strokeStyle=(ATLAS_SEL&&ATLAS_SEL.id==="track")?"#e04b34":"rgba(192,57,43,.75)";
+    g.lineWidth=(ATLAS_SEL&&ATLAS_SEL.id==="track")?3:2;
+    g.beginPath();
+    ATLAS_TRACK.forEach(function(p,i){i?g.lineTo(X(p[1]),Y(p[0])):g.moveTo(X(p[1]),Y(p[0]));});
+    g.stroke();
+  }
+  /* towns, with their names - the whole reason this is flat */
+  g.font="12px 'IM Fell English SC', Georgia, serif";
+  GLOBE_CITY.forEach(function(ct){
+    const x=X(ct.lo), y=Y(ct.la);
+    const sel=(ATLAS_SEL&&ATLAS_SEL.k==="city"&&ATLAS_SEL.id===ct.n);
+    g.fillStyle=(ct.k==="o")?"#d98a4a":"#e8dcc0";
+    g.fillRect(x-2.5,y-2.5,5,5);
+    if(sel){g.strokeStyle="#e04b34";g.lineWidth=2;g.strokeRect(x-5,y-5,10,10);}
+    g.fillStyle=sel?"#ffe9b8":"rgba(232,220,192,.82)";
+    g.textAlign=(x>W-90)?"right":"left";
+    g.fillText(ct.n,(x>W-90)?x-6:x+6,y-5);
+  });
+}
+function openAtlas(){
+  const host=$("atlasList");host.innerHTML="";
+  ATLAS_ITEMS.forEach(function(it){
+    const open=atlasOpenFor(it);
+    const b=document.createElement("button");
+    b.className="atRow"+((ATLAS_SEL&&ATLAS_SEL.id===it.id)?" sel":"");
+    b.disabled=!open;
+    let body=it.d||"";
+    if(!body&&it.k==="city"){
+      const c=GLOBE_CITY.filter(function(x){return x.n===it.id;})[0];
+      body=c?c.d:"";
+    }
+    b.innerHTML="<b>"+it.n+"</b><small>"+(open?body:"You have not met this yet.")+"</small>";
+    if(open)b.onclick=function(){
+      ATLAS_SEL=(ATLAS_SEL&&ATLAS_SEL.id===it.id)?null:it;
+      openAtlas();
+    };
+    host.appendChild(b);
+  });
+  drawAtlas();
+  $("mAtlas").classList.add("on");
+  const sh=document.querySelector("#mAtlas .sheet");if(sh)sh.scrollTop=0;
+}
 function openNotes(){
   const host=$("notesList");host.innerHTML="";
   PATCH_NOTES.forEach(function(p){
@@ -17709,6 +17849,7 @@ if(/(^|[?&#])admin\b/i.test(location.search+location.hash)){
   if(ab)ab.style.display="inline-flex";
 }
 $("btnNotes").onclick=openNotes;
+$("atlasClose").onclick=function(){$("mAtlas").classList.remove("on");};
 $("notesClose").onclick=function(){$("mNotes").classList.remove("on");};
 $("btnChapters").onclick=function(){toastMenu("");openChapters();};
 /* The Chapters button only exists once there is somewhere to go back TO. On a
@@ -17897,7 +18038,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1622";
+const BUILD="20260809-1636";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
