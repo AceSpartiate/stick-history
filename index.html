@@ -13223,8 +13223,20 @@ function buildGlobe(root){
      made it look like Britain. The camera stops over England, so the mesh has to
      be able to draw England. At 200 x 120 a cell is 1.5 degrees and the island
      is seven cells long, which is coarse and legible - the right trade for a
-     game drawn in flat colour. 48,000 triangles, once, for a cutscene. */
-  const SEG=200, RING=120;
+     game drawn in flat colour. 48,000 triangles, once, for a cutscene.
+
+     RAISED TO 300 x 180 once the land became a real half-degree mask. The reason is
+     specific: the mesh had become the limit rather than the data. A 1.5-degree cell
+     cannot show a 0.5-degree coastline - three cells of Natural Earth collapse into one
+     quad, and the Chesapeake we now have data for was being averaged away before it
+     reached the screen. At 300 x 180 a cell is 1.2 degrees of longitude and 1.0 of
+     latitude, so Britain is eleven cells long instead of seven and the mesh is finally
+     finer than the mask in one axis and equal in the other.
+     108,000 triangles against 48,000. Still built ONCE, for a cutscene, and still nothing
+     per frame - and this file's own budget note says triangles are a distant third behind
+     blended overdraw and resolution. If a low tier ever struggles, this constant is the
+     first thing to turn down and it costs only sharpness. */
+  const SEG=300, RING=180;
   const g=new Geo();
   const sea=0x16406b, seaDeep=0x0e2c4d, grn=0x40602f, grnDry=0x5c6b33,
         sand=0xa48a55, ice=0xdde8ef;
@@ -13270,22 +13282,63 @@ function buildGlobe(root){
       }
     }
   });
-  /* a city is a small square laid flat on the surface, turned to face outward */
+  /* ---- A CITY IS A LITTLE TOWN, NOT A DOT ----
+     Squares read as map pins, which is what they were: a placeholder standing in for the
+     idea of a place. A place should look like a place. Each city is now a handful of blocks
+     standing UP off the sphere, with one taller than the rest - the tower or steeple that is
+     the silhouette of every European town of this date and, at this distance, the only shape
+     that reads as "somebody lives here".
+     Built in the city's own frame: `up` is the radial, `east` and `north` are tangent to the
+     globe there, so the blocks stand on the surface wherever it is and never lean.
+     Deterministic, not random: the offsets are hashed off the city's own latitude and
+     longitude, so a town looks the same every time the cutscene runs and two towns do not
+     look alike. Nothing here is per-frame; it is built once with the sphere.
+     Roanoke and Jamestown are taller and in the copper tone - the two ends of the argument
+     the player has been having with the crew all chapter. */
+  function faceOut(V,ctr,cc){
+    const u=[V[1][0]-V[0][0],V[1][1]-V[0][1],V[1][2]-V[0][2]];
+    const v=[V[2][0]-V[1][0],V[2][1]-V[1][1],V[2][2]-V[1][2]];
+    const n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+    const m=[(V[0][0]+V[2][0])/2-ctr[0],(V[0][1]+V[2][1])/2-ctr[1],(V[0][2]+V[2][2])/2-ctr[2]];
+    if(n[0]*m[0]+n[1]*m[1]+n[2]*m[2]>=0)g.quad(V[0],V[1],V[2],V[3],cc);
+    else g.quad(V[3],V[2],V[1],V[0],cc);
+  }
+  function blockOn(base,up,east,north,hw,hd,h,cc){
+    const P=function(sx,sz,sy){
+      const p=base.clone().addScaledVector(east,sx*hw).addScaledVector(north,sz*hd)
+                          .addScaledVector(up,sy*h);
+      return [p.x,p.y,p.z];
+    };
+    const b=[P(-1,-1,0),P(1,-1,0),P(1,1,0),P(-1,1,0)];
+    const t=[P(-1,-1,1),P(1,-1,1),P(1,1,1),P(-1,1,1)];
+    const ctr=base.clone().addScaledVector(up,h*0.5);
+    const C=[ctr.x,ctr.y,ctr.z];
+    faceOut(t,C,cc);                                   /* the roof */
+    faceOut([b[0],b[1],t[1],t[0]],C,cc);
+    faceOut([b[1],b[2],t[2],t[1]],C,cc);
+    faceOut([b[2],b[3],t[3],t[2]],C,cc);
+    faceOut([b[3],b[0],t[0],t[3]],C,cc);
+  }
+  const townWall=RGB(0xcbb388), townRoof=RGB(0x8a6a4a),
+        storyWall=RGB(0xd98a4a), storyRoof=RGB(0xa85327);
   GLOBE_CITY.forEach(function(ct){
-    const c=llv(ct.la,ct.lo,MARK_R);
-    const up=c.clone().normalize();
+    const base=llv(ct.la,ct.lo,GLOBE_R*1.0008);
+    const up=base.clone().normalize();
     const east=new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0),up).normalize();
     const north=new THREE.Vector3().crossVectors(up,east).normalize();
-    const w=GLOBE_R*(ct.k==="o"?0.0075:0.005);
-    const P=[c.clone().addScaledVector(east,-w).addScaledVector(north,-w),
-             c.clone().addScaledVector(east, w).addScaledVector(north,-w),
-             c.clone().addScaledVector(east, w).addScaledVector(north, w),
-             c.clone().addScaledVector(east,-w).addScaledVector(north, w)];
-    const u=P[1].clone().sub(P[0]), v=P[2].clone().sub(P[1]);
-    const n=new THREE.Vector3().crossVectors(u,v);
-    const V=P.map(function(q){return [q.x,q.y,q.z];});
-    const cc=(ct.k==="o")?markStory:markCol;
-    if(n.dot(up)>=0)g.quad(V[0],V[1],V[2],V[3],cc); else g.quad(V[3],V[2],V[1],V[0],cc);
+    const story=(ct.k==="o");
+    const wall=story?storyWall:townWall, roof=story?storyRoof:townRoof;
+    const U=GLOBE_R*0.0016, tall=story?1.5:1.0;
+    /* four dwellings and a tower, placed off the city's own coordinates */
+    const h=function(n){return srand(ct.la*7.31+ct.lo*3.17+n*1.7);};
+    for(let i=0;i<4;i++){
+      const a=h(i)*Math.PI*2, r=(0.7+h(i+9)*1.3)*U;
+      const spot=base.clone().addScaledVector(east,Math.cos(a)*r)
+                             .addScaledVector(north,Math.sin(a)*r);
+      blockOn(spot,up,east,north,U*0.55,U*0.55,U*(1.1+h(i+4)*1.5)*tall,
+              (i%2)?wall:roof);
+    }
+    blockOn(base,up,east,north,U*0.5,U*0.5,U*3.4*tall,roof);   /* the tower */
   });
   for(let i=0;i<RING;i++){
     const la0=90-i*(180/RING), la1=90-(i+1)*(180/RING);
@@ -17739,7 +17792,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1422";
+const BUILD="20260809-1439";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
