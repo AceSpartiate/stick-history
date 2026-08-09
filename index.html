@@ -203,7 +203,16 @@
     color:var(--parch);font-family:'IM Fell English SC',serif;font-size:.92rem;white-space:nowrap}
   #prompt.on{display:block}
   #prompt b{color:var(--gold-bright)}
-  #hint{position:absolute;left:50%;top:52px;transform:translateX(-50%);z-index:5;color:rgba(231,218,187,.8);
+  /* ---- 52px AND 64px, BOTH CENTRED, AND THE HINT WRAPS TO THREE LINES ----
+     #guide sits at top:64px. This sat at 52 and is a full sentence, so at phone width it
+     wrapped straight through the guide pill and the two rendered on top of each other -
+     illegible, in the first seconds of the game, in the text that TEACHES THE CONTROLS.
+     Found by playing on a phone; no static layout check would catch it, because the hint
+     fades and a scan taken seconds later sees the guide sitting alone.
+     The transient element moves, not the persistent one: the guide is a compact pill that
+     stays for the whole chapter, so the hint goes BELOW it (guide bottom is 99px at 280px, where the pill itself wraps to two lines) and
+     wraps downward into empty screen instead of across it. */
+  #hint{position:absolute;left:50%;top:108px;transform:translateX(-50%);z-index:5;color:rgba(231,218,187,.8);
     font-style:italic;font-size:.85rem;text-align:center;text-shadow:0 1px 4px #000;pointer-events:none;transition:opacity .6s;max-width:88%}
 
   /* ---- TOUCH CONTROLS ---- */
@@ -17391,7 +17400,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-0100";
+const BUILD="20260809-0236";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
