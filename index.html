@@ -319,6 +319,13 @@
   .atDrawer>summary small{margin-left:auto;flex:none;opacity:.55;letter-spacing:0;
     text-transform:none;font-family:'EB Garamond',serif}
   .atChap{opacity:.62;font-style:italic}
+  /* a road's stops sit UNDER the road and indented from it, so the nesting is visible at a
+     glance rather than having to be worked out from the wording */
+  .atSub{margin:.1em 0 .6em .85em}
+  .atSub>summary{font-size:.7rem;padding:.28em .55em;background:rgba(90,72,40,.05);
+    border-style:dashed}
+  .atRow.atStop{margin-left:.85em;width:calc(100% - .85em);font-size:.85rem;
+    background:rgba(255,250,235,.26)}
   .atRow{display:block;width:100%;text-align:left;margin:.32em 0;padding:.5em .7em;
     border:1px solid rgba(90,72,40,.28);border-radius:7px;background:rgba(255,250,235,.42);
     font-family:'EB Garamond',serif;font-size:.9rem;color:var(--ink);cursor:pointer}
@@ -13339,6 +13346,74 @@ const GLOBE_RIVER=[
  {n:"James",      p:[[37.0,-76.4],[37.2,-76.8],[37.5,-77.4]]}
 ];
 
+/* ---- A ROAD, DRAWN ON THE SPHERE ----
+   Its own mesh, on purpose: a few hundred triangles against the globe's hundred thousand, so
+   it can be thrown away and remade every time the reader picks a different one. The line is
+   subdivided along the great circle rather than drawn point to point, or a leg from Manila to
+   Acapulco would cut a chord straight through the Pacific floor.
+   A STOP GETS A MARK. Every point carrying a name is somewhere a pupil can ask about, so it
+   is given a small lozenge standing off the surface - otherwise the labels would be pointing
+   at bare line and there would be nothing to aim at. */
+function buildRoutes(root,ids,bold){
+  if(!ids||!ids.length)return null;
+  /* ABOVE THE CLOUD SHELL, which sits at 1.013. A route drawn at 1.0035 like a river runs
+     UNDER the weather, and the weather is thickest over the equator - so the two roads that
+     matter most across the tropics were both half hidden behind a rain band. A road is a
+     thing drawn ON a globe rather than a feature of its surface, and it should sit proud. */
+  const g=new Geo(), R=GLOBE_R*1.018;
+  const ribbon=function(v0,v1,w,cc){
+    const mid=v0.clone().add(v1).multiplyScalar(0.5).normalize();
+    const along=v1.clone().sub(v0).normalize();
+    const side=new THREE.Vector3().crossVectors(mid,along).multiplyScalar(w);
+    const a=v0.clone().sub(side), b=v1.clone().sub(side),
+          c=v1.clone().add(side), d=v0.clone().add(side);
+    g.quad([a.x,a.y,a.z],[b.x,b.y,b.z],[c.x,c.y,c.z],[d.x,d.y,d.z],cc);
+  };
+  ids.forEach(function(id){
+    const r=routeById(id); if(!r)return;
+    /* WIDTH IS IN GLOBE UNITS, so it has to be chosen for the far end of the zoom range.
+       At 0.0046 the chosen road came out under four pixels wide at the Atlas's usual
+       distance - I could not find the Trail of Tears in my own screenshot, and a pupil on a
+       phone would have less chance. */
+    const cc=RGB(r.col), w=GLOBE_R*(id===bold?0.0070:0.0032);
+    for(let i=0;i+1<r.p.length;i++){
+      const a=llv(r.p[i].la,r.p[i].lo,R), b=llv(r.p[i+1].la,r.p[i+1].lo,R);
+      const steps=Math.max(2,Math.ceil(a.angleTo(b)*180/Math.PI/1.2));
+      let prev=a;
+      for(let k=1;k<=steps;k++){
+        const nx=a.clone().lerp(b,k/steps).normalize().multiplyScalar(R);
+        ribbon(prev,nx,w,cc);
+        prev=nx;
+      }
+    }
+    r.p.forEach(function(q){
+      if(!q.n)return;
+      const ctr=llv(q.la,q.lo,R*1.0006), up=ctr.clone().normalize();
+      const east=new THREE.Vector3(0,1,0).cross(up).normalize();
+      const north=up.clone().cross(east).normalize();
+      const sz=GLOBE_R*(id===bold?0.0105:0.0080);
+      const A=ctr.clone().addScaledVector(east,sz), B=ctr.clone().addScaledVector(north,sz),
+            C=ctr.clone().addScaledVector(east,-sz), D=ctr.clone().addScaledVector(north,-sz);
+      g.quad([A.x,A.y,A.z],[B.x,B.y,B.z],[C.x,C.y,C.z],[D.x,D.y,D.z],cc);
+    });
+  });
+  /* TWO-SIDED, and not from laziness: a lozenge lying flat on a sphere can face either way
+     depending on which hemisphere it is in, and this mesh is rebuilt on every click. A
+     winding test that has to be right in a hundred places is a winding test that will be
+     wrong in one of them. Sixty triangles is not worth the risk. */
+  const m=g.mesh(false,true);
+  /* ---- AND UNLIT, WHICH IS THE WHOLE POINT ----
+     The house material is Lambert, so everything on this globe is dimmed by where the sun
+     happens to be. That is right for terrain and wrong for a road: the Trail of Tears runs
+     across the eastern United States, which sits in the globe's shadow at the angle the
+     Atlas holds, and the line simply went out - visible only as a few marks in the dark.
+     A route is ANNOTATION drawn on top of a picture, not a feature of the ground it crosses,
+     so it takes its own colour at full strength wherever it runs. */
+  m.material=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});
+  m.renderOrder=1;
+  root.add(m);
+  return m;
+}
 function buildGlobe(root){
   /* AT 96 x 64 A CELL IS 2.8 DEGREES OF LATITUDE - three hundred kilometres -
      and Britain is three cells tall, so no arrangement of blobs could ever have
@@ -13411,35 +13486,11 @@ function buildGlobe(root){
     const A2=[a.x,a.y,a.z],B2=[b.x,b.y,b.z],C2=[c.x,c.y,c.z],D2=[d.x,d.y,d.z];
     if(n.dot(mid)>=0)g.quad(A2,B2,C2,D2,cc); else g.quad(D2,C2,B2,A2,cc);
   }
-  /* ---- THE ROUTE THEY ACTUALLY SAILED ----
-     Asked for as a red line across the ocean, and it is the one piece of geography this
-     whole chapter argues about. The crew keep saying they did not sail west, and the line
-     is why: the fleet went SOUTH first, down to the Canaries, then west with the trade
-     winds to the Indies, and only then north along the coast until the water shoaled.
-     Four months and more, for a place that is due west of England.
-     Every waypoint is from the record of that passage - the Downs, the Canaries, Dominica
-     and Nevis in the Leewards, Mona off Puerto Rico, then the Florida channel north to the
-     capes. Drawn in red and laid slightly higher than the rivers so it reads over both land
-     and sea. */
-  const GLOBE_TRACK=ATLAS_TRACK;
-  const _unused_track=[
-    [51.4,0.4],[50.9,1.4],[49.5,-5.0],[44.0,-9.5],[36.0,-12.0],
-    [28.1,-15.4],[24.0,-22.0],[19.0,-33.0],[16.0,-45.0],[15.4,-55.0],
-    [15.4,-61.4],[17.2,-62.6],[18.1,-67.9],[20.5,-72.0],[25.0,-76.5],
-    [29.0,-79.5],[32.5,-78.0],[35.5,-75.5],[36.9,-76.0]
-  ];
-  const TRACK_R=GLOBE_R*1.0035, trackCol=RGB(0xc0392b);
-  for(let i=0;i+1<GLOBE_TRACK.length;i++){
-    const a=llv(GLOBE_TRACK[i][0],GLOBE_TRACK[i][1],TRACK_R);
-    const b=llv(GLOBE_TRACK[i+1][0],GLOBE_TRACK[i+1][1],TRACK_R);
-    const steps=Math.max(2,Math.ceil(a.angleTo(b)*180/Math.PI/1.2));
-    let prev=a;
-    for(let k=1;k<=steps;k++){
-      const nx=a.clone().lerp(b,k/steps).normalize().multiplyScalar(TRACK_R);
-      ribbon(prev,nx,GLOBE_R*0.0030,trackCol);
-      prev=nx;
-    }
-  }
+  /* THE ROADS ARE NO LONGER BUILT IN HERE. They used to be: the outward track was laid into
+     this same geometry, which meant it was welded to a hundred thousand triangles that take
+     a quarter of a second to make - so there could only ever be one route and it could never
+     change. buildRoutes below makes each road its own small mesh, which is what lets the
+     Atlas swap one for another on a click. */
   GLOBE_RIVER.forEach(function(r){
     for(let i=0;i+1<r.p.length;i++){
       const a=llv(r.p[i][0],r.p[i][1],RIVER_R), b=llv(r.p[i+1][0],r.p[i+1][1],RIVER_R);
@@ -13604,6 +13655,7 @@ function buildGlobe(root){
     }
   }
   const cloud=cl.mesh(true,false);
+  cloud.name="weather";        /* so a reference map can turn it down - see atlasInit */
   cloud.material.transparent=true;cloud.material.opacity=0.80;
   cloud.material.depthWrite=false;
   root.add(cloud);
@@ -13976,6 +14028,7 @@ function playOpening(onDone){
   /* space */
   const space=new THREE.Group();sc.add(space);
   buildStars(space);buildGlobe(space);
+  buildRoutes(space,["track"],"track");   /* the passage, drawn over the sphere */
   space.add(new THREE.AmbientLight(lin(0x8899aa),0.55));
   const sun=new THREE.DirectionalLight(lin(0xfff0d8),1.15);
   sun.position.copy(llv(18,28,4000));space.add(sun);
@@ -18800,12 +18853,276 @@ const PATCH_NOTES=[
 ];
 /* the passage itself, out here so both the globe and the atlas draw the SAME line - two
    copies of a route would drift the moment either was corrected */
-const ATLAS_TRACK=[
-  [51.4,0.4],[50.9,1.4],[49.5,-5.0],[44.0,-9.5],[36.0,-12.0],
-  [28.1,-15.4],[24.0,-22.0],[19.0,-33.0],[16.0,-45.0],[15.4,-55.0],
-  [15.4,-61.4],[17.2,-62.6],[18.1,-67.9],[20.5,-72.0],[25.0,-76.5],
-  [29.0,-79.5],[32.5,-78.0],[35.5,-75.5],[36.9,-76.0]
+/* ================= THE ROADS =================
+   The Outward Passage used to be a bare array of nineteen lat/lon pairs with one paragraph
+   of prose beside it. The prose named the Canaries, Dominica, Nevis and Mona - and none of
+   them could be clicked, flown to, or asked about. The most interesting thing on the globe
+   was a red line you could only read ABOUT.
+
+   A ROUTE IS NOW A THING THE GAME HAS. It carries its own colour, its own camera, its own
+   date, and an ordered list of points - and a point with a NAME on it is a STOP: something a
+   pupil can pick out of a list, fly to, and be told about. Points without names are shape
+   only, there to bend the line round a cape or a mountain range.
+
+   WHY A REGISTRY AND NOT A SECOND ARRAY. Every list in this file that got pasted rather than
+   derived has since fallen out of step with its owner - the atlas towns did, the chart table
+   did, and "Overruled" went invisible for two commits because of it. The Oregon Trail was
+   asked for as something we would add LATER; adding it later must be one entry here and
+   nothing else. So the globe draws from this, the atlas list is built from this, the labels
+   come from this, and there is no second copy to forget.
+
+   WHAT IS HERE, AND WHY THESE. A course that runs from Jamestown to Reconstruction is in
+   large part the history of how people and goods MOVED, and who was moved against their
+   will. Read in date order the list is close to being the syllabus: the land road east
+   closes, so Europe hunts a sea road; the sea road opens and the Atlantic trade follows it;
+   silver crosses the Pacific; a colony is planted; a continent is walked, surveyed, taken,
+   railed - and two of these roads are journeys nobody chose to make.
+
+   NOT SUGARCOATED, because the record is not. The Middle Passage and the Trail of Tears are
+   written with their numbers in them.
+
+   Sited from ordinary geography: passes, forts, river mouths and cities at their real
+   coordinates, so the line on the globe goes where the road went. */
+/* COLOURS ARE CHOSEN AGAINST THE GROUND, NOT AGAINST EACH OTHER. Only one road is ever
+   drawn at a time, so two of them being similar costs nothing - but the globe's rivers are
+   0x2f7fb5 and its land runs green to desert tan, and a road in any of those disappears.
+   The Oregon Trail and Lewis and Clark were both river-blue drawn over river country; the
+   Underground Railroad was dark green on green. Each is now a colour the sphere does not
+   already own. */
+const ROUTES=[
+{id:"track",y:1606,era:"1606\u201307",col:0xc0392b,n:"The Outward Passage",
+ view:{la:30,lo:-45,d:3100},
+ d:"South first to the Canaries, then west with the trade winds to the Indies, and only "+
+   "then north along the coast. Four months and more, for a place that lies due west of England.",
+ p:[
+  {la:51.4,lo:0.4,n:"The Downs",d:"The anchorage off Kent where the three ships lay six weeks in sight of home, held by a contrary wind before they had gone anywhere at all."},
+  {la:50.9,lo:1.4},{la:49.5,lo:-5.0},{la:44.0,lo:-9.5},{la:36.0,lo:-12.0},
+  {la:28.1,lo:-15.4,n:"The Canaries",d:"Down the coast of Africa to find the trade winds. You do not sail west from England to America \u2014 you sail south until the wind will carry you west."},
+  {la:24.0,lo:-22.0},{la:19.0,lo:-33.0},{la:16.0,lo:-45.0},{la:15.4,lo:-55.0},
+  {la:15.4,lo:-61.4,n:"Dominica",d:"First landfall in the Indies after five weeks of open sea. They watered here and traded with the Kalinago, who had held the island against Spain for a century."},
+  {la:17.2,lo:-62.6,n:"Nevis",d:"Six days ashore: bathing in the hot springs, and a gallows built for a mutiny that in the end was never carried out."},
+  {la:18.1,lo:-67.9,n:"Mona",d:"An islet off Puerto Rico. A gentleman died here of the heat, hunting iguanas ashore \u2014 the fleet\u2019s first loss on the far side."},
+  {la:20.5,lo:-72.0},{la:25.0,lo:-76.5},{la:29.0,lo:-79.5},{la:32.5,lo:-78.0},{la:35.5,lo:-75.5},
+  {la:36.9,lo:-76.0,n:"Cape Henry",d:"Landfall, 26 April 1607, four months and eleven days out. They set up a cross, and were attacked the same evening going back aboard."}
+ ]},
+
+{id:"silk",y:-130,era:"c. 130 BC \u2014 AD 1450s",col:0xf0b429,n:"The Silk Road",
+ view:{la:38,lo:72,d:3000},
+ d:"Not one road but a chain of them, and almost nobody walked the whole length. Silk, paper "+
+   "and gunpowder went west; silver, glass and wool came east; and every city on the way took "+
+   "its cut. When Constantinople fell in 1453 the far end of it closed \u2014 which is why "+
+   "Europe went looking for a way round by sea, and why there is a fleet in this game at all.",
+ p:[
+  {la:34.27,lo:108.95,n:"Chang\u2019an",d:"The eastern end, and for centuries the largest city on earth. Caravans formed up here for a journey of four thousand miles."},
+  {la:36.06,lo:103.79},{la:39.80,lo:98.29},
+  {la:40.14,lo:94.66,n:"Dunhuang",d:"The last garrison before the desert, where the road split to pass the Taklamakan on the north or the south. Its cave library held manuscripts in seventeen languages."},
+  {la:42.95,lo:89.19},{la:41.72,lo:82.96},
+  {la:39.47,lo:75.99,n:"Kashgar",d:"Where the two tracks round the desert meet again, under the Pamirs. Everything going either way passed through this one oasis."},
+  {la:39.80,lo:72.90},
+  {la:39.65,lo:66.96,n:"Samarkand",d:"The great caravan city of Central Asia. Paper-making reached the west from here, taken from Chinese prisoners in 751."},
+  {la:39.77,lo:64.42},
+  {la:37.66,lo:62.19,n:"Merv",d:"An oasis city of libraries and irrigation, said to have been among the largest in the world \u2014 until the Mongols destroyed it in 1221 and it never recovered."},
+  {la:36.21,lo:58.80},{la:35.70,lo:51.42},{la:34.80,lo:48.52},
+  {la:33.31,lo:44.36,n:"Baghdad",d:"Where the overland road met the sea routes of the Indian Ocean. Goods could go on by ship from the Gulf, or on by camel to the Mediterranean."},
+  {la:36.20,lo:37.16},{la:37.87,lo:32.49},
+  {la:41.01,lo:28.98,n:"Constantinople",d:"The western end, and the reason the whole thing matters to this game. It fell to the Ottomans in 1453, and Europe began hunting a sea road east that it would not have to ask anyone\u2019s permission to use."}
+ ]},
+
+{id:"sahara",y:800,era:"c. 800 \u2014 1600",col:0xe8622c,n:"The Trans-Saharan Gold Road",
+ view:{la:24,lo:-4,d:2600},
+ d:"Salt going south, gold coming north, across a desert that takes two months to cross. It "+
+   "made Mali one of the richest states in the world and put West African gold into European "+
+   "coinage \u2014 and it is the reason Portuguese ships began working down the coast, hoping "+
+   "to reach the source by sea and cut out every middleman on this line.",
+ p:[
+  {la:16.77,lo:-3.01,n:"Timbuktu",d:"The southern terminus, on the Niger where the desert meets the river. A city of scholars and manuscripts, known in Europe by rumour long before any European saw it."},
+  {la:18.90,lo:-3.53},
+  {la:23.53,lo:-4.99,n:"Taghaza",d:"The salt mines, in the middle of the desert. Houses were built of salt blocks because there was nothing else. In the Sahel salt was worth its weight in gold \u2014 not as a figure of speech."},
+  {la:27.50,lo:-4.60},
+  {la:31.28,lo:-4.28,n:"Sijilmasa",d:"Where the caravans came out of the desert on the northern side. Gold was minted here, and the coins turned up all over the Mediterranean."},
+  {la:34.03,lo:-5.00,n:"Fez",d:"The northern market, and the gateway to the Mediterranean trade."},
+  {la:35.78,lo:-5.81}
+ ]},
+
+{id:"gama",y:1497,era:"1497\u201399",col:0x2fc47a,n:"Da Gama\u2019s Sea Road to India",
+ view:{la:-5,lo:20,d:3300},
+ d:"The answer to the closed road east. Four ships left Lisbon, swung far out into the "+
+   "Atlantic to catch the westerlies, rounded the bottom of Africa, and reached India \u2014 "+
+   "and Europe suddenly had a sea route to the spice trade that no other power controlled. "+
+   "Two of the four ships came home; about a third of the men did.",
+ p:[
+  {la:38.72,lo:-9.14,n:"Lisbon",d:"Sailed 8 July 1497. Portugal had been working down the African coast for sixty years to make this voyage possible."},
+  {la:28.10,lo:-15.40},
+  {la:14.90,lo:-23.50,n:"The Cape Verdes",d:"The last land before the great swing. From here they stood out into the open Atlantic rather than following the coast \u2014 ninety days out of sight of land."},
+  {la:0.00,lo:-28.00},{la:-15.00,lo:-32.00},{la:-28.00,lo:-22.00},
+  {la:-34.36,lo:18.47,n:"The Cape of Good Hope",d:"Rounded in November. Bartolomeu Dias had reached it a decade earlier and turned back; this time they kept going."},
+  {la:-33.00,lo:27.90},{la:-25.00,lo:35.00},
+  {la:-15.03,lo:40.73,n:"Mozambique",d:"Here they met the Swahili coast \u2014 a chain of trading cities already tied into an Indian Ocean network far older and richer than anything they had come from."},
+  {la:-3.22,lo:40.12,n:"Malindi",d:"The ruler gave them a pilot who knew the monsoon crossing. Twenty-three days later they were in India. The hardest part of the route was the part they did not work out for themselves."},
+  {la:11.25,lo:75.78,n:"Calicut",d:"Reached 20 May 1498. The goods they had brought to trade were so poor the court was insulted \u2014 but the route was open, and that was worth more than the cargo."}
+ ]},
+
+{id:"middle",y:1501,era:"c. 1501 \u2014 1867",col:0xc46b63,n:"The Middle Passage",
+ view:{la:8,lo:-30,d:3000},
+ d:"The Atlantic leg of a three-cornered trade: manufactured goods south to Africa, captive "+
+   "people west across the ocean, sugar and tobacco back to Europe. About 12.5 million people "+
+   "were forced aboard these ships over some three and a half centuries. About 10.7 million "+
+   "survived the crossing. It is the largest forced movement of people in recorded history, "+
+   "and the labour it delivered is what made the colony in this game pay.",
+ p:[
+  {la:51.45,lo:-2.59,n:"Bristol",d:"One of the three English ports that ran the trade, with London and later Liverpool. Ships left carrying cloth, iron, guns and brandy."},
+  {la:43.00,lo:-12.00},{la:30.00,lo:-17.00},{la:14.00,lo:-19.00},
+  {la:5.08,lo:-1.35,n:"Elmina",d:"A Portuguese fort of 1482, taken by the Dutch in 1637 \u2014 the oldest European building south of the Sahara. Captives were held in its cells before being loaded."},
+  {la:4.45,lo:7.17,n:"The Bight of Biafra",d:"With the Bight of Benin, the busiest stretch of coast in the trade. Most people taken here had been captured inland, in wars that the trade itself helped to pay for."},
+  {la:2.00,lo:-10.00},{la:5.00,lo:-25.00},{la:8.00,lo:-40.00},{la:12.00,lo:-52.00},
+  {la:13.10,lo:-59.62,n:"Barbados",d:"Six to ten weeks chained below decks. Barbados was the first great English sugar island and the model for every one that followed \u2014 and for South Carolina."},
+  {la:18.00,lo:-68.00},{la:32.78,lo:-79.93,n:"Charles Towne",d:"The largest entry point in mainland North America. Roughly forty per cent of all Africans brought to what became the United States landed here."},
+  {la:37.00,lo:-76.00,n:"The Chesapeake",d:"\u201cAbout the latter end of August, a Dutch man of Warr\u2026 brought not any thing but 20. and odd Negroes.\u201d The first recorded Africans in English Virginia, 1619 \u2014 twelve years after this game begins, on the ground of Chapter VI."}
+ ]},
+
+{id:"galleon",y:1565,era:"1565\u20131815",col:0xa87fd6,n:"The Manila Galleon",
+ view:{la:25,lo:-170,d:3400},
+ d:"For two hundred and fifty years, one or two ships a year crossed the Pacific between "+
+   "Manila and Acapulco. West went American silver; east came Chinese silk, porcelain and "+
+   "spices. It is the first trade route that closes a circle round the whole world \u2014 and "+
+   "the silver came out of Potos\u00ed, which is on this same globe.",
+ p:[
+  {la:14.60,lo:120.98,n:"Manila",d:"Spanish since 1571, and the place where American silver met Chinese goods. Chinese merchants sailed down each year to meet the fleet."},
+  {la:20.00,lo:127.00},{la:30.00,lo:140.00},{la:36.00,lo:160.00},{la:38.00,lo:180.00},
+  {la:38.00,lo:-170.00},{la:38.00,lo:-150.00},{la:34.00,lo:-130.00},
+  {la:25.00,lo:-115.00},
+  {la:16.85,lo:-99.90,n:"Acapulco",d:"The Pacific end. Goods were carried overland to Veracruz and put aboard the Atlantic treasure fleets \u2014 so a bolt of Chinese silk could reach Seville having crossed two oceans and a continent."}
+ ]},
+
+{id:"lewis",y:1804,era:"1804\u201306",col:0xf2c14e,n:"Lewis and Clark",
+ view:{la:45,lo:-105,d:1900},
+ d:"Sent by Jefferson to find a water route across the continent, immediately after the "+
+   "Louisiana Purchase doubled the size of the country on paper. There was no water route. "+
+   "They found that out, mapped what was actually there, and came back \u2014 which is the "+
+   "opening move of everything else on this list that happens in the west.",
+ p:[
+  {la:38.63,lo:-90.20,n:"St. Louis",d:"Set out May 1804. A French trading town that had been Spanish, then French again, and American for barely a year."},
+  {la:39.10,lo:-94.60},{la:41.26,lo:-96.00},{la:42.85,lo:-97.40},
+  {la:46.80,lo:-100.80,n:"Fort Mandan",d:"Wintered here among the Mandan and Hidatsa, who had been trading on this river for generations. Here they met Sacagawea, whose Shoshone was the reason they got horses in the mountains."},
+  {la:47.90,lo:-104.00},
+  {la:47.50,lo:-111.30,n:"The Great Falls",d:"Five waterfalls where they expected one. A portage they thought would take half a day took a month."},
+  {la:45.70,lo:-113.50,n:"Lemhi Pass",d:"The crest of the Rockies, and the end of the idea. Standing on it, Lewis saw not a river running west but more mountains."},
+  {la:46.40,lo:-117.00},{la:46.20,lo:-119.00},{la:46.19,lo:-123.00},
+  {la:46.13,lo:-123.88,n:"Fort Clatsop",d:"The Pacific, November 1805. \u201cOcian in view! O! the joy.\u201d They wintered here in the rain and started home in March."}
+ ]},
+
+{id:"santafe",y:1821,era:"1821\u20131880",col:0xc94f8a,n:"The Santa Fe Trail",
+ view:{la:37.5,lo:-100,d:1750},
+ d:"A trade road, not a settlers\u2019 road \u2014 wagons of manufactured goods west, silver "+
+   "and mules east. It opened the week Mexico won independence from Spain and reopened the "+
+   "province to foreign traders. Twenty-five years later the United States Army marched down "+
+   "it to take New Mexico.",
+ p:[
+  {la:39.09,lo:-94.42,n:"Independence",d:"The jumping-off town on the Missouri, and the same starting point the Oregon and California trails would use."},
+  {la:38.66,lo:-96.49,n:"Council Grove",d:"The last timber and the last repairs. Wagons formed into companies here before going out onto open plains."},
+  {la:38.36,lo:-98.76},
+  {la:37.75,lo:-100.02,n:"The Cimarron Cutoff",d:"Near here the road forked: a shorter route across sixty waterless miles, or the longer mountain road. Traders chose between thirst and a pass."},
+  {la:38.04,lo:-103.43,n:"Bent\u2019s Fort",d:"A private adobe fort on the Arkansas, and the great meeting place of the southern plains \u2014 Cheyenne, Arapaho, traders and the army all did business here."},
+  {la:36.99,lo:-104.49,n:"Raton Pass",d:"The mountain crossing on the longer branch, and hard enough on wagons that many took the waterless one instead."},
+  {la:35.59,lo:-105.22},
+  {la:35.69,lo:-105.94,n:"Santa Fe",d:"Founded by Spain in 1610 \u2014 three years after Jamestown, and the oldest capital in what is now the United States."}
+ ]},
+
+{id:"erie",y:1825,era:"1825",col:0x2fd0e0,n:"The Erie Canal",
+ view:{la:43,lo:-76.5,d:1250},
+ d:"Three hundred and sixty-three miles of ditch, dug mostly by hand, joining the Hudson to "+
+   "Lake Erie. It cut the cost of moving a ton of freight from about a hundred dollars to "+
+   "under ten and made New York the greatest port in the country. Everything the Old "+
+   "Northwest grew could now reach the sea, which is why it filled up so fast.",
+ p:[
+  {la:42.89,lo:-78.88,n:"Buffalo",d:"The western end, on Lake Erie \u2014 and from here a boat could reach Detroit, Chicago and the whole Great Lakes basin."},
+  {la:43.16,lo:-77.61,n:"Rochester",d:"A village of a few hundred before the canal; a city of twenty thousand within twenty years. America\u2019s first boomtown."},
+  {la:43.05,lo:-76.15,n:"Syracuse",d:"Salt country. The canal carried Onondaga salt to the whole interior."},
+  {la:43.10,lo:-75.23},
+  {la:42.79,lo:-73.94},
+  {la:42.65,lo:-73.76,n:"Albany",d:"The eastern end, on the Hudson \u2014 and from there it is a hundred and fifty miles of open river to New York harbour."}
+ ]},
+
+{id:"ugrr",y:1830,era:"c. 1780 \u2014 1861",col:0xf2d13c,n:"The Underground Railroad",
+ view:{la:41,lo:-77,d:1500},
+ d:"Neither underground nor a railroad: a loose network of people \u2014 most of them Black, "+
+   "free and enslaved \u2014 who hid, fed, moved and guided others north. There was no single "+
+   "route; this is one of the best-documented. After the Fugitive Slave Act of 1850 made every "+
+   "northern state unsafe, the line had to run all the way into Canada.",
+ p:[
+  {la:38.56,lo:-76.08,n:"Dorchester County",d:"Harriet Tubman was born enslaved on this shore, escaped in 1849, and then went back some thirteen times to bring out about seventy people. She never lost one."},
+  {la:39.75,lo:-75.55,n:"Wilmington",d:"Thomas Garrett, a Quaker ironmonger, is said to have helped more than two thousand people through this town. He was fined into bankruptcy for it and carried on."},
+  {la:39.95,lo:-75.17,n:"Philadelphia",d:"William Still kept careful written records of the people who came through \u2014 names, families, where they had come from \u2014 which is why we know so many of their stories at all."},
+  {la:40.71,lo:-74.01},{la:41.70,lo:-74.00},
+  {la:42.65,lo:-73.76},
+  {la:43.05,lo:-76.15,n:"Syracuse",d:"In 1851 a crowd broke into the courthouse here and freed a man named Jerry from federal custody. Nobody was ever convicted for it."},
+  {la:43.16,lo:-77.61,n:"Rochester",d:"Frederick Douglass printed his newspaper here and sheltered people in his own house. He had escaped from Baltimore in 1838 disguised as a sailor."},
+  {la:43.16,lo:-79.24,n:"St. Catharines",d:"Across the Niagara River, in Canada, where the law could not follow. Tubman lived here for years, and thousands settled in southern Ontario."}
+ ]},
+
+{id:"tears",y:1838,era:"1830\u20131850",col:0xb066d6,n:"The Trail of Tears",
+ view:{la:36,lo:-90,d:1700},
+ d:"The forced removal of the Cherokee, Muscogee, Choctaw, Chickasaw and Seminole from the "+
+   "southeast to Indian Territory, under the Indian Removal Act of 1830. The Cherokee won "+
+   "their case in the Supreme Court and were removed anyway. About 16,000 Cherokee were driven "+
+   "west; roughly 4,000 died on the way. This is the northern route, walked in the winter of "+
+   "1838\u201339.",
+ p:[
+  {la:34.55,lo:-84.79,n:"New Echota",d:"The Cherokee capital, with a written constitution and a newspaper in Sequoyah\u2019s syllabary. A treaty signed here by twenty men with no authority to sign it was used to remove a nation of sixteen thousand."},
+  {la:35.05,lo:-85.31,n:"Ross\u2019s Landing",d:"One of the stockades where families were held through the summer of 1838, taken from their houses with what they could carry."},
+  {la:36.16,lo:-86.78},
+  {la:36.87,lo:-87.49,n:"Hopkinsville",d:"Chief Whitepath and Fly Smith died here and are buried by the road. The detachments were losing people at every stage."},
+  {la:37.36,lo:-88.49,n:"The Ohio crossing",d:"Ferries charged a dollar a wagon \u2014 several times the usual toll \u2014 to a people being driven across at gunpoint."},
+  {la:37.31,lo:-89.52,n:"The Mississippi",d:"Held here for weeks in January by ice floes, camped on the bank with little shelter. More died in this crossing than in any other stretch."},
+  {la:37.21,lo:-93.29},{la:36.06,lo:-94.16},
+  {la:35.80,lo:-95.23,n:"Indian Territory",d:"The survivors arrived in March 1839 to land already occupied by other nations, and to begin again. It is now eastern Oklahoma."}
+ ]},
+
+{id:"oregon",y:1843,era:"1841\u20131869",col:0xf07d2e,n:"The Oregon Trail",
+ view:{la:43,lo:-108,d:1900},
+ d:"Two thousand miles, four to six months, and about four hundred thousand people between "+
+   "1841 and the railroad. Almost nobody rode in the wagon \u2014 it carried the food, and you "+
+   "walked beside it. Roughly one traveller in ten died on the way, and most of those from "+
+   "cholera rather than anything anyone expected.",
+ p:[
+  {la:39.09,lo:-94.42,n:"Independence",d:"You had to leave in late April: early enough for grass on the plains, late enough that it had grown, and early enough to be over the mountains before the snow."},
+  {la:40.66,lo:-99.11,n:"Fort Kearny",d:"The first army post on the road, on the Platte \u2014 a river famously \u201ca mile wide and an inch deep, too thick to drink and too thin to plough.\u201d"},
+  {la:41.70,lo:-103.35,n:"Chimney Rock",d:"The landmark mentioned in more trail diaries than any other. Seeing it meant the plains were ending and the mountains were coming."},
+  {la:42.20,lo:-104.55,n:"Fort Laramie",d:"The great resupply point, a third of the way. Here wagons were lightened, and the road began to climb."},
+  {la:42.49,lo:-107.13,n:"Independence Rock",d:"If you reached it by the fourth of July you were on time. Thousands carved their names into it and many are still legible."},
+  {la:42.36,lo:-108.90,n:"South Pass",d:"The crossing of the Continental Divide \u2014 and the whole reason a wagon could do this at all. It is so broad and gentle that many parties crossed the Rockies without being sure they had."},
+  {la:41.31,lo:-110.39},
+  {la:43.03,lo:-112.43,n:"Fort Hall",d:"Where the road forked: right for Oregon, left for California. After 1848 most of the traffic went left."},
+  {la:43.82,lo:-117.02},{la:45.33,lo:-118.08},
+  {la:45.60,lo:-121.18,n:"The Dalles",d:"The end of the wagon road. From here it was rafts down the Columbia through the gorge, or later the toll road round Mount Hood \u2014 and the rapids drowned people within sight of the finish."},
+  {la:45.36,lo:-122.61,n:"Oregon City",d:"The end of the trail, in the Willamette Valley. The land claims that drew people here were on ground that was not empty."}
+ ]},
+
+{id:"rail",y:1869,era:"1863\u20131869",col:0xd93a6b,n:"The Transcontinental Railroad",
+ view:{la:41.4,lo:-108,d:1800},
+ d:"Two companies building toward each other: the Union Pacific west from the Missouri, the "+
+   "Central Pacific east over the Sierra Nevada. It turned a six-month journey into about a "+
+   "week. The Central Pacific\u2019s workforce was up to ninety per cent Chinese; the Union "+
+   "Pacific\u2019s was largely Irish immigrants and Civil War veterans, Union and Confederate "+
+   "both.",
+ p:[
+  {la:41.26,lo:-95.94,n:"Omaha",d:"The eastern end. The line follows the Platte, which is the same valley the wagons had been walking for twenty years."},
+  {la:41.12,lo:-100.77},
+  {la:41.14,lo:-104.82,n:"Cheyenne",d:"A town that existed because the railroad decided it should. Dozens like it appeared along the line and some of them are still there."},
+  {la:41.31,lo:-105.59},{la:41.53,lo:-109.47},
+  {la:41.62,lo:-112.55,n:"Promontory Summit",d:"10 May 1869, where the two lines met and a last spike was driven. The telegraph carried the single word DONE, and the country heard it at the same moment."},
+  {la:40.83,lo:-115.76},{la:39.53,lo:-119.81},
+  {la:39.32,lo:-120.33,n:"Donner Pass",d:"The hardest miles on the whole line: tunnels blasted through granite at seven thousand feet, worked through two Sierra winters under snow sheds. Hundreds of the Chinese crews died here."},
+  {la:38.58,lo:-121.49,n:"Sacramento",d:"The western end, at the head of navigation on the Sacramento River \u2014 and from there a boat to San Francisco Bay."}
+ ]}
 ];
+function routeById(id){
+  for(let i=0;i<ROUTES.length;i++)if(ROUTES[i].id===id)return ROUTES[i];
+  return null;
+}
+function routeStops(r){
+  return r?r.p.filter(function(q){return !!q.n;}):[];
+}
 /* ---- THE ATLAS ----
    Everything here is data that already existed and could not be seen: the Natural Earth
    mask, the twenty-nine towns with their notes, the rivers, and the track the fleet
@@ -18853,9 +19170,6 @@ function openAtlasAt(id){
   return true;
 }
 const ATLAS_ITEMS=[
-  {k:"route", id:"track", n:"The Outward Passage, 1606-07",
-   d:"South first to the Canaries, then west with the trade winds to the Indies, and only then north along the coast. Four months and more, for a place that lies due west of England.",
-   need:null},
   {k:"city", id:"Jamestown", n:"Jamestown", need:"Why Jamestown Was Chosen"},
   {k:"city", id:"Roanoke", n:"Roanoke", need:"The Roanoke Colony"},
   {k:"city", id:"London", n:"London", need:null},
@@ -18880,6 +19194,12 @@ const ATLAS_ITEMS=[
   GLOBE_CITY.forEach(function(c){
     if(seen[c.n])return;
     ATLAS_ITEMS.push({k:"city",id:c.n,n:c.n,need:null});
+  });
+  /* and every road, from the one place roads are declared. The Outward Passage used to be
+     written out again here by hand; the Oregon Trail is not, and neither is anything added
+     after it. ROUTES owns what roads exist and this list owns nothing but the order. */
+  ROUTES.forEach(function(r){
+    ATLAS_ITEMS.push({k:"route",id:r.id,n:r.n,d:r.d,era:r.era,y:r.y,need:null});
   });
 })();
 /* ---- TWO WORLDS, AND EACH IN THE ORDER IT HAPPENED ----
@@ -18953,9 +19273,11 @@ const CHAPTER_PLACE={
   "VI": {la:37.4,lo:-77.2,d:1450,chart:"tobacco",w:"the tobacco ground up the river"}
 };
 function atlasGroups(){
-  const pass=[],old=[],nw=[];
+  const pass=[],roads=[],old=[],nw=[];
   ATLAS_ITEMS.forEach(function(it){
-    if(it.k==="route"){pass.push(it);return;}
+    /* THE GAME'S OWN ROAD LEADS, and the rest are a drawer of their own. Chapter I IS the
+       Outward Passage, so it keeps the top of the list; the others are the course. */
+    if(it.k==="route"){(it.id==="track"?pass:roads).push(it);return;}
     const w=ATLAS_WHEN[it.id];
     (w&&w.w==="new"?nw:old).push(it);
   });
@@ -18964,7 +19286,15 @@ function atlasGroups(){
     return ya-yb;
   };
   old.sort(byYear); nw.sort(byYear);
-  return [["The Passage",pass],["The Old World",old],["The New World",nw]];
+  /* ---- IN DATE ORDER, BECAUSE THE ORDER IS THE ARGUMENT ----
+     Read top to bottom it is close to the shape of the whole course: the land road east
+     closes, so Europe hunts a sea road; the sea road opens and the Atlantic trade follows;
+     silver crosses the Pacific; a colony is planted; and then a continent is walked,
+     surveyed, dug, taken and railed. Nobody has to say that out loud for a pupil scrolling
+     the list to feel it. */
+  roads.sort(function(a,b){return (a.y||9999)-(b.y||9999);});
+  return [["The Passage",pass],["The Great Roads",roads],
+          ["The Old World",old],["The New World",nw]];
 }
 /* ---- A CHOSEN PLACE SAYS MORE ----
    A row in a list gets one line, or the list is unreadable. But a place you have actually
@@ -19000,7 +19330,7 @@ function atlasOpenFor(it){return !it.need||!!S.insight[it.need];}
    Built ONCE and kept: buildGlobe is 250ms and a hundred thousand triangles, so it is made on
    first open and reused. The render loop runs only while the panel is up. */
 const A3={on:false,ready:false,ren:null,scene:null,cam:null,
-  pending:null,
+  pending:null,rt:null,stops:[],
   dir:new THREE.Vector3(0.2,0.35,1).normalize(),
   tgt:new THREE.Vector3(0.2,0.35,1).normalize(),
   d:3400,td:3400,raf:0};
@@ -19020,6 +19350,15 @@ function atlasInit(){
     A3.scene.add(sun);
     const root=new THREE.Group();
     buildGlobe(root);
+    /* ---- THE ATLAS IS A REFERENCE, NOT A VIEW FROM ORBIT ----
+       The cutscene wants weather: it is a picture of a planet and the cloud is most of what
+       sells it. This panel wants to be READ. At full strength the tropical band sits straight
+       across the Middle Passage and the Manila Galleon and hides them, and a reader looking
+       for a road should not have to wait for a gap. Turned down here and only here, so the
+       opening keeps its sky. */
+    root.traverse(function(o){
+      if(o.name==="weather"&&o.material)o.material.opacity=0.30;
+    });
     A3.scene.add(root);
     /* AND THE CONTEXT CAN BE TAKEN AWAY. Two live WebGL contexts - the world's and this
        one - is within every browser's limit, but a backgrounded tab or a driver reset can
@@ -19037,6 +19376,33 @@ function atlasInit(){
     return true;
   }catch(e){A3.ready=false;return false;}
 }
+/* ---- ONE ROAD AT A TIME ----
+   Thirteen routes drawn at once is a ball of wool. Showing only what has been chosen - and
+   the game's own passage when nothing has - means the line on the globe always answers the
+   question the reader just asked. Rebuilt rather than toggled, because a route mesh is a few
+   hundred triangles and building it is cheaper than keeping thirteen of them alive.
+   The old mesh is disposed by hand: three.js does not free GPU buffers when a node leaves the
+   scene graph, and this runs on every click. */
+function atlasRoutes(ids,bold){
+  if(!A3.ready||!A3.scene)return;
+  if(A3.rt){
+    A3.scene.remove(A3.rt);
+    A3.rt.traverse(function(o){
+      if(o.geometry)o.geometry.dispose();
+      if(o.material)o.material.dispose();
+    });
+    A3.rt=null;
+  }
+  A3.stops=[];
+  if(!ids||!ids.length)return;
+  A3.rt=new THREE.Group();
+  buildRoutes(A3.rt,ids,bold);
+  A3.scene.add(A3.rt);
+  ids.forEach(function(id){
+    const r=routeById(id); if(!r)return;
+    routeStops(r).forEach(function(q){A3.stops.push(q);});
+  });
+}
 function atlasLookAt(lat,lon,dist){
   A3.tgt=llv(lat,lon,1).normalize();
   A3.td=dist||1750;
@@ -19047,7 +19413,43 @@ function atlasLabels(){
   if(!host||!cv)return;
   const W=cv.clientWidth||cv.width, H=cv.clientHeight||cv.height;
   const v=new THREE.Vector3(), items=[];
+  /* ---- THE STOPS ON THE CHOSEN ROAD GET NAMED ----
+     This is the whole point of the exercise: the passage used to SAY "the Canaries, Dominica,
+     Mona" in a paragraph, and the globe showed a red line with nothing on it. A stop that is
+     named on the sphere is a stop a child can look for, point at, and ask about.
+     They are seated ahead of ordinary towns and are never dropped for distance, because a
+     road's own stops are the reason that road is on screen. */
+  const stopName={};
+  (A3.stops||[]).forEach(function(q){
+    const p=llv(q.la,q.lo,GLOBE_R*1.01);
+    const face=p.clone().normalize().dot(A3.dir);
+    if(face<0.15)return;
+    v.copy(p).project(A3.cam);
+    if(v.z>1)return;
+    const x=(v.x*0.5+0.5)*W, y=(-v.y*0.5+0.5)*H;
+    if(x<-40||x>W+40||y<-20||y>H+20)return;
+    const sel=!!(ATLAS_SEL&&ATLAS_SEL.k==="stop"&&ATLAS_SEL.pt===q);
+    stopName[q.n]=1;
+    /* SEATED CLEAR OF THE ROAD ITSELF. seatLabels puts a label's bottom edge on its point
+       and only lifts it to dodge OTHER labels - it knows nothing about the line. On a dense
+       route like the Trail of Tears that put eight names down flat along the road they were
+       naming, and the road disappeared underneath its own labels. Ten pixels of clearance is
+       enough to get the text off the ribbon and still read as belonging to the mark. */
+    items.push({cx:x,cy:y-10,w:(q.n.length*(sel?6.6:5.8))+10,h:sel?15:13,
+      pri:sel?0:0.5, d:1-face, txt:q.n, sel:sel});
+  });
+  const onRoad=!!(A3.stops&&A3.stops.length&&ATLAS_SEL&&
+                  (ATLAS_SEL.k==="route"||ATLAS_SEL.k==="stop"));
   GLOBE_CITY.forEach(function(ct){
+    /* a town already named as a stop must not be named twice */
+    if(stopName[ct.n])return;
+    /* ---- AND A ROAD'S OWN STOPS COME FIRST ----
+       Reading the Trail of Tears, four of its eight stops were being dropped for want of a
+       seat while Havana, Timbuktu and Santo Domingo kept theirs - places with nothing to do
+       with what the reader had just asked to see. While a road is up, ordinary towns stand
+       down; the two the whole game turns on stay, because they are the anchors a pupil
+       already knows. */
+    if(onRoad&&ct.k!=="o")return;
     const p=llv(ct.la,ct.lo,GLOBE_R*1.01);
     /* only the near face: a label on the back of the world is the thing that made a
        sphere look wrong for a reference in the first place */
@@ -19142,12 +19544,23 @@ function drawAtlas(){
   if(!atlasInit())return;
   A3.on=true;
   A3.pending=null; atlasShowGlobe();   /* a town or a route is a globe question */
-  if(ATLAS_SEL&&ATLAS_SEL.k==="city"){
-    const c=GLOBE_CITY.filter(function(x){return x.n===ATLAS_SEL.id;})[0];
+  const sel=ATLAS_SEL;
+  if(sel&&sel.k==="stop"){
+    /* a stop keeps its own road drawn, so you can see where on it you are standing */
+    atlasRoutes([sel.route.id],sel.route.id);
+    atlasLookAt(sel.pt.la,sel.pt.lo,1500);
+  } else if(sel&&sel.k==="route"){
+    const r=routeById(sel.id);
+    atlasRoutes([sel.id],sel.id);
+    if(r&&r.view)atlasLookAt(r.view.la,r.view.lo,r.view.d); else atlasWide();
+  } else if(sel&&sel.k==="city"){
+    atlasRoutes(["track"],"track");
+    const c=GLOBE_CITY.filter(function(x){return x.n===sel.id;})[0];
     if(c)atlasLookAt(c.la,c.lo,1650);
-  } else if(ATLAS_SEL&&ATLAS_SEL.k==="route"){
-    atlasLookAt(30,-45,3100);          /* the whole Atlantic, so the passage fits */
-  } else atlasWide();
+  } else {
+    atlasRoutes(["track"],"track");    /* nothing chosen: the game's own passage */
+    atlasWide();
+  }
   if(!A3.raf)A3.raf=requestAnimationFrame(atlasFrame);
 }
 function openAtlas(){
@@ -19214,7 +19627,9 @@ function openAtlas(){
     }
     const wn=ATLAS_WHEN[it.id];
     if(wn&&open)body=wn.e;
-    const yr=wn?("<i style='font-style:normal;opacity:.7'>"+wn.y+"</i>  "):"";
+    /* a town happened in a year; a road ran for a span of them, and says so */
+    const when=wn?String(wn.y):(it.era||"");
+    const yr=when?("<i style='font-style:normal;opacity:.7'>"+when+"</i>  "):"";
     b.innerHTML="<b>"+yr+it.n+"</b><small>"+(open?body:"You have not met this yet.")+"</small>";
     if(open)b.onclick=function(){
       /* ---- SELECTING MUST NOT REBUILD THE LIST ----
@@ -19233,6 +19648,39 @@ function openAtlas(){
       drawAtlas();
     };
     dd.appendChild(b);
+    /* ---- AND WHAT IS ALONG IT ----
+       The passage named the Canaries, Dominica and Mona in a paragraph and there was no way
+       to click on any of them. Every stop is now a row of its own: pick one and the globe
+       flies to it with the road still drawn, so you can see where along the journey you are
+       standing as well as what happened there.
+       A nested <details>, closed to start, for the same reason as the outer ones: eight stops
+       is a menu, not a list, and the reader decides when to open it. */
+    if(it.k==="route"){
+      const rt=routeById(it.id), stops=routeStops(rt);
+      if(stops.length){
+        const sdd=document.createElement("details");
+        sdd.className="atDrawer atSub";
+        const ssm=document.createElement("summary");
+        ssm.innerHTML="Along it<small>"+stops.length+"</small>";
+        sdd.appendChild(ssm);
+        stops.forEach(function(q){
+          const sb=document.createElement("button");
+          sb.className="atRow atStop"+
+            ((ATLAS_SEL&&ATLAS_SEL.k==="stop"&&ATLAS_SEL.pt===q)?" sel":"");
+          sb.innerHTML="<b>"+q.n+"</b><small>"+(q.d||"")+"</small>";
+          sb.onclick=function(){
+            const same=(ATLAS_SEL&&ATLAS_SEL.k==="stop"&&ATLAS_SEL.pt===q);
+            ATLAS_SEL=same?null:{k:"stop",id:it.id+"\u00b7"+q.n,n:q.n,route:rt,pt:q};
+            [].forEach.call(document.querySelectorAll("#atlasList .atRow"),function(x){
+              x.classList.remove("sel");});
+            if(!same)sb.classList.add("sel");
+            drawAtlas();
+          };
+          sdd.appendChild(sb);
+        });
+        dd.appendChild(sdd);
+      }
+    }
    });
   });
   drawAtlas();
@@ -19482,7 +19930,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-2340";
+const BUILD="20260810-0115";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
