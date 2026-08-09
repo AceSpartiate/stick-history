@@ -409,5 +409,98 @@ if re.search(r"S\.pending\s*=\s*\{", s) and "function resumePenalty" in s \
 else:
     bad("S.pending is set but never resumed - a refresh mid-punishment serves none of it")
 
+print("\n13. The globe agrees with the gazetteer")
+# ---- A METHODOLOGY FOR "MAKE THE MAP MORE ACCURATE" ----
+# The globe's land is a union of circles. Nudging one to fix a coast silently floods a sea
+# somewhere else, and that happened three times in one session: an Anatolia blob closed the
+# Black Sea, a pre-existing one closed the Gulf of Mexico, and the Sahara closed the
+# Mediterranean. Each was found by accident, one at a time, by a human squinting.
+#
+# So accuracy stops being taste and becomes a SCORE WITH NAMED FAILURES. A gazetteer of
+# places whose answer is not in dispute - cities that must be on land, seas and straits that
+# must be water - is run against the same great-circle test the game uses. Every edit to
+# GLOBE_LAND is then checked against all of them at once, and a fix that breaks something
+# elsewhere cannot ship quietly.
+#
+# The water list is the half that matters. Land points alone are satisfied by covering the
+# planet in land, which is precisely the failure mode of "add blobs until it looks right".
+#
+# TO IMPROVE THE MAP: add entries here first, watch them fail, then edit GLOBE_LAND until
+# they pass. That is the loop, and it converges - because the gazetteer only ever grows.
+
+LAND = [
+    ("London",51.5,-0.1),("Plymouth",50.4,-4.1),("Dublin",53.3,-6.3),("Paris",48.9,2.3),
+    ("Madrid",40.4,-3.7),("Lisbon",38.7,-9.1),("Rome",41.9,12.5),("Athens",38.0,23.7),
+    ("Constantinople",41.0,29.0),("Moscow",55.8,37.6),("Stockholm",59.3,18.1),
+    ("Cairo",30.0,31.2),("Timbuktu",16.8,-3.0),("Benin City",6.3,5.6),
+    ("Mbanza Kongo",-6.3,14.2),("Cape Town",-33.9,18.4),("Addis Ababa",9.0,38.7),
+    ("Isfahan",32.7,51.7),("Agra",27.2,78.0),("Goa",15.5,73.8),("Malacca",2.2,102.2),
+    ("Beijing",39.9,116.4),("Kyoto",35.0,135.8),("Manila",14.6,121.0),
+    ("Jamestown",37.2,-76.8),("Roanoke",35.9,-75.7),("Mexico City",19.4,-99.1),
+    ("Havana",23.1,-82.4),("Cartagena",10.4,-75.5),("Santo Domingo",18.5,-69.9),
+    ("Cusco",-13.5,-72.0),("Potosi",-19.6,-65.8),("Rio",-22.9,-43.2),
+    ("Sydney",-33.9,151.2),("Perth",-31.9,115.9),("Wellington",-41.3,174.8),
+    ("Greenland",72.0,-40.0),("South Pole",-89.0,0.0),
+]
+WATER = [
+    ("mid-Atlantic",30,-40),("mid-Pacific",0,-140),("Indian Ocean",-20,80),
+    ("Southern Ocean",-58,20),("Arctic Ocean",85,0),
+    ("English Channel",50.0,-1.0),("Irish Sea",53.6,-5.2),("North Sea",56,3),
+    ("Baltic",58,19),("Mediterranean",35,18),("Black Sea",43,34),("Red Sea",20,38),
+    ("Persian Gulf",27,51),("Bay of Bengal",15,88),("South China Sea",15,114),
+    ("Sea of Japan",40,135),("Caribbean",15,-75),("Gulf of Mexico",25,-90),
+    ("Hudson Bay",60,-86),("Baffin Bay",73,-65),("Drake Passage",-58,-65),
+    ("Tasman Sea",-40,160),("Bass Strait",-40,146),("Mozambique Channel",-18,41),
+    ("Gulf of Guinea",0,0),("Sargasso",28,-60),("North Pacific",40,-160),
+]
+
+import math
+def _blobs(src):
+    i = src.find("const GLOBE_LAND=[")
+    if i < 0: return None
+    j, d = src.find("[", i), 0
+    for k in range(j, len(src)):
+        if src[k] == "[": d += 1
+        elif src[k] == "]":
+            d -= 1
+            if d == 0: break
+    body = src[j:k+1]
+    return [(float(a), float(b), float(r)) for a, b, r, _t in
+            re.findall(r'\[(-?[\d.]+),(-?[\d.]+),(-?[\d.]+),"(\w)"\]', body)]
+
+def _land(bl, lat, lon):
+    for (bla, blo, br) in bl:
+        dl = abs(lon - blo)
+        if dl > 180: dl = 360 - dl
+        cosd = (math.sin(math.radians(lat))*math.sin(math.radians(bla)) +
+                math.cos(math.radians(lat))*math.cos(math.radians(bla))*math.cos(math.radians(dl)))
+        if math.degrees(math.acos(max(-1.0, min(1.0, cosd)))) <= br: return True
+    return False
+
+_bl = _blobs(s)
+if _bl is None:
+    bad("GLOBE_LAND not found - the globe cannot be checked")
+else:
+    dry = [n for (n, la, lo) in LAND  if not _land(_bl, la, lo)]
+    wet = [n for (n, la, lo) in WATER if     _land(_bl, la, lo)]
+    tot = len(LAND) + len(WATER)
+    okc = tot - len(dry) - len(wet)
+    if dry:
+        bad("%d gazetteer LAND point(s) fall in the sea: %s" % (len(dry), ", ".join(dry)))
+    if wet:
+        bad("%d gazetteer WATER point(s) are covered by land: %s" % (len(wet), ", ".join(wet)))
+    if not dry and not wet:
+        ok("all %d gazetteer points agree (%d land, %d water) from %d blobs"
+           % (tot, len(LAND), len(WATER), len(_bl)))
+    # area-weighted land fraction, reported always - the Earth is 29.2%
+    land_w = tot_w = 0.0
+    for la in range(-88, 89, 2):
+        w = math.cos(math.radians(la))
+        for lo in range(-179, 180, 2):
+            tot_w += w
+            if _land(_bl, la, lo): land_w += w
+    print("  note  land covers %.1f%% of the sphere (the Earth is 29.2%%), score %d/%d"
+          % (100*land_w/tot_w, okc, tot))
+
 print("\n" + ("PASS" if not fail else "FAILED %d check(s)" % len(fail)))
 sys.exit(0 if not fail else 1)
