@@ -303,14 +303,20 @@
     text-shadow:0 1px 3px #000,0 0 7px #000;opacity:.85}
   #atlasLabels span.sel{color:#ffd9a0;font-size:13px;opacity:1}
   .atDrawer{margin:.55em 0}
+  /* FLEX, NOT FLOATS. The count and the chevron were both float:right, so they queued for
+     the same corner - and once the title wrapped at phone width they landed on top of each
+     other ("COVERS 6" over the arrow). Floats have no idea the other exists. A flex row
+     gives each one its own cell: title, then the count pushed right, then the marker last,
+     and nothing can occupy another's space however the title wraps. */
   .atDrawer>summary{cursor:pointer;list-style:none;padding:.42em .6em;border-radius:7px;
+    display:flex;align-items:center;gap:.55em;
     font-family:'IM Fell English SC',serif;letter-spacing:.05em;font-size:.82rem;
     text-transform:uppercase;color:var(--copper);background:rgba(90,72,40,.10);
     border:1px solid rgba(90,72,40,.22)}
   .atDrawer>summary::-webkit-details-marker{display:none}
-  .atDrawer>summary::after{content:"be";float:right;opacity:.6;display:inline-block}
+  .atDrawer>summary::after{content:"be";opacity:.6;flex:none;transition:transform .18s}
   .atDrawer[open]>summary::after{transform:rotate(180deg)}
-  .atDrawer>summary small{float:right;margin-right:1.1em;opacity:.55;letter-spacing:0;
+  .atDrawer>summary small{margin-left:auto;flex:none;opacity:.55;letter-spacing:0;
     text-transform:none;font-family:'EB Garamond',serif}
   .atChap{opacity:.62;font-style:italic}
   .atRow{display:block;width:100%;text-align:left;margin:.32em 0;padding:.5em .7em;
@@ -17995,8 +18001,15 @@ function atlasLabels(){
 }
 function atlasFrame(){
   if(!A3.on||!A3.ready){A3.raf=0;return;}
-  A3.dir.lerp(A3.tgt,0.075).normalize();
-  A3.d+=(A3.td-A3.d)*0.075;
+  /* ---- SLOWER, AND EASED ----
+     0.075 a frame crossed the Atlantic in about half a second, which reads as a cut rather
+     than a journey - and the whole reason for putting this on a sphere was that a choice
+     should TURN THE WORLD. 0.026 takes roughly two seconds end to end.
+     The distance eases a little faster than the rotation on purpose: the globe finishes
+     turning to face you before it finishes coming in, so you see where you are going while
+     you are still arriving, rather than the ground rushing up and then sliding sideways. */
+  A3.dir.lerp(A3.tgt,0.026).normalize();
+  A3.d+=(A3.td-A3.d)*0.034;
   A3.cam.position.copy(A3.dir).multiplyScalar(A3.d);
   A3.cam.lookAt(0,0,0);
   A3.ren.render(A3.scene,A3.cam);
@@ -18324,7 +18337,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1755";
+const BUILD="20260809-1826";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
