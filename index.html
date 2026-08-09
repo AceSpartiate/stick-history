@@ -13001,6 +13001,18 @@ const GLOBE_LAND=[
   [45,-100,6,"g"],[38,-98,6,"s"],[32,-104,5,"s"],[40,-115,5,"s"],[47,-118,5,"g"],
   [55,-105,7,"g"],[60,-125,6,"g"],[63,-150,5,"i"],[50,-70,5,"g"],[30,-90,4.5,"g"],
 
+  /* ---- SEVEN HOLES THE CITY LIST FOUND ----
+     Every city in GLOBE_CITY must stand on land, and seven did not: Constantinople, Benin
+     City, Mbanza Kongo, Mexico City, Cusco, Havana and Cartagena were all standing in open
+     sea. A land-fraction percentage cannot tell you that - it says the total is short, not
+     WHERE. A list of real places names the gap, which is why the cities are a better test
+     of the coastline than the coastline's own statistics. */
+  [39,33,3.9,"g"],[37,35,4,"g"],[41,28,3.2,"g"],[38,23,3,"g"],  /* Anatolia and the Balkans. 3.9 and not 6: at 6 it closed the BLACK SEA, overlapping it by 1.93 degrees. A second smaller blob south of it carries the peninsula instead. */
+  [6,4,4,"g"],[5,-2,4,"g"],[-6,15,4.5,"g"],[-11,17,4,"g"],  /* West and Central Africa */
+  [19,-99,4.5,"g"],[15,-91,4,"g"],[11,-84,3,"g"],    /* Mexico and Central America */
+  [-14,-72,4.5,"g"],[-8,-77,4,"s"],                  /* the Andes */
+  [22,-80,3.2,"g"],[9,-74,4,"g"],[18,-70,2.6,"g"],   /* Cuba, the Main, Hispaniola */
+
   /* AUSTRALIA's dry middle, and the interior of Asia between the named ranges */
   [-24,133,7,"s"],[-28,120,6,"s"],[-20,145,5,"g"],
   [40,100,6,"s"],[35,110,5,"g"],[50,85,6,"g"],
@@ -13029,7 +13041,7 @@ const GLOBE_LAND=[
   [55.0,-64.0,8.0,"g"],[48.5,-56.0,3.2,"g"],[51.0,-76.0,9.0,"g"],
   /* the coast they were sailing for */
   [43.5,-71.0,4.2,"g"],[38.5,-78.5,4.2,"g"],[33.0,-81.0,3.6,"g"],
-  [28.5,-82.0,3.0,"g"],[30.5,-92.0,6.0,"g"],
+  [28.5,-82.0,3.0,"g"],[30.5,-92.0,5.6,"g"],
   [42.0,-96.0,10.0,"g"],[46.0,-112.0,10.0,"g"],[35.0,-108.0,8.0,"s"],
   /* the Indies, which is the way they actually went */
   [21.6,-79.0,2.6,"g"],[19.0,-71.0,1.9,"g"],[18.2,-66.5,1.1,"g"],[15.0,-61.2,1.0,"g"],
@@ -13083,6 +13095,55 @@ const OPEN_SUN=(function(){
    several seconds of play that have not happened yet. */
 const OPEN_Q={scale:1, measured:false, n:0, sum:0};
 function openDetail(){return OPEN_Q.scale;}
+/* ---- THE WORLD AS IT STOOD IN 1607, AS PLACES A PLAYER CAN BE SHOWN ----
+   Meant as landmarks: the globe is going to be pointed at where a story happens, and a
+   marker with no neighbours tells you nothing. London means something because Seville and
+   Constantinople and Beijing are on the same ball.
+
+   EVERY ONE OF THESE EXISTED IN 1607, which is the whole discipline of the list and the
+   reason it is not just "big cities". Deliberately ABSENT, and each absence is a fact worth
+   more than a dot:
+     Quebec        founded 1608 - the year AFTER this voyage
+     Santa Fe      1610
+     New Amsterdam 1624   Boston 1630
+   A class that finds New York missing has learned when New York began. Jamestown itself is
+   here as the thing being founded, and Roanoke as the thing that failed - the two ends of
+   the argument the player has been having with the crew all chapter.
+
+   `k` is a kind, used for the tone of the dot: e=English, x=other European, w=the wider
+   world that Europe traded with and did not rule, o=our own story. */
+const GLOBE_CITY=[
+  {n:"London",       la:51.5, lo:-0.1,  k:"e", d:"Where the Company sold shares and the fleet was fitted out."},
+  {n:"Plymouth",     la:50.4, lo:-4.1,  k:"e", d:"The last English harbour many of these men saw."},
+  {n:"Bristol",      la:51.5, lo:-2.6,  k:"e", d:"The western port, and the Newfoundland fishery's home."},
+  {n:"Amsterdam",    la:52.4, lo:4.9,   k:"x", d:"England's rival for the carrying trade of the world."},
+  {n:"Paris",        la:48.9, lo:2.3,   k:"x", d:"Across the Channel; France would be at the St Lawrence within two years."},
+  {n:"Seville",      la:37.4, lo:-6.0,  k:"x", d:"Spain's gate to the Americas. Every treasure fleet unloaded here."},
+  {n:"Lisbon",       la:38.7, lo:-9.1,  k:"x", d:"The Portuguese route to India and the spice trade."},
+  {n:"Rome",         la:41.9, lo:12.5,  k:"x", d:"The Pope had divided the New World between Spain and Portugal in 1494."},
+  {n:"Constantinople",la:41.0,lo:29.0,  k:"w", d:"The Ottoman capital, and the reason Europe wanted a sea road east."},
+  {n:"Cairo",        la:30.0, lo:31.2,  k:"w", d:"The old overland route to the Indies, and why a western passage was worth hunting."},
+  {n:"Timbuktu",     la:16.8, lo:-3.0,  k:"w", d:"A city of scholars and gold on the Niger, known in Europe by rumour."},
+  {n:"Benin City",   la:6.3,  lo:5.6,   k:"w", d:"A walled West African capital; its bronze work astonished European visitors."},
+  {n:"Mbanza Kongo", la:-6.3, lo:14.2,  k:"w", d:"Capital of the Kingdom of Kongo, in contact with Portugal for a century."},
+  {n:"Isfahan",      la:32.7, lo:51.7,  k:"w", d:"Safavid Persia's capital, rebuilt in these very years."},
+  {n:"Agra",         la:27.2, lo:78.0,  k:"w", d:"The Mughal court. England would send an ambassador within a decade."},
+  {n:"Goa",          la:15.5, lo:73.8,  k:"x", d:"Portuguese India - the eastern trade Europe already had."},
+  {n:"Malacca",      la:2.2,  lo:102.2, k:"x", d:"The strait every spice cargo passed through."},
+  {n:"Beijing",      la:39.9, lo:116.4, k:"w", d:"Ming China, the largest economy on earth, and uninterested in Europe."},
+  {n:"Kyoto",        la:35.0, lo:135.8, k:"w", d:"Japan, four years into the Tokugawa peace and closing to outsiders."},
+  {n:"Manila",       la:14.6, lo:121.0, k:"x", d:"Where Spanish silver from America bought Chinese silk."},
+  {n:"Mexico City",  la:19.4, lo:-99.1, k:"x", d:"Built on Tenochtitlan. What Spain got, and what England hoped for."},
+  {n:"Potos\u00ed", la:-19.6,lo:-65.8, k:"x", d:"The silver mountain. Worked by forced Andean labour, it paid for Spain's wars."},
+  {n:"Cusco",        la:-13.5,lo:-72.0, k:"w", d:"The Inca capital, taken seventy years before this voyage."},
+  {n:"Havana",       la:23.1, lo:-82.4, k:"x", d:"Where the treasure fleets gathered - and why a colony north of it worried Spain."},
+  {n:"Cartagena",    la:10.4, lo:-75.5, k:"x", d:"Fortified against the English, who had sacked it in 1586."},
+  {n:"Santo Domingo",la:18.5, lo:-69.9, k:"x", d:"The oldest European city in the Americas."},
+  {n:"Roanoke",      la:35.9, lo:-75.7, k:"o", d:"Left in 1587. Nobody aboard knows what became of them."},
+  {n:"Jamestown",    la:37.2, lo:-76.8, k:"o", d:"Not yet. In three weeks there will be a fort here."},
+  {n:"Moscow",       la:55.8, lo:37.6,  k:"w", d:"Russia, deep in its Time of Troubles as this fleet sailed."}
+];
+
 function buildGlobe(root){
   /* AT 96 x 64 A CELL IS 2.8 DEGREES OF LATITUDE - three hundred kilometres -
      and Britain is three cells tall, so no arrangement of blobs could ever have
@@ -17554,7 +17615,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1300";
+const BUILD="20260809-1311";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
