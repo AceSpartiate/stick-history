@@ -13406,10 +13406,29 @@ function buildGlobe(root){
       const v=cnoise((la0+la1)/2,(lo0+lo1)/2);
       if(v<0.46)continue;
       const t=Math.min(1,(v-0.46)/0.34);
+      /* ---- CLOUD WAS A MOSAIC OF IDENTICAL SQUARES, WHICH IS WHY IT READ AS STUCK PIXELS ----
+         Every qualifying cell emitted the WHOLE cell, so the weather was a grid: same size,
+         same alignment, hard edges meeting hard edges. Seen from any distance that is not
+         weather, it is dead pixels - and after the coastline became real data, this was the
+         coarsest thing left on the globe.
+         Two changes and no new triangles. Each patch SHRINKS toward its own centre by how
+         strongly the noise fired, so a weak cell is a small tuft and a strong one nearly
+         fills its cell - that alone destroys the uniform-square reading. Then every corner
+         is JITTERED off the grid on a hash of its own position, so no two patches share an
+         edge and nothing lines up in rows.
+         Deterministic, because the hash is of the coordinate: the same sky every run. */
+      const jt=function(la,lo,k){return (srand(la*3.7+lo*2.3+k*11.7)-0.5);};
+      const dla=(la0-la1), dlo=(lo1-lo0);
+      const mla=(la0+la1)/2, mlo=(lo0+lo1)/2;
+      const grow=0.34+0.62*t;                 /* how much of its cell this patch claims */
+      const P4=function(sla,slo,k){
+        const la=mla+(sla*dla*0.5*grow)+jt(mla,mlo,k)*dla*0.42;
+        const lo=mlo+(slo*dlo*0.5*grow)+jt(mlo,mla,k+5)*dlo*0.42;
+        const p=llv(la,lo,CLR);
+        return [p.x,p.y,p.z];
+      };
       const w=RGB(mixHex(0xbfc9d2,0xffffff,t));
-      const A=llv(la0,lo0,CLR),B2=llv(la0,lo1,CLR);
-      const C2=llv(la1,lo1,CLR),D=llv(la1,lo0,CLR);
-      cl.quad4([A.x,A.y,A.z],[D.x,D.y,D.z],[C2.x,C2.y,C2.z],[B2.x,B2.y,B2.z],w,w,w,w);
+      cl.quad4(P4(1,-1,0),P4(-1,-1,1),P4(-1,1,2),P4(1,1,3),w,w,w,w);
     }
   }
   const cloud=cl.mesh(true,false);
@@ -17823,7 +17842,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1529";
+const BUILD="20260809-1535";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
