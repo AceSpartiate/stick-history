@@ -296,7 +296,7 @@
   #btnNotes:active{background:rgba(176,141,62,.28)}
   #atlasStage{position:relative;border-radius:6px;overflow:hidden;
     border:1px solid rgba(90,72,40,.35);background:#05080e}
-  #atlasCanvas{width:100%;height:auto;display:block}
+  #atlasCanvas,#atlasChart{width:100%;height:auto;display:block}
   #atlasLabels{position:absolute;inset:0;pointer-events:none}
   #atlasLabels span{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;
     font-family:'IM Fell English SC',Georgia,serif;font-size:11px;color:#efe4c6;
@@ -798,6 +798,7 @@
       <div class="kicker">Where this happened</div>
       <h3>The Atlas</h3>
       <div id="atlasStage"><canvas id="atlasCanvas" width="900" height="470"></canvas>
+        <canvas id="atlasChart" width="620" height="430" style="display:none"></canvas>
         <div id="atlasLabels"></div></div>
       <div id="atlasList" data-read></div>
       <button class="btn ghost wide mt" id="atlasClose">Back</button>
@@ -16096,8 +16097,10 @@ function drawQuizMap(kind){
   } else return false;
   return true;
 }
-function drawChart(spec){
-  const c=$("mapCanvas");
+/* `into` added so the Atlas can borrow this. Defaulted, so every existing call is
+   untouched - the chart panel does not know or care that it now has a second customer. */
+function drawChart(spec,into){
+  const c=$(into||"mapCanvas");
   if(!c)return;
   const g=c.getContext("2d"), W=c.width, H=c.height;
   const X=function(u){return u*W;}, Y=function(v){return v*H;};
@@ -17959,6 +17962,7 @@ function atlasOpenFor(it){return !it.need||!!S.insight[it.need];}
    Built ONCE and kept: buildGlobe is 250ms and a hundred thousand triangles, so it is made on
    first open and reused. The render loop runs only while the panel is up. */
 const A3={on:false,ready:false,ren:null,scene:null,cam:null,
+  pending:null,
   dir:new THREE.Vector3(0.2,0.35,1).normalize(),
   tgt:new THREE.Vector3(0.2,0.35,1).normalize(),
   d:3400,td:3400,raf:0};
@@ -18035,7 +18039,41 @@ function atlasFrame(){
   A3.cam.lookAt(0,0,0);
   A3.ren.render(A3.scene,A3.cam);
   atlasLabels();
+  /* WHEN IT ARRIVES, not on a timer: the chart appears because the flight finished, so a
+     slow machine sees the same sequence as a fast one rather than a chart cutting in over a
+     globe still moving. */
+  if(A3.pending){
+    const near=Math.abs(A3.d-A3.td)<60&&A3.dir.dot(A3.tgt)>0.9993;
+    if(near){const sp=A3.pending;A3.pending=null;atlasShowChart(sp);}
+  }
   A3.raf=requestAnimationFrame(atlasFrame);
+}
+/* ---- THE GLOBE SAYS WHERE IN THE WORLD, THE CHART SAYS WHAT THE GROUND LOOKS LIKE ----
+   A ground-level zoom is impossible and would be dishonest: the land mask is half a degree,
+   about fifty-five kilometres a cell, so flying closer than the region shows three enormous
+   flat squares and nothing else. There is no more information down there to reveal.
+   But the game already HAS the ground-level maps - CHARTS, drawn by hand at chapter scale
+   with the geography considered, and already used by the chart panel in play. So this is a
+   SWAP rather than a zoom: the globe flies to the region, and when it arrives it gives way
+   to that chapter's own chart.
+   Which is also how a period atlas actually works - a world plate, and then a regional one.
+   Only chapters with a world have a chart, so only Chapters I and II swap. The others fly to
+   their ground and stay on the globe, which is the honest thing to do for a place the game
+   cannot yet show. */
+function atlasShowGlobe(){
+  const gc=$("atlasCanvas"), ch=$("atlasChart"), lb=$("atlasLabels");
+  if(gc)gc.style.display="block";
+  if(ch)ch.style.display="none";
+  if(lb)lb.style.display="block";
+}
+function atlasShowChart(spec){
+  const gc=$("atlasCanvas"), ch=$("atlasChart"), lb=$("atlasLabels");
+  if(!ch||!spec)return false;
+  try{drawChart(spec,"atlasChart");}catch(e){return false;}
+  if(gc)gc.style.display="none";
+  if(lb)lb.style.display="none";
+  ch.style.display="block";
+  return true;
 }
 function atlasStop(){A3.on=false;if(A3.raf)cancelAnimationFrame(A3.raf);A3.raf=0;}
 function drawAtlas(){
@@ -18043,6 +18081,7 @@ function drawAtlas(){
      the panel calls, so nothing else had to learn a new name. */
   if(!atlasInit())return;
   A3.on=true;
+  A3.pending=null; atlasShowGlobe();   /* a town or a route is a globe question */
   if(ATLAS_SEL&&ATLAS_SEL.k==="city"){
     const c=GLOBE_CITY.filter(function(x){return x.n===ATLAS_SEL.id;})[0];
     if(c)atlasLookAt(c.la,c.lo,1650);
@@ -18079,7 +18118,10 @@ function openAtlas(){
     cb.onclick=function(){
       ATLAS_SEL=null;
       if(!atlasInit())return;
+      atlasShowGlobe();
       A3.on=true; atlasLookAt(pl.la,pl.lo,pl.d);
+      /* a chapter with a world has a chart of its ground; one without flies and stays */
+      A3.pending=(c.world&&typeof CHARTS!=="undefined"&&CHARTS[c.world])?CHARTS[c.world]:null;
       if(!A3.raf)A3.raf=requestAnimationFrame(atlasFrame);
       [].forEach.call(document.querySelectorAll("#atlasList .atRow"),function(x){
         x.classList.remove("sel");});
@@ -18370,7 +18412,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1831";
+const BUILD="20260809-1848";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
