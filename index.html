@@ -13248,11 +13248,32 @@ function buildGlobe(root){
         sand=0xa48a55, ice=0xdde8ef;
   function col(lat,lon){
     const k=globeKind(lat,lon);
-    if(k==="i")return RGB(ice);
-    if(k==="s")return RGB(mixHex(sand,grnDry,0.5+0.5*Math.sin(lat*0.7+lon*0.4)*0.5));
-    if(k==="g")return RGB(mixHex(grn,grnDry,0.5+0.5*Math.sin(lat*0.9+lon*0.6)));
+    let h;
+    if(k==="i")h=ice;
+    else if(k==="s")h=mixHex(sand,grnDry,0.5+0.5*Math.sin(lat*0.7+lon*0.4)*0.5);
+    else if(k==="g")h=mixHex(grn,grnDry,0.5+0.5*Math.sin(lat*0.9+lon*0.6));
     /* the sea is not one blue: it deepens away from the shelf */
-    return RGB(mixHex(sea,seaDeep,0.5+0.5*Math.sin(lat*0.31+lon*0.23)));
+    else h=mixHex(sea,seaDeep,0.5+0.5*Math.sin(lat*0.31+lon*0.23));
+    /* ---- AND IT MUST STOP VARYING AS IT NEARS THE POLE ----
+       The degenerate slivers were fixed by fanning the polar rows, and I reported the
+       starburst gone. It was not: the GEOMETRY was fixed and the SHADING was not. Row one
+       is still three hundred quads, and that near the pole each is a thin wedge sampled at
+       its own longitude - so every one took a slightly different tone and the result striped
+       radially, which looks exactly like the artefact I had just removed.
+       A colour that varies with longitude cannot help but stripe where the meridians
+       converge. So over the last twelve degrees it is faded into one tone, and by 90 there
+       is no longitude term left to stripe. Both poles go to ice: the south is a continent of
+       it and the north is sea ice, so white is the truthful answer at both ends.
+       THE LESSON, AND IT COST A FALSE ALL-CLEAR: counting triangles answered "are there
+       slivers", which was a narrower question than "is the pole fixed". */
+    const a=Math.abs(lat);
+    /* Complete by 88, not 90, and the reason is a SEAM rather than stripes. The cap fan
+       is one tone, and its outer vertices sit at 89; if the fade is still running there,
+       row one arrives 5% short of the cap colour and the join shows as a ring. Measured:
+       colour spread at 89N was 0.342 against 0.06 either side of it. Finishing the fade
+       two degrees before the join means both sides are the same tone where they meet. */
+    if(a>76)h=mixHex(h,ice,Math.min(1,(a-76)/12));
+    return RGB(h);
   }
   /* ---- THE RIVERS AND THE CITY MARKS, LAID ON THE SURFACE ----
      Both sit slightly proud of the sphere - equal radii would z-fight with the ground they
@@ -17876,7 +17897,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1543";
+const BUILD="20260809-1622";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
