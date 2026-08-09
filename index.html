@@ -523,7 +523,13 @@
   #cine .cbar{position:absolute;left:0;right:0;height:0;background:#070805;transition:height .5s ease}
   #cine.on .cbar{height:11%}
   #cine .cbar.top{top:0} #cine .cbar.bot{bottom:0}
-  #cineSub{position:absolute;left:50%;bottom:15%;transform:translateX(-50%);max-width:80%;
+  /* ---- THE NARRATION WAS SITTING ON THE GLOBE ----
+     bottom:15% anchors the BOTTOM of the block, but the block is seven lines tall, so it
+     grew upward across the middle of the sphere - the one shot where the picture is the
+     point. Lowered to just above the letterbox bar (11%), and widened so the same words
+     take fewer lines: 88% of the width instead of 80, with the type and leading tightened.
+     Fewer, lower lines is the fix; making the text smaller alone would not have been. */
+  #cineSub{position:absolute;left:50%;bottom:12.2%;transform:translateX(-50%);max-width:88%;
     text-align:center;color:#f0e6cd;font-family:'EB Garamond',serif;font-size:1.06rem;line-height:1.5;
     font-style:italic;text-shadow:0 2px 8px #000,0 0 20px #000;opacity:0;transition:opacity .45s}
   #cineSub.on{opacity:1}
@@ -13268,6 +13274,34 @@ function buildGlobe(root){
     const A2=[a.x,a.y,a.z],B2=[b.x,b.y,b.z],C2=[c.x,c.y,c.z],D2=[d.x,d.y,d.z];
     if(n.dot(mid)>=0)g.quad(A2,B2,C2,D2,cc); else g.quad(D2,C2,B2,A2,cc);
   }
+  /* ---- THE ROUTE THEY ACTUALLY SAILED ----
+     Asked for as a red line across the ocean, and it is the one piece of geography this
+     whole chapter argues about. The crew keep saying they did not sail west, and the line
+     is why: the fleet went SOUTH first, down to the Canaries, then west with the trade
+     winds to the Indies, and only then north along the coast until the water shoaled.
+     Four months and more, for a place that is due west of England.
+     Every waypoint is from the record of that passage - the Downs, the Canaries, Dominica
+     and Nevis in the Leewards, Mona off Puerto Rico, then the Florida channel north to the
+     capes. Drawn in red and laid slightly higher than the rivers so it reads over both land
+     and sea. */
+  const GLOBE_TRACK=[
+    [51.4,0.4],[50.9,1.4],[49.5,-5.0],[44.0,-9.5],[36.0,-12.0],
+    [28.1,-15.4],[24.0,-22.0],[19.0,-33.0],[16.0,-45.0],[15.4,-55.0],
+    [15.4,-61.4],[17.2,-62.6],[18.1,-67.9],[20.5,-72.0],[25.0,-76.5],
+    [29.0,-79.5],[32.5,-78.0],[35.5,-75.5],[36.9,-76.0]
+  ];
+  const TRACK_R=GLOBE_R*1.0035, trackCol=RGB(0xc0392b);
+  for(let i=0;i+1<GLOBE_TRACK.length;i++){
+    const a=llv(GLOBE_TRACK[i][0],GLOBE_TRACK[i][1],TRACK_R);
+    const b=llv(GLOBE_TRACK[i+1][0],GLOBE_TRACK[i+1][1],TRACK_R);
+    const steps=Math.max(2,Math.ceil(a.angleTo(b)*180/Math.PI/1.2));
+    let prev=a;
+    for(let k=1;k<=steps;k++){
+      const nx=a.clone().lerp(b,k/steps).normalize().multiplyScalar(TRACK_R);
+      ribbon(prev,nx,GLOBE_R*0.0030,trackCol);
+      prev=nx;
+    }
+  }
   GLOBE_RIVER.forEach(function(r){
     for(let i=0;i+1<r.p.length;i++){
       const a=llv(r.p[i][0],r.p[i][1],RIVER_R), b=llv(r.p[i+1][0],r.p[i+1][1],RIVER_R);
@@ -17842,7 +17876,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1535";
+const BUILD="20260809-1543";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
