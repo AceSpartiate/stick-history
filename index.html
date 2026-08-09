@@ -18018,13 +18018,22 @@ const ATLAS_WHEN={
    So the Atlas answers "where does this game take place" before it offers the rest of the
    world. Kept here rather than on CHAPTERS because it is Atlas metadata: the chapter table
    owns identity, this owns a camera position. */
+/* `chart` NAMES THE CHART, rather than the chapter's world naming it.
+   That indirection was the bug: the swap looked up CHARTS[chapter.world], and Chapters I and
+   II have worlds ch1 and ch2 whose specs carry no art - so they drew the bay, every time,
+   and the island chart on CHARTS.james was unreachable from any chapter because james is a
+   SURVEY SITE and not a world. Reported as "it keeps switching to the old Chesapeake chart",
+   which is exactly what it was doing and for a reason no amount of staring at the new
+   artwork would have shown.
+   Naming the chart directly also lets two chapters share one - IV and V are the same fort in
+   different years - and lets a chapter have NO chart, which III and VI honestly do not yet. */
 const CHAPTER_PLACE={
-  "I":  {la:36.9,lo:-40.0,d:3200,w:"the crossing — four months of open water"},
-  "II": {la:36.93,lo:-76.01,d:1500,w:"Cape Henry, where they first stepped ashore"},
-  "III":{la:37.5,lo:-77.0,d:1450,w:"the Powhatan homeland, upriver"},
-  "IV": {la:37.21,lo:-76.78,d:1400,w:"the fort on the island, and the woods behind it"},
-  "V":  {la:37.21,lo:-76.78,d:1400,w:"the same fort, the winter it nearly ended"},
-  "VI": {la:37.4,lo:-77.2,d:1450,w:"the tobacco ground up the river"}
+  "I":  {la:36.9,lo:-40.0,d:3200,chart:"ch1",  w:"the crossing — four months of open water"},
+  "II": {la:36.93,lo:-76.01,d:1500,chart:"ch2",w:"Cape Henry, where they first stepped ashore"},
+  "III":{la:37.5,lo:-77.0,d:1450,chart:null,   w:"the Powhatan homeland, upriver"},
+  "IV": {la:37.21,lo:-76.78,d:1400,chart:"james",w:"the fort on the island, and the woods behind it"},
+  "V":  {la:37.21,lo:-76.78,d:1400,chart:"james",w:"the same fort, the winter it nearly ended"},
+  "VI": {la:37.4,lo:-77.2,d:1450,chart:null,   w:"the tobacco ground up the river"}
 };
 function atlasGroups(){
   const pass=[],old=[],nw=[];
@@ -18233,7 +18242,7 @@ function openAtlas(){
       atlasShowGlobe();
       A3.on=true; atlasLookAt(pl.la,pl.lo,pl.d);
       /* a chapter with a world has a chart of its ground; one without flies and stays */
-      A3.pending=(c.world&&typeof CHARTS!=="undefined"&&CHARTS[c.world])?CHARTS[c.world]:null;
+      A3.pending=(pl.chart&&typeof CHARTS!=="undefined"&&CHARTS[pl.chart])?CHARTS[pl.chart]:null;
       if(!A3.raf)A3.raf=requestAnimationFrame(atlasFrame);
       [].forEach.call(document.querySelectorAll("#atlasList .atRow"),function(x){
         x.classList.remove("sel");});
@@ -18524,7 +18533,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1855";
+const BUILD="20260809-1858";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
