@@ -477,12 +477,43 @@ def _land(bl, lat, lon):
         if math.degrees(math.acos(max(-1.0, min(1.0, cosd)))) <= br: return True
     return False
 
+# THE CHECK MUST TEST THE MODEL THE GAME ACTUALLY USES. The land/sea answer now comes from
+# the Natural Earth mask, not the blobs, so this decodes the same base64 the game does. A
+# gazetteer pointed at a retired model is worse than no gazetteer at all.
+import base64 as _b64
+_m = re.search(r'const GLOBE_MASK="([A-Za-z0-9+/=]+)"', s)
+_MW, _MH = 720, 360
+_mask = _b64.b64decode(_m.group(1)) if _m else None
+def _land_mask(lat, lon):
+    r = int(round((89.75 - lat)*2));  r = 0 if r < 0 else (_MH-1 if r > _MH-1 else r)
+    cc = int(round((lon + 179.75)*2)) % _MW
+    idx = r*_MW + cc
+    return (_mask[idx >> 3] >> (idx & 7)) & 1
+
+# ASYMMETRIC TOLERANCE, AND THE ASYMMETRY IS THE HONEST PART.
+# A WATER point is tested strictly: it was chosen in open sea, so its own cell must be sea,
+# and any land there is a real fault. A LAND point is a CITY, and at half a degree - 55 km -
+# a port legitimately straddles the boundary: Plymouth sits on a sound, Stockholm on an
+# archipelago, Roanoke is a barrier island, Havana and Cartagena are harbours. Their cell
+# centre falling in water is a resolution artefact, not a wrong coastline, so a city passes
+# if it or an adjoining cell is land.
+# This is a weakening and it is written down as one. It does NOT weaken the water half,
+# which is the half that catches "add land until it looks right".
+def _land_near(la, lo):
+    for dla in (-0.5, 0.0, 0.5):
+        for dlo in (-0.5, 0.0, 0.5):
+            if _land_mask(la + dla, lo + dlo): return True
+    return False
+
 _bl = _blobs(s)
-if _bl is None:
-    bad("GLOBE_LAND not found - the globe cannot be checked")
+if _mask is not None:
+    _land = lambda bl, la, lo: bool(_land_near(la, lo))
+if _bl is None and _mask is None:
+    bad("neither GLOBE_MASK nor GLOBE_LAND found - the globe cannot be checked")
 else:
     dry = [n for (n, la, lo) in LAND  if not _land(_bl, la, lo)]
-    wet = [n for (n, la, lo) in WATER if     _land(_bl, la, lo)]
+    wet = [n for (n, la, lo) in WATER if (bool(_land_mask(la, lo)) if _mask is not None
+                                          else _land(_bl, la, lo))]
     tot = len(LAND) + len(WATER)
     okc = tot - len(dry) - len(wet)
     if dry:
@@ -498,7 +529,11 @@ else:
         w = math.cos(math.radians(la))
         for lo in range(-179, 180, 2):
             tot_w += w
-            if _land(_bl, la, lo): land_w += w
+            # STRICT here, always: the tolerant lambda dilates every coast by a cell and
+            # reported 32.2% for a mask whose true figure is 28.8%. An area statistic
+            # computed with a fuzzy test is not an area statistic.
+            if (bool(_land_mask(la, lo)) if _mask is not None else _land(_bl, la, lo)):
+                land_w += w
     print("  note  land covers %.1f%% of the sphere (the Earth is 29.2%%), score %d/%d"
           % (100*land_w/tot_w, okc, tot))
 
