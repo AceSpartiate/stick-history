@@ -15924,6 +15924,13 @@ const CHARTS={
     gloss:"<b>You are here:</b> a creek off the north bank, some miles above the river's mouth. "+
       "Gabriel Archer argued for this place and a good many of the company agreed with him. "+
       "Wingfield overruled them all, and not on account of the ground \u2014 it was that a ship cannot lie against this bank."},
+  powhatan:{kick:"The Powhatan country \u00b7 as Smith set it down",
+    title:"Werowocomoco and the Two Rivers",
+    art:"powhatan", x:0.40,y:0.246,
+    gloss:"<b>Whose country this is:</b> two great rivers with a neck of land between them, "+
+      "and towns along both. Werowocomoco, on the north bank of the Pamunkey, is Powhatan's "+
+      "principal seat \u2014 it is where Smith was taken. The dashed line is Smith's own: west "+
+      "of it he drew what he was told and had not seen, and said so on the map."},
   james:{kick:"Jamestown Island \u00b7 the chart, weighted with a stone",
     title:"James Ile",
     art:"james", x:0.28,y:0.645,
@@ -16235,23 +16242,36 @@ CHART_ART.james=function(c,spec){
   g.fillStyle=PAPER;g.fillRect(0,0,W,H);
 
   /* the river, its north shore bending as a shore does */
-  coast([[-0.02,0.470],[0.14,0.442],[0.32,0.436],[0.50,0.452],[0.68,0.440],
-         [0.86,0.428],[1.02,0.440],[1.02,1.04],[-0.02,1.04]],true,WATER);
+  /* FAULT 3: the shore ran nearly straight across the whole width, so the top of the chart
+     read as a stripe of tan over a stripe of blue. A shore wanders. */
+  coast([[-0.02,0.474],[0.09,0.446],[0.18,0.464],[0.27,0.430],[0.37,0.448],
+         [0.46,0.422],[0.56,0.452],[0.66,0.426],[0.75,0.454],[0.86,0.424],
+         [1.02,0.446],[1.02,1.04],[-0.02,1.04]],true,WATER);
   /* the deep channel hard against the island's western shore */
-  coast([[0.105,0.640],[0.155,0.575],[0.225,0.585],[0.255,0.660],
-         [0.238,0.815],[0.150,0.880],[0.098,0.800]],true,DEEP);
+  /* FAULT 2: this was a rectangle sitting BESIDE the island. A channel is water following a
+     shore, so it now traces the island's own west and south edges at an offset and returns
+     outside them - the same curve, twice, at two distances. */
+  coast([[0.152,0.598],[0.142,0.650],[0.156,0.702],[0.186,0.754],[0.236,0.796],
+         [0.310,0.822],[0.300,0.856],[0.214,0.836],[0.150,0.788],[0.112,0.720],
+         [0.100,0.652],[0.116,0.598]],true,DEEP);
 
   /* the mainland, north bank */
-  coast([[-0.02,-0.04],[1.02,-0.04],[1.02,0.440],[0.86,0.428],[0.68,0.440],
-         [0.50,0.452],[0.32,0.436],[0.14,0.442],[-0.02,0.470]],true,LAND);
+  coast([[-0.02,-0.04],[1.02,-0.04],[1.02,0.446],[0.86,0.424],[0.75,0.454],
+         [0.66,0.426],[0.56,0.452],[0.46,0.422],[0.37,0.448],[0.27,0.430],
+         [0.18,0.464],[0.09,0.446],[-0.02,0.474]],true,LAND);
   /* the back river and marish */
   coast([[0.215,0.508],[0.34,0.487],[0.50,0.484],[0.64,0.500],[0.735,0.527],
          [0.700,0.572],[0.56,0.544],[0.40,0.532],[0.245,0.548]],true,MARSH);
 
   /* JAMES ILE */
-  coast([[0.205,0.578],[0.29,0.545],[0.40,0.532],[0.52,0.538],[0.63,0.560],
-         [0.715,0.596],[0.740,0.650],[0.690,0.712],[0.575,0.752],[0.44,0.768],
-         [0.315,0.748],[0.228,0.700],[0.190,0.630]],true,LAND,INK,W*0.0022);
+  /* FAULT 1: the points described an oval, so the curve smoothed it into an almond. The
+     curve routine was never the problem - the point set was. Inlets on both shores now, and
+     a blunter east end, which is the shape the record gives. */
+  coast([[0.205,0.578],[0.252,0.556],[0.298,0.568],[0.352,0.540],[0.412,0.550],
+         [0.472,0.530],[0.540,0.546],[0.598,0.558],[0.660,0.564],[0.714,0.594],
+         [0.746,0.638],[0.738,0.686],[0.694,0.716],[0.628,0.724],[0.578,0.752],
+         [0.508,0.742],[0.442,0.768],[0.378,0.750],[0.318,0.750],[0.262,0.722],
+         [0.226,0.698],[0.196,0.662],[0.190,0.618]],true,LAND,INK,W*0.0022);
   /* the necke of sand */
   coast([[0.205,0.578],[0.188,0.628],[0.146,0.606],[0.122,0.528],[0.160,0.486],
          [0.203,0.502]],true,LAND,INK,W*0.0022);
@@ -16320,6 +16340,118 @@ CHART_ART.james=function(c,spec){
     g.stroke();
   }
 
+};
+
+/* ---- THE POWHATAN COUNTRY, AFTER SMITH'S MAP OF VIRGINIA (1612) ----
+   Chapter III had no map at all, which was honest but not good enough: the chapter is about
+   meeting people on their own ground, and a globe cannot show whose ground it is.
+
+   FROM THE RECORD:
+     Two great rivers run east to the bay with a neck of land between them - the Powhatan
+       (the English called it the King's River; we call it the James) and the Pamunkey, which
+       the English came to call the York.
+     WEROWOCOMOCO, Powhatan's principal seat, stands on the NORTH bank of the Pamunkey. It is
+       where Smith was taken, and the most important place on this chart.
+     Paspahegh lies near the mouth of the Powhatan, close to where the English planted.
+     Kecoughtan sits at the bay end, the first town the fleet passed.
+     Smith's map marks towns with a symbol and the great seats with a larger one. It also
+       marks the limit of what the English had actually seen - beyond it he drew what he was
+       TOLD, and said so. That distinction is the whole reason this map is worth teaching.
+
+   THE COUNTRY IS DRAWN AS INHABITED, because it was. The English arrived in a place with
+   towns, fields and a paramount chief, and a chart that shows empty forest would be telling
+   a lie the record does not support. */
+CHART_ART.powhatan=function(c,spec){
+  const g=c.getContext("2d"), W=c.width, H=c.height;
+  const X=function(u){return u*W;}, Y=function(v){return v*H;};
+  const coast=function(pts,close,fill,stroke,lw){
+    g.beginPath();g.moveTo(X(pts[0][0]),Y(pts[0][1]));
+    for(let k=0;k<pts.length-1;k++){
+      const a=pts[k],b=pts[k+1],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;
+      g.quadraticCurveTo(X(a[0]),Y(a[1]),X(mx),Y(my));
+    }
+    const L=pts[pts.length-1];
+    g.quadraticCurveTo(X(L[0]),Y(L[1]),X(L[0]),Y(L[1]));
+    if(close)g.closePath();
+    if(fill){g.fillStyle=fill;g.fill();}
+    if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1;g.stroke();}
+  };
+  const PAPER="#e6dcbe", WATER="#a8c0ca", LAND="#d3c69f", INK="#4a3a22";
+  g.fillStyle=PAPER;g.fillRect(0,0,W,H);
+  g.fillStyle=LAND;g.fillRect(0,0,W,H);
+
+  /* the Pamunkey, north, widening to the bay */
+  coast([[-0.02,0.300],[0.12,0.286],[0.26,0.302],[0.40,0.288],[0.54,0.306],
+         [0.68,0.292],[0.82,0.276],[1.02,0.252],[1.02,0.352],[0.82,0.372],
+         [0.68,0.386],[0.54,0.396],[0.40,0.382],[0.26,0.392],[0.12,0.376],
+         [-0.02,0.386]],true,WATER);
+  /* the Powhatan, south */
+  coast([[-0.02,0.700],[0.12,0.716],[0.26,0.702],[0.40,0.722],[0.54,0.706],
+         [0.68,0.726],[0.82,0.740],[1.02,0.762],[1.02,0.878],[0.82,0.856],
+         [0.68,0.836],[0.54,0.818],[0.40,0.832],[0.26,0.812],[0.12,0.826],
+         [-0.02,0.812]],true,WATER);
+  /* the bay itself, east */
+  coast([[0.955,-0.04],[1.04,-0.04],[1.04,1.04],[0.94,1.04],[0.968,0.72],
+         [0.945,0.40],[0.972,0.14]],true,WATER);
+
+  /* woodland on the neck between the rivers */
+  g.strokeStyle="#5d6b3e";g.lineWidth=W*0.0015;
+  for(let k=0;k<16;k++){
+    const u=0.06+((k*5)%16)*0.055, v=0.470+((k*3)%5)*0.038;
+    g.beginPath();
+    g.moveTo(X(u),Y(v));g.lineTo(X(u),Y(v-0.026));
+    g.moveTo(X(u-0.009),Y(v-0.015));g.lineTo(X(u),Y(v-0.032));
+    g.lineTo(X(u+0.009),Y(v-0.015));
+    g.stroke();
+  }
+
+  /* the towns. A great seat takes the larger mark, as on the original. */
+  const town=function(u,v,great,name,align){
+    const r=W*(great?0.013:0.008);
+    g.fillStyle=great?"#8a5a2b":"#6b5a34";
+    g.beginPath();g.arc(X(u),Y(v),r,0,Math.PI*2);g.fill();
+    if(great){
+      g.strokeStyle="#8a5a2b";g.lineWidth=W*0.0022;
+      g.beginPath();g.arc(X(u),Y(v),r*1.9,0,Math.PI*2);g.stroke();
+    }
+    g.fillStyle=INK;g.textAlign=align||"left";
+    g.font="italic "+Math.round(W*(great?0.024:0.020))+"px Georgia, serif";
+    g.fillText(name,X(u)+(align==="right"?-r*2.6:r*2.6),Y(v)+W*0.007);
+  };
+  town(0.40,0.246,true,"Werowocomoco");
+  town(0.10,0.268,false,"Pamunkey");
+  town(0.30,0.748,false,"Paspahegh");
+  town(0.86,0.800,false,"Kecoughtan","right");
+  town(0.62,0.690,false,"Weanock");
+
+  /* the rivers named as the English wrote them */
+  g.fillStyle="#3d5a68";g.textAlign="center";
+  g.font="italic "+Math.round(W*0.022)+"px Georgia, serif";
+  g.fillText("Pamunkey flu.",X(0.30),Y(0.348));
+  g.fillText("Powhatan flu. \u2014 the Kings River",X(0.42),Y(0.784));
+  g.textAlign="left";
+  g.fillStyle=INK;g.font="italic "+Math.round(W*0.019)+"px Georgia, serif";
+  g.fillText("the neck betweene the rivers",X(0.07),Y(0.560));
+
+  /* what was SEEN, and what was only told - Smith's own distinction */
+  g.strokeStyle="#8f3f2f";g.lineWidth=W*0.0022;
+  g.setLineDash([W*0.012,W*0.010]);
+  g.beginPath();g.moveTo(X(0.175),Y(0.06));g.lineTo(X(0.175),Y(0.94));g.stroke();
+  g.setLineDash([]);
+  g.fillStyle="#8f3f2f";g.textAlign="left";
+  g.font="italic "+Math.round(W*0.017)+"px Georgia, serif";
+  g.fillText("beyond this, what wee were told",X(0.020),Y(0.100));
+  g.fillText("and did not see",X(0.020),Y(0.128));
+
+  if(spec&&typeof spec.x==="number"){
+    const r=W*0.013;
+    g.strokeStyle="#8f3f2f";g.lineWidth=W*0.0032;
+    g.beginPath();g.arc(X(spec.x),Y(spec.y),r,0,Math.PI*2);g.stroke();
+    g.beginPath();
+    g.moveTo(X(spec.x)-r*1.6,Y(spec.y));g.lineTo(X(spec.x)+r*1.6,Y(spec.y));
+    g.moveTo(X(spec.x),Y(spec.y)-r*1.6);g.lineTo(X(spec.x),Y(spec.y)+r*1.6);
+    g.stroke();
+  }
 };
 function drawChart(spec,into){
   const c=$(into||"mapCanvas");
@@ -18079,7 +18211,7 @@ const CHAPTER_PLACE={
      map", and it was: the right map for a voyage is the track, not a coastline. */
   "I":  {la:30,lo:-45,d:3100,chart:null,route:true,w:"the crossing — four months of open water"},
   "II": {la:36.93,lo:-76.01,d:1500,chart:"ch2",w:"Cape Henry, where they first stepped ashore"},
-  "III":{la:37.5,lo:-77.0,d:1450,chart:null,   w:"the Powhatan homeland, upriver"},
+  "III":{la:37.5,lo:-77.0,d:1450,chart:"powhatan",w:"the Powhatan homeland, upriver"},
   "IV": {la:37.21,lo:-76.78,d:1400,chart:"james",w:"the fort on the island, and the woods behind it"},
   "V":  {la:37.21,lo:-76.78,d:1400,chart:"james",w:"the same fort, the winter it nearly ended"},
   "VI": {la:37.4,lo:-77.2,d:1450,chart:null,   w:"the tobacco ground up the river"}
@@ -18592,7 +18724,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1907";
+const BUILD="20260809-1911";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
