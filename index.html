@@ -18028,7 +18028,12 @@ const ATLAS_WHEN={
    Naming the chart directly also lets two chapters share one - IV and V are the same fort in
    different years - and lets a chapter have NO chart, which III and VI honestly do not yet. */
 const CHAPTER_PLACE={
-  "I":  {la:36.9,lo:-40.0,d:3200,chart:"ch1",  w:"the crossing — four months of open water"},
+  /* THE CROSSING HAS NO CLOSE-UP AND MUST NOT BE GIVEN ONE. It is four months of open
+     ocean; the map of it IS the globe with the passage drawn on it. Routing it to ch1 sent
+     the player over the Atlantic and then dropped them on a chart of the Chesapeake - a
+     picture of the place they had not reached yet. Reported as "it switches to an incorrect
+     map", and it was: the right map for a voyage is the track, not a coastline. */
+  "I":  {la:30,lo:-45,d:3100,chart:null,route:true,w:"the crossing — four months of open water"},
   "II": {la:36.93,lo:-76.01,d:1500,chart:"ch2",w:"Cape Henry, where they first stepped ashore"},
   "III":{la:37.5,lo:-77.0,d:1450,chart:null,   w:"the Powhatan homeland, upriver"},
   "IV": {la:37.21,lo:-76.78,d:1400,chart:"james",w:"the fort on the island, and the woods behind it"},
@@ -18237,6 +18242,16 @@ function openAtlas(){
     cb.innerHTML="<b>Chapter "+c.n+" · "+c.t+"</b><small>"+
       (c.d||"")+(c.ready?"":" — not yet built")+"<br>"+pl.w+"</small>";
     cb.onclick=function(){
+      /* a chapter that IS a voyage selects the passage, so the track draws bold and the
+         camera pulls back far enough to hold the whole of it */
+      if(pl.route){
+        ATLAS_SEL=atlasItemById("track");
+        [].forEach.call(document.querySelectorAll("#atlasList .atRow"),function(x){
+          x.classList.remove("sel");});
+        cb.classList.add("sel");
+        drawAtlas();
+        return;
+      }
       ATLAS_SEL=null;
       if(!atlasInit())return;
       atlasShowGlobe();
@@ -18533,7 +18548,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1858";
+const BUILD="20260809-1901";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
