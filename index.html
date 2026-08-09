@@ -4669,8 +4669,19 @@ function buildHoldLevel(root){
         /* no clamp: an ambient floor plus a full cosine wrap, so every face differs */
         const f=0.30+0.70*(0.5+0.5*Math.cos((a0+a1)/2-0.6));
         const cc=RGB(shadeHex(iron?cHoop:col,iron?f*0.94:f));
-        HG.quad([cx+s0*rr*rA,cy+c0*rr*rA,zA],[cx+s1*rr*rA,cy+c1*rr*rA,zA],
-                [cx+s1*rr*rB,cy+c1*rr*rB,zB],[cx+s0*rr*rB,cy+c0*rr*rB,zB],cc);
+        /* ---- THE STAVES FACED INWARD, SO YOU COULD SEE STRAIGHT THROUGH THE CASK ----
+           Reported from play: the barrels down the sides below decks are see-through.
+           The ring is x=sin(a), y=cos(a), which advances CLOCKWISE viewed from +z, and the
+           quad ran A(a0),A(a1),B(a1),B(a0) with zA<zB - so the winding put every wall face's
+           normal pointing at the barrel's own axis. Backface culling then removed the whole
+           wall and left the heads floating with nothing between them.
+           Measured before touching it: the face normal dotted with the outward radial came
+           to -0.712 at four sampled angles, which is not a near miss - it is exactly
+           reversed. Wound the other way round the ring now. The two heads below were always
+           correct; they carry explicit opposite winding for the fore and after ends, which
+           is why only the middle of the barrel vanished. */
+        HG.quad([cx+s0*rr*rA,cy+c0*rr*rA,zA],[cx+s0*rr*rB,cy+c0*rr*rB,zB],
+                [cx+s1*rr*rB,cy+c1*rr*rB,zB],[cx+s1*rr*rA,cy+c1*rr*rA,zA],cc);
       }
     }
     /* the two heads, one fan each - lit on the after face, dark on the forward one */
@@ -17420,7 +17431,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-0242";
+const BUILD="20260809-1233";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
