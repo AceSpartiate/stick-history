@@ -17778,6 +17778,22 @@ const ATLAS_ITEMS=[
   {k:"city", id:"Mbanza Kongo", n:"Mbanza Kongo", need:null},
   {k:"city", id:"Potos\u00ed", n:"Potos\u00ed", need:null}
 ];
+/* ---- AND EVERY OTHER TOWN ON THE GLOBE, WITHOUT LISTING THEM ----
+   The rows above are FEATURED: they lead the list because the chapter turns on them, and two
+   of them carry gates. Everything else is appended straight from GLOBE_CITY.
+   DERIVED RATHER THAN PASTED, on purpose. A second hand-written list of the same towns falls
+   out of step with the first the day somebody adds one - which is exactly how "Overruled"
+   came to be invisible two commits ago, and how the outward route nearly ended up existing
+   twice. GLOBE_CITY is the one owner of what places exist; the Atlas decides only which of
+   them lead, and can no longer lag behind it. */
+(function(){
+  const seen={};
+  ATLAS_ITEMS.forEach(function(r){seen[r.id]=1;});
+  GLOBE_CITY.forEach(function(c){
+    if(seen[c.n])return;
+    ATLAS_ITEMS.push({k:"city",id:c.n,n:c.n,need:null});
+  });
+})();
 function atlasOpenFor(it){return !it.need||!!S.insight[it.need];}
 function drawAtlas(){
   const cv=$("atlasCanvas"); if(!cv)return;
@@ -18091,7 +18107,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1722";
+const BUILD="20260809-1725";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
