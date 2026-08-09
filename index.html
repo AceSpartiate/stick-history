@@ -4720,6 +4720,37 @@ function buildHoldLevel(root){
       HG.tri([cx,cy,cz-len/2],[cx+s0,cy+c0,cz-len/2],[cx+s1,cy+c1,cz-len/2],
         RGB(shadeHex(col,0.44)));
     }
+    /* ---- THE MERCHANT'S MARK, BURNED INTO THE HEAD ----
+       The cask document says a cask was marked rather than labelled, and until now the
+       barrels themselves were blank, which made the text a claim about something the player
+       could not see. This is that mark.
+       WHAT IT IS: the ordinary shape of an English merchant's mark - an upright staff, a
+       stylised figure-of-four at the head, and a foot bar. Marks of this family are all over
+       surviving bale seals, cask heads and merchants' tombs, because a device is recognised
+       at a glance by men who cannot read a name.
+       WHAT IT IS NOT: anybody's actual mark. Nobody knows what the Susan Constant's casks
+       bore, and the document says so - so this is deliberately generic, a mark OF THAT KIND,
+       and it carries no initials, which is precisely what would make it a specific claim.
+       Burned, not painted: it takes the darkest tone of the wood rather than a colour.
+       Proud of the head by 0.05 so it cannot z-fight with the head it sits on - equal depths
+       are a tie no precision breaks, which this file has paid for before. */
+    const mk=RGB(shadeHex(col,0.22)), R=rr*0.74;
+    const stroke=function(zc,sgn,x0,y0,x1,y1,w){
+      const dx=x1-x0, dy=y1-y0, L=Math.hypot(dx,dy)||1;
+      const nx=-dy/L*w, ny=dx/L*w;                    /* half-width across the stroke */
+      const P=[[x0-nx,y0-ny],[x1-nx,y1-ny],[x1+nx,y1+ny],[x0+nx,y0+ny]];
+      const V=P.map(function(p){return [cx+p[0],cy+p[1],zc];});
+      /* wound so the face looks OUTWARD along its own end, the same rule the heads follow */
+      if(sgn>0)HG.quad(V[0],V[1],V[2],V[3],mk);
+      else     HG.quad(V[3],V[2],V[1],V[0],mk);
+    };
+    [[cz+len/2+0.05,1],[cz-len/2-0.05,-1]].forEach(function(e){
+      const zc=e[0], sg=e[1], w=R*0.055;
+      stroke(zc,sg, 0,-R*0.62, 0, R*0.66, w);         /* the staff */
+      stroke(zc,sg, 0, R*0.16, R*0.40, R*0.60, w);    /* the diagonal of the four */
+      stroke(zc,sg, 0, R*0.34, R*0.40, R*0.34, w);    /* its crossbar */
+      stroke(zc,sg, -R*0.30,-R*0.56, R*0.30,-R*0.56, w); /* the foot */
+    });
   };
   let nCask=0;
   for(let z=SHIP.Z_BOW+15*K;z<SHIP.Z_STERN-13*K;z+=4.6*K){
@@ -17523,7 +17554,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1256";
+const BUILD="20260809-1300";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
