@@ -5666,6 +5666,13 @@ function buildPoop(root){
       lvl:LVL.CASTLE,r:7*K,action:"idle",data:HELMSMAN});
     interactables.push({id:"tiller",label:"The Tiller",x:0,z:sAft-3.0*K,y:sy,
       lvl:LVL.CASTLE,r:6.5*K,action:"doc",data:TILLER_DOC});
+    /* THE CASK ROW, in the hold. Position MEASURED rather than guessed: the casks are
+       placed at x = +-(halfBeam(z,y)-2.5K-inset), and at z=-8 in the hold that came to
+       x=11.3. Standing the hotspot three feet inboard of the cask centre keeps it clear of
+       the hull and inside the walkable lane down the middle - the reach test that four
+       props have already failed in this file. */
+    interactables.push({id:"casks",label:"The Casks",x:8.3,z:-8,y:LVL_Y[LVL.HOLD],
+      lvl:LVL.HOLD,r:7*K,action:"doc",data:CASK_DOC});
     interactables.push({id:"whipstaff",label:"The Whipstaff",
       x:0,z:wsZ-2.6*K,y:SHIP.QUARTER_Y,lvl:LVL.QUARTER,r:6*K,
       action:"doc",data:POOP_DOC});
@@ -5687,6 +5694,30 @@ const HELMSMAN={id:"helmsman",name:"The Man at the Staff",voice:"male",
    "\u201cThe officer above sings out the course and I put her over. If he is wrong I am wrong with him, and it is my hands on the staff.\u201d",
    "\u201cFive degrees either side is all she gives. In weather they come below and we work the tiller with tackles, four of us on the ropes.\u201d",
    "\u201cThere is a compass in the box above. There is none down here. I steer by his voice.\u201d"]};
+/* ---- WOULD THEY HAVE BEEN LABELLED? NO - AND THE REASON IS THE LESSON ----
+   Asked directly, and the honest answer is better than a yes. A painted or written label is
+   the wrong technology and the wrong audience: most seamen could not read. What a cask
+   carried instead was a MARK - a device cut or burned into the head - and a SIZE, because
+   the cask sizes were themselves standard measures. The authoritative record of what was
+   aboard lived in the purser's book, on paper, not on the barrel.
+   What is NOT claimed here: what marks these particular casks bore. Nobody knows. The
+   document says so rather than inventing a device for the Susan Constant. */
+const CASK_DOC={
+  kick:"The Hold \u00b7 stowed each side of the keelson",
+  title:"What Is In the Casks",
+  parts:[
+   {q:"They carry no writing, and nobody aboard expects them to.",
+    g:"A cask was marked, not labelled. A <b>merchant's mark</b> - a device something like a monogram, cut with a race knife or burned into the head - said whose it was. The cooper left his own marks on the staves. Most of the men handling them could not read a word, so a mark you can recognise at a glance beats a name you cannot. What was actually aboard, and how much of it, was written in the <b>purser's book</b>. The barrel is the goods; the paper is the record."},
+   {q:"The size of a cask is the measure. That is why 'a barrel' is a quantity and not just a container.",
+    g:"They ran in a set of standard sizes, each a known volume: <b>tun, pipe, butt, hogshead, barrel, kilderkin, firkin</b>, largest to smallest. A barrel of beer was thirty-six gallons; a hogshead about half as much again. So a purser counting hogsheads was counting gallons without having to open anything, and a cask's shape told you its contents' quantity before you touched it. We still say 'barrel' for oil this way, four hundred years on."},
+   {q:"Beer, before water. That is not indulgence - it is the only drink that keeps.",
+    g:"Water in a wooden cask goes foul within weeks and stinks long before it is dangerous to look at. Small beer is brewed weak, keeps far better, and was issued to everyone aboard including the boys. When the beer ran out on a long passage, men drank the water and got sick, and that is a real cause of what happened to crews - not a detail."},
+   {q:"The rest of it is salt, grain and hope.",
+    g:"The Company's own list of necessaries runs to <b>biscuit</b> (baked hard twice so it keeps for years), <b>salt beef and pork</b>, <b>salt fish</b>, <b>oatmeal</b>, <b>pease</b>, <b>cheese</b>, <b>butter</b>, <b>oil</b>, <b>vinegar</b> and <b>aqua vitae</b>. Almost none of it is fresh, and none of it grows here. Every one of these casks is a day the colony does not have to feed itself - and there is a fixed number of them."}
+  ],
+  insight:{g:"known",b:"Marks, Not Labels",
+    s:"Casks were marked with a merchant's device and identified by standard size - tun, pipe, butt, hogshead, barrel - rather than written labels, because most seamen could not read. The real inventory was the purser's book. Beer was carried in preference to water because water in wood goes foul."}};
+
 const TILLER_DOC={
   kick:"The Steerage \u00b7 under the poop",
   title:"The Tiller",
@@ -17440,7 +17471,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1240";
+const BUILD="20260809-1250";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
