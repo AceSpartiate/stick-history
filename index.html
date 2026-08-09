@@ -15910,7 +15910,7 @@ function recordFinding(siteKey,sv){
 const CHARTS={
   ch1:{kick:"The Great Cabin \u00b7 a chart on the table",
     title:"Such Chart As We Have",
-    x:0.665,y:0.445,
+    x:0.758,y:0.612,      /* standing in between the capes */
     gloss:"<b>You are here:</b> standing into the bay at first light, between two capes that had no English names when you woke. "+
       "Note what this chart does not show. It is drawn from Spanish captures and from what was learned at Roanoke twenty years ago; "+
       "beyond a few miles of water it is guesswork and empty paper. No one aboard has seen the head of any river on it. "+
@@ -15920,7 +15920,7 @@ const CHARTS={
      leave. Caught before it shipped, but only just. */
   archers:{kick:"Archer's Hope \u00b7 the chart, spread on a stump",
     title:"The King's River",
-    x:0.638,y:0.470,
+    x:0.428,y:0.430,      /* a creek off the north bank, some way up */
     gloss:"<b>You are here:</b> a creek off the north bank, some miles above the river's mouth. "+
       "Gabriel Archer argued for this place and a good many of the company agreed with him. "+
       "Wingfield overruled them all, and not on account of the ground \u2014 it was that a ship cannot lie against this bank."},
@@ -15947,7 +15947,7 @@ const CHARTS={
       "Nobody lives on it, in a country whose good ground is farmed \u2014 and the reason nobody lives on it is the reason you are asked to taste the water."},
   comfort:{kick:"Point Comfort \u00b7 the chart, held down with a stone",
     title:"The Mouth of the Bay",
-    x:0.695,y:0.512,
+    x:0.606,y:0.628,      /* the low point inside the capes */
     gloss:"<b>You are here:</b> a low point inside the capes where the deep channel runs hard against the shore. "+
       "The fleet anchored off it on the last day of April, and the men called it Point Comfort because after four "+
       "months of open water it was a comfort to find good holding ground. It is the first place any ship coming "+
@@ -16129,76 +16129,216 @@ function drawQuizMap(kind){
    for exactly this ground and is public domain - and guessing a coastline is the one thing
    this project does not do. The seam is now in the right place for that work to land. */
 const CHART_ART={};
-CHART_ART.bay=function(c,spec){  const g=c.getContext("2d"), W=c.width, H=c.height;
+/* ---- SUCH CHART AS WE HAVE: THE LOWER CHESAPEAKE ----
+   THE LAST CHART STILL IN THE OLD FLAT STYLE, and the first one a pupil ever sees. It was
+   also the least accurate: the bay ran WEST out of a lozenge with no Delmarva, no York, and
+   a King's River that stopped in a rounded blob two inches from the capes - while three
+   different chapter marks (the great cabin, Point Comfort and Archer's Hope) were all being
+   dropped into open water because there was no river bank to drop them on.
+
+   REDRAWN TO A STATED FRAME, which is what makes the rest of it checkable:
+     37.75 N down to 36.55 N, and 77.635 W across to 75.465 W.
+     x = (lon + 77.635) / 2.17        v = (37.75 - lat) / 1.2
+   Those two lines are chosen so the map is CONFORMAL at 37 north - the degree of longitude
+   is shortened by cos(latitude) exactly as it is on the ground - which is why the scale bar
+   below can be honest in both directions instead of only across.
+   Everything on it was sited through those two lines: Cape Henry 36.93/-76.01, Cape Charles
+   37.11/-75.97, Point Comfort 37.00/-76.30, Archer's Hope 37.23/-76.72, the falls 37.53/-77.43.
+
+   WHAT THE CHART ARGUES. This is the sheet in the great cabin at first light: drawn from
+   Spanish takings and from what was learnt at Roanoke twenty years earlier. So the ink STOPS.
+   The soundings run in from the sea, through the capes, up the river as far as anyone has
+   carried a lead - and then there are none, because nobody has been there. The interior is
+   ruled over and says so. A chart that admits where it ends is teaching the difference
+   between what is known and what is assumed, which is the whole habit this game is for. */
+CHART_ART.bay=function(c,spec){
+  const g=c.getContext("2d"), W=c.width, H=c.height;
   const X=function(u){return u*W;}, Y=function(v){return v*H;};
-  g.clearRect(0,0,W,H);
-  /* the paper */
-  g.fillStyle="#e6dcbe";g.fillRect(0,0,W,H);
-  /* the sea, east of the coast */
-  g.fillStyle="#c3cfc9";
+  const draw=function(pts0,close,fill,stroke,lw){
+    const p=PEN.wobble(pts0);
+    PEN.path(g,X,Y,p);
+    if(close)g.closePath();
+    if(fill){g.fillStyle=fill;g.fill();}
+    if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1;g.stroke();}
+    return p;
+  };
+  const WATER="rgba(146,176,190,0.32)", LAND="rgba(198,178,132,0.36)", INK="#4a3a22";
+  PEN.paper(g,W,H);
+  g.fillStyle=LAND;g.fillRect(0,0,W,H);
+
+  /* ---- ONE BODY OF WATER, TRAVERSED ONCE ----
+     The sea, the mouth and the bay are a single polygon. It runs DOWN the bay's western
+     shore, east along the south side of the mouth to Cape Henry, south down the sea coast,
+     out to the margin of the sheet, and then back in along the Delmarva - down its ocean
+     shore, round Cape Charles, and up its bay shore again. That last stretch is a SLIT: the
+     peninsula is carved out of the water rather than drawn on top of it, which is what keeps
+     the mouth open between the capes without anybody having to remember to leave a gap.
+     It also means the whole shore takes ONE hatch call at one side, because a consistent
+     traversal puts the water on the same hand the entire way round. */
+  const SEA=[
+    [0.569,-0.06],[0.586,0.06],[0.575,0.16],[0.596,0.26],[0.584,0.35],
+    [0.606,0.44],[0.598,0.52],[0.608,0.572],[0.600,0.612],[0.604,0.640],
+    [0.626,0.660],[0.658,0.676],[0.694,0.688],[0.724,0.686],[0.749,0.683],
+    [0.782,0.736],[0.806,0.82],[0.822,0.92],[0.812,1.06],
+    [1.06,1.06],[1.06,-0.06],
+    [0.918,-0.06],[0.926,0.10],[0.936,0.24],[0.924,0.37],[0.910,0.47],
+    [0.868,0.516],[0.812,0.528],[0.767,0.533],
+    [0.744,0.462],[0.732,0.376],[0.742,0.290],[0.728,0.196],[0.738,0.100],[0.724,-0.06]
+  ];
+  /* the King\u2019s River, tapering as a river does - four or five miles across where it meets
+     the bay, under two at the head of anything anyone has seen */
+  const JAMES=[
+    [0.688,0.556],[0.578,0.512],[0.494,0.474],[0.422,0.440],[0.354,0.414],
+    [0.288,0.372],[0.218,0.322],[0.168,0.276],
+    [0.176,0.302],[0.234,0.366],[0.290,0.412],[0.346,0.452],
+    [0.418,0.482],[0.492,0.518],[0.580,0.556],[0.688,0.630]
+  ];
+  /* and the next river north, which they have seen the mouth of and nothing else */
+  const YORK=[
+    [0.634,0.402],[0.510,0.362],[0.430,0.336],[0.352,0.318],[0.290,0.306],
+    [0.294,0.330],[0.356,0.342],[0.434,0.360],[0.514,0.388],[0.638,0.442]
+  ];
+  const sea=PEN.wobble(SEA), james=PEN.wobble(JAMES), york=PEN.wobble(YORK);
+  /* ---- ALL THE WATER IN ONE FILL ----
+     Three translucent washes laid one over another double their alpha where they overlap, and
+     the overlap is exactly where a river MEETS the bay - so the seams showed up as bright
+     rectangles at the two river mouths, which is the one place a chart must not have an edge.
+     One path, one fill: the non-zero winding rule paints an overlap once, and the same rule
+     is what makes the Delmarva slit above come out as land rather than sea. */
   g.beginPath();
-  g.moveTo(X(0.78),Y(0));g.lineTo(X(1),Y(0));g.lineTo(X(1),Y(1));g.lineTo(X(0.74),Y(1));
-  g.quadraticCurveTo(X(0.80),Y(0.62),X(0.78),Y(0));g.fill();
-  /* the bay, opening west between the capes */
+  PEN.path(g,X,Y,sea,true);g.closePath();
+  PEN.path(g,X,Y,james,true);g.closePath();
+  PEN.path(g,X,Y,york,true);g.closePath();
+  g.fillStyle=WATER;g.fill();
+
+  PEN.seaRule(g,X,Y,SEA,W,H,0.026,"rgba(70,104,124,0.30)",W*0.0010);
+  PEN.seaRule(g,X,Y,JAMES,W,H,0.022,"rgba(70,104,124,0.30)",W*0.0010);
+
+  /* ---- THE UNKNOWN, RULED OVER ----
+     The one thing the old chart got right and the reason it existed. Kept, and given a shape:
+     it covers the ground west and north of anywhere a boat has been. Clipped to the LAND -
+     rectangle minus every water shape, by the even-odd rule - because diagonals running
+     across a river say the river is unknown, when the river is the one thing here that is
+     not. */
+  const unknown=function(poly){
+    g.save();
+    g.beginPath();
+    PEN.path(g,X,Y,PEN.wobble(poly),true);g.closePath();
+    PEN.path(g,X,Y,sea,true);g.closePath();
+    PEN.path(g,X,Y,james,true);g.closePath();
+    PEN.path(g,X,Y,york,true);g.closePath();
+    g.clip("evenodd");
+    g.strokeStyle="rgba(90,72,40,0.22)";g.lineWidth=W*0.0011;
+    for(let t=-1.2;t<1.2;t+=0.030){
+      g.beginPath();
+      g.moveTo(X(t),Y(1.04));
+      g.lineTo(X(t)+H*0.26,Y(-0.04));
+      g.stroke();
+    }
+    g.restore();
+  };
+  /* ONE REGION WITH A WANDERING EDGE, not two rectangles. Two rects left a hard vertical cut
+     down the middle of the sheet and an unhatched seam between them, which reads as a
+     drawing error rather than as a limit of knowledge. This edge is the western bound of
+     anything anyone aboard has seen, and it is drawn as a boundary would be drawn. */
+  unknown([[-0.04,-0.04],[0.52,-0.04],[0.47,0.20],[0.40,0.44],[0.44,0.72],[0.50,1.04],
+           [-0.04,1.04]]);
+
+  /* ---- INK THE BANKS, NOT THE MOUTHS ----
+     Stroking a river as a closed shape draws a line straight across where it opens into the
+     bay, which is the one edge a river does not have. Each bank is inked as its own open
+     path, and the hatch that follows uses the very same points. */
+  g.strokeStyle=INK;
+  PEN.path(g,X,Y,sea.slice(0,19));g.lineWidth=W*0.0022;g.stroke();
+  PEN.path(g,X,Y,sea.slice(21));g.stroke();
+  PEN.hatch(g,X,Y,sea.slice(0,19),-1,0.020,0.014,"rgba(74,58,34,0.68)",W*0.0016);
+  PEN.hatch(g,X,Y,sea.slice(21),-1,0.020,0.014,"rgba(74,58,34,0.68)",W*0.0016);
+
+  /* ---- A RIVER BANK ENDS AT THE BAY, NOT IN IT ----
+     Both rivers are drawn a little PAST the bay's western shore, because that overlap is what
+     merges the water into one body and leaves the mouths open. But the same overlap put the
+     inked banks - and their ticks - running out across open water, two ruled lines heading
+     for the Delmarva. Everything from here is clipped to the LAND: the sheet minus the sea,
+     by the even-odd rule, so each bank stops exactly where the shore is and no arithmetic
+     about where to end the array is needed or can drift. */
+  g.save();
   g.beginPath();
-  g.moveTo(X(0.80),Y(0.30));
-  g.quadraticCurveTo(X(0.52),Y(0.26),X(0.40),Y(0.36));
-  g.quadraticCurveTo(X(0.30),Y(0.45),X(0.34),Y(0.60));
-  g.quadraticCurveTo(X(0.44),Y(0.66),X(0.56),Y(0.60));
-  g.quadraticCurveTo(X(0.68),Y(0.58),X(0.795),Y(0.56));
-  g.quadraticCurveTo(X(0.84),Y(0.44),X(0.80),Y(0.30));
-  g.fill();
-  /* the James, running west from the bay - drawn thin, because it was barely known */
-  g.strokeStyle="#c3cfc9";g.lineWidth=Math.max(6,W*0.014);g.lineCap="round";
-  g.beginPath();
-  g.moveTo(X(0.56),Y(0.605));
-  g.quadraticCurveTo(X(0.44),Y(0.645),X(0.30),Y(0.638));
-  g.quadraticCurveTo(X(0.20),Y(0.632),X(0.13),Y(0.655));
-  g.stroke();
-  /* the coast, inked over the water */
-  g.strokeStyle="#4a3a22";g.lineWidth=Math.max(1.4,W*0.0028);
-  g.beginPath();
-  g.moveTo(X(0.79),Y(0));
-  g.quadraticCurveTo(X(0.775),Y(0.18),X(0.76),Y(0.30));
-  g.quadraticCurveTo(X(0.52),Y(0.26),X(0.40),Y(0.36));
-  g.quadraticCurveTo(X(0.30),Y(0.45),X(0.34),Y(0.60));
-  g.stroke();
-  g.beginPath();
-  g.moveTo(X(0.34),Y(0.60));
-  g.quadraticCurveTo(X(0.44),Y(0.665),X(0.56),Y(0.607));
-  g.quadraticCurveTo(X(0.68),Y(0.585),X(0.755),Y(0.558));
-  g.quadraticCurveTo(X(0.775),Y(0.78),X(0.745),Y(1));
-  g.stroke();
-  /* where the chart stops being knowledge - hatching, and a legend */
-  g.strokeStyle="rgba(90,72,40,.22)";g.lineWidth=1;
-  for(let i=0;i<26;i++){
-    const yy=Y(0.06)+i*(H*0.034);
-    g.beginPath();g.moveTo(X(0.02),yy);g.lineTo(X(0.02)+H*0.10,yy-H*0.10);g.stroke();
+  g.rect(-2,-2,W+4,H+4);
+  PEN.path(g,X,Y,sea,true);g.closePath();
+  g.clip("evenodd");
+  g.strokeStyle=INK;g.lineWidth=W*0.0019;
+  PEN.path(g,X,Y,james.slice(0,8));g.stroke();
+  PEN.path(g,X,Y,james.slice(8));g.stroke();
+  g.lineWidth=W*0.0017;
+  PEN.path(g,X,Y,york.slice(0,5));g.stroke();
+  PEN.path(g,X,Y,york.slice(5));g.stroke();
+  PEN.hatch(g,X,Y,james.slice(0,8),1,0.015,0.013,"rgba(74,58,34,0.60)",W*0.0014);
+  PEN.hatch(g,X,Y,james.slice(8),-1,0.015,0.013,"rgba(74,58,34,0.60)",W*0.0014);
+  PEN.hatch(g,X,Y,york.slice(0,5),1,0.013,0.013,"rgba(74,58,34,0.55)",W*0.0013);
+  PEN.hatch(g,X,Y,york.slice(5),-1,0.013,0.013,"rgba(74,58,34,0.55)",W*0.0013);
+  g.restore();
+
+  const SND="#3d5a68";
+  [[0.962,0.360,16],[0.958,0.620,14],[0.938,0.790,12],
+   [0.792,0.598,11],[0.762,0.566,10],[0.802,0.662,9],
+   [0.700,0.556,8],[0.688,0.470,7],[0.660,0.356,6],[0.648,0.200,5],
+   [0.566,0.536,6],[0.474,0.494,5],[0.392,0.450,4]
+  ].forEach(function(p){PEN.sounding(g,X,Y,p[0],p[1],p[2],W,SND);});
+
+  /* the two capes and the point, which are the only named things on this coast */
+  const mark=function(u,v,name,align,dv){
+    g.fillStyle="#6b5a34";
+    g.beginPath();g.arc(X(u),Y(v),W*0.0068,0,Math.PI*2);g.fill();
+    g.fillStyle=INK;g.textAlign=align||"left";
+    g.font="italic "+Math.round(W*0.021)+"px Georgia, serif";
+    g.fillText(name,X(u)+(align==="right"?-W*0.020:W*0.020),Y(v+(dv||0))+W*0.007);
+  };
+  mark(0.767,0.533,"Cape Charles",null,-0.042);
+  mark(0.749,0.683,"Cape Henry","right",0.048);   /* the name goes ashore, not to sea */
+  mark(0.606,0.628,"Point Comfort","right",0.040);
+
+  g.fillStyle="#3d5a68";g.textAlign="center";
+  g.font="italic "+Math.round(W*0.023)+"px Georgia, serif";
+  /* set ALONG the channel, because the bay on this sheet is a tall narrow reach and a
+     horizontal name spans it twice over and runs aground on the Delmarva */
+  g.font="italic "+Math.round(W*0.022)+"px Georgia, serif";
+  g.save();
+  g.translate(X(0.672),Y(0.300));g.rotate(-Math.PI/2);
+  g.fillText("The Chesupioc Bay",0,0);
+  g.restore();
+  g.save();
+  g.translate(X(0.330),Y(0.420));g.rotate(0.415);
+  g.fillText("The Kings River",0,0);
+  g.restore();
+  g.textAlign="right";
+  g.font="italic "+Math.round(W*0.021)+"px Georgia, serif";
+  g.fillText("The Maine Sea",X(0.988),Y(0.880));
+
+  g.fillStyle="rgba(74,58,34,0.72)";g.textAlign="left";
+  g.font="italic "+Math.round(W*0.019)+"px Georgia, serif";
+  g.fillText("no man of ours hath been here",X(0.098),Y(0.222));
+  g.fillText("how farre these rivers runne,",X(0.030),Y(0.500));
+  g.fillText("wee know not",X(0.030),Y(0.530));
+
+  PEN.rose(g,X,Y,0.238,0.790,W*0.040,INK);
+  /* ---- A SCALE BAR THAT IS ACTUALLY TO SCALE ----
+     The frame is 1.2 degrees of latitude tall, so one degree is H/1.2 and a league - three
+     sea miles - is 3.45 statute miles. Eight of them come to 0.231 of the width. Worth
+     stating: two of the other charts in this file were carrying bars that were out by a
+     factor, which is worse than carrying none. */
+  PEN.scaleBar(g,X,Y,0.470,0.930,0.231,8,"Leagues",INK,W);
+  PEN.cartouche(g,X,Y,0.036,0.034,0.362,0.140,INK,
+    "Such Chart As We Have","of the Chesupioc Bay","from Spanish takings, and Roanoke",W);
+
+  if(spec&&typeof spec.x==="number"){
+    const r=W*0.013;
+    g.strokeStyle="#8f3f2f";g.lineWidth=W*0.0032;
+    g.beginPath();g.arc(X(spec.x),Y(spec.y),r,0,Math.PI*2);g.stroke();
+    g.beginPath();
+    g.moveTo(X(spec.x)-r*1.6,Y(spec.y));g.lineTo(X(spec.x)+r*1.6,Y(spec.y));
+    g.moveTo(X(spec.x),Y(spec.y)-r*1.6);g.lineTo(X(spec.x),Y(spec.y)+r*1.6);
+    g.stroke();
   }
-  g.fillStyle="rgba(74,58,34,.55)";
-  g.font="italic "+Math.round(W*0.021)+"px Georgia, serif";
-  g.fillText("no man of ours hath been here",X(0.035),Y(0.135));
-  /* names, and only the ones they had */
-  g.fillStyle="#4a3a22";
-  g.font=Math.round(W*0.024)+"px Georgia, serif";
-  g.fillText("Cape Charles",X(0.775),Y(0.295));
-  g.fillText("Cape Henry",X(0.775),Y(0.585));
-  g.fillText("Chesupioc Bay",X(0.44),Y(0.44));
-  g.save();g.translate(X(0.30),Y(0.685));g.rotate(-0.06);
-  g.fillText("the King's River",0,0);g.restore();
-  g.font="italic "+Math.round(W*0.021)+"px Georgia, serif";
-  g.fillStyle="rgba(74,58,34,.7)";
-  g.fillText("the Atlantic",X(0.86),Y(0.86));
-  /* and a rose, because this was the only chart of the five without one */
-  PEN.rose(g,X,Y,0.915,0.145,W*0.038,"#4a3a22");
-  /* the mark */
-  const mx=X(spec.x), my=Y(spec.y);
-  g.strokeStyle="#8f2f28";g.lineWidth=Math.max(2.6,W*0.0055);
-  const r=Math.max(7,W*0.017);
-  g.beginPath();g.moveTo(mx-r,my-r);g.lineTo(mx+r,my+r);
-  g.moveTo(mx+r,my-r);g.lineTo(mx-r,my+r);g.stroke();
-  g.strokeStyle="rgba(143,47,40,.45)";g.lineWidth=1.4;
-  g.beginPath();g.arc(mx,my,r*2.1,0,Math.PI*2);g.stroke();
 };
 
 /* ---- JAMES ILE, AFTER SMITH'S MAP OF VIRGINIA (ENGRAVED 1612) ----
@@ -16259,8 +16399,8 @@ PEN.wobble=function(pts,amp){
    copy of the point list to hatch, and the two drifted apart. Now the path can be laid down
    from points that are already wobbled, and the same points can be inked, hatched, filled
    and clipped, which is the only way those four can be guaranteed to agree. */
-PEN.path=function(g,X,Y,pts){
-  g.beginPath();
+PEN.path=function(g,X,Y,pts,append){
+  if(!append)g.beginPath();
   g.moveTo(X(pts[0][0]),Y(pts[0][1]));
   for(let k=0;k<pts.length-1;k++){
     const a=pts[k],b=pts[k+1],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;
@@ -16619,7 +16759,10 @@ CHART_ART.james=function(c,spec){
    [0.845,0.744,2],[0.880,0.640,2],[0.700,0.560,2],[0.480,0.512,1]
   ].forEach(function(p){PEN.sounding(g,X,Y,p[0],p[1],p[2],W,SND);});
 
-  PEN.scaleBar(g,X,Y,0.615,0.930,0.230,6,"Leagues",INK,W);
+  /* A MILE IS 0.187 OF THIS SHEET: the island is three miles long and spans 0.56 of it.
+     The bar here used to say SIX LEAGUES - twenty-one miles - across a chart five miles
+     wide, which is out by a factor of seventeen. A scale that lies is worse than none. */
+  PEN.scaleBar(g,X,Y,0.480,0.930,0.373,2,"Miles",INK,W);
   PEN.cartouche(g,X,Y,0.035,0.030,0.335,0.150,INK,
     "James Ile","in the Kings River","after Capt. Smith",W);
 
@@ -16877,7 +17020,9 @@ CHART_ART.cape=function(c,spec){
 
   PEN.rose(g,X,Y,0.115,0.170,W*0.040,INK);
 
-  PEN.scaleBar(g,X,Y,0.560,0.930,0.230,6,"Leagues",INK,W);
+  /* the two capes are twelve miles apart and this chart sets them 0.245 of the width
+     apart, so a league is 0.0705 of it - not the 0.038 the old six-league bar implied */
+  PEN.scaleBar(g,X,Y,0.560,0.930,0.282,4,"Leagues",INK,W);
   PEN.cartouche(g,X,Y,0.300,0.032,0.360,0.150,INK,
     "The Mouth of the Bay","betweene the two capes","26 April 1607",W);
 
@@ -19337,7 +19482,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-2210";
+const BUILD="20260809-2340";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
