@@ -13013,6 +13013,16 @@ const GLOBE_LAND=[
   [-14,-72,4.5,"g"],[-8,-77,4,"s"],                  /* the Andes */
   [22,-80,3.2,"g"],[9,-74,4,"g"],[18,-70,2.6,"g"],   /* Cuba, the Main, Hispaniola */
 
+  /* ---- NINE HOLES THE RIVERS FOUND ----
+     Same trick as the cities, denser. Every inland point of a river must stand on land, and
+     nine did not: the Danube at Belgrade, the Volga, the Amazon headwaters, three points of
+     the Ganges across northern India, two of the Indus in the Punjab, and the Yangtze in
+     Yunnan. All of them are hundreds of miles inland in reality, so the river data is right
+     and the coastline was hollow. A river is a better probe than a city because it is a LINE
+     - it samples the interior, where blobs leave gaps that no coastal check ever visits. */
+  [45,21,4,"g"],[49,45,4,"g"],[-7,-73,4.5,"g"],
+  [25,86,4,"g"],[28,80,4.5,"g"],[34,73,4,"g"],[28,100,4,"g"],
+
   /* AUSTRALIA's dry middle, and the interior of Asia between the named ranges */
   [-24,133,7,"s"],[-28,120,6,"s"],[-20,145,5,"g"],
   [40,100,6,"s"],[35,110,5,"g"],[50,85,6,"g"],
@@ -13144,6 +13154,35 @@ const GLOBE_CITY=[
   {n:"Moscow",       la:55.8, lo:37.6,  k:"w", d:"Russia, deep in its Time of Troubles as this fleet sailed."}
 ];
 
+/* ---- RIVERS, AND WHY THEY ARE THE RIGHT THING TO DRAW NEXT ----
+   A coastline made of circles cannot show where people actually lived, but a river can -
+   because in 1607 a river IS the road. Every city on the list above that is not a seaport
+   is on one of these, and the argument the whole chapter turns on ("plant a hundred miles
+   up a navigable river") is a statement about a river.
+   Points run MOUTH FIRST, so a future camera can follow one inland the way a ship would.
+   The James is here deliberately and last: it is three points long and it is the reason
+   any of this happened. */
+const GLOBE_RIVER=[
+ {n:"Thames",     p:[[51.5,0.7],[51.5,0.0],[51.6,-1.3]]},
+ {n:"Rhine",      p:[[52.0,4.1],[51.8,6.1],[50.0,7.6],[47.6,8.5]]},
+ {n:"Danube",     p:[[45.2,29.6],[44.1,27.0],[44.8,20.5],[48.1,17.1],[48.6,13.5]]},
+ {n:"Volga",      p:[[46.3,48.0],[48.7,44.5],[53.4,50.1],[56.3,44.0],[57.6,39.9]]},
+ {n:"Nile",       p:[[31.5,30.5],[27.2,31.2],[24.1,32.9],[19.6,30.5],[15.6,32.5],[9.5,33.0]]},
+ {n:"Niger",      p:[[4.8,6.3],[7.8,6.7],[11.9,3.4],[16.3,-0.05],[13.4,-6.3],[11.3,-9.3]]},
+ {n:"Congo",      p:[[-6.0,12.4],[-4.3,15.3],[-1.6,18.0],[0.5,22.0],[-4.3,25.2]]},
+ {n:"Zambezi",    p:[[-18.6,36.3],[-16.5,31.1],[-17.9,25.8],[-15.0,22.5]]},
+ {n:"Amazon",     p:[[-0.7,-50.0],[-2.5,-55.0],[-3.3,-60.0],[-4.0,-66.0],[-6.0,-73.0]]},
+ {n:"Parana",     p:[[-34.5,-58.5],[-32.0,-58.5],[-27.5,-58.8],[-23.0,-55.0]]},
+ {n:"Mississippi",p:[[29.2,-89.3],[32.3,-90.9],[35.1,-90.1],[38.6,-90.2],[44.9,-93.1]]},
+ {n:"St Lawrence",p:[[48.8,-64.5],[47.0,-70.5],[45.5,-73.6],[44.0,-76.5]]},
+ {n:"Ganges",     p:[[22.9,89.5],[24.0,88.0],[25.6,85.1],[27.0,82.0],[29.9,78.2]]},
+ {n:"Indus",      p:[[24.5,67.5],[27.0,68.0],[30.0,71.0],[33.0,72.5],[35.0,74.5]]},
+ {n:"Yangtze",    p:[[31.4,121.0],[30.6,114.3],[29.6,106.5],[28.5,100.0]]},
+ {n:"Huang He",   p:[[37.8,118.9],[35.0,114.0],[35.5,107.0],[36.5,101.0]]},
+ /* the one the chapter is about */
+ {n:"James",      p:[[37.0,-76.4],[37.2,-76.8],[37.5,-77.4]]}
+];
+
 function buildGlobe(root){
   /* AT 96 x 64 A CELL IS 2.8 DEGREES OF LATITUDE - three hundred kilometres -
      and Britain is three cells tall, so no arrangement of blobs could ever have
@@ -13163,6 +13202,57 @@ function buildGlobe(root){
     /* the sea is not one blue: it deepens away from the shelf */
     return RGB(mixHex(sea,seaDeep,0.5+0.5*Math.sin(lat*0.31+lon*0.23)));
   }
+  /* ---- THE RIVERS AND THE CITY MARKS, LAID ON THE SURFACE ----
+     Both sit slightly proud of the sphere - equal radii would z-fight with the ground they
+     lie on, which this file has paid for more than once today.
+     WINDING: a ribbon on the OUTSIDE of a sphere must be wound so its face points AWAY from
+     the centre. Rather than reason about it a fourth time, the quad is emitted and then its
+     normal is dotted with the outward radial; if it comes back negative the order is
+     flipped. The test is in the code, so it cannot rot. */
+  const RIVER_R=GLOBE_R*1.0015, MARK_R=GLOBE_R*1.004;
+  const riverCol=RGB(0x2f7fb5), markCol=RGB(0xd8c58a), markStory=RGB(0xc8672f);
+  function ribbon(v0,v1,w,cc){
+    const mid=v0.clone().add(v1).multiplyScalar(0.5).normalize();
+    const along=v1.clone().sub(v0).normalize();
+    const side=new THREE.Vector3().crossVectors(mid,along).multiplyScalar(w);
+    const a=v0.clone().sub(side), b=v1.clone().sub(side),
+          c=v1.clone().add(side), d=v0.clone().add(side);
+    const u=b.clone().sub(a), v=c.clone().sub(b);
+    const n=new THREE.Vector3().crossVectors(u,v);
+    const A2=[a.x,a.y,a.z],B2=[b.x,b.y,b.z],C2=[c.x,c.y,c.z],D2=[d.x,d.y,d.z];
+    if(n.dot(mid)>=0)g.quad(A2,B2,C2,D2,cc); else g.quad(D2,C2,B2,A2,cc);
+  }
+  GLOBE_RIVER.forEach(function(r){
+    for(let i=0;i+1<r.p.length;i++){
+      const a=llv(r.p[i][0],r.p[i][1],RIVER_R), b=llv(r.p[i+1][0],r.p[i+1][1],RIVER_R);
+      /* subdivide so a long reach still hugs the curve instead of cutting through it */
+      const steps=Math.max(2,Math.ceil(a.angleTo(b)*180/Math.PI/1.5));
+      let prev=a;
+      for(let k=1;k<=steps;k++){
+        const t=k/steps;
+        const nx=a.clone().lerp(b,t).normalize().multiplyScalar(RIVER_R);
+        ribbon(prev,nx,GLOBE_R*0.0022,riverCol);
+        prev=nx;
+      }
+    }
+  });
+  /* a city is a small square laid flat on the surface, turned to face outward */
+  GLOBE_CITY.forEach(function(ct){
+    const c=llv(ct.la,ct.lo,MARK_R);
+    const up=c.clone().normalize();
+    const east=new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0),up).normalize();
+    const north=new THREE.Vector3().crossVectors(up,east).normalize();
+    const w=GLOBE_R*(ct.k==="o"?0.0075:0.005);
+    const P=[c.clone().addScaledVector(east,-w).addScaledVector(north,-w),
+             c.clone().addScaledVector(east, w).addScaledVector(north,-w),
+             c.clone().addScaledVector(east, w).addScaledVector(north, w),
+             c.clone().addScaledVector(east,-w).addScaledVector(north, w)];
+    const u=P[1].clone().sub(P[0]), v=P[2].clone().sub(P[1]);
+    const n=new THREE.Vector3().crossVectors(u,v);
+    const V=P.map(function(q){return [q.x,q.y,q.z];});
+    const cc=(ct.k==="o")?markStory:markCol;
+    if(n.dot(up)>=0)g.quad(V[0],V[1],V[2],V[3],cc); else g.quad(V[3],V[2],V[1],V[0],cc);
+  });
   for(let i=0;i<RING;i++){
     const la0=90-i*(180/RING), la1=90-(i+1)*(180/RING);
     for(let j=0;j<SEG;j++){
@@ -17615,7 +17705,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1325";
+const BUILD="20260809-1409";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
