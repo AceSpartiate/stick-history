@@ -302,6 +302,17 @@
     font-family:'IM Fell English SC',Georgia,serif;font-size:11px;color:#efe4c6;
     text-shadow:0 1px 3px #000,0 0 7px #000;opacity:.85}
   #atlasLabels span.sel{color:#ffd9a0;font-size:13px;opacity:1}
+  .atDrawer{margin:.55em 0}
+  .atDrawer>summary{cursor:pointer;list-style:none;padding:.42em .6em;border-radius:7px;
+    font-family:'IM Fell English SC',serif;letter-spacing:.05em;font-size:.82rem;
+    text-transform:uppercase;color:var(--copper);background:rgba(90,72,40,.10);
+    border:1px solid rgba(90,72,40,.22)}
+  .atDrawer>summary::-webkit-details-marker{display:none}
+  .atDrawer>summary::after{content:"be";float:right;opacity:.6;display:inline-block}
+  .atDrawer[open]>summary::after{transform:rotate(180deg)}
+  .atDrawer>summary small{float:right;margin-right:1.1em;opacity:.55;letter-spacing:0;
+    text-transform:none;font-family:'EB Garamond',serif}
+  .atChap{opacity:.62;font-style:italic}
   .atRow{display:block;width:100%;text-align:left;margin:.32em 0;padding:.5em .7em;
     border:1px solid rgba(90,72,40,.28);border-radius:7px;background:rgba(255,250,235,.42);
     font-family:'EB Garamond',serif;font-size:.9rem;color:var(--ink);cursor:pointer}
@@ -17882,6 +17893,18 @@ const ATLAS_WHEN={
   "Roanoke":{w:"new",y:1587,e:"A colony is left here. Nobody aboard knows what became of them."},
   "Jamestown":{w:"new",y:1607,e:"Not yet. In three weeks there will be a fort."}
 };
+/* ---- WHERE EACH CHAPTER HAPPENS ----
+   So the Atlas answers "where does this game take place" before it offers the rest of the
+   world. Kept here rather than on CHAPTERS because it is Atlas metadata: the chapter table
+   owns identity, this owns a camera position. */
+const CHAPTER_PLACE={
+  "I":  {la:36.9,lo:-40.0,d:3200,w:"the crossing — four months of open water"},
+  "II": {la:36.93,lo:-76.01,d:1500,w:"Cape Henry, where they first stepped ashore"},
+  "III":{la:37.5,lo:-77.0,d:1450,w:"the Powhatan homeland, upriver"},
+  "IV": {la:37.21,lo:-76.78,d:1400,w:"the fort on the island, and the woods behind it"},
+  "V":  {la:37.21,lo:-76.78,d:1400,w:"the same fort, the winter it nearly ended"},
+  "VI": {la:37.4,lo:-77.2,d:1450,w:"the tobacco ground up the river"}
+};
 function atlasGroups(){
   const pass=[],old=[],nw=[];
   ATLAS_ITEMS.forEach(function(it){
@@ -17996,11 +18019,43 @@ function drawAtlas(){
 }
 function openAtlas(){
   const host=$("atlasList");host.innerHTML="";
+  /* ---- DROPDOWNS, USING NATIVE details/summary ----
+     Thirty rows in one column is a scroll, not a menu. details is the right tool: it opens
+     and closes with no script of ours, it is keyboard and screen-reader navigable for free,
+     and it keeps no state we could get out of step with. */
+  const drawer=function(title,count,open){
+    const d=document.createElement("details");
+    d.className="atDrawer"; if(open)d.open=true;
+    const sm=document.createElement("summary");
+    sm.innerHTML=title+"<small>"+count+"</small>";
+    d.appendChild(sm); host.appendChild(d); return d;
+  };
+  /* WHAT THIS GAME COVERS, FIRST AND OPEN. Built from CHAPTERS, which already owns chapter
+     identity, so a chapter added tomorrow appears here with no second edit - and the ones
+     not yet built are listed greyed rather than hidden, because a pupil seeing five chapters
+     ahead of them, sited on the same globe, is being told what the course IS. */
+  const chs=CHAPTERS.filter(function(c){return CHAPTER_PLACE[c.n];});
+  const cd=drawer("What This Game Covers",chs.length,true);
+  chs.forEach(function(c){
+    const pl=CHAPTER_PLACE[c.n];
+    const cb=document.createElement("button");
+    cb.className="atRow"+(c.ready?"":" atChap");
+    cb.innerHTML="<b>Chapter "+c.n+" · "+c.t+"</b><small>"+
+      (c.d||"")+(c.ready?"":" — not yet built")+"<br>"+pl.w+"</small>";
+    cb.onclick=function(){
+      ATLAS_SEL=null;
+      if(!atlasInit())return;
+      A3.on=true; atlasLookAt(pl.la,pl.lo,pl.d);
+      if(!A3.raf)A3.raf=requestAnimationFrame(atlasFrame);
+      [].forEach.call(document.querySelectorAll("#atlasList .atRow"),function(x){
+        x.classList.remove("sel");});
+      cb.classList.add("sel");
+    };
+    cd.appendChild(cb);
+  });
   atlasGroups().forEach(function(grp){
    if(!grp[1].length)return;
-   const h=document.createElement("div");
-   h.className="kicker";h.style.cssText="margin:.9em 0 .2em";h.textContent=grp[0];
-   host.appendChild(h);
+   const dd=drawer(grp[0],grp[1].length,grp[0]==="The Passage");
    grp[1].forEach(function(it){
     const open=atlasOpenFor(it);
     const b=document.createElement("button");
@@ -18019,7 +18074,7 @@ function openAtlas(){
       ATLAS_SEL=(ATLAS_SEL&&ATLAS_SEL.id===it.id)?null:it;
       openAtlas();
     };
-    host.appendChild(b);
+    dd.appendChild(b);
    });
   });
   drawAtlas();
@@ -18269,7 +18324,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-1751";
+const BUILD="20260809-1755";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
