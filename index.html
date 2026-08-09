@@ -16329,6 +16329,53 @@ PEN.cartouche=function(g,X,Y,u,v,w,h,ink,title,sub1,sub2,W){
   if(sub2)g.fillText(sub2,x+ww/2,y+hh*0.83);
   g.restore();
 };
+/* ---- SOUNDINGS ----
+   Small numerals scattered through the water, in FATHOMS, are what a chart was FOR. A sailing
+   master did not buy a chart to know the shape of a coast; he bought it to know whether he
+   could take his ship in. On this particular chart they do more work than anywhere else,
+   because the whole argument of the chapter is that the water ran deep hard against the bank
+   and the ships could moor to the trees. Stated in the gloss, and now shown on the water.
+   ILLUSTRATIVE, AND SAID SO HERE: these are not transcribed from a survey. No sounding line
+   from 1607 survives for this reach. They carry the relationship the record DOES fix - deep
+   against the island's west shore, shoaling into the marsh and the back river - and they are
+   drawn in the ordinary way rather than invented as data. */
+PEN.sounding=function(g,X,Y,u,v,n,W,ink){
+  g.fillStyle=ink;g.textAlign="center";
+  g.font="italic "+Math.round(W*0.017)+"px Georgia, serif";
+  g.fillText(String(n),X(u),Y(v));
+};
+/* ---- THE SCALE ----
+   A bar of alternating cells with the unit named. English charts of this date commonly give
+   LEAGUES - three sea miles - and often a pair of dividers beside the bar, which is the tool
+   you actually measured with. Both here, because the dividers are the thing that says this
+   was a working instrument and not a picture. */
+PEN.scaleBar=function(g,X,Y,u,v,w,cells,label,ink,W){
+  const x=X(u), y=Y(v), ww=X(w), h=Math.max(3,W*0.010);
+  g.save();
+  g.strokeStyle=ink;g.lineWidth=W*0.0016;
+  g.beginPath();g.rect(x,y,ww,h);g.stroke();
+  for(let k=0;k<cells;k++){
+    if(k%2===0){
+      g.fillStyle=ink;
+      g.fillRect(x+ww*k/cells,y,ww/cells,h);
+    }
+    g.beginPath();
+    g.moveTo(x+ww*k/cells,y);g.lineTo(x+ww*k/cells,y+h);g.stroke();
+  }
+  g.fillStyle=ink;g.textAlign="center";
+  g.font="italic "+Math.round(W*0.017)+"px Georgia, serif";
+  g.fillText(label,x+ww/2,y+h+W*0.026);
+  /* the dividers, legs open across the bar */
+  const dx=x+ww+W*0.030, dy=y-W*0.004;
+  g.lineWidth=W*0.0018;
+  g.beginPath();
+  g.moveTo(dx,dy-W*0.026);g.lineTo(dx-W*0.016,dy+h+W*0.012);
+  g.moveTo(dx,dy-W*0.026);g.lineTo(dx+W*0.016,dy+h+W*0.012);
+  g.stroke();
+  g.fillStyle=ink;
+  g.beginPath();g.arc(dx,dy-W*0.026,W*0.0045,0,Math.PI*2);g.fill();
+  g.restore();
+};
 PEN.rose=function(g,X,Y,u,v,r,ink){
   g.save();
   g.strokeStyle=ink;g.lineWidth=r*0.055;
@@ -16510,6 +16557,14 @@ CHART_ART.james=function(c,spec){
   g.fillStyle=INK;g.textAlign="center";
   g.font="italic "+Math.round(W*0.019)+"px Georgia, serif";
   g.fillText("N",X(0.905),Y(0.268));
+  /* the soundings: deep against the island's west shore, shoaling into the marsh */
+  const SND="#3d5a68";
+  [[0.135,0.640,6],[0.150,0.720,6],[0.205,0.792,5],[0.285,0.836,5],
+   [0.380,0.860,4],[0.500,0.880,4],[0.630,0.856,3],[0.760,0.812,3],
+   [0.845,0.744,2],[0.880,0.640,2],[0.700,0.560,2],[0.480,0.512,1]
+  ].forEach(function(p){PEN.sounding(g,X,Y,p[0],p[1],p[2],W,SND);});
+
+  PEN.scaleBar(g,X,Y,0.615,0.930,0.230,6,"Leagues",INK,W);
   PEN.cartouche(g,X,Y,0.035,0.030,0.335,0.150,INK,
     "James Ile","in the Kings River","after Capt. Smith",W);
 
@@ -16646,6 +16701,12 @@ CHART_ART.powhatan=function(c,spec){
   g.font="italic "+Math.round(W*0.017)+"px Georgia, serif";
   g.fillText("beyond this, what wee were told",X(0.020),Y(0.100));
   g.fillText("and did not see",X(0.020),Y(0.128));
+  const SND2="#3d5a68";
+  [[0.20,0.336,4],[0.38,0.330,4],[0.56,0.300,3],[0.74,0.286,3],[0.90,0.268,5],
+   [0.20,0.780,5],[0.38,0.808,5],[0.56,0.792,6],[0.74,0.812,6],[0.90,0.822,7]
+  ].forEach(function(p){PEN.sounding(g,X,Y,p[0],p[1],p[2],W,SND2);});
+
+  PEN.scaleBar(g,X,Y,0.055,0.905,0.240,6,"Leagues",INK,W);
   PEN.cartouche(g,X,Y,0.615,0.028,0.355,0.150,INK,
     "The Powhatan","and the two rivers","as wee were shewn",W);
 
@@ -18930,7 +18991,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-2033";
+const BUILD="20260809-2035";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
