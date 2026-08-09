@@ -15926,7 +15926,7 @@ const CHARTS={
       "Wingfield overruled them all, and not on account of the ground \u2014 it was that a ship cannot lie against this bank."},
   tobacco:{kick:"The tobacco ground \u00b7 a planter's sketch",
     title:"The Tobacco Ground",
-    art:"tobacco", x:0.760,y:0.700,
+    art:"tobacco", x:0.255,y:0.720,  /* up at the Appomattox, where the globe just flew */
     gloss:"<b>Why the fields walk upriver:</b> tobacco spends ground in three or four years, "+
       "so a planter cannot stay put. Every holding is long, narrow and touches the water, "+
       "because a hogshead weighs half a ton and is rolled to a landing rather than carted. "+
@@ -15954,7 +15954,7 @@ const CHARTS={
       "into this bay must pass \u2014 which is the argument for it, and the argument against it."},
   ch2:{kick:"Cape Henry \u00b7 the Captain\u2019s chart, spread on a chest",
     title:"The Mouth of the Bay",
-    art:"cape", x:0.475,y:0.668,
+    art:"cape", x:0.420,y:0.700,     /* beside the crosse, not on top of it */
     gloss:"<b>You are here:</b> the southern cape at the mouth of the Chesapeake, named this month for the King\u2019s eldest son. "+
       "The northern cape across the water is Cape Charles, for his second. Neither had these names three weeks ago. "+
       "The fleet will not stay: there is no depth here for the ships and no cover from the sea. "+
@@ -16141,12 +16141,12 @@ CHART_ART.bay=function(c,spec){  const g=c.getContext("2d"), W=c.width, H=c.heig
   g.quadraticCurveTo(X(0.80),Y(0.62),X(0.78),Y(0));g.fill();
   /* the bay, opening west between the capes */
   g.beginPath();
-  g.moveTo(X(0.76),Y(0.30));
+  g.moveTo(X(0.80),Y(0.30));
   g.quadraticCurveTo(X(0.52),Y(0.26),X(0.40),Y(0.36));
   g.quadraticCurveTo(X(0.30),Y(0.45),X(0.34),Y(0.60));
   g.quadraticCurveTo(X(0.44),Y(0.66),X(0.56),Y(0.60));
-  g.quadraticCurveTo(X(0.68),Y(0.58),X(0.755),Y(0.56));
-  g.quadraticCurveTo(X(0.79),Y(0.44),X(0.76),Y(0.30));
+  g.quadraticCurveTo(X(0.68),Y(0.58),X(0.795),Y(0.56));
+  g.quadraticCurveTo(X(0.84),Y(0.44),X(0.80),Y(0.30));
   g.fill();
   /* the James, running west from the bay - drawn thin, because it was barely known */
   g.strokeStyle="#c3cfc9";g.lineWidth=Math.max(6,W*0.014);g.lineCap="round";
@@ -16189,6 +16189,8 @@ CHART_ART.bay=function(c,spec){  const g=c.getContext("2d"), W=c.width, H=c.heig
   g.font="italic "+Math.round(W*0.021)+"px Georgia, serif";
   g.fillStyle="rgba(74,58,34,.7)";
   g.fillText("the Atlantic",X(0.86),Y(0.86));
+  /* and a rose, because this was the only chart of the five without one */
+  PEN.rose(g,X,Y,0.915,0.145,W*0.038,"#4a3a22");
   /* the mark */
   const mx=X(spec.x), my=Y(spec.y);
   g.strokeStyle="#8f2f28";g.lineWidth=Math.max(2.6,W*0.0055);
@@ -16243,21 +16245,55 @@ PEN.jit=function(u,v,k){                 /* a repeatable wander, in chart units 
   const h=Math.sin((u*127.1+v*311.7+k*74.7))*43758.5453;
   return (h-Math.floor(h)-0.5)*0.016;
 };
-PEN.wobble=function(pts){
+PEN.wobble=function(pts,amp){
+  const a=(amp===undefined)?1:amp;   /* a field bound wanders less than a coast does */
   return pts.map(function(p,i){
-    return [p[0]+PEN.jit(p[0],p[1],i), p[1]+PEN.jit(p[1],p[0],i+17)];
+    return [p[0]+PEN.jit(p[0],p[1],i)*a, p[1]+PEN.jit(p[1],p[0],i+17)*a];
   });
 };
-/* ticks struck outward from a shore. `side` is +1 or -1 for which way the water lies. */
+/* ---- THE HOUSE CURVE ----
+   Every coast on every chart here is the same shape: one quadratic per point, anchored on
+   the midpoints, so a shore bends the way an engraver's hand would rather than snapping at
+   the corners. It lived four times over as a private `coast` inside each chart, which meant
+   a chart could DRAW a line and then have no way to refer to it again - so it built a second
+   copy of the point list to hatch, and the two drifted apart. Now the path can be laid down
+   from points that are already wobbled, and the same points can be inked, hatched, filled
+   and clipped, which is the only way those four can be guaranteed to agree. */
+PEN.path=function(g,X,Y,pts){
+  g.beginPath();
+  g.moveTo(X(pts[0][0]),Y(pts[0][1]));
+  for(let k=0;k<pts.length-1;k++){
+    const a=pts[k],b=pts[k+1],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;
+    g.quadraticCurveTo(X(a[0]),Y(a[1]),X(mx),Y(my));
+  }
+  const L=pts[pts.length-1];
+  g.quadraticCurveTo(X(L[0]),Y(L[1]),X(L[0]),Y(L[1]));
+};
+/* ticks struck outward from a shore. `side` is +1 or -1 for which way the water lies.
+   ---- THEY MUST SIT ON THE LINE THE COAST ACTUALLY DREW ----
+   These used to be spaced along the straight CHORDS between the points, while every coast
+   on every chart here is drawn as a quadratic through the MIDPOINTS. Wherever a point set
+   turns, the chord and the drawn curve part company, and a tick whose foot is on the chord
+   lands on the inland side of the ink - which is exactly the little "x" marks that showed
+   up on the island's south shore and at the neck. Walking the same curve the coast walks
+   means the two cannot disagree, and it takes the normal from the curve's own tangent
+   rather than from a chord that is not there. */
 PEN.hatch=function(g,X,Y,pts,side,len,step,col,lw){
   g.strokeStyle=col;g.lineWidth=lw;
+  const mid=function(a,b){return [(a[0]+b[0])/2,(a[1]+b[1])/2];};
   for(let i=0;i<pts.length-1;i++){
-    const a=pts[i], b=pts[i+1];
-    const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy)||1;
-    const nx=-dy/L*side, ny=dx/L*side;
+    const p0=(i===0)?pts[0]:mid(pts[i-1],pts[i]);
+    const cp=pts[i], p1=mid(pts[i],pts[i+1]);
+    const L=Math.hypot(p1[0]-p0[0],p1[1]-p0[1])||1;
     const n=Math.max(1,Math.round(L/step));
     for(let k=0;k<n;k++){
-      const t=(k+0.5)/n, ux=a[0]+dx*t, uy=a[1]+dy*t;
+      const t=(k+0.5)/n, it=1-t;
+      const ux=it*it*p0[0]+2*it*t*cp[0]+t*t*p1[0];
+      const uy=it*it*p0[1]+2*it*t*cp[1]+t*t*p1[1];
+      const dx=2*it*(cp[0]-p0[0])+2*t*(p1[0]-cp[0]);
+      const dy=2*it*(cp[1]-p0[1])+2*t*(p1[1]-cp[1]);
+      const D=Math.hypot(dx,dy)||1;
+      const nx=-dy/D*side, ny=dx/D*side;
       const l=len*(0.62+0.38*Math.abs(PEN.jit(ux,uy,k)*140));
       g.beginPath();
       g.moveTo(X(ux),Y(uy));
@@ -16405,6 +16441,16 @@ PEN.rose=function(g,X,Y,u,v,r,ink){
   g.lineTo(X(u)-r*0.16,Y(v)-r*1.02);
   g.lineTo(X(u)+r*0.16,Y(v)-r*1.02);
   g.closePath();g.fill();
+  /* ---- AND THE LETTER, WELDED TO THE FLEUR ----
+     This used to be a separate fillText at each call site, and on two charts of four it was
+     placed BELOW the rose - labelling the south point as north while the fleur above it
+     pointed the other way. Nothing checks a loose label. The letter now comes out of the
+     same routine that decides which way north is, one line under the fleur it belongs to,
+     so the two can no longer disagree: any chart that gets a rose gets a true N with it,
+     and a chart that wants north somewhere else has to move the rose. */
+  g.textAlign="center";g.textBaseline="alphabetic";
+  g.font="italic "+Math.round(r*0.58)+"px Georgia, serif";
+  g.fillText("N",X(u),Y(v)-r*1.50);
   g.restore();
 };
 
@@ -16459,16 +16505,25 @@ CHART_ART.james=function(c,spec){
      a separate crescent of water sitting beside the island. */
   g.strokeStyle=DEEP;g.lineWidth=W*0.030;g.lineCap="round";g.lineJoin="round";
   g.beginPath();
-  g.moveTo(X(0.168),Y(0.590));
-  g.quadraticCurveTo(X(0.146),Y(0.660),X(0.176),Y(0.722));
-  g.quadraticCurveTo(X(0.216),Y(0.784),X(0.300),Y(0.812));
+  g.moveTo(X(0.182),Y(0.596));
+  g.quadraticCurveTo(X(0.166),Y(0.664),X(0.198),Y(0.722));
+  g.quadraticCurveTo(X(0.240),Y(0.780),X(0.322),Y(0.802));
   g.stroke();
   g.lineCap="butt";
 
-  /* the mainland, north bank */
-  coast([[-0.02,-0.04],[1.02,-0.04],[1.02,0.446],[0.86,0.424],[0.75,0.454],
-         [0.66,0.426],[0.56,0.452],[0.46,0.422],[0.37,0.448],[0.27,0.430],
-         [0.18,0.464],[0.09,0.446],[-0.02,0.474]],true,LAND);
+  /* ---- THE MAINLAND, NORTH BANK ----
+     FILLED as a closed shape, then INKED along the shore alone. It used to be fill-only, so
+     the biggest coast on the chart was nothing but a change of colour with a row of loose
+     ticks hovering near it. Stroking the closed polygon instead was worse: the two corners
+     meant to sit off the top of the sheet get ROUNDED by the same midpoint curve that bends
+     a coastline, and the rounding drags them back onto the page as a stray arc through the
+     compass. So: one wobble, filled closed, inked open, hatched from the same points. */
+  const mainAll=PEN.wobble([[-0.02,-0.04],[1.02,-0.04],[1.02,0.446],[0.86,0.424],
+    [0.75,0.454],[0.66,0.426],[0.56,0.452],[0.46,0.422],[0.37,0.448],[0.27,0.430],
+    [0.18,0.464],[0.09,0.446],[-0.02,0.474]]);
+  PEN.path(g,X,Y,mainAll);g.closePath();g.fillStyle=LAND;g.fill();
+  const main=mainAll.slice(2);
+  PEN.path(g,X,Y,main);g.strokeStyle=INK;g.lineWidth=W*0.0020;g.stroke();
   /* the back river and marish */
   coast([[0.215,0.508],[0.34,0.487],[0.50,0.484],[0.64,0.500],[0.735,0.527],
          [0.700,0.572],[0.56,0.544],[0.40,0.532],[0.245,0.548]],true,MARSH);
@@ -16480,7 +16535,7 @@ CHART_ART.james=function(c,spec){
   /* the inlets were about eight thousandths deep and vanished into the curve. Three times
      that, so the shore actually bites - a creek mouth on the north side and two on the
      south, which is the character of this island. */
-  coast([[0.205,0.578],[0.250,0.548],[0.292,0.590],[0.348,0.534],[0.408,0.562],
+  const isle=coast([[0.205,0.578],[0.250,0.548],[0.292,0.590],[0.348,0.534],[0.408,0.562],
          [0.468,0.524],[0.534,0.556],[0.596,0.536],[0.658,0.566],[0.714,0.592],
          [0.752,0.640],[0.736,0.694],[0.688,0.712],[0.632,0.700],[0.588,0.760],
          [0.512,0.726],[0.446,0.778],[0.382,0.734],[0.320,0.762],[0.262,0.714],
@@ -16500,15 +16555,10 @@ CHART_ART.james=function(c,spec){
 
   /* THE HATCHING, struck outward from the island into the water - the mark that says
      "this edge is land" on every chart of this century */
-  PEN.hatch(g,X,Y,PEN.wobble([[0.205,0.578],[0.250,0.548],[0.292,0.590],[0.348,0.534],
-    [0.408,0.562],[0.468,0.524],[0.534,0.556],[0.596,0.536],[0.658,0.566],[0.714,0.592],
-    [0.752,0.640],[0.736,0.694],[0.688,0.712],[0.632,0.700],[0.588,0.760],[0.512,0.726],
-    [0.446,0.778],[0.382,0.734],[0.320,0.762],[0.262,0.714],[0.222,0.706],[0.194,0.658],
-    [0.192,0.612],[0.205,0.578]]),-1,0.030,0.014,"rgba(74,58,34,0.80)",W*0.0019);
-  /* and the mainland shore, hatched into the river */
-  PEN.hatch(g,X,Y,PEN.wobble([[0.00,0.474],[0.09,0.446],[0.18,0.464],[0.27,0.430],
-    [0.37,0.448],[0.46,0.422],[0.56,0.452],[0.66,0.426],[0.75,0.454],[0.86,0.424],
-    [1.00,0.446]]),1,0.026,0.016,"rgba(74,58,34,0.70)",W*0.0017);
+  PEN.hatch(g,X,Y,isle.concat([isle[0]]),-1,0.030,0.014,"rgba(74,58,34,0.80)",W*0.0019);
+  /* and the mainland shore, hatched into the river. `main` is the shore alone, taken west-to-east
+     so the ticks fall on the water side rather than into the trees. */
+  PEN.hatch(g,X,Y,main.slice().reverse(),1,0.026,0.016,"rgba(74,58,34,0.70)",W*0.0017);
 
   /* marish tufts along the island's north edge, the way a chart shows soft ground */
   g.strokeStyle="#7f8a5c";g.lineWidth=W*0.0013;
@@ -16546,7 +16596,7 @@ CHART_ART.james=function(c,spec){
   g.font="italic "+Math.round(W*0.026)+"px Georgia, serif";
   g.fillText("James Ile",X(0.415),Y(0.660));
   g.font="italic "+Math.round(W*0.021)+"px Georgia, serif";
-  g.fillText("the necke",X(0.048),Y(0.470));
+  g.fillText("the necke",X(0.030),Y(0.418));   /* was written across the shore's hatching */
   g.fillText("Paspahegh",X(0.115),Y(0.255));
   g.fillText("the back river & marish",X(0.395),Y(0.512));
   g.textAlign="center";
@@ -16561,10 +16611,7 @@ CHART_ART.james=function(c,spec){
 
   /* a ROSE, not an arrow - and it still marks north, because this is turned from Smith's
      west-up original */
-  PEN.rose(g,X,Y,0.905,0.175,W*0.042,INK);
-  g.fillStyle=INK;g.textAlign="center";
-  g.font="italic "+Math.round(W*0.019)+"px Georgia, serif";
-  g.fillText("N",X(0.905),Y(0.268));
+  PEN.rose(g,X,Y,0.905,0.190,W*0.042,INK);
   /* the soundings: deep against the island's west shore, shoaling into the marsh */
   const SND="#3d5a68";
   [[0.135,0.640,6],[0.150,0.720,6],[0.205,0.792,5],[0.285,0.836,5],
@@ -16656,7 +16703,7 @@ CHART_ART.powhatan=function(c,spec){
     [0.62,0.332],[0.78,0.322],[1.00,0.316]]),-1,0.024,0.015,"rgba(74,58,34,0.72)",W*0.0017);
   PEN.hatch(g,X,Y,PEN.wobble([[0.00,0.688],[0.14,0.724],[0.30,0.700],[0.46,0.744],
     [0.62,0.722],[0.78,0.756],[1.00,0.742]]),1,0.024,0.015,"rgba(74,58,34,0.72)",W*0.0017);
-  PEN.rose(g,X,Y,0.905,0.135,W*0.036,INK);
+  PEN.rose(g,X,Y,0.885,0.470,W*0.032,INK);
 
   /* woodland on the neck between the rivers */
   g.strokeStyle="#5d6b3e";g.lineWidth=W*0.0015;
@@ -16667,7 +16714,14 @@ CHART_ART.powhatan=function(c,spec){
     g.closePath();g.fill();
     g.beginPath();g.moveTo(X(u),Y(v));g.lineTo(X(u),Y(v+h*0.22));g.stroke();
   };
-  for(let k=0;k<14;k++)tree(0.07+((k*5)%14)*0.062, 0.575+((k*3)%4)*0.040, 0.038);
+  const TOWNS=[[0.46,0.236],[0.10,0.298],[0.28,0.700],[0.885,0.700],[0.60,0.680]];
+  for(let k=0;k<14;k++){
+    const tu=0.07+((k*5)%14)*0.062, tv=0.575+((k*3)%4)*0.040;
+    let clear=true;
+    for(let t=0;t<TOWNS.length;t++)
+      if(Math.abs(tu-TOWNS[t][0])<0.055&&Math.abs(tv-TOWNS[t][1])<0.075)clear=false;
+    if(clear)tree(tu,tv,0.038);
+  }
 
   /* the towns. A great seat takes the larger mark, as on the original. */
   const town=function(u,v,great,name,align){
@@ -16685,7 +16739,7 @@ CHART_ART.powhatan=function(c,spec){
   town(0.46,0.236,true,"Werowocomoco");
   town(0.10,0.298,false,"Pamunkey");
   town(0.28,0.700,false,"Paspahegh");
-  town(0.87,0.782,false,"Kecoughtan","right");
+  town(0.885,0.700,false,"Kecoughtan","right");   /* was at 0.782, i.e. in the river */
   town(0.60,0.680,false,"Weanock");
 
   /* the rivers named as the English wrote them */
@@ -16802,7 +16856,7 @@ CHART_ART.cape=function(c,spec){
   [[0.660,0.400,12],[0.700,0.470,11],[0.755,0.360,14],[0.620,0.310,9],
    [0.560,0.420,8],[0.480,0.480,7],[0.395,0.545,5],[0.300,0.600,4],
    [0.640,0.560,9],[0.740,0.620,7],[0.845,0.480,10],[0.900,0.330,6],
-   [0.190,0.620,3],[0.110,0.600,2]
+   [0.200,0.570,3],[0.110,0.556,2]
   ].forEach(function(p){PEN.sounding(g,X,Y,p[0],p[1],p[2],W,SND);});
 
   /* lettering */
@@ -16816,15 +16870,12 @@ CHART_ART.cape=function(c,spec){
   g.fillText("The Maine Sea",X(0.760),Y(0.850));
   g.fillStyle="#8f3f2f";
   g.font="italic "+Math.round(W*0.018)+"px Georgia, serif";
-  g.fillText("the crosse sett up",X(0.400),Y(0.616));
+  g.fillText("the crosse sett up",X(0.296),Y(0.582));
   g.fillStyle=INK;
   g.font="italic "+Math.round(W*0.018)+"px Georgia, serif";
-  g.fillText("Paspahegh country, westward",X(0.030),Y(0.680));
+  g.fillText("Paspahegh country, westward",X(0.030),Y(0.628));
 
-  PEN.rose(g,X,Y,0.115,0.155,W*0.040,INK);
-  g.fillStyle=INK;g.textAlign="center";
-  g.font="italic "+Math.round(W*0.019)+"px Georgia, serif";
-  g.fillText("N",X(0.115),Y(0.250));
+  PEN.rose(g,X,Y,0.115,0.170,W*0.040,INK);
 
   PEN.scaleBar(g,X,Y,0.560,0.930,0.230,6,"Leagues",INK,W);
   PEN.cartouche(g,X,Y,0.300,0.032,0.360,0.150,INK,
@@ -16896,18 +16947,32 @@ CHART_ART.tobacco=function(c,spec){
     const bank=north?(0.470+0.030*Math.sin(u*9.1)):(0.598+0.030*Math.sin(u*9.1));
     const dir=north?-1:1;
     const x0=u-wide/2, x1=u+wide/2, yEdge=bank, yBack=bank+dir*depth;
-    g.strokeStyle="rgba(74,58,34,0.55)";g.lineWidth=W*0.0013;
+    /* THE ONE THING ON THIS SHEET STILL DRAWN WITH A RULER. Every other line on this chart
+       wanders, and eighteen mathematically perfect rectangles read as a spreadsheet laid
+       over a map. A bound is still a bound - the wander is a third of the coastline's - but
+       no two of them agree now, which is what a page of hand-struck lines looks like. */
+    const c=PEN.wobble([[x0,yEdge],[x0,yBack],[x1,yBack],[x1,yEdge]],0.30);
+    g.strokeStyle="rgba(74,58,34,"+(0.34+0.26*vigour).toFixed(2)+")";
+    g.lineWidth=W*0.0013;
     g.beginPath();
-    g.moveTo(X(x0),Y(yEdge));g.lineTo(X(x0),Y(yBack));
-    g.lineTo(X(x1),Y(yBack));g.lineTo(X(x1),Y(yEdge));
+    g.moveTo(X(c[0][0]),Y(c[0][1]));
+    for(let k=1;k<4;k++)g.lineTo(X(c[k][0]),Y(c[k][1]));
     g.stroke();
-    /* the rows, which is how a field was shown */
-    g.strokeStyle="rgba(122,142,86,"+(0.30+0.45*vigour).toFixed(2)+")";
-    g.lineWidth=W*0.0012;
-    const rows=6;
+    /* ---- THE ARGUMENT, ACTUALLY DRAWN ----
+       Tobacco spends ground in three or four years, so the fields must read NEWER westward:
+       that is the whole reason this chart exists. It was carried by an alpha ramp on one
+       green so faint that nothing showed, which left the claim living entirely in two lines
+       of text at the foot - a caption, not a map. Now the west is close-planted and green
+       and the east is thin, wide-set and the colour of worn ground, and a child can see
+       which way the crop is walking before reading a word of it. */
+    const rows=Math.round(3+4*vigour), spent=1-vigour;
+    g.strokeStyle="rgba("+Math.round(122+38*spent)+","+Math.round(142-2*spent)+","+
+                          Math.round(86+24*spent)+","+(0.34+0.50*vigour).toFixed(2)+")";
+    g.lineWidth=W*(0.0009+0.0007*vigour);
     for(let r=1;r<rows;r++){
-      const yy=yEdge+dir*depth*(r/rows);
-      g.beginPath();g.moveTo(X(x0+0.004),Y(yy));g.lineTo(X(x1-0.004),Y(yy));g.stroke();
+      const yy=yEdge+dir*depth*(r/rows), j=PEN.jit(u,yy,r)*0.30;
+      g.beginPath();
+      g.moveTo(X(x0+0.005),Y(yy+j));g.lineTo(X(x1-0.005),Y(yy-j));g.stroke();
     }
     /* the landing: a short jetty into the water */
     g.strokeStyle=INK;g.lineWidth=W*0.0018;
@@ -16930,21 +16995,33 @@ CHART_ART.tobacco=function(c,spec){
     g.font="italic "+Math.round(W*0.021)+"px Georgia, serif";
     g.fillText(name,X(u)+(align==="right"?-W*0.024:W*0.024),Y(v)+W*0.007);
   };
-  seat(0.085,0.330,"Henrico");
-  seat(0.300,0.700,"Bermuda Hundred");
-  seat(0.545,0.318,"Shirley Hundred");
-  seat(0.760,0.700,"James Towne");
-  seat(0.955,0.330,"Kecoughtan","right");
+  /* ---- WHICH BANK, AND HOW FAR UP ----
+     James Towne was on the SOUTH bank here, which the island chart in this same game flatly
+     contradicts - "the island lies against the NORTH bank of the river" - so one of the two
+     was lying to a child and it was this one. Henrico, Shirley, Jamestown and Kecoughtan are
+     all north-bank seats; Bermuda Hundred is the one that is not, sitting on the neck the
+     Appomattox makes on the south side.
+     They were also spaced evenly, which flattened the river. Placed now by their real
+     distance from the mouth - Kecoughtan at 0, Jamestown about 35 miles up, Shirley 60,
+     Bermuda Hundred 75, Henrico 85, with the falls off the western edge at 100 - so the long
+     empty reach below Jamestown is as long on the chart as it was in a boat. */
+  seat(0.130,0.300,"Henrico");
+  seat(0.255,0.720,"Bermuda Hundred");
+  seat(0.420,0.300,"Shirley Hundred");
+  seat(0.665,0.372,"James Towne");
+  seat(0.960,0.330,"Kecoughtan","right");
 
   /* soundings: the river is the road, and it must be deep enough to carry a ship */
   const SND="#3d5a68";
-  [[0.16,0.545,4],[0.30,0.560,5],[0.44,0.530,5],[0.58,0.510,6],
-   [0.72,0.520,6],[0.86,0.480,7]].forEach(function(p){
+  /* the middle two used to straddle the river's own name; the name has dropped into clear
+     water and the soundings have opened out around it */
+  [[0.13,0.545,4],[0.27,0.560,5],[0.41,0.520,5],[0.63,0.505,6],
+   [0.78,0.515,6],[0.90,0.485,7]].forEach(function(p){
     PEN.sounding(g,X,Y,p[0],p[1],p[2],W,SND);});
 
   g.fillStyle="#3d5a68";g.textAlign="center";
   g.font="italic "+Math.round(W*0.022)+"px Georgia, serif";
-  g.fillText("The Kings River",X(0.50),Y(0.556));
+  g.fillText("The Kings River",X(0.50),Y(0.585));
   g.fillStyle=INK;g.textAlign="left";
   g.font="italic "+Math.round(W*0.018)+"px Georgia, serif";
   g.fillText("newe ground, lately cleared",X(0.030),Y(0.900));
@@ -19260,7 +19337,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-2045";
+const BUILD="20260809-2210";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
