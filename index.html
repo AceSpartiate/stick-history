@@ -16273,6 +16273,62 @@ PEN.paper=function(g,W,H){
   vg.addColorStop(1,"rgba(90,70,40,0.20)");
   g.fillStyle=vg;g.fillRect(0,0,W,H);
 };
+/* ---- SEA HATCHING ----
+   An engraved chart does not colour the sea in. It RULES it: fine parallel lines, laid
+   closer near a coast and opening out into the offing. That is the single most recognisable
+   thing on a chart of this century after the rose, and it is why a flat blue field reads as
+   a modern map however good the coastline is.
+   Clipped to the water's own shape, so the ruling stops at the shore exactly as a burin
+   would have stopped. */
+PEN.seaRule=function(g,X,Y,pts,W,H,spacing,col,lw){
+  g.save();
+  const p=PEN.wobble(pts);
+  g.beginPath();
+  g.moveTo(X(p[0][0]),Y(p[0][1]));
+  for(let k=0;k<p.length-1;k++){
+    const a=p[k],b=p[k+1],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;
+    g.quadraticCurveTo(X(a[0]),Y(a[1]),X(mx),Y(my));
+  }
+  g.closePath();g.clip();
+  g.strokeStyle=col;g.lineWidth=lw;
+  for(let v=0;v<1.02;v+=spacing){
+    g.beginPath();
+    for(let u=0;u<=1.0;u+=0.05){
+      const yy=Y(v+PEN.jit(u,v,3)*0.55);
+      if(u===0)g.moveTo(X(u),yy); else g.lineTo(X(u),yy);
+    }
+    g.stroke();
+  }
+  g.restore();
+};
+/* ---- THE CARTOUCHE ----
+   A period chart carries its title in an ornamented panel, not as a caption. It is where the
+   maker signs the thing, and its absence is most of why these looked like diagrams. Kept
+   plain - a double rule with the corners struck off - because a scrolled baroque cartouche
+   belongs to a later century than 1607. */
+PEN.cartouche=function(g,X,Y,u,v,w,h,ink,title,sub1,sub2,W){
+  const x=X(u),y=Y(v),ww=X(w),hh=Y(h),k=Math.min(ww,hh)*0.16;
+  g.save();
+  g.fillStyle="rgba(233,222,193,0.90)";
+  g.beginPath();
+  g.moveTo(x+k,y);g.lineTo(x+ww-k,y);g.lineTo(x+ww,y+k);g.lineTo(x+ww,y+hh-k);
+  g.lineTo(x+ww-k,y+hh);g.lineTo(x+k,y+hh);g.lineTo(x,y+hh-k);g.lineTo(x,y+k);
+  g.closePath();g.fill();
+  g.strokeStyle=ink;g.lineWidth=W*0.0022;g.stroke();
+  g.lineWidth=W*0.0011;
+  g.beginPath();
+  const m=Math.min(ww,hh)*0.10;
+  g.moveTo(x+k+m,y+m);g.lineTo(x+ww-k-m,y+m);g.lineTo(x+ww-m,y+k+m);
+  g.lineTo(x+ww-m,y+hh-k-m);g.lineTo(x+ww-k-m,y+hh-m);g.lineTo(x+k+m,y+hh-m);
+  g.lineTo(x+m,y+hh-k-m);g.lineTo(x+m,y+k+m);g.closePath();g.stroke();
+  g.fillStyle=ink;g.textAlign="center";
+  g.font="italic "+Math.round(W*0.030)+"px Georgia, serif";
+  g.fillText(title,x+ww/2,y+hh*0.42);
+  g.font="italic "+Math.round(W*0.018)+"px Georgia, serif";
+  if(sub1)g.fillText(sub1,x+ww/2,y+hh*0.64);
+  if(sub2)g.fillText(sub2,x+ww/2,y+hh*0.83);
+  g.restore();
+};
 PEN.rose=function(g,X,Y,u,v,r,ink){
   g.save();
   g.strokeStyle=ink;g.lineWidth=r*0.055;
@@ -16324,8 +16380,13 @@ CHART_ART.james=function(c,spec){
     if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1;g.stroke();}
     return pts;
   };
-  const WATER="#a8c0ca", DEEP="#7fa2b2",
-        LAND="#d3c69f", MARSH="#b6bb90", INK="#4a3a22";
+  /* ---- WASHES, NOT FILLS ----
+     The strong blue was the most modern thing on this sheet. A chart of this date is a LINE
+     DRAWING with thin colour laid over it, so every one of these is now translucent and the
+     toned paper shows through - which is also what makes the mottling and the vignette do
+     any work at all. */
+  const WATER="rgba(146,176,190,0.32)", DEEP="rgba(96,140,164,0.42)",
+        LAND="rgba(198,178,132,0.36)", MARSH="rgba(140,158,104,0.38)", INK="#4a3a22";
   PEN.paper(g,W,H);
 
   /* the river, its north shore bending as a shore does */
@@ -16376,6 +16437,11 @@ CHART_ART.james=function(c,spec){
   coast([[0.205,0.578],[0.176,0.556],[0.152,0.520],[0.140,0.486],[0.128,0.462],
          [0.168,0.458],[0.176,0.486],[0.190,0.520],[0.208,0.548],[0.212,0.572]],
         true,LAND,INK,W*0.0022);
+
+  /* the sea, RULED rather than coloured */
+  PEN.seaRule(g,X,Y,[[-0.02,0.474],[0.09,0.446],[0.18,0.464],[0.27,0.430],[0.37,0.448],
+    [0.46,0.422],[0.56,0.452],[0.66,0.426],[0.75,0.454],[0.86,0.424],[1.02,0.446],
+    [1.02,1.04],[-0.02,1.04]],W,H,0.028,"rgba(70,104,124,0.30)",W*0.0010);
 
   /* THE HATCHING, struck outward from the island into the water - the mark that says
      "this edge is land" on every chart of this century */
@@ -16444,6 +16510,8 @@ CHART_ART.james=function(c,spec){
   g.fillStyle=INK;g.textAlign="center";
   g.font="italic "+Math.round(W*0.019)+"px Georgia, serif";
   g.fillText("N",X(0.905),Y(0.268));
+  PEN.cartouche(g,X,Y,0.035,0.030,0.335,0.150,INK,
+    "James Ile","in the Kings River","after Capt. Smith",W);
 
   /* the "you are here" mark */
   if(spec&&typeof spec.x==="number"){
@@ -16493,9 +16561,9 @@ CHART_ART.powhatan=function(c,spec){
     if(fill){g.fillStyle=fill;g.fill();}
     if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1;g.stroke();}
   };
-  const WATER="#a8c0ca", LAND="#d3c69f", INK="#4a3a22";
+  const WATER="rgba(146,176,190,0.32)", LAND="rgba(198,178,132,0.36)", INK="#4a3a22";
   PEN.paper(g,W,H);
-  g.fillStyle="rgba(211,198,159,0.85)";g.fillRect(0,0,W,H);
+  g.fillStyle="rgba(203,186,142,0.30)";g.fillRect(0,0,W,H);
 
   /* the Pamunkey, north, widening to the bay */
   /* THE TWO RIVERS WERE PARALLEL RIBBONS OF THE SAME WIDTH and read as a road diagram.
@@ -16511,6 +16579,14 @@ CHART_ART.powhatan=function(c,spec){
   /* the bay itself, east */
   coast([[0.955,-0.04],[1.04,-0.04],[1.04,1.04],[0.94,1.04],[0.968,0.72],
          [0.945,0.40],[0.972,0.14]],true,WATER);
+
+  /* both rivers ruled, so they read as water and not as bands of colour */
+  PEN.seaRule(g,X,Y,[[-0.02,0.322],[0.14,0.300],[0.30,0.318],[0.46,0.272],[0.62,0.248],
+    [0.78,0.238],[1.02,0.216],[1.02,0.316],[0.78,0.322],[0.62,0.332],[0.46,0.352],
+    [0.30,0.376],[0.14,0.352],[-0.02,0.360]],W,H,0.020,"rgba(70,104,124,0.32)",W*0.0010);
+  PEN.seaRule(g,X,Y,[[-0.02,0.688],[0.14,0.724],[0.30,0.700],[0.46,0.744],[0.62,0.722],
+    [0.78,0.756],[1.02,0.742],[1.02,0.900],[0.78,0.898],[0.62,0.860],[0.46,0.876],
+    [0.30,0.836],[0.14,0.856],[-0.02,0.828]],W,H,0.020,"rgba(70,104,124,0.32)",W*0.0010);
 
   /* both river shores hatched, so the water reads as water */
   PEN.hatch(g,X,Y,PEN.wobble([[0.00,0.360],[0.14,0.352],[0.30,0.376],[0.46,0.352],
@@ -16570,6 +16646,8 @@ CHART_ART.powhatan=function(c,spec){
   g.font="italic "+Math.round(W*0.017)+"px Georgia, serif";
   g.fillText("beyond this, what wee were told",X(0.020),Y(0.100));
   g.fillText("and did not see",X(0.020),Y(0.128));
+  PEN.cartouche(g,X,Y,0.615,0.028,0.355,0.150,INK,
+    "The Powhatan","and the two rivers","as wee were shewn",W);
 
   if(spec&&typeof spec.x==="number"){
     const r=W*0.013;
@@ -18852,7 +18930,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260809-2026";
+const BUILD="20260809-2033";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
