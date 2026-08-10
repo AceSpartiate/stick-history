@@ -2895,6 +2895,35 @@ function deckHeight(x,z,lvl){
 
 let renderer,scene,cam,player,playerParts,clock,labelHost;
 let camYaw=0,camPitch=0.30,camDist=30,camHeight=17;
+/* ---- HOW FAR YOU MAY LOOK UP AND DOWN ----
+   Reported: "when I look up or down my view is snapped back to the middle - I cannot in a
+   sustained way look up or down, only briefly." Two faults, and the second is what made it
+   feel like the game taking the controls away.
+
+   THE LIMIT WAS A SPRING. Below decks the pitch was eased back toward -0.10..0.34 EVERY
+   FRAME, so the mouse and the camera pulled against each other: you looked up, and while you
+   were still holding the mouse it dragged you down again. A limit you cannot pass is fine. A
+   limit that pushes back is a fight. It is a CLAMP on the input now, and the ease survives
+   only to recover from a state CHANGE - walking below decks while already pitched up - which
+   it can tell apart because the player is not touching the look at that moment.
+
+   AND IT APPLIED IN FIRST PERSON, where there is no camera outside the body to bury in the
+   deckhead and looking up at the beams over your head is exactly what a person does in a
+   hold. Chapter I spawns at camDist 0 - first person, below decks - so this was the whole
+   chapter. Four months in a hold you could not look up in.
+
+   The band that remains is a function of how far the camera is out, because the actual reason
+   for it is that an ORBIT camera RISES as it pitches: the limit is whatever keeps that rise
+   inside about five feet of timber. Close in you may look almost anywhere, far out you may
+   not, and the geometry says so rather than a constant. */
+function pitchHi(){
+  if(plevel>LVL.TWEEN||camDist<FP_AT)return 1.12;
+  return Math.min(1.12,Math.asin(Math.min(1,5.2/Math.max(1,camDist))));
+}
+function pitchLo(){
+  if(plevel>LVL.TWEEN||camDist<FP_AT)return -0.42;
+  return -Math.min(0.42,Math.asin(Math.min(1,2.6/Math.max(1,camDist))));
+}
 let camZoom=30;const ZOOM_MIN=0,ZOOM_MAX=52,FP_AT=4.5;
 /* ========== RECOIL, AND A BUG THAT HID THE WHOLE SHOT ==========
    `camKick` was written in six places and DECLARED IN NONE. This file is strict
@@ -5353,7 +5382,7 @@ window.addEventListener("mousemove",function(e){
   if(!AIM.on)return;
   const s=AIM_SENS*(1-AIM.ads*0.45);
   camYaw-=(e.movementX||0)*s;
-  camPitch=Math.max(-0.42,Math.min(1.12,camPitch+(e.movementY||0)*s));
+  camPitch=Math.max(pitchLo(),Math.min(pitchHi(),camPitch+(e.movementY||0)*s));
   LOOK_AT=performance.now();     /* so the drill's camera nudge yields to you */
 });
 window.addEventListener("mousedown",function(e){
@@ -7262,10 +7291,13 @@ function animate(){
   const tH=below?3.0:17;
   camDist+=(tD-camDist)*Math.min(1,dt*6);
   camHeight+=(tH-camHeight)*Math.min(1,dt*4);
-  /* below decks the beams are close overhead, so ease the pitch back to
-     something that does not bury the camera in the deckhead */
-  if(below&&camPitch>0.34)camPitch+=(0.34-camPitch)*Math.min(1,dt*4);
-  if(below&&camPitch<-0.10)camPitch+=(-0.10-camPitch)*Math.min(1,dt*4);
+  /* and if a change of level or zoom has left the pitch outside its band, ease it back -
+     but ONLY while the player is not looking, or this is the spring that fought the mouse */
+  if(performance.now()-(LOOK_AT||0)>420){
+    const plo=pitchLo(), phi=pitchHi();
+    if(camPitch>phi)camPitch+=(phi-camPitch)*Math.min(1,dt*4);
+    if(camPitch<plo)camPitch+=(plo-camPitch)*Math.min(1,dt*4);
+  }
 
   const firstPerson=camDist<FP_AT;
   player.visible=!firstPerson;
@@ -7664,7 +7696,7 @@ function lookMove(e){
   /* The old floor of 0.02 stopped you looking much above level - which is the
      one direction you most want on a ship, where everything interesting is up
      the rigging. Opened out both ways, and a touch more travel per pixel. */
-  camPitch=Math.max(-0.42,Math.min(1.12,camPitch+(e.clientY-lookY)*0.005));
+  camPitch=Math.max(pitchLo(),Math.min(pitchHi(),camPitch+(e.clientY-lookY)*0.005));
   LOOK_AT=performance.now();      /* so the drill's camera nudge yields to you */
   lookX=e.clientX;lookY=e.clientY;
 }
@@ -8453,8 +8485,22 @@ let VOICE_ON=true;
    voice installed. The offsets are derived from the speaker's id, so the Sailor
    sounds like the Sailor every time. */
 const VOICE_SET={male:null,female:null,narrator:null};
-const MALE_HINT=/\b(male|man|david|george|daniel|james|arthur|fred|alex|oliver|thomas|guy|rishi)\b/i;
-const FEMALE_HINT=/\b(female|woman|zira|hazel|susan|serena|samantha|victoria|fiona|kate|amy|emma|libby|sonia)\b/i;
+/* ---- AND A POOL, SO TWO MEN ARE TWO MEN ----
+   One male voice served every man aboard, told apart only by a pitch offset - which is what
+   "robotic" mostly IS: the same synthesiser transposed. Where a system has more than one
+   usable voice for a part, each speaker takes one from the pool by a hash of its own id, so
+   the Sailor and the Captain are different VOICES and stay so between sessions. A hand-picked
+   voice in the wardrobe still wins outright. */
+const VOICE_POOL={male:[],female:[]};
+/* ---- THE NAME LISTS WERE TOO SHORT TO FIND WHAT IS INSTALLED ----
+   This PC offers exactly three voices - Microsoft David, Mark and Zira - and only David and
+   Zira were in these lists, so Mark was unreachable and every man aboard was David at a
+   different pitch. Edge's neural voices are Ryan, Guy, Aria, Jenny, Sonia, Libby, Thomas,
+   Maisie; Windows adds Mark, Catherine, Hazel, Richard, Linda; Apple adds Daniel, Serena,
+   Moira, Tessa, Rishi. All of them are now findable, which is worth more than any amount of
+   scoring: a voice that is not in the list cannot be chosen however good it is. */
+const MALE_HINT=/\b(male|man|david|mark|george|daniel|james|arthur|alex|oliver|thomas|guy|rishi|ryan|brian|christopher|eric|steffan|roger|tony|liam|william|andrew|aaron|adam|jason|tom|richard|edward|henry|gordon|davis|nathan|lee)\b/i;
+const FEMALE_HINT=/\b(female|woman|zira|hazel|susan|serena|samantha|victoria|fiona|kate|amy|emma|libby|sonia|aria|jenny|michelle|ana|maisie|natasha|clara|olivia|sara|nancy|jane|ava|allison|monica|catherine|elizabeth|mia|karen|moira|tessa|veena|linda|joanna|salli|kendra)\b/i;
 function voiceList(){
   if(!window.speechSynthesis||!window.speechSynthesis.getVoices)return [];
   return window.speechSynthesis.getVoices()||[];
@@ -8477,7 +8523,13 @@ function voiceByName(nm){
    platform ships (Siri, Google, Natural, Premium), and prefer a network voice where one
    exists because those are the good ones. */
 const VOICE_BAR=/zarvox|deranged|bubbles|bahh|trinoids|whisper|bells|boing|cellos|good news|bad news|jester|organ|superstar|wobble|albert|fred|junior|ralph|kathy|princess|hysterical|pipe organ|eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|novelty|eloquence|espeak/i;
-const VOICE_PLUS=/siri|premium|enhanced|neural|natural|online|google/i;
+/* NEURAL IS A DIFFERENT CLASS OF THING, not a nicer version of the same thing. Microsoft's
+   "Online (Natural)" voices in Edge, Apple's Siri voices and anything marked Neural or
+   Premium are recorded-quality; the old SAPI5 and eSpeak voices are formant synthesis and
+   sound like 1998. Lumping them under one +6 let a merely-networked voice outrank a neural
+   one. Two tiers now, and the gap between them is deliberately large. */
+const VOICE_TOP=/natural|neural|siri|premium|enhanced|eloquent/i;
+const VOICE_PLUS=/online|google|multilingual/i;
 /* ---- THE GOOD VOICES ARE THE NETWORK ONES, AND THEY ARE NOT ALWAYS THERE ----
    speechSynthesis marks a voice localService:false when the audio is synthesised on a
    server - Google's voices in Chrome, Microsoft's Natural and Online voices in Edge. Those
@@ -8500,7 +8552,8 @@ function voiceScore(x){
     if(!netVoicesUsable())return -100;  /* offline: it would play silence */
     n+=8;                               /* online: this is the whole improvement */
   }
-  if(VOICE_PLUS.test(x.name))n+=6;
+  if(VOICE_TOP.test(x.name))n+=14;
+  else if(VOICE_PLUS.test(x.name))n+=6;
   if(/en[-_]GB/i.test(x.lang))n+=2;    /* the chapter is English and so are the speakers */
   else if(/^en/i.test(x.lang))n+=1;
   if(x.default)n+=1;
@@ -8529,6 +8582,12 @@ function pickVoices(){
   VOICE_SET.male=find(function(x){return MALE_HINT.test(x.name);});
   VOICE_SET.female=find(function(x){return FEMALE_HINT.test(x.name);});
   VOICE_SET.narrator=find(function(){return true;});
+  /* the pools take every English voice that matches, best-scoring first, so a hash into them
+     lands on good voices before poor ones */
+  const eng=v.filter(function(x){return /^en/i.test(x.lang);});
+  const pool=eng.length?eng:v;
+  VOICE_POOL.male=pool.filter(function(x){return MALE_HINT.test(x.name);});
+  VOICE_POOL.female=pool.filter(function(x){return FEMALE_HINT.test(x.name);});
   /* if only one voice exists, everything uses it and pitch does the work */
   if(!VOICE_SET.male)VOICE_SET.male=VOICE_SET.narrator;
   if(!VOICE_SET.female)VOICE_SET.female=VOICE_SET.narrator;
@@ -8547,6 +8606,21 @@ function pickVoice(){return VOICE_SET.narrator||null;}
     window.addEventListener("online",again,false);
     window.addEventListener("offline",again,false);
   }
+  /* ---- THE GOOD VOICES ARRIVE AFTER THE PAGE DOES, AND NOTHING WAS LISTENING ----
+     This is the bug behind "there must be better voices than this". getVoices() is
+     SYNCHRONOUS and on Chrome and Edge it returns the LOCAL voices immediately and the
+     network ones - the neural ones, the whole reason to be online - some hundreds of
+     milliseconds later, announcing them with a voiceschanged event. There was no listener
+     for it anywhere in this file. pickVoices() ran once, on whatever had loaded by then, and
+     the result stood for the session: on Windows that is Microsoft David, for ever, while
+     Edge's Ryan and Aria sat in a list nobody read again.
+     One listener, and two late sweeps for the engines that never fire the event at all. */
+  if(window.speechSynthesis){
+    try{window.speechSynthesis.addEventListener("voiceschanged",again,false);}
+    catch(e){try{window.speechSynthesis.onvoiceschanged=again;}catch(e2){}}
+  }
+  setTimeout(again,600);
+  setTimeout(again,2500);
 })();
 /* a stable per-speaker offset, so two men do not sound like the same man */
 /* Every speaker aboard in 1607 is a man - the first English women reached
@@ -8778,7 +8852,18 @@ function speak(text,kind,who,force){
        - which on Android is a woman. Pitch is then the ONLY lever, and 0.82 was
        nowhere near enough: it gave a slightly lowered woman. Widened hard, so
        gender reads even when one voice is doing all the parts. */
-    const base=(k==="female")?{p:1.38,r:0.95}:(k==="male")?{p:0.62,r:0.86}:{p:1.00,r:0.90};
+    /* ---- PITCH ONLY HAS TO CARRY GENDER WHEN NOTHING ELSE CAN ----
+       0.62 is a HARD transposition - about a fifth down - and on a formant voice like
+       Microsoft David that is most of what "robotic and abrasive" is: a growl at 0.86 speed.
+       It exists for Android, where Chrome returns languages rather than named voices and one
+       system voice speaks every part, and there it is the only lever there is.
+       Where genuinely distinct voices were found, they do that work already, so the pitch
+       stays near natural and the rate comes up. The wide split is kept for exactly the case
+       it was written for. */
+    const oneVoice=!(VOICE_SET.male&&VOICE_SET.female&&VOICE_SET.male!==VOICE_SET.female);
+    const base=oneVoice
+      ? ((k==="female")?{p:1.38,r:0.95}:(k==="male")?{p:0.62,r:0.86}:{p:1.00,r:0.90})
+      : ((k==="female")?{p:1.04,r:0.96}:(k==="male")?{p:0.96,r:0.94}:{p:1.00,r:0.94});
     const t=speakerTint(who);
     const pitch=Math.max(0.1,Math.min(2,base.p+t.p));
     /* THE READER SETS THE PACE. Rate moves comprehension more than any amount of voice
@@ -8786,7 +8871,16 @@ function speak(text,kind,who,force){
        seconds. Stored inside S.voicePref, which is already in the save whitelist, so this
        persists with no change to the save format at all. */
     const rate=Math.max(0.5,Math.min(1.6,(base.r+t.r)*sayRate()));
-    const v=VOICE_SET[k]||null;
+    let v=VOICE_SET[k]||null;
+    /* a speaker takes its own voice out of the pool, unless the reader has chosen one */
+    if(who&&k!=="narrator"&&!(S&&S.voicePref&&S.voicePref[k])){
+      const pool=VOICE_POOL[k]||[];
+      if(pool.length>1){
+        let h=0;
+        for(let i=0;i<who.length;i++)h=(h*31+who.charCodeAt(i))&0xffff;
+        v=pool[h%pool.length];
+      }
+    }
     const pieces=chunkForSpeech(clean);
     for(let i=0;i<pieces.length;i++)
       /* kind travels with the piece so a demoted retry re-picks the RIGHT local voice
@@ -9053,7 +9147,7 @@ function startSayBtnWatch(){
    A cutscene is data: camera moves, narration, sound, actors walking on.
    It drives the same renderer and the same figures the game already uses. */
 const CS={active:false,cs:null,i:0,t:0,dur:0,step:null,onDone:null,actors:[],shake:0,
-  camFrom:null,lookFrom:null,lastLook:null,moveFrom:null};
+  camFrom:null,lookFrom:null,lastLook:null,moveFrom:null,said:false};
 function playCutscene(cs,onDone){
   if(CS.active||!scene||!cam||!player){if(onDone)onDone();return;}
   CS.active=true;CS.cs=cs;CS.i=-1;CS.onDone=onDone||null;CS.actors=[];CS.shake=0;
@@ -9165,8 +9259,13 @@ function csNext(){
     $("cineFade").style.transition="opacity "+(s.t||1)+"s linear";
     $("cineFade").style.opacity=(s.fade==="out")?"1":"0";
   }
-  if(s.wait)CS.dur=s.wait;
+  /* ---- A WAIT MUST NOT SHORTEN A LINE ----
+     This was a bare assignment, so any step carrying BOTH narration and an explicit `wait`
+     threw away the speech-aware duration computed twenty lines above and cut its own line
+     off. Same fault as the `t` one already fixed here, in the other field. */
+  if(s.wait)CS.dur=Math.max(CS.dur||0,s.wait);
   if(!CS.dur)CS.dur=0.02;
+  CS.said=!!s.narrate;
 }
 function updateCutscene(dt){
   const s=CS.step;if(!s)return;
@@ -9205,7 +9304,26 @@ function updateCutscene(dt){
       }
     }
   }
-  if(CS.t>=CS.dur)csNext();
+  /* ---- AND THE SHOT WAITS FOR THE SENTENCE ----
+     CS.dur is the LONGER of the authored duration and an ESTIMATE of how long the line takes
+     to say - words over 2.3 a second. An estimate is all it can be before the engine starts,
+     and when it comes in short the next step calls speak(), which cancels what is still being
+     said. Reported as narration cut off mid-sentence, and it is: a guess arbitrating a real
+     duration. So the estimate now only sets the FLOOR, and the step actually waits for the
+     speech to finish - the same principle as the atlas waiting for its flight to arrive
+     rather than for a timer.
+     CAPPED, because a wedged speech engine must not be able to hang the film: fourteen
+     seconds past the planned duration and the cutscene moves on regardless. */
+  if(CS.t>=CS.dur&&!csSpeaking())csNext();
+}
+function csSpeaking(){
+  if(!CS.said||!SPEECH_OK||!VOICE_ON)return false;
+  if(CS.t>CS.dur+14)return false;
+  if(SAY_Q.length)return true;
+  try{
+    const ss=window.speechSynthesis;
+    return !!(ss&&(ss.speaking||ss.pending));
+  }catch(e){return false;}
 }
 function endCutscene(){
   if(!CS.active)return;
@@ -10252,13 +10370,49 @@ function renderVoices(){
     return;
   }
   /* English first, everything else after, so the useful ones are reachable */
+  /* English first, then by the same score the automatic choice uses, so the best voices are
+     the ones a reader sees without scrolling - the list used to be alphabetical, which put
+     "Microsoft David" ahead of a neural voice further down that nobody ever reached. */
   const list=v.slice().sort(function(a,b){
     const ae=/^en/i.test(a.lang)?0:1, be=/^en/i.test(b.lang)?0:1;
-    return ae-be||a.name.localeCompare(b.name);
+    return ae-be||voiceScore(b)-voiceScore(a)||a.name.localeCompare(b.name);
   });
+  /* ---- SAY WHAT THE BROWSER IS ACTUALLY OFFERING ----
+     Reported: "there has to be a better set of voices available for free." There is, and it
+     is the browser's own - but this panel gave no way to tell whether you had them. On the
+     PC this was tested on, getVoices() returns three voices, all of them local formant
+     synthesis from the 1990s, and no amount of choosing between David, Mark and Zira makes
+     any of them sound like a person. That is not something the game can fix by picking
+     better; it is a fact about the browser, and the honest thing is to report it and say
+     what does fix it.
+     Which is worth being exact about: the good voices are NEURAL and they are synthesised on
+     a server, so they are marked localService:false. Edge ships a full set of them free -
+     Ryan, Aria, Sonia, Guy - and Chrome has Google's. Neither needs an account, a key or a
+     download, and nothing in this file fetches anything: the browser owns the connection.
+     Counted from the live list, so the note is never out of step with what is installed. */
+  const netN=v.filter(function(x){return x.localService===false;}).length;
+  const topN=v.filter(function(x){return VOICE_TOP.test(x.name);}).length;
   const note=document.createElement("div");
   note.className="vNote";
-  note.textContent="Tap a voice to hear it and assign it. On some devices only one voice exists \u2014 then the men and women are told apart by pitch alone.";
+  let msg="Tap a voice to hear it and assign it. ";
+  if(topN){
+    msg+="Your browser has "+topN+" high-quality "+(topN===1?"voice":"voices")+
+         " \u2014 the ones marked Natural or Neural. Those are used first while you have a "+
+         "connection, and the game falls back to a built-in voice the moment it does not.";
+  } else if(netN){
+    msg+="Your browser has "+netN+" online "+(netN===1?"voice":"voices")+
+         ", which are better than the built-in ones and are used first while you have a "+
+         "connection.";
+  } else {
+    msg+="Your browser is only offering "+v.length+" built-in "+
+         (v.length===1?"voice":"voices")+", and they are the plain robotic sort \u2014 no "+
+         "choice among them will sound like a person. Microsoft Edge and Google Chrome both "+
+         "add far better voices over the internet at no cost and with nothing to install. "+
+         "Opening this same page in either will sound markedly better.";
+  }
+  if(v.length<2)
+    msg+=" With one voice for every part, the men and women are told apart by pitch alone.";
+  note.textContent=msg;
   host.appendChild(note);
   /* Pace first, because it is the setting most readers actually want and the only one
      that helps on a device with a single voice. Same vRow/chip furniture as the voices, so
@@ -10294,11 +10448,14 @@ function renderVoices(){
     b.textContent=row.label+(cur?" \u2014 "+cur.name:"");
     box.appendChild(b);
     const chips=document.createElement("div");chips.className="chips";
-    for(let i=0;i<list.length&&i<14;i++){
+    for(let i=0;i<list.length&&i<18;i++){
       const vo=list[i];
       const c=document.createElement("button");
       c.className="cchip tiny"+((cur&&cur.name===vo.name)?" sel":"");
-      c.textContent=vo.name.replace(/^Google\s+/,"")+" ("+vo.lang+")";
+      /* the neural ones are worth pointing at, since they are the reason to be online */
+      const star=VOICE_TOP.test(vo.name)?"\u2605 ":"";
+      c.textContent=star+vo.name.replace(/^Google\s+/,"").replace(/^Microsoft\s+/,"")
+                    .replace(/\s*-\s*English.*$/i,"")+" ("+vo.lang+")";
       c.onclick=function(){
         if(!S.voicePref)S.voicePref={};
         S.voicePref[row.k]=vo.name;
@@ -13057,7 +13214,7 @@ function updateDrill(dt){
    ocean", but they crossed in company and a class watching this should see that,
    so the shot puts the Susan Constant in the foreground with her consorts astern
    - which reads as "a ship" and is true. */
-const OPEN={on:false,raf:0,t:0,shot:-1,sc:null,cam:null,onDone:null,done:false};
+const OPEN={on:false,raf:0,t:0,dur:1,shot:-1,sc:null,cam:null,onDone:null,done:false};
 let OPEN_FOG=null;
 /* one degree of latitude and longitude onto a sphere of radius r */
 function llv(lat,lon,r){
@@ -13976,6 +14133,37 @@ const OPEN_SHOTS=[
    from:[-40,150,-2380],to:[-70,172,-2560],look:[-40,60,-3290],look2:[-45,58,-3300],
    say:"Below deck, in the dark and the stink, men still trade the old rumours."}
 ];
+/* ---- HOW LONG A SHOT MUST ACTUALLY LAST ----
+   Reported: some of the opening's read-aloud is cut short and never finishes. It was, and
+   badly - FIVE of the six shots were shorter than their own line, by up to 5.2 seconds. The
+   whole opening authored 38 seconds of camera for 55 seconds of narration, and every time a
+   shot changed, openingSay called speak(), which cancels whatever is still being said. So
+   the last clause of most of the opening was simply never heard.
+
+   playCutscene had been taught this once already ("the duration is now the LONGER of the
+   two") but the OPENING is a separate system with its own shot list and its own tick, and
+   it never learnt. Same rule, now in both: the shot lasts the authored time or the time the
+   line takes to say, whichever is longer.
+
+   AND ONLY WHEN THERE IS NARRATION. With read-aloud off the authored 38 seconds stands, so
+   a reader who does not use it is not held for words nobody is saying. */
+function openShotDur(sh){
+  let d=sh.t||0;
+  if(sh.say&&SPEECH_OK&&VOICE_ON)d=Math.max(d,speechSeconds(sh.say));
+  return Math.max(0.4,d);
+}
+/* and because that duration is an ESTIMATE, the shot also waits for the engine to actually
+   finish - capped, so a wedged voice cannot strand the player on a title card */
+function openSpeaking(){
+  const sh=OPEN_SHOTS[OPEN.shot];
+  if(!sh||!sh.say||!SPEECH_OK||!VOICE_ON)return false;
+  if(OPEN.t>OPEN.dur+10)return false;
+  if(SAY_Q.length)return true;
+  try{
+    const ss=window.speechSynthesis;
+    return !!(ss&&(ss.speaking||ss.pending));
+  }catch(e){return false;}
+}
 function openingSay(line){
   const el=$("cineSub");
   if(!el)return;
@@ -14144,8 +14332,12 @@ function playOpening(onDone){
     }
     /* advance the shot */
     let s=OPEN_SHOTS[OPEN.shot];
-    if(OPEN.shot<0||OPEN.t>=s.t){
-      if(OPEN.shot>=0)OPEN.t-=s.t;
+    if(OPEN.shot<0||(OPEN.t>=OPEN.dur&&!openSpeaking())){
+      /* RESET rather than carry the remainder. The old line subtracted the shot's length so
+         a fraction of a frame rolled into the next shot; now that a shot can be HELD past
+         its length waiting for a sentence, that remainder can be seconds - which would eat
+         the next shot whole the moment it began. */
+      OPEN.t=0;
       OPEN.shot++;
       if(OPEN.shot>=OPEN_SHOTS.length){
         OPEN.done=true;
@@ -14156,6 +14348,7 @@ function playOpening(onDone){
         return;
       }
       s=OPEN_SHOTS[OPEN.shot];
+      OPEN.dur=openShotDur(s);
       const inSpace=(s.set==="space");
       if(!inSpace)buildSeaNow();          /* first time only, at the measured detail */
       space.visible=inSpace;seaSet.visible=!inSpace;
@@ -14181,7 +14374,9 @@ function playOpening(onDone){
       }
       if(s.title)$("openTitle").classList.add("on");
     }
-    const kk=Math.min(1,OPEN.t/s.t);
+    /* the camera move spans the WHOLE shot, so a line that takes ten seconds gets ten
+       seconds of camera rather than six seconds of camera and four of a frozen frame */
+    const kk=Math.min(1,OPEN.t/OPEN.dur);
     shotAt(s,kk);
     c.position.copy(V);
     /* A SLOW ROLL. A camera hand-held off a crane is never perfectly level, and a
@@ -19930,7 +20125,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260810-0115";
+const BUILD="20260810-1210";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

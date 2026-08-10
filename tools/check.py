@@ -164,20 +164,64 @@ else:
         % ", ".join("%s (~line %d of the script blocks)" % (n, assigned[n]) for n in wild))
 
 print("\n7. Cutscene steps are long enough for their narration")
-# csNext takes MAX(given, 2.6, spoken). Anything much over ~60s is a wall the
-# player cannot skip past quickly; measure and tighten the writing, not the timer.
-long = []
-for mm in re.finditer(r'narrate:"((?:[^"\\]|\\.)*)"', s):
-    words = len(re.sub(r'\\u[0-9a-fA-F]{4}', ' ', mm.group(1)).split())
-    secs  = words / 2.3 + 0.8
-    if secs > 20: long.append((round(secs, 1), mm.group(1)[:52]))
+# THIS CHECK USED TO MEASURE THE WRONG THING. Its name says "long enough for their
+# narration" and it only ever asserted that no single line runs past twenty seconds -
+# which is a note about the WRITING, not about whether the shot holding a line lasts
+# long enough to finish saying it. It passed green while five of the six shots in the
+# opening cut their own line, by up to 5.2 seconds.
+#
+# Both cutscene systems now derive their duration as max(authored, spoken) at runtime,
+# so a short authored time no longer truncates anything. What it DOES mean is that the
+# camera finishes its move and then sits still for the remainder - so the gap is worth
+# reporting as a note: it tells the author which shots to lengthen so the picture moves
+# for as long as the voice is talking.
+def _secs(txt):
+    return len(re.sub(r'\\u[0-9a-fA-F]{4}', ' ', txt).split()) / 2.3 + 0.8
+
+def _steps(src, key):
+    """Every {...} object literal in src that carries `key`, with its authored seconds."""
+    out = []
+    for mm in re.finditer(key + r':\s*"((?:[^"\\]|\\.)*)"', src):
+        # walk back to the { that opens this object, then forward to its }
+        i = src.rfind("{", 0, mm.start())
+        depth, j = 0, i
+        while j < len(src):
+            c = src[j]
+            if c in "[{(":
+                depth += 1
+            elif c in "]})":
+                depth -= 1
+                if depth == 0:
+                    break
+            j += 1
+        step = src[i:j + 1]
+        t = re.search(r'\bt:\s*([0-9.]+)', step)
+        w = re.search(r'\bwait:\s*([0-9.]+)', step)
+        authored = max(float(t.group(1)) if t else 0.0,
+                       float(w.group(1)) if w else 0.0)
+        out.append((authored, mm.group(1), src.count("\n", 0, i) + 1))
+    return out
+
+rows = _steps(s, "narrate") + _steps(s, "say")
+long  = [(round(_secs(x[1]), 1), x[1][:52]) for x in rows if _secs(x[1]) > 20]
+short = [(round(_secs(a[1]) - max(a[0], 2.6), 1), a[2], a[1][:46])
+         for a in rows if _secs(a[1]) - max(a[0], 2.6) > 1.0]
+
 if long:
-    print("  note  %d narration lines exceed 20s when spoken:" % len(long))
-    for secs, txt in sorted(long, reverse=True)[:5]:
-        print("        %5.1fs  %s..." % (secs, txt))
-    print("        (not a failure - but a scene is only as short as its writing)")
+    bad("%d narration lines exceed 20s when spoken - too long to sit through:\n"
+        % len(long)
+        + "\n".join("        %5.1fs  %s..." % r for r in sorted(long, reverse=True)[:5]))
 else:
-    ok("no narration line runs past 20s")
+    ok("no narration line runs past 20s (%d narrating steps)" % len(rows))
+
+if short:
+    print("  note  %d shots are shorter than their own line, so the camera arrives" % len(short))
+    print("        and then waits. Not a truncation - both systems hold for the voice -")
+    print("        but the picture stops moving while the words carry on:")
+    for gap, line, txt in sorted(short, reverse=True)[:6]:
+        print("        %5.1fs short  ~line %-6d %s..." % (gap, line, txt))
+else:
+    ok("every shot lasts as long as the line spoken over it")
 
 print("\n8. No texture or image assets")
 # The project is deliberately procedural. An <img>, a TextureLoader, or a url()
