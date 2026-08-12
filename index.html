@@ -1528,8 +1528,22 @@ let CH={
     {t:"Have Englishmen tried to settle Virginia before us? I'd know what became of them.",wise:true,ink:8,
      reply:"\u201cAye. Roanoke, twenty year gone. Over a hundred souls - men, women, children among them - put ashore on an island off the Carolina banks in 1587. A proper colony, not a fort of soldiers.\u201d",
      insight:{g:"known",b:"The Roanoke Colony",s:"In 1587 over 100 English settlers - including women and children - were landed at Roanoke, off the Carolina coast. It was a full colony, not a garrison."}},
-    {t:"How many days yet until we sight land?",wise:false,
-     reply:"\u201cTwo months if the wind's kind. Three if it isn't.\u201d He waves it off. \u201cYou've a man before you who's crossed twice and come back. Ask me something worth the asking.\u201d"},
+    /* ---- HE WAS ANSWERING A QUESTION ABOUT A DIFFERENT MORNING ----
+       "How many days yet until we sight land?" - "Two months if the wind's kind." The
+       chapter's own opening paragraph says "Four months and more at sea are behind
+       you. Land was descried at four this morning, and the ships are standing into
+       the Chesapeake." The player can see the capes through the port and both
+       consorts at anchor. Fifteen other places in this file say "four months and
+       more", including the assessment. This one line said two months yet to run, on a
+       ship that had arrived - and it was a REWARDED conversation contradicting the
+       narrator in the same breath, which is the one thing the content must never do.
+       The beat's job is unchanged: a question that misses the point, brushed aside to
+       turn the player toward Roanoke. It just asks about the crossing that HAPPENED.
+       The six weeks are Percy's, who kept the account: they set sail on the 20th of
+       December and "by unprosperous winds were kept six weeks in the sight of
+       England" before they were away at all. */
+    {t:"How long were we at sea? It felt like a year.",wise:false,
+     reply:"\u201cFour months and more \u2014 and six weeks of that in sight of Kent, with the wind in our teeth and not a mile made good.\u201d He jerks his chin at the daylight. \u201cIt is behind you. Land was called at four this morning. Ask me about the country you are looking at.\u201d"},
     {t:"Will the Company pay us well once we're ashore?",wise:false,
      reply:"\u201cPay?\u201d He barks a laugh. \u201cAsk the clerk about wages, boy - he keeps the papers. Ask me about the country and what's already happened in it.\u201d"},
     /* DEFENSIBLE AND INCOMPLETE. He is not wrong - ships had worked this coast for
@@ -21600,7 +21614,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260812-1840";
+const BUILD="20260812-1842";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
