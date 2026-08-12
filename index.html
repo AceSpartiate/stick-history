@@ -599,9 +599,16 @@
      hidden here by DEFAULT and has to ask to be seen. The cinematic layers - the
      subtitle, the fade, the skip button, the title card - all live in #cine, which
      is outside #viewport, so none of them are touched. */
-  body.opening #viewport > *{display:none !important}
-  body.opening #viewport > #world,
-  body.opening #viewport > #vig{display:block !important}
+  /* AND THE SAME FOR A CUTSCENE, which is the same fault reported again. A cutscene
+     takes the camera and returns early from the frame loop, so the world-space labels are
+     never UPDATED - but a DOM element that is not updated is not hidden either, it just
+     keeps whatever it had. So the interaction markers hung over Cape Henry through every
+     scene there. One rule for both, and a body class rather than a selector on #cine.on,
+     so it works on the older phones this has to run on. */
+  body.opening #viewport > *,
+  body.cine #viewport > *{display:none !important}
+  body.opening #viewport > #world, body.opening #viewport > #vig,
+  body.cine #viewport > #world, body.cine #viewport > #vig{display:block !important}
   /* The title, over the anchorage. Above the fade so it can hold while the
      picture goes to black under it, which is the whole point of a title card. */
   #openTitle{position:absolute;inset:0;z-index:3;display:none;flex-direction:column;
@@ -8120,6 +8127,19 @@ function firstOpenBeat(npc){
   return -1;
 }
 function openDialogue(npc){
+  /* ---- A MAN WITH LINES IS NOT A MAN WITH BEATS ----
+     Reported as "I can't talk to the Reverend in chapter 2, or Captain Newport." It was
+     worse than that: it was ALL FOUR of them - Newport, Archer, Percy and Hunt - and it
+     was a crash, not a missing feature. Chapter II's speakers carry `lines` and no
+     `beats`, because they are line-speakers rather than question trees; firstOpenBeat
+     reads npc.beats.length on its first statement and threw a TypeError, so the Speak
+     button did nothing at all, silently, for every named man on that beach except
+     Kendall. Measured by calling doInteract on each of the five in turn.
+     They keep action:"talk" rather than being demoted to "idle", because the selection
+     rule deliberately ranks idle below everything else and these four are the chapter's
+     content - the man who commands, the man the arrows wound, the man who keeps the
+     account and the man who says the prayer. So the ROUTING moves, not their standing. */
+  if(npc&&!npc.beats){openIdle(npc);return;}
   const start=firstOpenBeat(npc);
   /* mistakes are remembered on the man, not on the conversation, so stepping
      away and coming back cannot scrub them */
@@ -8168,11 +8188,38 @@ function openIdle(npc){
     $("dlgChoices").appendChild(b);
     $("dlgLeave").style.display="none";
   } else {
-    const ls=npc.lines;
-    sayLine("dlgLine",(ls&&ls.length)
-      ? ls[Math.floor(Math.random()*ls.length)]
-      : "He nods, and goes back to his work.",voiceOf(npc).kind,voiceOf(npc).who);
-    showLeave("Step away");
+    /* ---- EVERYTHING HE HAS, IN ORDER ----
+       One line drawn at random is right for a man sawing a plank. It is not right for
+       Captain Newport, who has three things to say and one of them is the argument of the
+       whole chapter - that this is a cape and not a colony. A player who spoke to him
+       heard one of the three and had no way to know there were others.
+       So a speaker with more than one line gives them all, in the order they were
+       written, behind a Go on. The random pick stays for the strand crowd, who have one
+       line each and whose whole job is to be different each time you pass. */
+    const ls=npc.lines||[];
+    if(ls.length>1){
+      let i=0;
+      const step=function(){
+        sayLine("dlgLine",ls[i],voiceOf(npc).kind,voiceOf(npc).who);
+        i++;
+        $("dlgChoices").innerHTML="";
+        if(i<ls.length){
+          const b=document.createElement("button");
+          b.className="choice";b.textContent="Go on.";
+          b.onclick=step;
+          $("dlgChoices").appendChild(b);
+          $("dlgFoot").textContent="or press F";
+          $("dlgLeave").style.display="";
+          $("dlgLeave").textContent="Step away";
+        } else showLeave("Step away");
+      };
+      step();
+    } else {
+      sayLine("dlgLine",ls.length
+        ? ls[0]
+        : "He nods, and goes back to his work.",voiceOf(npc).kind,voiceOf(npc).who);
+      showLeave("Step away");
+    }
   }
   openModal("mDlg");setPaused(true);
 }
@@ -9332,6 +9379,7 @@ function playCutscene(cs,onDone){
   if(CS.active||!scene||!cam||!player){if(onDone)onDone();return;}
   CS.active=true;CS.cs=cs;CS.i=-1;CS.onDone=onDone||null;CS.actors=[];CS.shake=0;
   CS.lastLook=new THREE.Vector3(player.position.x,player.position.y+5,player.position.z);
+  document.body.classList.add("cine");
   $("cine").classList.add("on");
   $("cineSkip").style.display=(cs.skippable===false)?"none":"";
   $("cineFade").style.transition="none";$("cineFade").style.opacity="0";
@@ -9511,6 +9559,7 @@ function endCutscene(){
   for(let i=0;i<CS.actors.length;i++)scene.remove(CS.actors[i].mesh);
   CS.actors=[];CS.step=null;CS.shake=0;
   stopSfx();hushVoice();
+  document.body.classList.remove("cine");
   $("cine").classList.remove("on");$("cineSub").classList.remove("on");
   $("cineFade").style.transition="opacity .45s linear";$("cineFade").style.opacity="0";
   const cb=CS.onDone;CS.onDone=null;
@@ -10302,6 +10351,49 @@ function result(good,title,body,pills,after){
 
 /* ========== RECKONING ========== */
 let rk=null;
+/* ---- WHAT YOU DO ABOUT WHAT YOU HEARD ----
+   Both answers are recorded and neither is marked. Kendall was shot at Jamestown in
+   November 1607 after a Council trial, and the men who spoke against him were men who had
+   been standing on this beach - so the choice is real, and a twelve-year-old is entitled
+   to make it without being told which one earns the points. */
+function askKendall(after){
+  const K=[
+    {t:"Tell Captain Newport what Kendall said.",v:"told",
+     r:"Newport hears you out without a word, and then: \u201cYou will say that again before the Council, if you are asked. Not before.\u201d He does not thank you. He does not send for Kendall either \u2014 not today."},
+    {t:"Say nothing. You only heard him talking.",v:"kept",
+     r:"You keep it. Half the men within earshot heard the same thing and are keeping it too, which is how a thing goes unsaid by everybody at once."},
+    {t:"Ask Master Percy to set it down in his account, and no more.",v:"written",
+     r:"Percy dips the pen. \u201cI shall write that it was said, and by whom, and that I had it from you.\u201d He blots it. \u201cThat is not an accusation. It is worse in a way \u2014 it will still be there in ten years.\u201d"}
+  ];
+  const host=$("dlgChoices");
+  dlg={npc:{id:"kendallchoice",name:"The Muster",role:"before the paper",voice:"male"},
+       busy:false,canLeave:false,idle:true};
+  $("dlgName").innerHTML="The Muster<small>before the paper</small>";
+  $("dlgMeter").style.width="0%";
+  $("dlgProgress").textContent="";$("dlgRapport").textContent="";
+  $("dlgLeave").style.display="none";
+  sayLine("dlgLine","Before the scrivener sits with you, there is the other business \u2014 what Captain Kendall said on the strand, and whether anybody is going to say it out loud.","narrator","narrator");
+  $("dlgFoot").textContent="Neither answer is scored. The record keeps both.";
+  host.innerHTML="";
+  K.forEach(function(k){
+    const b=document.createElement("button");
+    b.className="choice";b.textContent=k.t;
+    b.onclick=function(){
+      S.reportedKendall=k.v;
+      S.incidents.push("Kendall: "+k.v);
+      saveGame();
+      sayLine("dlgLine",k.r,"narrator","narrator");
+      host.innerHTML="";
+      const c=document.createElement("button");
+      c.className="choice cont";c.textContent="To the paper";
+      c.onclick=function(){closeAllModals();if(after)after();};
+      host.appendChild(c);
+      $("dlgFoot").textContent="or press F";
+    };
+    host.appendChild(b);
+  });
+  openModal("mDlg");setPaused(true);
+}
 function openReckoning(){
   /* THE GATE BELONGS IN HERE, not at the one place that currently calls it. The
      dispatcher checked chapterReady() and this did not, so the function opened a
@@ -10312,6 +10404,21 @@ function openReckoning(){
     const owed=(g.missing&&g.missing.length)?g.missing:["more of this place than you have seen"];
     toast((CH.reck&&CH.reck.lockLine)||"The scrivener will not sit with you yet. Still to ask: "
       +owed.join("; ")+".");
+    return;
+  }
+  /* ---- THE PROMISE MADE ON THE BEACH IS KEPT HERE ----
+     Reported: "there was no time for me to tell on Kendall for being seditious." There
+     was no time because there was no WAY. What you overhear ends with a panel that says
+     the choice is yours and a button reading "Decide at the muster" - and then the ambush
+     begins one and a half seconds later. S.reportedKendall was declared, saved, loaded and
+     reset, and NOTHING in the file ever assigned it. The game promised a decision it had
+     no code to take.
+     It is taken here, at the muster, before the paper - which is where the panel said it
+     would be, and the only place in this chapter where a man is standing in front of an
+     officer with time to speak. Not scored, deliberately: in April 1607 nobody knew which
+     answer was the safe one, and the record keeps both. */
+  if(CURRENT_WORLD==="ch2"&&S.heardKendall&&S.reportedKendall===null){
+    askKendall(openReckoning);
     return;
   }
   const R=CH.reck;
@@ -15194,6 +15301,65 @@ function npcMeshById(id){
     if(npcMeshes[i].npc&&npcMeshes[i].npc.id===id)return npcMeshes[i].mesh;
   return null;
 }
+/* ---- THE RANGE IS CLEARED, WHICH IS WHAT A RANGE IS ----
+   Reported: men standing in the way while being taught to shoot. The firing line measures
+   clean when nothing moves - checked from the mark, aim (1,0), fifty-eight feet, no man
+   within five feet of it. What was missing is that the shore party KEEPS WALKING:
+   updateCrowd runs before the lesson's early return in the frame loop, so thirty-four men
+   went on about their errands across the lane while Kendall was teaching, and whether
+   anybody stood in front of you depended on the second you happened to arrive. That is
+   why it looked intermittent and why nothing was wrong with the geometry.
+
+   A serjeant about to let a green man discharge a matchlock does not hope the beach is
+   empty. He clears it, and he keeps it clear until the piece is proved.
+
+   NOBODY IS TELEPORTED. Men are given a destination out of the lane and walk out of it,
+   which is the picture anyway - a working party stepping aside off a range - and the
+   errand logic is closed to the lane while it is hot, so nobody wanders back in. Their
+   homes are untouched, so when the drill ends they drift back on their own. */
+let RANGE_ON=false;
+function rangeLane(){
+  if(!TARGETS.length||typeof CAPE_MARK==="undefined")return null;
+  let far=TARGETS[0];
+  for(let i=1;i<TARGETS.length;i++)
+    if(Math.hypot(TARGETS[i].x-CAPE_MARK.x,TARGETS[i].z-CAPE_MARK.z)>
+       Math.hypot(far.x-CAPE_MARK.x,far.z-CAPE_MARK.z))far=TARGETS[i];
+  const dx=far.x-CAPE_MARK.x, dz=far.z-CAPE_MARK.z, L=Math.hypot(dx,dz)||1;
+  /* the width of a man and his arm either side, and a little past the far butt, because a
+     ball does not stop where the target is */
+  return {x:CAPE_MARK.x,z:CAPE_MARK.z,ux:dx/L,uz:dz/L,len:L+26,half:8};
+}
+function inLane(x,z,lane){
+  if(!lane)return false;
+  const dx=x-lane.x, dz=z-lane.z;
+  const along=dx*lane.ux+dz*lane.uz;
+  if(along<-3||along>lane.len)return false;
+  return Math.abs(dx*lane.uz-dz*lane.ux)<=lane.half;
+}
+/* where a man in the lane should stand instead: straight out to whichever side he is
+   already nearer, far enough that he is clear of it */
+function outOfLane(x,z,lane){
+  const dx=x-lane.x, dz=z-lane.z;
+  const side=(dx*lane.uz-dz*lane.ux)>=0?1:-1;
+  let nx=x, nz=z, esc=0;
+  while(inLane(nx,nz,lane)&&esc<20){
+    nx+=lane.uz*side*2.0; nz-=lane.ux*side*2.0; esc++;
+  }
+  esc=0;
+  while(capeBlocked(nx,nz)&&esc<12){nx+=lane.uz*side*1.5;nz-=lane.ux*side*1.5;esc++;}
+  return [nx,nz];
+}
+function clearTheRange(on){
+  const lane=on?rangeLane():null;
+  RANGE_ON=!!lane;
+  if(!RANGE_ON||typeof CROWD==="undefined"||!CROWD.length)return;
+  CROWD.forEach(function(c){
+    const m=c.mesh; if(!m)return;
+    if(!inLane(m.position.x,m.position.z,lane))return;
+    const o=outOfLane(m.position.x,m.position.z,lane);
+    c.toX=o[0];c.toZ=o[1];c.st="walk";c.t=0;
+  });
+}
 function lessonAim(){
   const T0=TARGETS[0]||{x:CAPE_MARK.x+60,y:0,z:CAPE_MARK.z};
   const dx=T0.x-player.position.x, dz=T0.z-player.position.z;
@@ -15204,10 +15370,9 @@ function showToTheMark(onDone){
   if(!player||!TARGETS.length){if(onDone)onDone();return;}
   LESSON.on=true;LESSON.t=0;LESSON.phase=-1;LESSON.onDone=onDone||null;
   paused=true;moveVec={x:0,y:0};
+  document.body.classList.add("cine");
   $("cine").classList.add("on");
   $("cineSkip").style.display="";
-  $("action").classList.remove("on");$("guide").classList.remove("on");
-  $("prompt").classList.remove("on");
   /* put the player on the mark, squared up on the near target */
   const gy=WORLD.ground(CAPE_MARK.x,CAPE_MARK.z);
   player.position.set(CAPE_MARK.x,gy,CAPE_MARK.z);
@@ -15261,6 +15426,8 @@ function updateLesson(dt){
 function endLesson(){
   if(!LESSON.on)return;
   LESSON.on=false;
+  document.body.classList.remove("cine");
+  clearTheRange(false);
   if(LESSON.sj&&LESSON.sjHome)LESSON.sj.position.copy(LESSON.sjHome);
   LESSON.sj=null;LESSON.sjHome=null;
   $("cine").classList.remove("on");$("cineSub").classList.remove("on");
@@ -15940,6 +16107,14 @@ function updateCrowd(dt){
           c.toZ=c.homeZ+(fz-c.homeZ)*k;
           let esc=0;
           while(capeBlocked(c.toX,c.toZ)&&esc<24){c.toZ-=2.0;esc++;}
+        }
+        /* and while the range is hot, no errand crosses it */
+        if(RANGE_ON){
+          const lane=rangeLane();
+          if(inLane(c.toX,c.toZ,lane)){
+            const o=outOfLane(c.toX,c.toZ,lane);
+            c.toX=o[0];c.toZ=o[1];
+          }
         }
         c.out=!c.out;c.st="walk";
       }
@@ -20305,7 +20480,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260811-1450";
+const BUILD="20260811-2320";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
