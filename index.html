@@ -6401,10 +6401,26 @@ function coastNoise(u,ph){
   const i=Math.floor(u), f=u-i, s=f*f*(3-2*f);
   return srand(i+ph)*(1-s)+srand(i+1+ph)*s;
 }
+/* ---- THE SHORE, EXPOSED SO SOMETHING CAN ASK WHERE IT IS ----
+   Cape Henry is swept as a ribbon inside buildRiver and its radius lives in three
+   lines of a closure. That was fine while nothing needed to know: the player cannot
+   walk there. A cannon ball can. Whether a shot out of the starboard ports comes
+   down in the bay or in the wood on the cape is the single most important thing
+   about firing it, and the answer is in rAt() and nowhere else - so rAt() is
+   published here rather than duplicated, which is how the two would drift apart.
+   Null in every other world, and cleared with the world. */
+let CH1_SHORE=null;
 function buildRiver(root){
+  /* Named, because it is used eight times below and because it is a real limit that
+     something outside this function ran into: the cannon's second graze falls at
+     1369, sixty-nine feet past the last triangle of water, which is one of the three
+     measurements that decide how much of a fired shot can be shown. Not published -
+     the shot's answer to it is to stop at the first graze, and a constant exported
+     for a reader that does not exist is the same debt as a button wired to nothing. */
+  const BAY=1300;
   const shape=new THREE.Shape();
-  shape.moveTo(-1300,-1300);shape.lineTo(1300,-1300);shape.lineTo(1300,1300);
-  shape.lineTo(-1300,1300);shape.lineTo(-1300,-1300);
+  shape.moveTo(-BAY,-BAY);shape.lineTo(BAY,-BAY);shape.lineTo(BAY,BAY);
+  shape.lineTo(-BAY,BAY);shape.lineTo(-BAY,-BAY);
   const hole=new THREE.Path();
   const zA=SHIP.Z_BOW-2.5,zB=SHIP.Z_STERN+2.5,n=40;
   const wl=function(z){return Math.max(0.8,halfBeam(z,0)-0.3);};
@@ -6502,6 +6518,12 @@ function buildRiver(root){
   const cStrand=RGB(0xbca87c);                     /* the pale strand at the foot */
   const cDuneL=RGB(0x5c5f39), cDuneH=RGB(0x6f6a45);
   const cWoodL=RGB(0x24391d), cWoodH=RGB(0x39562a);
+  /* the same bearing frame the ribbon is swept in: sin for x, cos for z */
+  CH1_SHORE=function(x,z){
+    const a=Math.atan2(x,z);
+    if(a<A0||a>A1)return 1e9;              /* open water on that bearing */
+    return rAt((a-A0)/(A1-A0));
+  };
   let pv=null;
   for(let i=0;i<=STEP;i++){
     const t=i/STEP, a=A0+(A1-A0)*t, r=rAt(t);
@@ -6674,9 +6696,10 @@ function buildConsorts(){
      note here measured them against a river channel and a marsh at |x| 231-257;
      there is no river and no marsh - see buildRiver. */
   /* Godspeed: 88 ft to the Susan Constant's 116, so about three-quarters */
-  buildConsort(0.76,-168,140,0.10,5,"godspeed");
+  /* NAMED, because something now has to say which of them a ball went past. */
+  buildConsort(0.76,-168,140,0.10,5,"godspeed").userData.ship="the Godspeed";
   /* Discovery: the 20-ton pinnace, well under half the length */
-  buildConsort(0.43,182,248,-0.16,3,"discovery");
+  buildConsort(0.43,182,248,-0.16,3,"discovery").userData.ship="the Discovery";
 }
 
 /* ========== WORLD REGISTRY ==========
@@ -6731,6 +6754,7 @@ function disposeWorld(){
   /* pools were children of fxRoot, so the traverse above has already disposed
      their materials; drop the references so the next world builds fresh ones */
   fxRoot=null;POOL.smoke=null;POOL.trace=null;POOL.impacts=null;POOL.arrows=null;
+  CH1_SHORE=null;               /* a coastline must not outlive the world it is in */
   CROWD_HITS.length=0;
   /* CROWD too, and it was leaking: it is filled by buildShoreParty and was only
      emptied there, so standing in Chapter I the registry still held all thirty-six
@@ -9821,6 +9845,7 @@ function spawnSmoke(x,y,z,vx,vy,vz,size){
   return spawnPuff(POOL.smoke,x,y,z,vx,vy,vz,{size:size,col:0xbfbdb4});
 }
 function updateFx(dt){
+  updateBall(dt);            /* runs in cutscenes too - line 7413 ticks updateFx */
   if(knock){
     knock.t+=dt;
     const f=Math.max(0,1-knock.t/0.55);
@@ -9888,6 +9913,274 @@ function updateFx(dt){
     if(age>=p.life){p.pool.give(p.m);smoke.splice(i,1);}
   }
 }
+/* ========== WHERE THE BALL WENT ==========
+   The cutscene said "a piece discharged in a strange bay - with two of his ships in
+   company, and the boats astern", and the reckoning asks the player to say plainly
+   why that is grave, with a model answer that reads "our own two ships and their
+   boats lay close by, so the shot might have killed one of our own company... a gun
+   fired without cause could be read as an act of war by the people whose river this
+   is." Both of those are claims about WHERE THE BALL WENT, and the game answered
+   neither: the ball simply ceased to exist at the muzzle. A question that asks a
+   student to reason about a consequence the game refuses to show is a question about
+   the study guide, not about the world.
+
+   ONE SOLVER, READ BY BOTH THE WORDS AND THE PICTURE. cannonSolution works the shot
+   out once; the flight animates that solution and the narration reads the same
+   object. They cannot disagree, which is the failure mode this file keeps finding.
+
+   AND THE ANSWER IS NOT THE SAME ON BOTH SIDES, which is the whole reward for
+   solving it rather than writing it. Cape Henry is swept from bearing 25 to 150
+   degrees at a radius of 600 to 880, and the guns fire square out on the beam - so a
+   port gun sends its ball out over open bay, and a STARBOARD gun sends it into the
+   wood on the cape, at about five hundred feet. That is the act of war, and the
+   player did it by choosing which side of the deck to walk down. */
+const SAKER={
+  /* Period powder, low end of the modern estimates for a 17th-century naval piece.
+     The number matters: it sets the range, and the range decides which of the two
+     grave things in the model answer actually happened. */
+  MV:1050,        /* ft/s at the muzzle */
+  G:32.174,       /* ft/s/s */
+  SKIP:0.55,      /* each graze carries about this much of the last */
+  GRAZES:3,
+  /* Played at about a third speed. A ball that crosses two hundred yards in six
+     tenths of a second is a frame and a half at sixty hertz, which is not something
+     a person can watch. The narration states the TRUE time of flight, so what the
+     student takes away is the real figure and not the one on screen - the same
+     bargain GUN_AID.trace makes, and made in the open for the same reason. */
+  SLOW:0.36
+};
+function cannonSolution(d){
+  const g=SAKER.G;
+  const h=d.muzzle.y/K;                    /* the port above the water, in FEET */
+  /* Laid level, so the drop alone gives the time of flight, and the time gives the
+     range. This is the gunner's "point blank": the distance at which a piece fired
+     horizontally first meets what it is fired over. */
+  const t1=Math.sqrt(2*h/g), r1=SAKER.MV*t1;
+  /* how far out the land gets in the way, if it does. Feet. */
+  let shore=1e9;
+  if(CH1_SHORE){
+    for(let u=8;u<2600;u+=6){
+      const x=d.muzzle.x+d.side*u;
+      if(Math.hypot(x,d.muzzle.z)>=CH1_SHORE(x,d.muzzle.z)){shore=u/K;break;}
+    }
+  }
+  const legs=[];
+  let at=0, r=r1, y0=h, land=false;
+  for(let i=0;i<SAKER.GRAZES;i++){
+    const sp=SAKER.MV*Math.pow(SAKER.SKIP,i);
+    let L=r, y1=0;
+    if(at+L>=shore){
+      L=shore-at; land=true;
+      const tt=L/sp;
+      y1=Math.max(0,y0-0.5*g*tt*tt);      /* still falling when the dune stops it */
+    }
+    if(L<=1)break;
+    const t=L/sp;
+    legs.push({L:L,y0:y0,y1:y1,sp:sp,t:t,at:at+L,land:land,
+      /* the one launch speed that puts it where it has to be at t. For the first
+         leg and for a strike on the cape this comes out at zero, which is the check
+         that the parabola is the SAME parabola and not a second one. */
+      vy0:(y1-y0+0.5*g*t*t)/t});
+    at+=L; y0=0;
+    if(land)break;
+    r*=SAKER.SKIP;
+  }
+  const total=legs.length?legs[legs.length-1].at:0;
+  let flight=0;
+  for(let i=0;i<legs.length;i++)flight+=legs[i].t;
+  /* AND WHO IT WENT PAST. The ball runs along x at the gun's own z, so the miss is
+     the difference in z - and only a ship on the side that was fired counts. */
+  let near=null;
+  for(let i=0;i<CONSORTS.length;i++){
+    const c=CONSORTS[i];
+    if(!c||!c.position)continue;
+    const along=(c.position.x-d.muzzle.x)*d.side/K;
+    if(along<=0||along>total)continue;
+    const miss=Math.abs(c.position.z-d.muzzle.z)/K;
+    if(!near||miss<near.miss)
+      near={name:c.userData.ship||"the other ship",miss:miss,along:along,
+            hi:Math.max(0,h-0.5*g*Math.pow(along/SAKER.MV,2))};
+  }
+  return {legs:legs,total:total,flight:flight,land:land,near:near,side:d.side,z:d.muzzle.z};
+}
+const GRAZE_WORD=["","once","twice","three times","four times"];
+function cannonWords(sol){
+  const yd=function(ft){return Math.round(ft/3);};
+  const out=[];
+  if(sol.land){
+    out.push("The ball went home in the wood on Cape Henry, "+yd(sol.total)+
+      " yards off, and it was there in "+sol.flight.toFixed(1)+
+      " seconds \u2014 into a country whose people we have not yet met.");
+  } else {
+    /* THE TOTAL IS COMPUTED, NOT PHRASED. The first draft of this line said "a
+       quarter of a mile", which sounds like the sort of thing a narrator says and is
+       four hundred and forty yards. The solver's answer is three hundred and
+       ninety-nine, so the line said a distance the game had not fired. */
+    out.push("The ball first touched the water "+yd(sol.legs[0].at)+
+      " yards out, and skipped "+(GRAZE_WORD[sol.legs.length-1]||"again")+
+      " more into the haze \u2014 "+yd(sol.total)+
+      " yards of the anchorage in all, and "+sol.flight.toFixed(1)+
+      " seconds from the muzzle to the last of it.");
+  }
+  if(sol.near)
+    out.push("It passed within "+Math.round(sol.near.miss)+" feet of "+sol.near.name+
+      ", at "+Math.round(sol.near.hi)+" feet above the water. There was no enemy in the bay.");
+  else
+    out.push("No ship of ours stood in the line of it. That was the luck of where you were standing, and nothing else.");
+  return out;
+}
+/* ---- the shot itself, in flight ---- */
+const BALL={on:false,m:null,legs:null,t:0,side:1,x0:0,z0:0};
+const BALL_P=new THREE.Vector3();
+function fireBall(sol,d){
+  if(!sol||!sol.legs.length||BALL.on)return;
+  const m=new THREE.Mesh(new THREE.SphereGeometry(1,8,6),
+    new THREE.MeshBasicMaterial({color:lin(0x201d1a)}));
+  (fxRoot||worldRoot||scene).add(m);
+  BALL.on=true;BALL.m=m;BALL.legs=sol.legs;BALL.t=0;
+  BALL.side=d.side;BALL.x0=d.muzzle.x;BALL.z0=d.muzzle.z;
+}
+function endBall(){
+  if(BALL.m){
+    if(BALL.m.parent)BALL.m.parent.remove(BALL.m);
+    if(BALL.m.geometry&&!SHARED.has(BALL.m.geometry))BALL.m.geometry.dispose();
+    if(BALL.m.material&&!SHARED.has(BALL.m.material))BALL.m.material.dispose();
+  }
+  BALL.on=false;BALL.m=null;BALL.legs=null;
+}
+function grazeAt(x,y,z,land,far){
+  /* ---- A COLUMN, NOT A BLOB ----
+     The first version threw a dozen wide puffs upward at 23 and it came out as a
+     white box sitting on the water: measured off the frame at ten units tall, when a
+     five-pound ball grazing at a thousand feet a second lifts a column of spray three
+     or four times a man's height. Three things were wrong and all three are about
+     SHAPE. The puffs were as wide as the column was tall. They all went up at once,
+     so there was no rise to watch. And the drag here is heavy - vertical speed decays
+     to four tenths in a second, so the total lift is only about 1.1 times the launch
+     speed, and 23 buys you 25 units however long you wait.
+     So: narrow and fast for the column, wide and slow for the burst at its foot, and
+     the column's puffs are delayed a few hundredths apart so it CLIMBS. */
+  /* AND THE SAND ONE WAS PAINTED 0xbca87c, WHICH IS THE STRAND'S OWN COLOUR - the
+     literal same constant, cStrand, twenty lines up in buildRiver. A dust cloud the
+     exact colour of the beach it stands on is the trail's old fault made again: it
+     was in the frame and it could not be seen. The column rises against Cape Henry's
+     pines for nearly all of its height, so pale dust is both what a ball into a sand
+     dune actually throws and the one value that reads there, with dark earth thrown
+     out low where it meets the strand. */
+  const spec=land
+    ? {col:0xece0c6,n:14,up:52,life:3.4,base:0x5c4a2e}   /* dust, and earth at its foot */
+    : {col:0xdfeae7,n:16,up:60,life:3.0,base:0xc6d8d6};  /* a column of spray */
+  for(let i=0;i<spec.n;i++)
+    spawnPuff(POOL.smoke,x,y+0.6,z,
+      (Math.random()-0.5)*4-BALL.side*2.5, spec.up*(0.42+Math.random()*0.95), (Math.random()-0.5)*4,
+      /* ease under 1 so the column HOLDS while the camera is on it. At 1.0 it was a
+         fifth of its opacity by two seconds - measured off the frame as a pale smear
+         where a seventy-unit column had actually risen. */
+      {size:0.6+far*0.009,col:spec.col,op:0.9,life:spec.life,grow:0.5,delay:i*0.028,ease:0.8});
+  for(let i=0;i<5;i++)
+    spawnPuff(POOL.smoke,x,y+0.4,z,
+      (Math.random()-0.5)*16-BALL.side*7, 5+Math.random()*6, (Math.random()-0.5)*16,
+      {size:1.1+far*0.017,col:spec.base,op:0.7,life:spec.life*1.3,grow:1.0,ease:1.3});
+  playSfx(land?"hit":"splash",0.22);
+  /* the same red cross a ball leaves anywhere else. `floor` because aboard ship the
+     world cannot answer what a shot came down on: WORLD.ground returns the height of
+     whichever DECK you are standing on for any x and z you give it. On the water the
+     surface is 0; in the face of a dune the ball is buried where it stopped and must
+     not be stood up on anything. */
+  markImpact(x,y+0.3,z,{x:BALL.side,y:-0.12,z:0},far,{life:26,floor:land?-9999:0});
+}
+/* ---- ONE GRAZE IS ALL THE WORLD CAN SHOW, AND THE ANIMATION SAYS SO PLAINLY ----
+   Three measurements decide this and none of them is negotiable:
+     the modelled bay is a square 1300 on a side, and the second graze falls at 1369;
+     the fog runs from 200 to 860, so a white column of spray at the 701 the second
+     graze would be watched from is three quarters of the way to the colour of the
+     air in front of it - in the depth buffer, absent from the picture; and
+     the flight covers 870 feet in 1.7 seconds of screen time, which no single frame
+     and no travelling camera can hold.
+   So the ball flies its first leg, throws its plume, and is done. Where it finished
+   after that is a fact about the shot rather than about the picture, and the
+   narration is the only place that can live.
+
+   TWO DRAFTS TRIED TO MAKE THE BALL DECIDE THIS AND BOTH ASKED AT THE WRONG MOMENT.
+   Testing it every frame threw away the one graze there was: logged at 1.57s the ball
+   stood 776 out with 0.05s of leg left, and the next frame carried it past the limit
+   and ended the flight forty milliseconds short of the plume. Testing it once when
+   the leg BEGINS was worse in a quieter way - at launch the camera is still alongside
+   the ship, 807 from a graze it is about to CUT to and watch from 307. It refused
+   every shot in the game.
+   The camera is not the ball's business. Whether a graze can be seen is a staging
+   question, it is answered in cannonFallSteps by standing a camera there, and the
+   flight simply flies. */
+function updateBall(dt){
+  if(!BALL.on)return;
+  if(!BALL.m||!BALL.m.parent){BALL.on=false;BALL.m=null;return;}   /* the world went */
+  const L=BALL.legs[0];
+  if(!L){endBall();return;}
+  BALL.t+=dt*SAKER.SLOW;
+  const t=Math.min(L.t,BALL.t);
+  const y=Math.max(0,L.y0+L.vy0*t-0.5*SAKER.G*t*t);
+  const x=BALL.x0+BALL.side*L.sp*t*K, z=BALL.z0;
+  BALL.m.position.set(x,y*K,z);
+  /* Apparent size. A saker's ball is three and a half inches across and would be
+     four hundredths of a pixel at the graze, so it holds about a third of a degree
+     instead - the acknowledged cheat, same as the musket's trail. */
+  const cp=cam.getWorldPosition(BALL_P);
+  const far=Math.hypot(x-cp.x,y*K-cp.y,z-cp.z);
+  BALL.m.scale.setScalar(Math.max(0.5,far*0.0055));
+  if(BALL.t>=L.t){grazeAt(x,y*K,z,L.land,far);endBall();}
+}
+/* the beats that watch it go: fired from below decks, so this is the narrator's eye
+   and not the player's - the same licence the flogging shots already take. */
+function cannonFallSteps(d,sol){
+  if(!sol||!sol.legs.length)return [];
+  const words=cannonWords(sol);
+  /* ---- TWO STANDS AND A CUT, BECAUSE ONE FRAME CANNOT HOLD IT ----
+     Two staging attempts died here and each was killed by a measurement.
+     THE CAMERA CANNOT TRAVEL WITH IT. A `cam` step lerps across its own duration and
+     the duration is stretched to fit the narration, so a camera aimed at x=-447
+     reached x=-85 while the entire flight happened ahead of it.
+     NOR CAN ONE STAND HOLD BOTH ENDS. Standing off the middle of the flight puts the
+     muzzle and the graze the same distance away - 535 and 535, both inside what the
+     fog allows - and that is a fact about DISTANCE, not about the frame. Projected on
+     a 1180-wide screen the ship came out at x=-414 and the graze at x=1589: 110
+     degrees of arc through a 79-degree lens. Standing further back to fit it puts
+     both ends at 763, where the fog is 85 per cent of the way to grey and a white
+     plume is the same colour as the air in front of it.
+     So: alongside as she leaves, then a CUT out to where she comes down. `do` runs
+     before the step reads cam.position and CS.lastLook, so setting both there makes
+     it a true cut - in the aim as well as the position - and the `cam` that follows
+     is a slow drift laid over it. The first beat is timed to end just before the
+     graze, so the ball flies into the second frame rather than being waited for. */
+  const first=d.muzzle.x+d.side*sol.legs[0].at*K;
+  /* THE FIRST STAND FACES THE SHIP, which the first cut of it did not: it stood just
+     outside the port and looked the way the ball was going, so the frame held open
+     water and a receding dot and the thing the beat is FOR - a ball leaving a ship's
+     side - was behind the camera. It stands out on the line of fire now and looks
+     back, so the shot comes at you and grows, with her hull in the haze behind it. */
+  const aX=d.muzzle.x+d.side*420, aZ=d.muzzle.z-70;
+  const bZ=d.muzzle.z-300;
+  /* AND THE SECOND STAND MUST NOT BE IN THE TREES. To starboard the ball goes INTO
+     Cape Henry, so the natural place to watch it from is inside a wood. Walk back
+     down the line of fire until there is water underfoot again. */
+  let bX=first;
+  for(let k=0;k<24&&CH1_SHORE&&Math.hypot(bX,bZ)>=CH1_SHORE(bX,bZ)*0.94;k++)bX-=d.side*40;
+  const out=[
+    {do:function(){cam.position.set(aX,30,aZ);CS.lastLook.set(d.muzzle.x,12,d.muzzle.z);
+                   fireBall(sol,d);},
+     cam:{to:[aX+d.side*22,27,aZ-16],look:[d.muzzle.x,12,d.muzzle.z]},
+     t:1.05,sfx:"wind",gain:0.10},
+    /* LOW, and looking a little UP the column. From seventy the camera looked down on
+       the spray and flattened it into a mark on the water; from twenty-six a
+       sixty-foot column stands against the haze, which is the whole picture. */
+    {do:function(){cam.position.set(bX,26,bZ);CS.lastLook.set(first,14,d.muzzle.z);},
+     cam:{to:[bX+d.side*16,24,bZ+22],look:[first,14,d.muzzle.z]},
+     t:3.4,narrate:words[0]}
+  ];
+  if(words[1])out.push(
+    {cam:{to:[bX+d.side*54,30,bZ+78],look:[first,8,d.muzzle.z]},
+     t:3.2,narrate:words[1]});
+  return out;
+}
 function fireCannon(d){
   if(S.firedGun){toast("The guns are secured. You have done enough.");return;}
   S.firedGun=true;S.corrections+=2;
@@ -9913,7 +10206,8 @@ function fireCannon(d){
   /* the gun leaps back on its breeching, and so does the player */
   if(d.grp)d.grp.position.x-=d.side*1.6*K;
   knock={vx:-d.side*46*K,vz:(Math.random()-0.5)*10*K,t:0};
-  playCutscene(cannonCutscene(d),function(){
+  /* solved BEFORE the cutscene is built, because the narration reads the answer */
+  playCutscene(cannonCutscene(d,cannonSolution(d)),function(){
     if(d.grp)d.grp.position.x+=d.side*1.6*K;
     seizedAtTheMast();
   });
@@ -10020,13 +10314,18 @@ function updateBell(dt){
 }
 
 /* the set piece: smoke, the captain on the ladder, and the walk to the mast */
-function cannonCutscene(d){
+function cannonCutscene(d,sol){
   const mainY=LVL_Y[LVL.MAIN];
   return {skippable:true,steps:[
     {wait:0.25,shake:2.8},
     /* tight on the gun that just went off */
     {shot:{of:["player"],dist:9,height:2.6,lookH:3.2,tight:true},t:1.7,sfx:"creak",gain:0.45},
-    {narrate:"The piece leapt back upon its breeching, and the whole ship heard it.",t:3.6,shake:0},
+    {narrate:"The piece leapt back upon its breeching, and the whole ship heard it.",t:3.6,shake:0}
+    /* ---- AND THE BALL DID NOT STOP AT THE SHIP'S SIDE ----
+       Cut away, follow it out, cut back to the deck for Newport. Nothing is spliced
+       when there is no solution, so the chapter still plays if the shore or the
+       consorts are ever absent. */
+  ].concat(cannonFallSteps(d,sol),[
     /* widen to take in the smoke filling the deck */
     {shot:{of:["player"],dist:16,height:5.0},t:2.9,sfx:"drone",gain:0.12},
     {spawn:{id:"newport",eq:CH.captain.eq,at:[0,LVL_Y[LVL.TWEEN],-30*K],face:0}},
@@ -10052,7 +10351,7 @@ function cannonCutscene(d){
     {shot:{of:["player"],dist:11,height:4.5,lookH:4.5,tight:true},t:3.6,sfx:"bell",gain:0.3,
      narrate:"The boatswain fetched the whip, and the ship\u2019s company was called to witness."},
     {fade:"out",t:1.0}
-  ]};
+  ])};
 }
 function seizedAtTheMast(){
   knock=null;
@@ -12822,7 +13121,13 @@ function shotTrail(o,d,dist){
    rather than a crate you trip over. At forty yards it is thirteen inches and
    about eleven pixels of bright red - and red because nothing else on this beach
    is, so it needs no outline, no lighting and no contrast argument at dusk. */
-function markImpact(x,y,z,d,dist,life){
+/* `o` carries {life, floor}. floor is for a caller that knows what the shot came
+   down on when the WORLD does not: aboard ship WORLD.ground answers with the height
+   of the deck you are standing on whatever x and z it is given, and WORLD.sea is
+   -9999 because there is no open water inside a hull - so a ball that goes out
+   through a gunport and lands in the bay has no surface to stand on. */
+function markImpact(x,y,z,d,dist,o){
+  o=o||{};
   if(!POOL.impacts)return;
   const mk=POOL.impacts.take();
   if(!mk)return;
@@ -12855,15 +13160,16 @@ function markImpact(x,y,z,d,dist,life){
      component of sqrt(1-d.y^2); no vector allocation needed to know it.
      A ball in the butt is chest high and never moves. Only the ones that went into
      the ground or the water do. */
-  const floor=Math.max((WORLD.ground?WORLD.ground(mk.position.x,mk.position.z):-9999),
-                       (WORLD.sea===undefined)?-9999:WORLD.sea);
+  const floor=(o.floor!==undefined)?o.floor
+    :Math.max((WORLD.ground?WORLD.ground(mk.position.x,mk.position.z):-9999),
+              (WORLD.sea===undefined)?-9999:WORLD.sea);
   const halfUp=size*0.606*Math.sqrt(Math.max(0,1-d.y*d.y));
   const clear=floor+size*0.5;
   if(mk.position.y-halfUp<clear)mk.position.y=clear+halfUp;
   mk.material.opacity=1;
   mk.visible=true;               /* take() does this; do not wait on the next tick */
   smoke.push({m:mk,pool:POOL.impacts,t:0,vx:0,vy:0,vz:0,bx:size,by:size,bz:1,
-    life:life||34,op:1,grow:0,delay:0,ease:0.22});
+    life:o.life||34,op:1,grow:0,delay:0,ease:0.22});
 }
 /* sand, water or splinters, according to what it hit */
 function shotImpact(p,d){
@@ -18986,7 +19292,7 @@ function updateArrows(dt){
          sin(k*PI)*arc at k=1 is -PI*arc - so the cross faces the way the shaft came. */
       const ady=(a.y1-a.y0)-Math.PI*arc, adx=a.x1-a.x0, adz=a.z1-a.z0;
       const aL=Math.hypot(adx,ady,adz)||1;
-      markImpact(x,y,z,{x:adx/aL,y:ady/aL,z:adz/aL},a.near,6);
+      markImpact(x,y,z,{x:adx/aL,y:ady/aL,z:adz/aL},a.near,{life:6});
       if(a.near<3.4){camKick=Math.max(camKick,0.045);playSfx("hit",0.16);}
       POOL.arrows.give(a.m);ARROWS.splice(i,1);
     }
@@ -21294,7 +21600,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260812-1802";
+const BUILD="20260812-1840";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
