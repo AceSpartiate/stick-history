@@ -2618,7 +2618,8 @@ function buildFigureRaw(eq){
   const thin=survivor?0.075:0.095;
   const WOOL=RGB(0x272e3d),WOOL2=RGB(0x1f2534),LINEN=RGB(0xf1ede2),PEWTER=RGB(0xbcc0c8),
         LEATHER=RGB(0x6b4a2a),BUCKLE=RGB(0xc9a24a),STOCK=RGB(0xd2ccb8),SHOE=RGB(0x2a2118),
-        BUFF=RGB(0xb8996a),FINE=RGB(0x2b2636),CANVAS=RGB(0x8d8368);
+        BUFF=RGB(0xb8996a),FINE=RGB(0x2b2636),CANVAS=RGB(0x8d8368),
+        HIDE=RGB(0x6d543a),THONG=RGB(0x7a6242);
 
   /* The chosen cloth used to reach ONLY the shirt-and-slops starter: every other
      garment overwrote sleeveCol and breechCol with a hardcoded colour, so the
@@ -2643,6 +2644,22 @@ function buildFigureRaw(eq){
     /* fine cloth held dye deepest, which is part of why it cost what it did */
     sleeveCol=RGB(shadeHex(palHex,0.55));cuffCol=LINEN;
     breechCol=RGB(shadeHex(brHex,0.44));breechLen=0.44;
+  }
+  else if(T==="torso_bare"){
+    /* ---- BARE, WHICH THE WARDROBE HAD NO WAY TO SAY ----
+       Every torso in this game is a GARMENT. "none_torso" is not nothing - it is Shirt &
+       Slops, a loose linen shirt over canvas slops, which is what an English seaman wore.
+       So the five men on the dune at Cape Henry came out dressed as the party they were
+       shooting at, and I held the whole scene rather than ship that.
+       This is the missing option, and it is a real one rather than something pasted over
+       the shirt: the arms and legs take the skin, the chest is built in skin instead of
+       cloth below, and what remains is a hide clout at the waist on a thong. Percy, at
+       Kecoughtan four days after this: the men wore skins about the middle and little
+       else in warm weather.
+       NOT IN THE WARDROBE TABLE, deliberately - it is not a thing the player can put on,
+       it is a way of building somebody who is not English. */
+    sleeveCol=SK;cuffCol=null;breechCol=HIDE;breechIsWool=false;breechLen=0.16;
+    stockCol=SK;limbW=thin*1.30;
   }
   else if(survivor){
     /* faded most of the way back to undyed wool */
@@ -2791,6 +2808,13 @@ function buildFigureRaw(eq){
     B.box(0,1.44,0.17,0.30,0.05,0.18,LINEN);
     for(let i=0;i<11;i++)B.box(0,1.02+i*0.04,0.128,0.034,0.034,0.034,RGB(0xd8b25a));
     B.box(0,0.99,0,0.37,0.05,0.27,RGB(0x53381f));
+  } else if(T==="torso_bare"){
+    /* the same two sections as the shirt, a little narrower and in skin - so the
+       silhouette is a man and not a man in a smock */
+    B.oct(0,0,0.91,1.41,0.258,0.202,0.306,0.234,0.30,shadeRGB(SK,0.90),SK,0.78);
+    B.oct(0,0,1.365,1.435,0.306,0.234,0.318,0.240,0.30,SK,SK);
+    B.box(0,0.905,0,0.335,0.215,0.255,HIDE);        /* the clout */
+    B.box(0,1.015,0,0.345,0.045,0.265,THONG);       /* the thong that holds it */
   } else {
     B.oct(0,0,0.91,1.41,0.272,0.212,0.322,0.246,0.30,shadeRGB(CLOTH,0.90),CLOTH,0.78);
     B.oct(0,0,1.365,1.435,0.322,0.246,0.335,0.252,0.30,CLOTH,CLOTH);
@@ -18339,7 +18363,7 @@ let BOWMEN=[];
    hair Percy describes - the right side shaved with a shell, the left worn long and knotted
    - built properly in buildFigureRaw rather than pasted over it.
    Turn this on when that exists. Nothing else has to change. */
-const BOWMEN_READY=false;
+const BOWMEN_READY=true;
 /* Percy, of these people, within weeks: "Their Bowes are made of tough Hasell, their
    strings of Leather", arrows of cane "an elle long" - 45 inches - "headed with very sharpe
    stones... like a broad Arrow", others "with the ends of Deeres hornes". One unit is one
@@ -18386,25 +18410,50 @@ function buildBowman(seed){
      and the hair Percy describes at Kecoughtan four days later: "they shave the right side
      of their heads with a shell, the left side they weare of an ell long tied up with an
      artificiall knot". */
-  const eq={skin:"tidewater",palette:"ink",cloak:"none_cloak",torso:"none_torso",
-            accessory:"none_acc",head:"none_head",build:"build_normal",face:"plain",
-            dye:{breech:"ink",stock:"ink"}};
+  const eq={skin:"tidewater",palette:"ink",cloak:"none_cloak",torso:"torso_bare",
+            accessory:"none_acc",head:"none_head",build:"build_normal",face:"plain"};
   const f=buildFigure(eq);
   const p=f.userData.parts;
+  /* ---- THE HAIR, WHICH IS THE MOST DISTINCTIVE THING AND THE EASIEST TO GET WRONG ----
+     Percy, at Kecoughtan four days after this beach: "they shave the right side of their
+     heads with a shell, the left side they weare of an ell long tied up with an
+     artificiall knot". So it is ASYMMETRIC - shaved on the right, long on the left and
+     knotted - and that one detail does more to make these men look like themselves than
+     anything else available. It is not a wardrobe piece because it is not a thing the
+     player can put on. */
+  if(p&&p.neck){
+    const hg=new Geo(), HR=RGB(0x241a12), HR2=RGB(0x120d08);
+    hg.box(-0.02,0.30,-0.02,0.30,0.09,0.34,HR);            /* the crown, close */
+    hg.box(-0.15,0.20,-0.03,0.10,0.34,0.30,HR2);           /* long down the LEFT only */
+    hg.box(-0.17,-0.05,-0.10,0.13,0.16,0.14,HR);           /* the knot */
+    const hair=hg.mesh(false,true);
+    p.neck.add(hair);
+  }
+  /* ---- A CHILD OF A FIGURE IS INSIDE THE FIGURE'S SCALE ----
+     buildFigure wraps the body in a group scaled by FIG_SCALE - 2.916 - so anything
+     parented to a joint is multiplied by it. The bow is modelled in FEET, because that is
+     the unit the rest of this level uses and because a five-foot stave should be written
+     as five, so it has to be divided back out or it comes out fourteen feet long. That is
+     exactly what it was doing: a pale pole lying across the whole frame, which no amount
+     of correcting the rotation was ever going to fix.
+     One place, applied to everything that hangs off the man. */
+  const IN_FIG=1/FIG_SCALE;
   const bow=buildBow();
   const quiver=buildQuiver();
   const nocks=buildNocks(7+(seed%2));
+  bow.scale.setScalar(IN_FIG);
+  quiver.scale.setScalar(IN_FIG);
   if(p&&p.neck){
     /* ---- THE BOW IN THE TEETH ----
        Parented to the head, crosswise, tips clear of the sand. This is the single most
        vivid thing in the record of this engagement and the old code had no representation
        of it whatever. */
-    bow.position.set(0,0.30,0.34);
+    bow.position.set(0,0.10,0.30);
     bow.rotation.set(0,0,Math.PI/2);
     p.neck.add(bow);
   }
   f.add(quiver);
-  quiver.position.set(-0.30,3.6,-0.42);
+  quiver.position.set(-0.42,3.6,-0.55);
   quiver.rotation.set(0.22,0,0.30);
   nocks.forEach(function(m){quiver.add(m);});
   f.userData.bow=bow;f.userData.quiver=quiver;f.userData.nocks=nocks;
@@ -18429,11 +18478,11 @@ function bowInHand(b,inHand){
        self bow is actually held. Caught by looking at it: the numbers all ran green while
        the man was carrying a five-foot stave at forty-five degrees. */
     p.wristL.add(bow);
-    bow.position.set(0.06,-0.10,0.14);
+    bow.position.set(0.02,-0.04,0.06);
     bow.rotation.set(1.35,0,0.16);
   } else if(p.neck){
     p.neck.add(bow);
-    bow.position.set(0,0.30,0.34);
+    bow.position.set(0,0.10,0.30);
     bow.rotation.set(0,0,Math.PI/2);
   }
 }
@@ -20936,7 +20985,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260812-0510";
+const BUILD="20260812-0740";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
