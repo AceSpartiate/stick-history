@@ -16916,40 +16916,94 @@ function drawQuizMap(kind){
     g.fillStyle=LAND;g.fillRect(0,0,W,H);
     /* the Atlantic, the bay behind the Delmarva, and the mouth between the capes - one
        traversal with the peninsula carved out of it as a slit, exactly as the bay chart does */
-    /* ---- ONE TRAVERSAL WITH THE PENINSULA CUT OUT OF IT ----
-       Down the bay's WESTERN shore, east along the south side of the mouth to Cape Henry,
-       south down the sea coast, out to the margin, and back in along the Delmarva: down
-       its ocean shore, round Cape Charles, and UP its bay shore again. That last stretch
-       is a slit, so the peninsula is carved out of the water rather than laid on top of
-       it - which is what leaves the mouth open between the capes without anyone having to
-       remember to leave a gap.
-       The first attempt put the Delmarva's bay shore at -76.06 and its ocean shore at
-       -75.30: three quarters of a degree wide, nearly twice the real thing, and it pushed
-       the Atlantic off the sheet altogether. */
-    const SEA=[[37.95,-76.42],[37.60,-76.34],[37.30,-76.28],[37.08,-76.27],
-               [37.00,-76.30],[36.97,-76.19],[36.95,-76.09],[36.93,-76.01],
-               [36.85,-75.97],[36.65,-75.90],[36.55,-75.86],[36.55,-75.15],
-               [37.95,-75.15],[37.95,-75.55],[37.60,-75.61],[37.30,-75.80],
-               [37.11,-75.97],[37.20,-76.03],[37.50,-76.01],[37.95,-75.95]];
+    /* ---- WHY THIS DID NOT READ AS A MOUTH, AND WHAT ACTUALLY FIXED IT ----
+       Two attempts failed here and both were the same mistake: nudging points instead of
+       asking what makes a mouth legible at all. A reader sees a mouth when TWO CAPES POINT
+       AT EACH OTHER and water runs between them. Neither of mine pointed.
+
+       CAPE CHARLES had a blunt end. The Delmarva simply stopped, so it read as a strip of
+       land that had been cut off by the frame rather than as a peninsula arriving at a
+       point. It is tapered now over its last quarter degree - the ocean shore comes in
+       west and the bay shore comes out east, and they meet at 37.11/-75.99.
+
+       CAPE HENRY had no turn in it. The old line ran from the mouth's south shore straight
+       on to the sea coast with nothing happening at the cape, so there was no cape - just a
+       bend. The coast now runs EAST along the bay side, turns hard at 36.94/-76.02, and
+       goes back SOUTH along the seaward face, which is what the ground does and what makes
+       a hook you can see.
+
+       AND THE BOTTOM EDGE WAS WRONG. The old traversal ran east along 36.55 to the corner,
+       so the Virginia Beach coast came out as a line heading out to sea and the water below
+       the cape opened into nothing. That coast runs very nearly due SOUTH from Cape Henry
+       at about -75.95, and running it south is what keeps the Atlantic on the east side
+       where it belongs instead of spreading under the whole sheet.
+
+       The Delmarva is still carved out as a SLIT - down its ocean shore, round the cape,
+       back up its bay shore - so the mouth stays open between the two tips without anyone
+       having to remember to leave a gap. Cape Charles 37.11 N and Cape Henry 36.94 N is
+       twelve miles of water, which is what it is. */
+    const SEA=[[37.95,-76.48],[37.62,-76.42],[37.38,-76.33],[37.16,-76.29],
+               [37.04,-76.28],[37.01,-76.19],[36.98,-76.10],[36.94,-76.02],
+               [36.92,-75.98],[36.86,-75.96],[36.72,-75.95],[36.55,-75.94],
+               [36.55,-75.10],[37.95,-75.10],
+               [37.95,-75.50],[37.68,-75.56],[37.42,-75.70],[37.24,-75.86],
+               [37.16,-75.94],[37.11,-75.99],
+               [37.19,-76.05],[37.42,-76.04],[37.70,-76.01],[37.95,-75.99]];
     const sea=shore(SEA,true,WATER);
     /* the King's River, from the mouth to the head of navigation at the falls */
-    const RIV=[[37.02,-76.28],[37.14,-76.52],[37.21,-76.78],[37.25,-76.92],
+    /* the river's mouth has to reach INTO the bay or it ends in a squared-off box against
+       the shore, which is what it was doing - both ends were at the same longitude */
+    const RIV=[[37.06,-76.16],[37.14,-76.52],[37.21,-76.78],[37.25,-76.92],
                [37.32,-77.10],[37.40,-77.30],[37.53,-77.43],
                [37.47,-77.45],[37.35,-77.32],[37.26,-77.12],[37.17,-76.94],
-               [37.10,-76.76],[37.02,-76.50],[36.94,-76.28]];
+               [37.10,-76.76],[37.01,-76.50],[36.93,-76.14]];
     const riv=shore(RIV,true,WATER);
     /* and the next river north, mouth only */
     /* the next river north: its mouth has to reach INTO the bay, or it floats as a grey
        sliver in the middle of the land, which is what it did */
-    shore([[37.26,-76.18],[37.34,-76.56],[37.41,-76.80],[37.37,-76.83],
-           [37.29,-76.60],[37.19,-76.20]],true,WATER);
+    const YRK=[[37.30,-76.06],[37.36,-76.56],[37.42,-76.80],
+               [37.38,-76.83],[37.31,-76.60],[37.22,-76.08]];
+    const yrk=shore(YRK,true,WATER);
     PEN.seaRule(g,U,V,SEA.map(function(q){return [(q[1]-F.lo0)/(F.lo1-F.lo0),
                                                   (F.la0-q[0])/(F.la0-F.la1)];}),
       W,H,0.026,"rgba(70,104,124,0.28)",W*0.0009);
+    /* ---- THE THING THAT WAS ACTUALLY COVERING THE MOUTH ----
+       The river was inked as a CLOSED shape, so the stroke ran straight from the end of one
+       bank to the end of the other - a nine-mile wall of ink standing across the bay mouth,
+       squarely on top of the one feature this sheet exists to show. Two attempts at moving
+       the capes about failed because the capes were never the problem; the box in front of
+       them was.
+       Each bank is inked as its own OPEN path now, and everything after the fill is clipped
+       to the LAND - the sheet minus the sea, by the even-odd rule - so a bank stops exactly
+       where the shore is and no arithmetic about array indices is needed or can drift. Same
+       treatment the bay chart already uses, and for the same reason. */
+    /* ---- A COAST IS INTERRUPTED BY A RIVER MOUTH ----
+       The bay's shoreline was inked as one unbroken run, so it drew straight across both
+       river mouths and the two rivers ended against a wall of ink instead of opening into
+       the water they open into. Clipped to everything EXCEPT the rivers - the sheet minus
+       the two river shapes, even-odd - so the shore ink and its hatching stop at each mouth
+       and start again on the far side, which is what a shore does. */
+    g.save();
+    g.beginPath();
+    g.rect(-2,-2,W+4,H+4);
+    PEN.path(g,U,V,riv,true);g.closePath();
+    PEN.path(g,U,V,yrk,true);g.closePath();
+    g.clip("evenodd");
     g.strokeStyle=INK;g.lineWidth=W*0.0022;
     PEN.path(g,U,V,sea);g.closePath();g.stroke();
-    PEN.path(g,U,V,riv);g.closePath();g.lineWidth=W*0.0018;g.stroke();
     PEN.hatch(g,U,V,sea,-1,0.016,0.013,"rgba(74,58,34,0.55)",W*0.0013);
+    g.restore();
+    g.save();
+    g.beginPath();
+    g.rect(-2,-2,W+4,H+4);
+    PEN.path(g,U,V,sea,true);g.closePath();
+    g.clip("evenodd");
+    g.strokeStyle=INK;g.lineWidth=W*0.0018;
+    PEN.path(g,U,V,riv.slice(0,7));g.stroke();
+    PEN.path(g,U,V,riv.slice(7));g.stroke();
+    PEN.path(g,U,V,yrk.slice(0,3));g.stroke();
+    PEN.path(g,U,V,yrk.slice(3));g.stroke();
+    g.restore();
 
     [[37.35,-76.16,9],[37.10,-76.10,11],[36.98,-75.92,8],[37.60,-76.18,6],
      [37.16,-76.62,5],[37.24,-76.98,3]].forEach(function(q){
@@ -16961,7 +17015,10 @@ function drawQuizMap(kind){
     site(-75.90,36.90,"X");
     site(-76.78,37.21,"Y");
     site(-77.43,37.53,"Z");
-    say("The Maine Sea",-75.44,36.70,0.020,"right","#3d5a68");
+    /* naming the water gives away nothing - the question is about Spanish warships and
+       distance up a river - and without it a reader has to infer which side is the ocean */
+    say("The Bay",-76.16,37.62,0.020,"center","#3d5a68");
+    say("The Maine Sea",-75.24,36.72,0.020,"right","#3d5a68");
     PEN.rose(g,U,V,0.075,0.230,W*0.030,INK);
     bar(0.520,0.895,10);
   }
@@ -21145,7 +21202,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260812-0930";
+const BUILD="20260812-1120";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
