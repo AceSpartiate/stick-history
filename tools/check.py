@@ -453,6 +453,114 @@ if re.search(r"S\.pending\s*=\s*\{", s) and "function resumePenalty" in s \
 else:
     bad("S.pending is set but never resumed - a refresh mid-punishment serves none of it")
 
+print("\n14. Every conversation beat can be finished on its own")
+# The chapter's dialogue pool went from 34 choices to 89, most of them ALTERNATIVE wise
+# routes - several ways of asking that reach the same insight, so a pupil who cannot see
+# one framing can find another. Two things have to stay true of that pool, and neither is
+# obvious by eye once a beat carries nine choices:
+#
+#   A BEAT MUST HAVE AN UNGATED WAY OUT. A wise choice may require an insight earned from
+#   another character (needs:) or evidence from a survey (evid:). If EVERY wise choice on
+#   a beat were gated, the conversation would stop dead for a player who had not been
+#   somewhere else first, with no way forward and nothing saying so.
+#
+#   AN ALTERNATIVE ROUTE MUST REACH THE SAME ROOM. Every wise choice carries the insight
+#   it grants. Two routes on one beat granting DIFFERENT insights is not an alternative
+#   door, it is a second lesson hidden behind a coin toss - the player takes one and never
+#   learns the other, and the scrivener may ask about either.
+import json as _json
+
+def _beats_of(src):
+    """(npc id, beat index, [choice source]) for every beat in every npcs:[] block"""
+    def _skip(t, j):
+        if t.startswith("/*", j):
+            e = t.find("*/", j + 2); return len(t) if e < 0 else e + 2
+        if t.startswith("//", j):
+            e = t.find("\n", j + 2); return len(t) if e < 0 else e + 1
+        return j
+    def _match(t, i):
+        depth, j, instr = 0, i, None
+        while j < len(t):
+            if not instr:
+                k = _skip(t, j)
+                if k != j:
+                    j = k; continue
+            c = t[j]
+            if instr:
+                if c == "\\": j += 2; continue
+                if c == instr: instr = None
+            elif c in "\"'": instr = c
+            elif c in "[{(": depth += 1
+            elif c in "]})":
+                depth -= 1
+                if depth == 0: return j
+            j += 1
+        return len(t) - 1
+    def _objs(t):
+        out, depth, start, instr, j = [], 0, None, None, 0
+        while j < len(t):
+            if not instr:
+                k = _skip(t, j)
+                if k != j:
+                    j = k; continue
+            c = t[j]
+            if instr:
+                if c == "\\": j += 2; continue
+                if c == instr: instr = None
+            elif c in "\"'": instr = c
+            elif c == "{":
+                if depth == 0: start = j
+                depth += 1
+            elif c == "}":
+                depth -= 1
+                if depth == 0 and start is not None:
+                    out.append(t[start:j + 1]); start = None
+            j += 1
+        return out
+    rows = []
+    for mm in re.finditer(r"\bnpcs:\s*\[", src):
+        i = src.index("[", mm.start())
+        for npc in _objs(src[i + 1:_match(src, i)]):
+            idm = re.search(r'\bid:"([^"]+)"', npc)
+            bm = re.search(r"\bbeats:\s*\[", npc)
+            if not (idm and bm):
+                continue
+            bi = npc.index("[", bm.end() - 1)
+            for k, beat in enumerate(_objs(npc[bi + 1:_match(npc, bi)])):
+                cm = re.search(r"\bchoices:\s*\[", beat)
+                if not cm:
+                    continue
+                ci = beat.index("[", cm.end() - 1)
+                rows.append((idm.group(1), k, _objs(beat[ci + 1:_match(beat, ci)])))
+    return rows
+
+stuck, split = [], []
+nbeats = nchoices = 0
+for who, bi, chs in _beats_of(s):
+    nbeats += 1
+    nchoices += len(chs)
+    wise = [c for c in chs if re.search(r"\bwise:true", c)]
+    free = [c for c in wise if not re.search(r'\bneeds:"|\bevid:"', c)]
+    if wise and not free:
+        stuck.append("%s beat %d" % (who, bi))
+    titles = set()
+    for c in free:
+        t = re.search(r'\binsight:\{g:"[a-z]+",b:"((?:[^"\\]|\\.)*)"', c)
+        if t:
+            titles.add(t.group(1))
+    if len(titles) > 1:
+        split.append("%s beat %d grants %s by different routes" % (who, bi, sorted(titles)))
+
+if stuck:
+    bad("a beat with no ungated way out - the conversation stops dead: %s" % stuck)
+else:
+    ok("all %d beats have an ungated wise route (%d choices in the pool)" % (nbeats, nchoices))
+if split:
+    bad("alternative routes on one beat grant DIFFERENT insights:\n        "
+        + "\n        ".join(split))
+else:
+    ok("every route out of a beat reaches the same insight")
+
 print("\n13. The globe agrees with the gazetteer")
 # ---- A METHODOLOGY FOR "MAKE THE MAP MORE ACCURATE" ----
 # The globe's land is a union of circles. Nudging one to fix a coast silently floods a sea

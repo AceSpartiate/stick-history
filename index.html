@@ -585,12 +585,23 @@
   /* THE OPENING BORROWS THE SCENE SCREEN, so the whole game HUD comes with it -
      the menu button, the walk hint, the thumb zones, the objective arrow. Caught
      on the first frame that rendered: a planet in space with "pinch to zoom" over
-     it. Hidden as a set rather than one at a time, so a HUD element added later
-     cannot quietly reappear here. */
-  body.opening #hud, body.opening #hint, body.opening #guide,
-  body.opening #action, body.opening #touchMove, body.opening #touchLook,
-  body.opening #menuBtn, body.opening #gunBar, body.opening #gPanel{
-    display:none !important}
+     it.
+
+     THIS WAS A DENYLIST, and it said in this very comment that it was "hidden as a
+     set rather than one at a time, so a HUD element added later cannot quietly
+     reappear here". It was nine names, and #viewport has seventeen children. Eight
+     were leaking - reported as icons floating over the ship during the opening,
+     which is #labels, the world-space interaction markers. Also #prompt, #gun,
+     #reticle, #joy, #camBtns, #gunBtn and #fireBtn.
+
+     AN ALLOWLIST DOES WHAT THE COMMENT CLAIMED. Everything inside the viewport is
+     hidden and the picture is put back, so anything added to the HUD tomorrow is
+     hidden here by DEFAULT and has to ask to be seen. The cinematic layers - the
+     subtitle, the fade, the skip button, the title card - all live in #cine, which
+     is outside #viewport, so none of them are touched. */
+  body.opening #viewport > *{display:none !important}
+  body.opening #viewport > #world,
+  body.opening #viewport > #vig{display:block !important}
   /* The title, over the anchorage. Above the fade so it can hold while the
      picture goes to black under it, which is the whole point of a title card. */
   #openTitle{position:absolute;inset:0;z-index:3;display:none;flex-direction:column;
@@ -1490,7 +1501,17 @@ let CH={
     /* DEFENSIBLE AND INCOMPLETE. He is not wrong - ships had worked this coast for
        forty years - he has just missed the only part that bears on where he is going. */
     {t:"I know English ships have worked this coast before. Fishermen, privateers.",fair:true,ink:3,
-     reply:"\u201cThey have, and every one of them sailed home again.\u201d He is unimpressed. \u201cTouching a coast is not the same as being PUT ASHORE on it and left. That is the thing you ought to be asking me \u2014 but have it your way.\u201d"}
+     reply:"\u201cThey have, and every one of them sailed home again.\u201d He is unimpressed. \u201cTouching a coast is not the same as being PUT ASHORE on it and left. That is the thing you ought to be asking me \u2014 but have it your way.\u201d"},
+    {t:"Has England ever put families ashore in that country before - not soldiers, but households?",wise:true,ink:8,
+     reply:"\u201cOnce, with families. Roanoke, in 1587, on an island off the banks south of where we are bound. Above a hundred of them, women and children among them.\u201d He works his jaw. \u201cThat is the whole difference, and nobody aboard sees it. Soldiers you can fetch off again. A colony has come to live.\u201d",
+     insight:{g:"known",b:"The Roanoke Colony",s:"In 1587 over 100 English settlers - including women and children - were landed at Roanoke, off the Carolina coast. It was a full colony, not a garrison."}},
+    {t:"Has an English child ever been born in that country before now?",wise:true,ink:8,
+     reply:"\u201cOne that I know of. A girl, born on Roanoke in the August of '87, within a month of their landing - the first English child born in that country. They christened her Virginia, after the place.\u201d He looks out at the water. \u201cMen do not carry a woman big with child three thousand mile across the sea to hold a fort for a season. That was a colony. They meant to stay, and to raise her there.\u201d",
+     insight:{g:"known",b:"The Roanoke Colony",s:"In 1587 over 100 English settlers - including women and children - were landed at Roanoke, off the Carolina coast. It was a full colony, not a garrison."}},
+    {t:"Were the last Englishmen there soldiers sent to fight the Spanish?",fair:true,ink:3,
+     reply:"\u201cThere were soldiers on that island once, aye. A company of them, with a fort, and they gave it up and took ship home.\u201d He waves it away. \u201cYou are not wrong, you are only behind. I am speaking of the lot that came after. Ask me who was put ashore then.\u201d"},
+    {t:"That country is empty of people, is it not - nobody living there before us?",wise:false,
+     reply:"\u201cEmpty.\u201d He laughs, with nothing in it. \u201cI have been twice on that coast. There are fields cleared down to the water, and smoke standing over the trees where the towns are, and more people in them than in the parish I was born in.\u201d He shakes his head. \u201cAnd Englishmen have been put ashore in that country before us. Ask me about those.\u201d"}
    ]},
   {npc:"\u201cYou've the look of a man who wants the rest of it. Go on.\u201d",
    choices:[
@@ -1500,7 +1521,19 @@ let CH={
     {t:"The Company must simply have forgotten them.",wise:false,
      reply:"\u201cForgotten?\u201d He shakes his head. \u201cWhite near killed himself trying to get back. It weren't forgetting. Think what a war with Spain does to a kingdom's shipping, and ask me again.\u201d"},
     {t:"Surely they could have sailed home under their own sail?",wise:false,
-     reply:"\u201cWith what? White took the only ship worth the name. They'd a pinnace at best, and no stores for an ocean.\u201d He grunts. \u201cThe question isn't why they stayed. It's why nobody came.\u201d"}
+     reply:"\u201cWith what? White took the only ship worth the name. They'd a pinnace at best, and no stores for an ocean.\u201d He grunts. \u201cThe question isn't why they stayed. It's why nobody came.\u201d"},
+    {t:"What was England busy with in those years that mattered more than a hundred colonists?",wise:true,ink:8,
+     reply:"\u201cSaving its own neck. Word came that Spain meant to invade, and the Council laid a stay on shipping - not a hull to leave an English port. Then the Armada came up the Channel in '88, and every ship that could carry a gun was wanted for the fight.\u201d He shrugs. \u201cA hundred souls on an island three thousand mile off do not weigh much against that. They were still there, though.\u201d",
+     insight:{g:"known",b:"Why Roanoke Was Abandoned",s:"Governor John White sailed to England for supplies in 1587; war with Spain (the Armada) commandeered every available ship, delaying his return until 1590."}},
+    {t:"Did their own governor never try to fetch them help himself?",wise:true,ink:8,
+     reply:"\u201cTheir governor was White, and try he did.\u201d He holds up two fingers. \u201cHe got two small ships out of England in '88 - all he could get. They went hunting prizes on the way, the way every ship did that year, and better-armed men fell on them and sent them home shot to pieces, never near that coast at all.\u201d His mouth goes thin. \u201cTwo more years after that before he stood on the island.\u201d",
+     insight:{g:"known",b:"Why Roanoke Was Abandoned",s:"Governor John White sailed to England for supplies in 1587; war with Spain (the Armada) commandeered every available ship, delaying his return until 1590."}},
+    {t:"Ships are lost at sea all the time - perhaps the relief simply never made the crossing.",fair:true,ink:3,
+     reply:"\u201cOne ship lost is ill luck.\u201d He shrugs. \u201cThree years without one is a reason. You are not wrong about the sea, but you have not asked what the reason was.\u201d"},
+    {t:"Did White save himself and leave them to it?",wise:false,
+     reply:"\u201cThey sent him. It was the colony's own doing - they wanted a man in England with a name to him, who would stand up and shout for supply.\u201d He shakes his head. \u201cHe came back for them in the end. What you want to ask is what kept him so long.\u201d"},
+    {t:"England had no money to send a ship, I suppose.",wise:false,
+     reply:"\u201cIt weren't the purse that stopped it.\u201d He looks at you a moment. \u201cMoney buys nothing when there is no hull to be had at any price. It was the harbours that were empty. Now think what England wanted with every ship she had in those years.\u201d"}
    ]},
   {npc:"\u201cAnd when White finally set foot on that island again, in 1590 -\u201d He stops, and spits over the rail.",
    choices:[
@@ -1510,7 +1543,17 @@ let CH={
     {t:"The Spanish had put them all to the sword, I'd wager.",wise:false,
      reply:"\u201cAnd left no bodies? No burned timber, no broken palings?\u201d He looks at you flatly. \u201cThe Spanish don't tidy up after a slaughter. Whatever happened on that island, it weren't a massacre. Ask me what was actually there.\u201d"},
     {t:"Then they starved where they stood.",wise:false,
-     reply:"\u201cStarved men leave bones. And they don't take their own houses apart plank by plank first.\u201d He taps the rail. \u201cThat was an orderly leaving, not a dying. Ask me plain what he found.\u201d"}
+     reply:"\u201cStarved men leave bones. And they don't take their own houses apart plank by plank first.\u201d He taps the rail. \u201cThat was an orderly leaving, not a dying. Ask me plain what he found.\u201d"},
+    {t:"Did they leave him any sign - anything cut or written where he would be sure to find it?",wise:true,ink:9,
+     reply:"\u201cOne word, cut in a post at the entrance. CROATOAN - an island to the south of there, and the people living on it.\u201d He holds up a finger. \u201cAnd here is the part men leave out. Before ever he sailed they had agreed on a token between them: if they were driven off in distress, they should cut a cross above the name. There was no cross. No bodies, no graves, no burning - and no cross.\u201d",
+     insight:{g:"known",b:"What Was Found at Roanoke",s:"In 1590 John White found the settlement empty: no bodies, no graves, no signs of battle, the houses dismantled in orderly fashion, and 'CROATOAN' carved on a post - the name of a nearby island and people."}},
+    {t:"Did the place look like men running, or men taking their time about it?",wise:true,ink:9,
+     reply:"\u201cTaking their time.\u201d He is certain of it. \u201cThe houses were not knocked down. They were taken to pieces and carried off. And round the whole ground somebody had set up a fence of great trees, high and strong, made like a fort - and that went up after White sailed, for it was not there when he left.\u201d He knocks the rail with his knuckles. \u201cFrightened men do not build a wall and then unbuild their own houses. Whatever moved them, it was not one night's terror.\u201d",
+     insight:{g:"known",b:"What Was Found at Roanoke",s:"In 1590 John White found the settlement empty: no bodies, no graves, no signs of battle, the houses dismantled in orderly fashion, and 'CROATOAN' carved on a post - the name of a nearby island and people."}},
+    {t:"Did he dig about the place for whatever they left in the ground?",fair:true,ink:3,
+     reply:"\u201cHe found his own chests dug up and spoiled. Books torn out of their covers, maps and pictures rotted with the rain, armour eaten through with rust.\u201d He shrugs. \u201cSomebody had been at them after the leaving - a good while, by the rot on the books. That is furniture, boy. Set the chests aside and look at the whole place, for that is where the answer is lying.\u201d"},
+    {t:"Perhaps he came to the wrong island - three years is a long while to remember a coast.",wise:false,
+     reply:"\u201cHe had lived on that ground. His own chests lay buried in it, and he found them broken open and spoiled.\u201d A flat look. \u201cIt was the place. What was wanting was the people - and the people are the question.\u201d"}
    ]},
   {npc:"\u201cSo. You've heard the whole of it now. What do you make of it?\u201d",
    choices:[
@@ -1527,7 +1570,19 @@ let CH={
     {t:"That it proves the natives of that country cannot be trusted.",wise:false,
      reply:"\u201cDoes it?\u201d He frowns. \u201cThere's no blood, no battle, and the word they left behind was the name of a people who'd been friendly to them. You've leapt to a verdict the evidence won't carry. Try again, and stay with what was found.\u201d"},
     {t:"That it's a tale sailors tell to frighten green men.",wise:false,
-     reply:"\u201cI have stood on that island.\u201d His face closes. \u201cIt is no tale. But go on - tell me what the evidence says, not what's comfortable to believe.\u201d"}
+     reply:"\u201cI have stood on that island.\u201d His face closes. \u201cIt is no tale. But go on - tell me what the evidence says, not what's comfortable to believe.\u201d"},
+    {t:"Rather than guess where they went, tell me what the evidence rules out.",wise:true,ink:11,
+     reply:"\u201cNow that is the right end of it.\u201d He leans on the rail. \u201cNo bodies on that ground, so it was no slaughter. No bones, so they did not starve where they stood. No char, no broken palings, nothing thrown down - so it was neither stormed nor burnt. Everything gone from that place was carried, and by the look of it carried by them.\u201d He is quiet a moment. \u201cWhat is left standing is a word cut in a post. That is a direction, not an answer, and I'll not make it one.\u201d",
+     insight:{g:"disp",b:"The Fate of Roanoke",s:"DISPUTED: the evidence (orderly departure, the 'CROATOAN' carving, no bodies) suggests the colonists may have joined the nearby Croatoan people - but no one knows. Claims of massacre or starvation are not supported by what was found."}},
+    {t:"What would a man have to find, even now, to settle it one way or the other?",wise:true,ink:11,
+     reply:"\u201cAye. That is the question nobody puts.\u201d He thinks about it longer than you expect. \u201cOne of them living, and able to say it. Or a child of theirs grown, in that country, with English on his tongue. Or bones a man could swear were English, in ground somebody could name.\u201d He turns his hands over. \u201cShort of that we have a word on a post and our own wanting. Mind which is which.\u201d",
+     insight:{g:"disp",b:"The Fate of Roanoke",s:"DISPUTED: the evidence (orderly departure, the 'CROATOAN' carving, no bodies) suggests the colonists may have joined the nearby Croatoan people - but no one knows. Claims of massacre or starvation are not supported by what was found."}},
+    {t:"Did nobody ever sail down to Croatoan and ask them?",fair:true,ink:3,
+     reply:"\u201cHe meant to. The weather came on foul, the cables parted, the anchors were lost, and the ship stood away for the islands to the south.\u201d He spits over the rail. \u201cNo ship ever came at that island to ask. Some tried, in the years after. None of them made that ground. That is not an answer - that is a hole where the answer should be.\u201d"},
+    {t:"Nobody knows, so one guess is as good as another.",wise:false,
+     reply:"\u201cIs it?\u201d He shakes his head. \u201cThen you have thrown away everything I told you and kept the shrug. Some tales that ground will carry and some it will not. Sort them, and come back to me.\u201d"},
+    {t:"If we cannot know what happened, then it is no use to us.",wise:false,
+     reply:"\u201cNo use?\u201d He looks away down the deck. \u201cWe know a hundred were landed. We know no ship came for three years. We know a man came back to an empty island.\u201d He turns back to you. \u201cThat is a deal of use to men bound for the same coast. Do not throw away what you have because you cannot have all of it - now count me up what we do know.\u201d"}
    ]}
   ],
   done:"\u201cYou have had the whole of it from me. Roanoke, and what it means. Go and think on it.\u201d",
@@ -1545,7 +1600,19 @@ let CH={
     {t:"The King paid for it, did he not?",wise:false,
      reply:"\u201cThe King granted the charter. He did not open his purse.\u201d The clerk almost smiles. \u201cNot a penny of Crown money is in these hulls. Ask me again - who actually put up the coin?\u201d"},
     {t:"We sail for God and for England's glory, surely.",wise:false,
-     reply:"\u201cIt says so in the preamble, and I'd not call it a lie.\u201d He turns the page. \u201cBut read on, to what the shareholders are promised. Then ask me your question again.\u201d"}
+     reply:"\u201cIt says so in the preamble, and I'd not call it a lie.\u201d He turns the page. \u201cBut read on, to what the shareholders are promised. Then ask me your question again.\u201d"},
+    {t:"What would a river running through to the South Sea be worth to the men who paid?",wise:true,ink:9,
+     reply:"\u201cEverything. It is written into their instructions - find a river that runs far into the land, and follow it up.\u201d He sets the pen down. \u201cThis is a joint-stock company: many men buying shares, pooling the coin, dividing whatever comes home. Gold would please them well enough. But a short road through to the South Sea, and so to Asia, is a toll every merchant in Europe must pay us, year on year, for ever. That is the great prize. Gold is only the one they talk of in taverns.\u201d",
+     insight:{g:"known",b:"The Virginia Company",s:"A for-profit joint-stock company funded the colony. Shareholders expected returns: precious metals, saleable commodities, and a hoped-for water passage through Virginia to Asia."}},
+    {t:"Someone is out of purse for my biscuit - who is it, and what do they want back?",wise:true,ink:8,
+     reply:"\u201cOut of purse. Somebody always is.\u201d He sets the pen down. \u201cLearn the two words while you are here. The men who venture their money are called adventurers. You venture your person, and so you are a planter. The adventurers bought shares in a joint-stock - many men, many shares, and every share owed a part of whatever comes home.\u201d He turns the book toward you. \u201cYour biscuit is written on this page as a cost against that. Costs are expected to earn.\u201d",
+     insight:{g:"known",b:"The Virginia Company",s:"A for-profit joint-stock company funded the colony. Shareholders expected returns: precious metals, saleable commodities, and a hoped-for water passage through Virginia to Asia."}},
+    {t:"London merchants paid for it, I suppose, and they want gold for their trouble.",fair:true,ink:3,
+     reply:"\u201cMerchants, and gentlemen, and men who have never stood on a deck in their lives - that is what a joint-stock is for. Many hands, many shares.\u201d He does not look up. \u201cAs for gold, it stands first on their list and is not the whole of it. Timber. Pitch. Sassafras. A passage to Asia. You have the beginning of the thing, which is more than the deck has.\u201d"},
+    {t:"So this is a place for poor men to start a new life away from England?",wise:false,
+     reply:"\u201cA refuge is a place men run to.\u201d He looks up. \u201cNobody runs toward a coast with no Englishman standing on it and no crop in the ground. Most of these men were sought out and their passage paid, and something is expected back from every one of them.\u201d He dips the pen. \u201cAsk me who paid, and what he expects for it.\u201d"},
+    {t:"We came for freedom of religion, did we not? That is what I was told.",wise:false,
+     reply:"\u201cYou are thinking of some congregation that took ship to be let alone. This is not one.\u201d He turns the book so you can see the names. \u201cGentlemen. Labourers. Carpenters. A barber. Entered one by one, and not a man of them entered out of a church that turned him out - they were gathered by men of business.\u201d He turns it back. \u201cThe paper does speak of religion, and I will come to that if you stay by me. Ask me first what those men of business were promised.\u201d"}
    ]},
   {npc:"\u201cYou've read further than most. Ask on, while I've the light.\u201d",
    choices:[
@@ -1555,7 +1622,19 @@ let CH={
     {t:"So each man is granted his own plot on arrival?",wise:false,
      reply:"\u201cGranted?\u201d He taps the page hard. \u201cNothing is granted. Everything is the Company's. You are labour, not landowner. Read the clause again and put the question to me properly.\u201d"},
     {t:"At least we'll be free men once ashore.",wise:false,
-     reply:"\u201cFree to work where you are told. There is a Council named in a sealed box we mayn't open until landfall - you'll not even choose who commands you.\u201d He shrugs. \u201c'Free' is not the word this document uses.\u201d"}
+     reply:"\u201cFree to work where you are told. There is a Council named in a sealed box we mayn't open until landfall - you'll not even choose who commands you.\u201d He shrugs. \u201c'Free' is not the word this document uses.\u201d"},
+    {t:"If I break ground and raise a field of corn in Virginia, whose corn is it?",wise:true,ink:10,
+     reply:"\u201cNot yours. The land is the Company's, the seed is the Company's, the spade in your hand was bought on their account - and so is the corn.\u201d He shrugs. \u201cIt goes into a common store and is doled back out by measure: the same measure to the man who grew it and the man who stood and watched him. Seven years of that. You are their servant, not a settler, and you will own nothing in Virginia until the term is out - if you live the term.\u201d",
+     insight:{g:"known",b:"Colonists as Company Servants",s:"Under the charter, colonists were the Company's employees for a seven-year term. Land, stores, and produce belonged to the Company and were held in a common store, not owned by settlers."}},
+    {t:"What am I paid for these seven years, and when do I see it?",wise:true,ink:9,
+     reply:"\u201cNothing counted into your hand.\u201d He says it without softening. \u201cYou are fed and clothed out of the common store while the term runs, and that is your wage. At the end there is talk of a division - land parcelled out, a share of the stock to the planters.\u201d He taps the desk. \u201cTalk. I have not got it in front of me on a page. What I have got on a page is the seven years, and the Company's orders for how you are to spend them.\u201d",
+     insight:{g:"known",b:"Colonists as Company Servants",s:"Under the charter, colonists were the Company's employees for a seven-year term. Land, stores, and produce belonged to the Company and were held in a common store, not owned by settlers."}},
+    {t:"They paid my passage and take the whole risk, so seven years seems a fair bargain.",fair:true,ink:3,
+     reply:"\u201cThey did pay it, and that is why the term is long. You have that much right.\u201d He allows it with a small nod. \u201cBut a bargain is written by whoever holds the pen, and it was not yours. While it runs you own nothing and you go where you are sent.\u201d He straightens the papers. \u201cHalf an answer, honestly got.\u201d"},
+    {t:"If the terms are poor, a man can simply quit and work for himself.",wise:false,
+     reply:"\u201cQuit and walk where?\u201d He looks up. \u201cThere is an ocean behind you and seven years in front of you. This is a contract, not a humour to be got over.\u201d He waits. \u201cNow put it to me properly, and ask what you are.\u201d"},
+    {t:"Then we are slaves to them, and that is the plain word for it.",wise:false,
+     reply:"\u201cIt is not the word, and I will not have it used loose.\u201d He is patient about it. \u201cA slave has no term to his service. Yours is written down, and it ends - and while it runs they must feed you.\u201d He taps the page. \u201cDo not soften it either. For those seven years you own nothing and you go where you are sent. Ask me what you are, and use the word the Company uses.\u201d"}
    ]},
   {npc:"\u201cThere's a question almost nobody thinks to put to me. I'll wait while you find it.\u201d",
    choices:[
@@ -1572,7 +1651,19 @@ let CH={
     {t:"Then the Crown will surely send relief.",wise:false,
      reply:"\u201cThe Crown that spent nothing to begin with?\u201d He shakes his head. \u201cThis is a merchants' venture, and merchants cut their losses. There is no rescue written anywhere in these pages. Ask me what that means for us.\u201d"},
     {t:"The Company would never abandon its own men.",wise:false,
-     reply:"\u201cWould it not? Go and ask the sailor what became of Roanoke.\u201d A pause. \u201cShips come when there is profit in the coming. Now say the consequence back to me plainly.\u201d"}
+     reply:"\u201cWould it not? Go and ask the sailor what became of Roanoke.\u201d A pause. \u201cShips come when there is profit in the coming. Now say the consequence back to me plainly.\u201d"},
+    {t:"What must be in the hold going home before another ship is sent out to us?",wise:true,ink:11,
+     reply:"\u201cSomething worth a merchant's freight. Timber. Pitch. Sassafras. Ore, if this country has any.\u201d He counts them off against the page. \u201cSend a hull home empty and you have shown the adventurers that their money is dead. Then no more ships. And a colony that cannot yet feed itself and gets no ships is not a colony long.\u201d He glances at the hatch. \u201cKeep that between us.\u201d",
+     insight:{g:"known",b:"Profit or Perish",s:"Because the colony was a commercial venture, continued supply depended on producing something profitable. No saleable cargo meant no incentive for investors to keep sending ships."}},
+    {t:"Put it as one of the men who paid: why send us a second ship?",wise:true,ink:10,
+     reply:"He almost approves. \u201cBecause the first one paid him. That is the only reason a ledger knows how to write down.\u201d He does not blink. \u201cThere are others - his good name, the King's favour, spite against Spain - and I would not trust my life to any of them. Return nothing for long enough and he keeps his coin, and he is within his rights, and we are three thousand miles off with no supply and no harvest. That is the sum of it, and I would not say it loudly on deck.\u201d",
+     insight:{g:"known",b:"Profit or Perish",s:"Because the colony was a commercial venture, continued supply depended on producing something profitable. No saleable cargo meant no incentive for investors to keep sending ships."}},
+    {t:"Then we had best grow our own food and not lean on their ships at all.",fair:true,ink:4,
+     reply:"\u201cThat is the soundest thing said to me this week, and it is still not the whole of it.\u201d He looks up from the page. \u201cGrow food and you may live. But no cargo means no ships, and no ships means no nails, no powder, no men to stand in for the dead. Hold both halves at once and you will be ahead of the deck.\u201d"},
+    {t:"They have already spent their money on us, so they must keep spending.",wise:false,
+     reply:"\u201cThat is not how a merchant reckons.\u201d He sets the pen crosswise. \u201cCoin already lost is lost. He asks what the next pound earns him, not what the last one did. Some will throw good money after bad to save their name, and some cut a venture loose in a morning - and from three thousand miles off you will not know which sort you have.\u201d He looks at you steadily. \u201cSay back to me what that means for men living out here.\u201d"},
+    {t:"One good vein of gold and the ships will come thick as gulls.",wise:false,
+     reply:"\u201cIf there is gold.\u201d He is dry about it. \u201cThere is none in my book yet, only the hope of it, and hope is not cargo.\u201d He turns the page over. \u201cSet the gold aside and answer me for the case where there is none. What brings the ships then - and what follows if nothing does?\u201d"}
    ]},
   {npc:"\u201cOne last thing, since you seem able to read. The charter speaks a good deal of religion.\u201d",
    choices:[
@@ -1585,7 +1676,17 @@ let CH={
      fair:true,ink:4,
      reply:"\u201cThat is nearer the mark than most, and cruder than it needs to be.\u201d He sets the paper down. \u201cA man may mean a thing AND profit by it. Read it for both at once and you will read it right - but you have half of it, which is more than the deck has.\u201d"},
     {t:"Then it is a lie, and only gold matters.",wise:false,
-     reply:"\u201cThat is as lazy as swallowing it whole. Some men mean it sincerely and would be insulted by you.\u201d He taps the page. \u201cA paper can be honest and self-serving at once. That is the harder thing to hold in your head. Try it.\u201d"}
+     reply:"\u201cThat is as lazy as swallowing it whole. Some men mean it sincerely and would be insulted by you.\u201d He taps the page. \u201cA paper can be honest and self-serving at once. That is the harder thing to hold in your head. Try it.\u201d"},
+    {t:"Can a man mean the religion sincerely and still be counting on the profit?",wise:true,ink:10,
+     reply:"\u201cHe can, and I judge these did.\u201d He does not hurry the answer. \u201cMaster Hunt means every word of that preamble, and would take it ill from you if you said otherwise. The same words also make the venture lawful and godly in the telling, and they quiet a man's conscience about planting a fort on ground that other people are already living on.\u201d He closes the book. \u201cSincere and useful in one breath. Hold both, and you will read a paper better than most clerks.\u201d",
+     insight:{g:"known",b:"Reading a Document's Purpose",s:"The charter's religious language was likely sincere AND served the venture's interests - lending legitimacy to settlement on land already inhabited. Sources can be honest and self-serving simultaneously."}},
+    {t:"Who was this written for, and what did the writers want out of him?",wise:true,ink:9,
+     reply:"\u201cNow that is a clerk's question.\u201d He lays the page flat. \u201cThe King, who must grant it. The adventurers, who must be got to pay. And any man who may one day stand up and ask by what right we plant a fort on ground that is not ours. The religion in it is meant sincerely by some - and it answers all three of them at once.\u201d He looks up. \u201cA paper can be honest and serve its writer in the same breath. Read for both, always.\u201d",
+     insight:{g:"known",b:"Reading a Document's Purpose",s:"The charter's religious language was likely sincere AND served the venture's interests - lending legitimacy to settlement on land already inhabited. Sources can be honest and self-serving simultaneously."}},
+    {t:"It carries the King's seal, so whatever it says must be so.",wise:false,
+     reply:"\u201cA seal makes a paper lawful. It does not make it true, and it tells you nothing at all about what the paper is for.\u201d He turns it toward you. \u201cAsk me instead who wrote this, and for whom, and what they wanted out of the writing.\u201d"},
+    {t:"Why need godly words at all? The country is empty and free for the taking.",wise:false,
+     reply:"\u201cEmpty.\u201d He stops writing. \u201cMen who have been on this coast speak of towns up the rivers, with people enough in them to fill this ship many times over. That is precisely why the paper needs godly words - a country with people already in it must be answered for.\u201d He dips the pen again. \u201cAsk me what that language is doing there.\u201d"}
    ]}
   ],
   done:"\u201cThe charter is on the table if you would read it yourself. I have told you what is in it.\u201d",
@@ -1603,7 +1704,17 @@ let CH={
     {t:"How much of it do you expect to carry home?",wise:false,
      reply:"\u201cChests! Chests of it!\u201d He beams at you, delighted to be agreed with - and you notice he has no answer beyond the beaming. Press him instead on where the claim comes from."},
     {t:"The Spanish found gold in the Americas, so we shall too.",wise:false,
-     reply:"\u201cJust so! Precisely my own reasoning!\u201d He seizes your arm, thrilled. And there it is, you think: a reason that is only a resemblance. Ask him what it actually rests upon."}
+     reply:"\u201cJust so! Precisely my own reasoning!\u201d He seizes your arm, thrilled. And there it is, you think: a reason that is only a resemblance. Ask him what it actually rests upon."},
+    {t:"Why should Virginia hold gold just because Peru did, when it is a different country entirely?",wise:true,ink:9,
+     reply:"\u201cBecause -\u201d He opens his mouth, and shuts it again. \u201cBecause it is all one New World, sir, and the New World is rich. That is what is said.\u201d He looks down at his boots. \u201cThough Peru is a great way from Virginia. Further than London is from Moscow, I should think.\u201d He does not seem at all pleased to have thought of it.",
+     insight:{g:"myth",b:"Gold in Virginia",s:"MYTH: that Virginia held Spanish-style gold deposits. The belief rested on promotional writing and analogy with Spanish Peru - not on any evidence from Virginia itself."}},
+    {t:"Somebody printed that in a book, I take it, and whoever did wanted men to buy passage.",wise:true,ink:9,
+     reply:"\u201cMaster Hakluyt is a scholar and a churchman, sir, not a pedlar at a fair.\u201d He says it hotly. Then slower: \u201cThough he has never set foot in that country himself. He had the whole of it from other men's telling. And I am told his name stands on the Company's own patent.\u201d He turns his hat over and over in his hands. \u201cA churchman may have money in the thing too, I suppose.\u201d",
+     insight:{g:"myth",b:"Gold in Virginia",s:"MYTH: that Virginia held Spanish-style gold deposits. The belief rested on promotional writing and analogy with Spanish Peru - not on any evidence from Virginia itself."}},
+    {t:"Spain's silver came out of deep mines at Potosi, and they have been digging sixty years.",fair:true,ink:3,
+     reply:"\u201cSixty years, then. I am a young man.\u201d He is not troubled in the least. And you notice you have quarrelled with him over how HARD the gold is to come by, and left the question of whether it is there at all standing exactly where it was. Ask him where the story began."},
+    {t:"Merchants are careful men. They'd not send three ships unless the gold were certain.",wise:false,
+     reply:"\u201cThey would not, would they?\u201d he says, brightening. But the Company's own papers hope for timber and pitch and sassafras besides, and a passage through to the South Sea. A man who is certain of gold does not trouble to list four other things. That is a gamble dressed as a certainty. Ask him where his own belief came from."}
    ]},
   {npc:"\u201cYou look doubtful, sir. I do not care for the look.\u201d",
    choices:[
@@ -1620,7 +1731,19 @@ let CH={
     {t:"Then you will simply buy provisions from the natives.",wise:false,
      reply:"\u201cBuy? With what, my good name?\u201d He laughs, then stops laughing. \u201c...We do carry copper and beads for trade, it is true. But that supposes they will always wish to sell to us.\u201d He frowns. \u201cAsk me what I should do if they will not.\u201d"},
     {t:"Then you will go home richer in experience, at least.",wise:false,
-     reply:"\u201cHome?\u201d He says it lightly, and then not lightly at all. \u201cI have nothing to go home to. The plate is sold.\u201d He straightens. \u201cAsk me what I mean to actually do when we arrive.\u201d"}
+     reply:"\u201cHome?\u201d He says it lightly, and then not lightly at all. \u201cI have nothing to go home to. The plate is sold.\u201d He straightens. \u201cAsk me what I mean to actually do when we arrive.\u201d"},
+    {t:"What would they say at home if word came that you had dug in a field all day?",wise:true,ink:10,
+     reply:"\u201cThat I had come down in the world. And they would be right.\u201d He straightens his cuff. \u201cA gentleman does not labour with his hands. That is what the word MEANS.\u201d Then, quieter: \u201cThough I suppose a field does not much care what a man is called.\u201d",
+     insight:{g:"known",b:"Too Many Gentlemen",s:"A large share of the first colonists were gentlemen and their servants, who regarded manual farm labour as beneath their station - leaving very few willing or able to grow food."}},
+    {t:"Those manservants at the rail - what will they do in a country with no houses to keep?",wise:true,ink:10,
+     reply:"\u201cDo? What they do here.\u201d He seems puzzled to be asked. \u201cThey shave us, and keep our linen, and stand behind our chairs at dinner.\u201d A pause. \u201c...There will be no chairs.\u201d He watches them a moment longer. \u201cThey are gentlemen's men, sir. Not one of them was ever a husbandman. It had not struck me that they will be no more use in a field than I am.\u201d",
+     insight:{g:"known",b:"Too Many Gentlemen",s:"A large share of the first colonists were gentlemen and their servants, who regarded manual farm labour as beneath their station - leaving very few willing or able to grow food."}},
+    {t:"There is nobody in Virginia to see you work. Why should a hoe shame you there?",fair:true,ink:3,
+     reply:"\u201cTo SEE me?\u201d He is honestly puzzled by the question. \u201cSir, it is not a coat I put on when there is company. It is what I am set down as in every book at home that carries my name.\u201d He is not being vain. He means it exactly - and a man who believes that of himself will not be argued into a field by the want of witnesses."},
+    {t:"You need not farm at all. You can live off the game and the fish in that country.",wise:false,
+     reply:"\u201cNow THAT is work fit for a gentleman!\u201d He brightens at once. \u201cI have shot since I was a boy.\u201d But a deer park at home is not a strange forest, and a hundred men must eat every day of the year, not only on the days the hunting is good. Ask him who will plant, and when."},
+    {t:"The Company will have chosen strong workmen for a voyage like this.",wise:false,
+     reply:"\u201cChosen?\u201d He laughs. \u201cI paid for my place aboard, sir. So did half the men in good doublets standing about you.\u201d Then he hears what he has said, and stops laughing. Ask him what such a company will do when there is ground to be broken."}
    ]},
   {npc:"\u201cCome, say what you are thinking. You have the face of a man doing sums.\u201d",
    choices:[
@@ -1633,7 +1756,17 @@ let CH={
     {t:"Fortune favours the bold. You will do very well.",wise:false,
      reply:"He grips your hand, thoroughly delighted. \u201cA man of sense at last!\u201d And you have told him what he wished to hear rather than what the muster roll plainly shows. Look again at who is aboard this ship."},
     {t:"The Company will send food from England if it comes to that.",wise:false,
-     reply:"\u201cYes - yes, of course they will.\u201d He seizes on it gratefully. And yet the clerk's arithmetic runs the other way: ships come when there is cargo worth carrying. You have comforted him with something you do not know to be true."}
+     reply:"\u201cYes - yes, of course they will.\u201d He seizes on it gratefully. And yet the clerk's arithmetic runs the other way: ships come when there is cargo worth carrying. You have comforted him with something you do not know to be true."},
+    {t:"The stores in the hold will not last for ever. Who breaks the first ground, and when?",wise:true,ink:12,
+     reply:"\u201cIn the spring, I should think, when a man has -\u201d He stops. \u201cIt is nearly May already.\u201d He looks at the hatch over the hold. \u201cGround must be broken long before a thing grows out of it, and got in long after that.\u201d His eye goes along the rail, over the good doublets, and he works something out that he does not say aloud.",
+     insight:{g:"known",b:"The Colony's Fatal Composition",s:"The combination of an unfounded expectation of gold and a workforce unwilling to farm meant the colony was poorly equipped to feed itself - a direct cause of the starvation that followed."}},
+    {t:"If the gold is only a story, then a man's dinner must come out of that ground, and somebody must put it in.",wise:true,ink:12,
+     reply:"\u201cGrows.\u201d He turns the word over like a strange coin. \u201cCorn is not riches, sir. Corn is what riches BUY.\u201d Then, slower: \u201c...Though a man cannot eat a passage to Asia. And there is no English market nearer than three thousand miles to buy bread at.\u201d He is very quiet. \u201cI had not thought on a country where food might be the dearest thing in it.\u201d",
+     insight:{g:"known",b:"The Colony's Fatal Composition",s:"The combination of an unfounded expectation of gold and a workforce unwilling to farm meant the colony was poorly equipped to feed itself - a direct cause of the starvation that followed."}},
+    {t:"They will learn to farm quick enough once they are hungry.",wise:false,
+     reply:"\u201cLearn?\u201d He considers it, wanting very much to agree. \u201cA man may learn. Whether he will stoop to it before the store runs out is another matter, and pride is a slow thing to starve out of a man.\u201d Now say plainly what becomes of the colony while they are learning."},
+    {t:"We carry soldiers and guns. They can take corn from the natives if we run short.",wise:false,
+     reply:"The pleasure goes out of his face. \u201cTake it,\u201d he says slowly. \u201cFrom the nearest people who have any, and who must eat through the winter themselves.\u201d And the plan settles nothing: corn taken is corn somebody else planted, and it lasts only as long as their store does. Tell him instead what becomes of the colony if no man aboard plants at all."}
    ]}
   ],
   done:"\u201cI would rather not think on it again, if it is all the same to you.\u201d",
@@ -8100,9 +8233,42 @@ function beatPay(base,tries){
   const f=(tries<=0)?1:(tries===1)?0.55:0.25;
   return Math.max(1,Math.round((base||6)*f));
 }
+/* ---- A DEEP POOL AND A SHALLOW PANEL ----
+   Reported: "some of the conversations are too difficult to progress through", and the
+   asked-for fix was three times as many paths. The pool per beat is now about that, and
+   most of what was added is ALTERNATIVE WISE ROUTES: different ways of asking that reach
+   the same insight, so a reader who cannot see one framing can find another.
+
+   But ten buttons in front of a twelve-year-old is not more navigable, it is less - and
+   navigability was the complaint. So the depth goes in the DATA and not on the screen:
+   four are offered at a time, always including at least one that actually gets somewhere,
+   and a wrong turn brings a FRESH one up rather than merely greying one out. A second
+   attempt is then a new angle instead of a shrinking list, which is the whole difference
+   between being helped and being told to guess again.
+
+   WHICH WISE ROUTE IS OFFERED ROTATES with the number of wrong turns, so the door you are
+   shown after a mistake is deliberately not the door you just failed to open.
+
+   A SHUT CROSS-CHARACTER DOOR IS ALWAYS SHOWN, at the bottom and disabled, because seeing
+   a locked door and being told what opens it is exactly what sends a player off to ask
+   somebody else. Those are rare - two in the chapter - and they are the best thing in it. */
+const BEAT_SHOW=4;
+function beatSlate(b){
+  const shut=[],wise=[],rest=[];
+  b.choices.forEach(function(c,i){
+    if(dlg.spent[i])return;
+    if((c.needs&&!S.insight[c.needs])||(c.evid&&!found(c.evid))){shut.push(i);return;}
+    (c.wise?wise:rest).push(i);
+  });
+  const out=[];
+  if(wise.length)out.push(wise[(dlg.tries||0)%wise.length]);
+  const bag=shuffle(rest.concat(wise.filter(function(i){return out.indexOf(i)<0;})));
+  for(let k=0;k<bag.length&&out.length<BEAT_SHOW;k++)out.push(bag[k]);
+  return shuffle(out).concat(shut);
+}
 function renderBeat(){
   const b=dlg.npc.beats[dlg.beat];
-  if(!dlg.order){dlg.order=shuffle(b.choices.map(function(_,i){return i;}));dlg.spent={};dlg.tries=0;}
+  if(!dlg.order){dlg.order=1;dlg.spent={};dlg.tries=0;}
   dlg.paid=null;
   meters();
   sayLine("dlgLine",b.npc,voiceOf(dlg&&dlg.npc).kind,voiceOf(dlg&&dlg.npc).who);
@@ -8111,17 +8277,7 @@ function renderBeat(){
   const sh=document.querySelector("#mDlg .sheet");if(sh)sh.scrollTop=0;
   const els=[];
   dlg.cont=null;
-  /* two spent of three leaves a certainty, so stop pretending it is a choice */
-  const live=b.choices.filter(function(_,i){return !dlg.spent[i];}).length;
-  if(dlg.tries>=2&&live<=1){
-    const wi=b.choices.map(function(c,i){return c.wise?i:-1;}).filter(function(i){return i>=0;})[0];
-    if(wi!==undefined){
-      contBtn("Let him tell you",function(){dlg.busy=false;pick(wi,b.choices[wi],null,true);});
-      $("dlgFoot").textContent="He will tell you himself — for the least of it";
-      return;
-    }
-  }
-  dlg.order.forEach(function(idx){
+  beatSlate(b).forEach(function(idx){
     const c=b.choices[idx];
     const el=document.createElement("button");
     /* EVIDENCE GATES A CHOICE THE WAY AN INSIGHT DOES. `evid` is a survey key -
@@ -8144,6 +8300,30 @@ function renderBeat(){
     else el.onclick=function(){pick(idx,c,el);};
     host.appendChild(el);
   });
+  /* ---- AND IN THE END HE WILL SIMPLY TELL YOU ----
+     The old rescue fired when two of three choices were spent and the last was therefore
+     a certainty rather than a choice. With a pool three times deeper that condition can
+     never be reached again - so the one thing guaranteeing a stuck reader could get out
+     would have quietly stopped existing, which is the exact opposite of the report this
+     whole change answers.
+     It goes on the count of WRONG TURNS now rather than on what is left, and it is offered
+     ALONGSIDE the choices instead of replacing them: a reader who wants to keep trying
+     still can, and a reader who is beaten is never stranded. It pays the least of it, as
+     it always did. */
+  if((dlg.tries||0)>=3){
+    const wi=b.choices.map(function(c,i){
+      const shutC=(c.needs&&!S.insight[c.needs])||(c.evid&&!found(c.evid));
+      return (c.wise&&!dlg.spent[i]&&!shutC)?i:-1;
+    }).filter(function(i){return i>=0;})[0];
+    if(wi!==undefined){
+      const gv=document.createElement("button");
+      gv.className="choice cont";
+      gv.textContent="Let him tell you";
+      gv.onclick=function(){dlg.busy=false;pick(wi,b.choices[wi],null,true);};
+      host.appendChild(gv);
+      $("dlgFoot").textContent="He will tell you himself \u2014 for the least of it";
+    }
+  }
   }
 /* Replies used to be swept away by a timer, which pulled the text out from
    under anyone still reading it. Nothing advances now until you say so. */
@@ -20125,7 +20305,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260810-1210";
+const BUILD="20260811-1450";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
