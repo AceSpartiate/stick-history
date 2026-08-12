@@ -16577,142 +16577,245 @@ const CHARTS={
      "roanoke"  - the Carolina banks, Roanoke island and Croatoan to the south. The
                   question is what a word cut in a post actually pointed at.
    No labels are given away that the question is asking for. */
+/* ---- THE THREE ASSESSMENT MAPS, REDRAWN ----
+   Reported: severely out of date beside the game's charts. They were - flat fills, straight
+   lines, fixed pixel fonts, no stated frame, no scale a pupil could measure anything with.
+   These are drawn in the same hand as the charts and to a STATED FRAME, so every feature is
+   sited through two lines of arithmetic that anyone can check.
+
+   A STIMULUS MAP HAS A HARDER JOB THAN A CHART. It must carry everything the question needs
+   and nothing that answers it. So there are no labels here naming a fort, a colony or a
+   wind, and the three sites on the capes sheet are X, Y and Z and nothing else.
+
+   THE LEAGUE IS THREE SEA MILES, not three English miles. Every bar here is sized off one
+   degree of latitude being twenty leagues, which makes a league three minutes of arc - 3.45
+   statute miles. The first draft of this labelled it three English miles, which is a fifteen
+   per cent error, and on the Roanoke sheet it would have REFUTED the answer key: a pupil
+   measuring the distance and applying the bar's own conversion would have got forty miles
+   where the stimulus says fifty. Both units are on the bar now, because the questions speak
+   in miles and a pupil handed only leagues cannot check them. */
+function quizFrame(kind){
+  /* lat0/lat1 top and bottom, lon0/lon1 left and right */
+  if(kind==="atlantic")return {la0:58,la1:8,lo0:-90,lo1:10};
+  if(kind==="capes")   return {la0:37.9,la1:36.6,lo0:-77.6,lo1:-75.2};
+  return {la0:36.25,la1:35.05,lo0:-76.60,lo1:-75.30};
+}
 function drawQuizMap(kind){
   const c=$("reckMap");
   if(!c)return false;
   const g=c.getContext("2d"), W=c.width, H=c.height;
-  const X=function(u){return u*W;}, Y=function(v){return v*H;};
+  const F=quizFrame(kind);
+  const X=function(lon){return (lon-F.lo0)/(F.lo1-F.lo0)*W;};
+  const Y=function(lat){return (F.la0-lat)/(F.la0-F.la1)*H;};
+  const U=function(u){return u*W;}, V=function(v){return v*H;};
+  const INK="#4a3a22", WATER="rgba(146,176,190,0.32)", LAND="rgba(198,178,132,0.36)";
+  const SND="#3d5a68";
   g.clearRect(0,0,W,H);
-  g.fillStyle="#e6dcbe";g.fillRect(0,0,W,H);
-  const ink="#4a3a22", sea="#c3cfc9", land="#cdc49f";
-  g.lineJoin="round";g.lineCap="round";
-  const label=function(t,u,v,size,align){
-    g.fillStyle=ink;g.font="italic "+(size||12)+"px Georgia,serif";
-    g.textAlign=align||"left";g.fillText(t,X(u),Y(v));
+  PEN.paper(g,W,H);
+
+  /* a shore, in the house hand: wobbled, curved through midpoints, optionally hatched */
+  const shore=function(pts,close,fill,stroke,lw){
+    const p=PEN.wobble(pts.map(function(q){return [(q[1]-F.lo0)/(F.lo1-F.lo0),
+                                                   (F.la0-q[0])/(F.la0-F.la1)];}),0.45);
+    PEN.path(g,U,V,p);
+    if(close)g.closePath();
+    if(fill){g.fillStyle=fill;g.fill();}
+    if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||W*0.0020;g.stroke();}
+    return p;
   };
-  const dot=function(u,v,r){g.fillStyle=ink;g.beginPath();
-    g.arc(X(u),Y(v),r||3.2,0,Math.PI*2);g.fill();};
+  const say=function(t,lon,lat,sz,al,col){
+    g.fillStyle=col||INK;g.textAlign=al||"left";
+    g.font="italic "+Math.round(W*(sz||0.023))+"px Georgia, serif";
+    g.fillText(t,X(lon),Y(lat));
+  };
+  const site=function(lon,lat,letter){
+    g.fillStyle="#8f3f2f";
+    g.beginPath();g.arc(X(lon),Y(lat),W*0.016,0,Math.PI*2);g.fill();
+    g.fillStyle="#f6efdd";g.textAlign="center";
+    g.font="bold "+Math.round(W*0.024)+"px Georgia, serif";
+    g.fillText(letter,X(lon),Y(lat)+W*0.009);
+    g.textAlign="left";
+  };
+  /* ONE DEGREE OF LATITUDE IS TWENTY LEAGUES. w is the bar's width in canvas units. */
+  const bar=function(u,v,leagues){
+    const perDeg=H/(F.la0-F.la1);
+    const w=(leagues/20)*perDeg/W;
+    PEN.scaleBar(g,U,V,u,v,w,leagues,"Leagues",INK,W);
+    g.fillStyle=INK;g.textAlign="center";
+    g.font="italic "+Math.round(W*0.016)+"px Georgia, serif";
+    /* LEFT-ALIGNED UNDER THE BAR, not centred on it. The caption is far wider than the
+       bar - two hundred leagues is only a seventh of the Atlantic sheet - so centring ran
+       it off the left margin on all three. */
+    g.textAlign="left";
+    g.fillText("a league is three sea miles \u2014 three miles and a halfe English",
+      U(u),V(v)+W*0.048);
+    g.textAlign="left";
+  };
+
   if(kind==="atlantic"){
-    /* ocean */
-    g.fillStyle=sea;g.fillRect(0,0,W,H);
-    /* Europe and Africa on the right, the Americas on the left */
-    g.fillStyle=land;
-    g.beginPath();g.moveTo(X(0.86),Y(0));g.lineTo(X(1),Y(0));g.lineTo(X(1),Y(1));
-    g.lineTo(X(0.80),Y(1));g.quadraticCurveTo(X(0.84),Y(0.52),X(0.86),Y(0));g.fill();
-    g.beginPath();g.moveTo(X(0),Y(0));g.lineTo(X(0.20),Y(0));
-    g.quadraticCurveTo(X(0.26),Y(0.30),X(0.16),Y(0.46));
-    g.quadraticCurveTo(X(0.24),Y(0.66),X(0.12),Y(1));g.lineTo(X(0),Y(1));g.fill();
-    g.strokeStyle=ink;g.lineWidth=1.3;
-    g.beginPath();g.moveTo(X(0.86),Y(0));g.quadraticCurveTo(X(0.84),Y(0.52),X(0.80),Y(1));g.stroke();
-    g.beginPath();g.moveTo(X(0.20),Y(0));g.quadraticCurveTo(X(0.26),Y(0.30),X(0.16),Y(0.46));
-    g.quadraticCurveTo(X(0.24),Y(0.66),X(0.12),Y(1));g.stroke();
-    /* the straight line nobody sailed */
-    g.strokeStyle="#8a7a58";g.lineWidth=1.6;g.setLineDash([6,5]);
-    g.beginPath();g.moveTo(X(0.83),Y(0.20));g.lineTo(X(0.20),Y(0.26));g.stroke();
+    /* the ocean, ruled, and the two land masses either side */
+    g.fillStyle=WATER;g.fillRect(0,0,W,H);
+    PEN.seaRule(g,U,V,[[-0.02,-0.02],[1.02,-0.02],[1.02,1.02],[-0.02,1.02]],
+      W,H,0.030,"rgba(70,104,124,0.26)",W*0.0009);
+    /* AMERICA: the seaboard from Newfoundland down past Florida, and the interior running
+       off the west margin so the coast does not read as an island chain */
+    shore([[58,-92],[52,-56],[47.6,-59.3],[45.9,-59.8],[44.6,-66.9],[42.0,-70.2],
+           [41.3,-71.9],[40.5,-74.0],[38.8,-75.1],[37.1,-76.0],[35.2,-75.5],
+           [33.9,-78.0],[32.0,-80.9],[30.4,-81.4],[27.0,-80.1],[25.1,-80.4],
+           [26.0,-82.0],[29.7,-85.0],[29.3,-89.4],[26.0,-92],[8,-92]],
+      true,LAND,INK,W*0.0022);
+    /* the Antilles, as an arc of small ground - the fleet threads it */
+    [[18.5,-70.0,1.6],[18.2,-66.5,0.9],[17.3,-62.7,0.5],[15.4,-61.4,0.5],
+     [14.6,-61.0,0.5],[13.1,-59.6,0.5],[10.7,-61.5,0.9],[21.5,-78.0,2.2]]
+      .forEach(function(q){
+        g.fillStyle=LAND;g.beginPath();
+        g.ellipse(X(q[2]?q[1]:q[1]),Y(q[0]),W*0.010*q[2],W*0.007*q[2],0,0,Math.PI*2);
+        g.fill();g.strokeStyle=INK;g.lineWidth=W*0.0014;g.stroke();});
+    /* EUROPE AND AFRICA on the east margin */
+    shore([[58,10],[54,8],[51.5,3.4],[50.9,1.4],[49.9,-5.2],[48.5,-4.8],[46.2,-1.2],
+           [43.4,-1.8],[43.5,-8.9],[41.1,-8.6],[38.7,-9.5],[37.0,-8.9],[36.0,-5.6],
+           [35.8,-5.9],[33.3,-8.5],[30.4,-9.7],[28.0,-12.0],[23.7,-16.0],[20.8,-17.1],
+           [14.7,-17.5],[10.0,-14.3],[8,-13],[8,10]],true,LAND,INK,W*0.0022);
+    /* Ireland and Britain, because a fleet leaves from one of them */
+    shore([[55.4,-7.3],[54.2,-10.1],[51.6,-10.4],[51.4,-8.3],[52.2,-6.3],[54.0,-5.9],
+           [55.2,-6.5]],true,LAND,INK,W*0.0018);
+    shore([[58,-5.0],[56.0,-2.5],[54.0,-0.2],[52.0,1.7],[51.1,1.4],[50.2,-3.5],
+           [51.6,-5.3],[53.4,-4.8],[55.0,-5.6],[58,-5.6]],true,LAND,INK,W*0.0018);
+
+    /* ---- THE COURSE THEY DID NOT TAKE, and the one they did ----
+       The track is read straight out of ROUTES so it cannot drift from the globe and the
+       atlas. The direct course is ruled straight because that is how a master of this date
+       laid a course off a plane chart - not because a rhumb is straight on one; it is not,
+       and correcting that is what Mercator and Wright were for. */
+    const R=(typeof routeById==="function")?routeById("track"):null;
+    if(R){
+      g.strokeStyle="#8f3f2f";g.lineWidth=W*0.0038;g.lineJoin="round";
+      g.beginPath();
+      R.p.forEach(function(q,i){
+        if(i===0)g.moveTo(X(q.lo),Y(q.la));else g.lineTo(X(q.lo),Y(q.la));});
+      g.stroke();
+    }
+    g.strokeStyle="rgba(74,58,34,0.75)";g.lineWidth=W*0.0026;
+    g.setLineDash([W*0.014,W*0.011]);
+    g.beginPath();g.moveTo(X(-5.2),Y(49.96));g.lineTo(X(-76.01),Y(36.93));g.stroke();
     g.setLineDash([]);
-    label("the direct course",0.50,0.16,12,"center");
-    /* the track actually sailed: south, then west, then north */
-    g.strokeStyle="#8f2f28";g.lineWidth=2.6;
-    g.beginPath();
-    g.moveTo(X(0.83),Y(0.20));
-    g.quadraticCurveTo(X(0.80),Y(0.44),X(0.72),Y(0.58));   /* down to the Canaries */
-    g.quadraticCurveTo(X(0.50),Y(0.72),X(0.30),Y(0.70));   /* across on the trades */
-    g.quadraticCurveTo(X(0.20),Y(0.60),X(0.22),Y(0.40));   /* north along the coast */
-    g.stroke();
-    /* arrow heads on the track */
-    const arrow=function(u,v,a){
-      g.save();g.translate(X(u),Y(v));g.rotate(a);g.fillStyle="#8f2f28";
-      g.beginPath();g.moveTo(7,0);g.lineTo(-4,4);g.lineTo(-4,-4);g.closePath();g.fill();g.restore();};
-    arrow(0.775,0.50,1.7);arrow(0.50,0.715,3.14);arrow(0.215,0.50,-1.6);
-    dot(0.83,0.20,3.6); label("England",0.845,0.175,12);
-    dot(0.72,0.585,3.2); label("the Canaries",0.705,0.635,11,"right");
-    dot(0.30,0.70,3.2);  label("the Indies",0.31,0.755,11);
-    dot(0.22,0.375,3.6); label("Virginia",0.245,0.355,12);
-    label("prevailing winds \u2192",0.40,0.88,11,"center");
-    g.strokeStyle="#6a5836";g.lineWidth=1.2;g.setLineDash([3,4]);
-    g.beginPath();g.moveTo(X(0.62),Y(0.83));g.lineTo(X(0.30),Y(0.83));g.stroke();
-    g.beginPath();g.moveTo(X(0.28),Y(0.30));g.lineTo(X(0.60),Y(0.30));g.stroke();
-    g.setLineDash([]);
-    label("\u2190 prevailing winds",0.62,0.27,11,"left");
-  } else if(kind==="capes"){
-    g.fillStyle=land;g.fillRect(0,0,W,H);
-    /* the Atlantic to the east */
-    g.fillStyle=sea;
-    g.beginPath();g.moveTo(X(0.80),Y(0));g.lineTo(X(1),Y(0));g.lineTo(X(1),Y(1));
-    g.lineTo(X(0.76),Y(1));g.quadraticCurveTo(X(0.82),Y(0.5),X(0.80),Y(0));g.fill();
-    /* the bay, opening between two capes */
-    g.beginPath();
-    g.moveTo(X(0.78),Y(0.26));
-    g.quadraticCurveTo(X(0.50),Y(0.22),X(0.36),Y(0.34));
-    g.quadraticCurveTo(X(0.26),Y(0.46),X(0.32),Y(0.62));
-    g.quadraticCurveTo(X(0.46),Y(0.70),X(0.58),Y(0.62));
-    g.quadraticCurveTo(X(0.70),Y(0.60),X(0.775),Y(0.58));
-    g.quadraticCurveTo(X(0.81),Y(0.42),X(0.78),Y(0.26));g.fill();
-    /* the river, running west, with a narrows and an island */
-    g.strokeStyle=sea;g.lineWidth=Math.max(7,W*0.016);
-    g.beginPath();
-    g.moveTo(X(0.575),Y(0.625));
-    g.quadraticCurveTo(X(0.44),Y(0.665),X(0.30),Y(0.655));
-    g.quadraticCurveTo(X(0.19),Y(0.648),X(0.10),Y(0.675));
-    g.stroke();
-    g.strokeStyle=ink;g.lineWidth=1.3;
-    g.beginPath();g.moveTo(X(0.78),Y(0.26));
-    g.quadraticCurveTo(X(0.50),Y(0.22),X(0.36),Y(0.34));
-    g.quadraticCurveTo(X(0.26),Y(0.46),X(0.32),Y(0.62));
-    g.quadraticCurveTo(X(0.46),Y(0.70),X(0.58),Y(0.62));
-    g.quadraticCurveTo(X(0.70),Y(0.60),X(0.775),Y(0.58));g.stroke();
-    /* three lettered sites for the question to refer to */
-    const site=function(u,v,t){
-      g.fillStyle="#8f2f28";g.beginPath();g.arc(X(u),Y(v),7,0,Math.PI*2);g.fill();
-      g.fillStyle="#f4ecd6";g.font="bold 11px Georgia,serif";g.textAlign="center";
-      g.fillText(t,X(u),Y(v)+4);};
-    site(0.735,0.30,"X");                 /* on the open cape, by the sea */
-    site(0.375,0.645,"Y");                /* well up the river, low ground */
-    site(0.145,0.672,"Z");                /* far inland, at the head of navigation */
-    label("Atlantic",0.90,0.12,12,"center");
-    label("the bay",0.52,0.44,12,"center");
-    label("the river",0.24,0.60,11,"center");
-    label("N",0.055,0.10,13);
-    g.strokeStyle=ink;g.lineWidth=1.4;
-    g.beginPath();g.moveTo(X(0.062),Y(0.20));g.lineTo(X(0.062),Y(0.115));g.stroke();
-    g.beginPath();g.moveTo(X(0.045),Y(0.145));g.lineTo(X(0.062),Y(0.112));
-    g.lineTo(X(0.079),Y(0.145));g.stroke();
-  } else if(kind==="roanoke"){
-    g.fillStyle=sea;g.fillRect(0,0,W,H);
-    /* mainland to the west */
-    g.fillStyle=land;
-    g.beginPath();g.moveTo(X(0),Y(0));g.lineTo(X(0.30),Y(0));
-    g.quadraticCurveTo(X(0.36),Y(0.34),X(0.30),Y(0.56));
-    g.quadraticCurveTo(X(0.36),Y(0.80),X(0.28),Y(1));g.lineTo(X(0),Y(1));g.fill();
-    /* the barrier banks, a thin arc off the coast */
-    g.strokeStyle=land;g.lineWidth=Math.max(6,W*0.013);
-    g.beginPath();g.moveTo(X(0.62),Y(0.02));
-    g.quadraticCurveTo(X(0.70),Y(0.34),X(0.60),Y(0.60));
-    g.quadraticCurveTo(X(0.52),Y(0.82),X(0.40),Y(0.98));g.stroke();
-    g.strokeStyle=ink;g.lineWidth=1.1;
-    g.beginPath();g.moveTo(X(0),Y(0));g.lineTo(X(0.30),Y(0));
-    g.quadraticCurveTo(X(0.36),Y(0.34),X(0.30),Y(0.56));
-    g.quadraticCurveTo(X(0.36),Y(0.80),X(0.28),Y(1));g.stroke();
-    /* two islands inside the banks */
-    const isle=function(u,v,rx,ry,nm,nu,nv){
-      g.fillStyle=land;g.beginPath();g.ellipse(X(u),Y(v),X(rx),Y(ry),0.3,0,Math.PI*2);g.fill();
-      g.strokeStyle=ink;g.lineWidth=1.1;g.stroke();
-      if(nm)label(nm,nu,nv,12);
+
+    /* ---- THE WINDS, LAID ALONG THE COURSES THEY BEAR ON ----
+       The northern arrows used to sit on a fixed parallel well north of the direct course,
+       so the western half of that course had no wind on it at all and the question could
+       not be answered off the picture. They follow the rhumb now. */
+    const arrow=function(lon,lat,dx,dy){
+      const x=X(lon),y=Y(lat),L=W*0.048;
+      g.strokeStyle="rgba(70,104,124,0.85)";g.lineWidth=W*0.0026;
+      g.beginPath();g.moveTo(x,y);g.lineTo(x+dx*L,y+dy*L);g.stroke();
+      g.fillStyle="rgba(70,104,124,0.85)";
+      const a=Math.atan2(dy,dx), h=W*0.014;
+      g.beginPath();
+      g.moveTo(x+dx*L,y+dy*L);
+      g.lineTo(x+dx*L-Math.cos(a-0.4)*h,y+dy*L-Math.sin(a-0.4)*h);
+      g.lineTo(x+dx*L-Math.cos(a+0.4)*h,y+dy*L-Math.sin(a+0.4)*h);
+      g.closePath();g.fill();
     };
-    isle(0.50,0.26,0.045,0.075,"Roanoke I.",0.395,0.175);
-    isle(0.44,0.78,0.038,0.058,"Croatoan I.",0.30,0.885);
-    dot(0.50,0.26,3.0);dot(0.44,0.78,3.0);
-    label("the sound",0.40,0.50,11,"center");
-    label("Atlantic",0.86,0.62,12,"center");
-    g.strokeStyle=ink;g.lineWidth=1.2;g.setLineDash([4,4]);
-    g.beginPath();g.moveTo(X(0.50),Y(0.32));g.lineTo(X(0.44),Y(0.72));g.stroke();
-    g.setLineDash([]);
-    label("about 50 miles",0.505,0.53,11,"left");
-    label("N",0.90,0.12,13);
-    g.beginPath();g.moveTo(X(0.905),Y(0.22));g.lineTo(X(0.905),Y(0.135));g.stroke();
-    g.beginPath();g.moveTo(X(0.888),Y(0.165));g.lineTo(X(0.905),Y(0.132));
-    g.lineTo(X(0.922),Y(0.165));g.stroke();
-  } else return false;
+    /* the trades: west and a little south, across the belt the fleet actually crossed on */
+    [[19,-30],[17,-42],[16,-52],[20,-22],[15.4,-62]].forEach(function(q){
+      arrow(q[1],q[0],-0.94,0.34);});
+    /* the westerlies: east and a little north, ALONG the direct course */
+    [[48,-15],[45,-30],[42,-45],[40,-60]].forEach(function(q){
+      arrow(q[1],q[0],0.94,-0.34);});
+
+    PEN.rose(g,U,V,0.085,0.760,W*0.030,INK);
+    bar(0.055,0.895,200);
+    say("The Maine Sea",-46,11,0.021,"center","#3d5a68");
+  }
+
+  else if(kind==="capes"){
+    g.fillStyle=LAND;g.fillRect(0,0,W,H);
+    /* the Atlantic, the bay behind the Delmarva, and the mouth between the capes - one
+       traversal with the peninsula carved out of it as a slit, exactly as the bay chart does */
+    /* ---- ONE TRAVERSAL WITH THE PENINSULA CUT OUT OF IT ----
+       Down the bay's WESTERN shore, east along the south side of the mouth to Cape Henry,
+       south down the sea coast, out to the margin, and back in along the Delmarva: down
+       its ocean shore, round Cape Charles, and UP its bay shore again. That last stretch
+       is a slit, so the peninsula is carved out of the water rather than laid on top of
+       it - which is what leaves the mouth open between the capes without anyone having to
+       remember to leave a gap.
+       The first attempt put the Delmarva's bay shore at -76.06 and its ocean shore at
+       -75.30: three quarters of a degree wide, nearly twice the real thing, and it pushed
+       the Atlantic off the sheet altogether. */
+    const SEA=[[37.95,-76.42],[37.60,-76.34],[37.30,-76.28],[37.08,-76.27],
+               [37.00,-76.30],[36.97,-76.19],[36.95,-76.09],[36.93,-76.01],
+               [36.85,-75.97],[36.65,-75.90],[36.55,-75.86],[36.55,-75.15],
+               [37.95,-75.15],[37.95,-75.55],[37.60,-75.61],[37.30,-75.80],
+               [37.11,-75.97],[37.20,-76.03],[37.50,-76.01],[37.95,-75.95]];
+    const sea=shore(SEA,true,WATER);
+    /* the King's River, from the mouth to the head of navigation at the falls */
+    const RIV=[[37.02,-76.28],[37.14,-76.52],[37.21,-76.78],[37.25,-76.92],
+               [37.32,-77.10],[37.40,-77.30],[37.53,-77.43],
+               [37.47,-77.45],[37.35,-77.32],[37.26,-77.12],[37.17,-76.94],
+               [37.10,-76.76],[37.02,-76.50],[36.94,-76.28]];
+    const riv=shore(RIV,true,WATER);
+    /* and the next river north, mouth only */
+    /* the next river north: its mouth has to reach INTO the bay, or it floats as a grey
+       sliver in the middle of the land, which is what it did */
+    shore([[37.26,-76.18],[37.34,-76.56],[37.41,-76.80],[37.37,-76.83],
+           [37.29,-76.60],[37.19,-76.20]],true,WATER);
+    PEN.seaRule(g,U,V,SEA.map(function(q){return [(q[1]-F.lo0)/(F.lo1-F.lo0),
+                                                  (F.la0-q[0])/(F.la0-F.la1)];}),
+      W,H,0.026,"rgba(70,104,124,0.28)",W*0.0009);
+    g.strokeStyle=INK;g.lineWidth=W*0.0022;
+    PEN.path(g,U,V,sea);g.closePath();g.stroke();
+    PEN.path(g,U,V,riv);g.closePath();g.lineWidth=W*0.0018;g.stroke();
+    PEN.hatch(g,U,V,sea,-1,0.016,0.013,"rgba(74,58,34,0.55)",W*0.0013);
+
+    [[37.35,-76.16,9],[37.10,-76.10,11],[36.98,-75.92,8],[37.60,-76.18,6],
+     [37.16,-76.62,5],[37.24,-76.98,3]].forEach(function(q){
+      PEN.sounding(g,U,V,(q[1]-F.lo0)/(F.lo1-F.lo0),(F.la0-q[0])/(F.la0-F.la1),q[2],W,SND);});
+
+    /* THE THREE SITES, AND NOTHING NAMED. X on the open cape facing the sea, Y well up the
+       river, Z at the head of navigation. No fort, no colony, no name - the question is
+       which of them and why, and a label would answer it. */
+    site(-75.90,36.90,"X");
+    site(-76.78,37.21,"Y");
+    site(-77.43,37.53,"Z");
+    say("The Maine Sea",-75.44,36.70,0.020,"right","#3d5a68");
+    PEN.rose(g,U,V,0.075,0.230,W*0.030,INK);
+    bar(0.520,0.895,10);
+  }
+
+  else {
+    /* ---- ROANOKE AND THE BANKS ----
+       The stimulus names both islands, so both are lettered - the question is what a word
+       cut in a post pointed AT, and a pupil has to be able to measure the distance. */
+    g.fillStyle=WATER;g.fillRect(0,0,W,H);
+    PEN.seaRule(g,U,V,[[-0.02,-0.02],[1.02,-0.02],[1.02,1.02],[-0.02,1.02]],
+      W,H,0.028,"rgba(70,104,124,0.26)",W*0.0009);
+    /* the mainland on the west */
+    shore([[36.25,-76.60],[36.10,-76.30],[35.95,-76.20],[35.80,-76.10],[35.60,-76.15],
+           [35.40,-76.30],[35.25,-76.45],[35.05,-76.60]],true,LAND,INK,W*0.0020);
+    /* the banks: a long thin ridge from the north down to the cape and west again */
+    const BANKS=[[36.25,-75.78],[36.10,-75.72],[35.90,-75.60],[35.74,-75.53],
+                 [35.55,-75.47],[35.35,-75.50],[35.22,-75.53],[35.20,-75.72],
+                 [35.19,-75.95],
+                 [35.15,-75.98],[35.16,-75.74],[35.18,-75.58],[35.30,-75.55],
+                 [35.50,-75.52],[35.70,-75.58],[35.88,-75.66],[36.08,-75.78],
+                 [36.25,-75.84]];
+    shore(BANKS,true,LAND,INK,W*0.0018);
+    /* Roanoke Island - eight miles, 35.81 to 35.945 */
+    shore([[35.945,-75.70],[35.90,-75.63],[35.84,-75.63],[35.81,-75.68],
+           [35.85,-75.73],[35.91,-75.74]],true,LAND,INK,W*0.0018);
+    /* the sounds are SHALLOW - three fathoms and under, which is the whole point:
+       continuous inside, and falling away fast outside */
+    [[36.05,-76.00,3],[35.85,-75.90,2],[35.60,-75.80,2],[35.40,-75.75,3],
+     [35.30,-75.90,2],[35.75,-75.60,1],
+     [35.95,-75.40,10],[35.60,-75.35,14],[35.20,-75.40,8],[35.12,-75.60,2]]
+      .forEach(function(q){
+        PEN.sounding(g,U,V,(q[1]-F.lo0)/(F.lo1-F.lo0),(F.la0-q[0])/(F.la0-F.la1),q[2],W,SND);});
+    say("Roanoke",-75.78,35.88,0.021,"right");
+    say("Croatoan",-75.62,35.30,0.021,"left");
+    say("The Maine Sea",-75.32,35.12,0.019,"right","#3d5a68");
+    PEN.rose(g,U,V,0.115,0.130,W*0.030,INK);
+    bar(0.055,0.930,10);
+  }
   return true;
 }
 /* `into` added so the Atlas can borrow this. Defaulted, so every existing call is
@@ -20833,7 +20936,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260812-0210";
+const BUILD="20260812-0510";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
