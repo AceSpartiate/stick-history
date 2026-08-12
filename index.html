@@ -9752,9 +9752,35 @@ function makePools(){
     const m=G.mesh(false,false);
     fxRoot.add(m);return m;
   });
+  /* ---- THE MARK IS A SMALL RED CROSS, AND IT IS THERE THE INSTANT THE BALL IS ----
+     What shipped was a unit BOX in near-black scaled 0.55+dist*0.022, which at forty
+     yards is a three-foot cube of soot standing in the sand like a crate. Three faults
+     put it there and they compounded:
+       markImpact flattened it to (size,size,size*0.35) to make a disc, and updateFx's
+       very next tick called setScalar() and threw the flatten away - so every mark
+       inflated into a cube one frame after it was placed;
+       the flatten was on the WORLD z axis whatever way the shot went, so even in that
+       one frame it only read as a disc if you happened to be firing north; and
+       it was drawn in the same transparent pass as the muzzle cloud and the shot's own
+       trail - eight puffs four feet from the camera and forty more laid down the range -
+       so it was SORTED BEHIND ITS OWN SMOKE. The mark went in on time all along. What
+       the player saw was smoke, then, seconds later, a black cube: the mark arriving
+       late is what a mark looks like when the smoke in front of it thins.
+     One geometry for all twenty-four: two bars crossed inside a unit square, so `size`
+     is the width of the mark. Materials stay per-mesh, because the fade is per-mark. */
+  const XG=new Geo(), XR=RGB(0xe8261a);
+  XG.box(0,0,0,1.414,0.30,0.02,XR, Math.PI/4);
+  XG.box(0,0,0,1.414,0.30,0.02,XR,-Math.PI/4);
+  const XGEOM=XG.mesh(false,true).geometry;
+  SHARED.add(XGEOM);                       /* shared: never disposed with one mark */
   POOL.impacts=new Pool(24,function(){
-    const m=new THREE.Mesh(boxGeom(1,1,1),
-      new THREE.MeshBasicMaterial({color:lin(0x1a1510),transparent:true,opacity:1}));
+    const m=new THREE.Mesh(XGEOM,new THREE.MeshBasicMaterial({
+      vertexColors:true,transparent:true,opacity:1,side:THREE.DoubleSide,
+      depthWrite:false}));
+    /* after the smoke, and only after the smoke. Depth testing still applies, so a
+       dune between you and the mark still hides it - it is the game's own transparent
+       effects this beats, not the world. */
+    m.renderOrder=4;
     fxRoot.add(m);return m;
   });
 }
@@ -9781,7 +9807,7 @@ function spawnPuff(pool,x,y,z,vx,vy,vz,o){
      hanging for fifteen seconds. Shortening the LIFE rather than the count keeps
      the author's staging - the trail still lays itself out and still reads - it
      just clears sooner on a machine that cannot afford it. */
-  smoke.push({m:m,pool:pool,t:0,vx:vx,vy:vy,vz:vz,base:size,
+  smoke.push({m:m,pool:pool,t:0,vx:vx,vy:vy,vz:vz,bx:size,by:size,bz:size,
     life:((o.life===undefined)?2.7:o.life)*GFX.fx, op:op,
     grow:(o.grow===undefined)?1.5:o.grow, delay:o.delay||0,
     /* {x,y,z,r}: never get further than r feet from that point. Only the muzzle
@@ -9851,7 +9877,12 @@ function updateFx(dt){
         p.vx=p.vy=p.vz=0;
       }
     }
-    p.m.scale.setScalar(p.base*(1+age*p.grow));
+    /* PER AXIS, NOT setScalar. Every puff is a cube, so the two are the same thing
+       for all of them - which is why this hid for so long. Anything in the pool that
+       is NOT a cube was squared off on its first tick, one frame after it was placed,
+       and the impact mark is a flat cross. */
+    const gw=1+age*p.grow;
+    p.m.scale.set(p.bx*gw,p.by*gw,p.bz*gw);
     const k=Math.max(0,1-age/p.life);
     p.m.material.opacity=p.op*Math.pow(k,p.ease);
     if(age>=p.life){p.pool.give(p.m);smoke.splice(i,1);}
@@ -12747,7 +12778,7 @@ function panFlash(){
     m.material.opacity=0.9;
     smoke.push({m:m,pool:POOL.smoke,t:0,
       vx:(Math.random()-0.5)*1.2,vy:1.6+Math.random(),vz:(Math.random()-0.5)*1.2,
-      base:0.16,life:0.42,op:0.9,grow:2.4,delay:0,ease:1.4});
+      bx:0.16,by:0.16,bz:0.16,life:0.42,op:0.9,grow:2.4,delay:0,ease:1.4});
   }
 }
 function shotTrail(o,d,dist){
@@ -12782,21 +12813,57 @@ function shotTrail(o,d,dist){
        ease:0.62});
   }
 }
-/* A hole where the ball went in. The old one was a fixed 0.34 units - about
-   seven pixels at twenty yards and three at forty, which is why no mark was ever
-   visible. Scaled with range so it holds a steady apparent size, the same fix the
-   trail needed, and pulled a little toward the shooter so it does not fight the
-   surface it is on. */
-function markImpact(x,y,z,d,dist,col){
+/* Where the shot struck. The very first version of this was a fixed 0.34 units -
+   about seven pixels at twenty yards and three at forty - so no mark was ever
+   visible; the answer to that was to scale it with range, which is right, and then
+   to scale it with range STARTING FROM 0.55 AND CLIMBING AT 0.022 A FOOT, which
+   gave the three-foot cube. Apparent size is the correct idea at a third the
+   figure: about half a degree of arc all the way out, which is a mark you read
+   rather than a crate you trip over. At forty yards it is thirteen inches and
+   about eleven pixels of bright red - and red because nothing else on this beach
+   is, so it needs no outline, no lighting and no contrast argument at dusk. */
+function markImpact(x,y,z,d,dist,life){
   if(!POOL.impacts)return;
   const mk=POOL.impacts.take();
   if(!mk)return;
-  const size=0.55+dist*0.022;
-  mk.position.set(x-d.x*0.28,y-d.y*0.28,z-d.z*0.28);
-  mk.scale.set(size,size,size*0.35);
-  mk.material.color.setHex(col).convertSRGBToLinear();
-  smoke.push({m:mk,pool:POOL.impacts,t:0,vx:0,vy:0,vz:0,base:size,
-    life:34,op:1,grow:0,delay:0,ease:0.28});
+  const size=0.20+dist*0.0075;
+  mk.position.set(x-d.x*0.30,y-d.y*0.30,z-d.z*0.30);
+  mk.scale.set(size,size,1);              /* z is the bar's own thickness; leave it */
+  /* Facing back down the line of fire, which is the one orientation that is always
+     a cross from where the shot was taken. The old flatten was on the world axes,
+     so the mark presented its edge or its face according to your heading. */
+  mk.lookAt(mk.position.x-d.x,mk.position.y-d.y,mk.position.z-d.z);
+  /* ---- AND IT MUST NOT BE HALF IN THE SAND ----
+     The cross stands in the aim's own plane, and a shot that came in nearly flat
+     leaves that plane nearly vertical - so a strike on the beach put the bottom of
+     the mark UNDER the beach, and a miss read as a red smudge rather than a cross.
+     Measured on the Cape Henry range at sixty, ninety and a hundred and five feet:
+     0.25, 0.36 and 0.42 feet buried, which is four tenths of the mark.
+     Two things had to be right and the first attempt got neither:
+       THE CROSS IS TALLER THAN IT LOOKS. Bars 1.414 long turned a quarter turn
+       reach 0.5 in y at their ends, plus 0.15 of half-width times cos45 - so 0.606,
+       not the 0.5 a first pass assumed, and it stayed a fraction under.
+       AND STANDING IT EXACTLY ON THE SAND IS NOT ENOUGH. Sighting down a flat beach
+       the eye is a few feet up and the mark is a hundred out, so the line to the
+       foot of the mark runs ALONG the sand, and an inch of undulation short of it
+       takes the bottom half. Measured: the ground a stride short of the mark stood
+       0.44 to 0.62 feet above that line, and the picture showed a red V.
+     So it clears by half its own width, which - because the width already grows
+     with range to hold its apparent size - is a constant quarter of a degree
+     however far out it is, and reads as a mark at the spot rather than a mark
+     floating above it. The mark's own up, tilted by the shot, has a world-y
+     component of sqrt(1-d.y^2); no vector allocation needed to know it.
+     A ball in the butt is chest high and never moves. Only the ones that went into
+     the ground or the water do. */
+  const floor=Math.max((WORLD.ground?WORLD.ground(mk.position.x,mk.position.z):-9999),
+                       (WORLD.sea===undefined)?-9999:WORLD.sea);
+  const halfUp=size*0.606*Math.sqrt(Math.max(0,1-d.y*d.y));
+  const clear=floor+size*0.5;
+  if(mk.position.y-halfUp<clear)mk.position.y=clear+halfUp;
+  mk.material.opacity=1;
+  mk.visible=true;               /* take() does this; do not wait on the next tick */
+  smoke.push({m:mk,pool:POOL.impacts,t:0,vx:0,vy:0,vz:0,bx:size,by:size,bz:1,
+    life:life||34,op:1,grow:0,delay:0,ease:0.22});
 }
 /* sand, water or splinters, according to what it hit */
 function shotImpact(p,d){
@@ -13191,7 +13258,7 @@ function ignite(hung){
     /* stop the trail at the mark, and leave a hole in it */
     shotTrail(o,d,best.along);
     const hx=o.x+d.x*best.along, hy=o.y+d.y*best.along, hz=o.z+d.z*best.along;
-    markImpact(hx,hy,hz,d,best.along,0x1a1510);
+    markImpact(hx,hy,hz,d,best.along);
     for(let i=0;i<4;i++){
       spawnPuff(POOL.smoke,hx,hy,hz,
         (Math.random()-0.5)*4-d.x*2,(Math.random()-0.2)*3,(Math.random()-0.5)*4-d.z*2,
@@ -13209,7 +13276,7 @@ function ignite(hung){
     if(p.kind!=="air"){
       shotImpact(p,d);
       /* a scar in the sand or a ring on the water, so a miss leaves evidence too */
-      markImpact(p.x,p.y+0.06,p.z,d,p.dist,(p.kind==="water")?0x6f8a86:0x8a7550);
+      markImpact(p.x,p.y+0.06,p.z,d,p.dist);
     }
     playSfx(p.kind==="water"?"splash":"hit",0.22);
     /* name the miss against the near mark, so it can be corrected */
@@ -18908,6 +18975,18 @@ function updateArrows(dt){
       /* struck the sand: a small spurt where it lands, and it stays a moment */
       spawnPuff(POOL.smoke,x,y+0.2,z,(Math.random()-0.5)*2,1.6,(Math.random()-0.5)*2,
         {size:0.55,col:0xd0bd91,op:0.7,life:0.9,grow:1.0});
+      /* AND THE SAME MARK A BALL LEAVES. An arrow is a projectile weapon too, and a
+         cane shaft that missed by six feet should leave the same evidence - it is how
+         you read, in failing light, that they are shooting at you and mostly missing,
+         which is the historical point. The mark is sized against the distance from
+         YOUR eye rather than from the bowman, because that is what governs how big it
+         looks. Six seconds, not thirty-four: a beach carrying every arrow of a
+         forty-second volley would be a scoreboard, not a shore.
+         The flight direction at the moment of landing, arc included - d/dk of
+         sin(k*PI)*arc at k=1 is -PI*arc - so the cross faces the way the shaft came. */
+      const ady=(a.y1-a.y0)-Math.PI*arc, adx=a.x1-a.x0, adz=a.z1-a.z0;
+      const aL=Math.hypot(adx,ady,adz)||1;
+      markImpact(x,y,z,{x:adx/aL,y:ady/aL,z:adz/aL},a.near,6);
       if(a.near<3.4){camKick=Math.max(camKick,0.045);playSfx("hit",0.16);}
       POOL.arrows.give(a.m);ARROWS.splice(i,1);
     }
@@ -21215,7 +21294,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260812-1350";
+const BUILD="20260812-1802";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
