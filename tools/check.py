@@ -561,6 +561,51 @@ if split:
 else:
     ok("every route out of a beat reaches the same insight")
 
+print("\n15. No button wired to nothing")
+# THE INVERSE OF CHECK 5, AND IT IS THE ONE THAT BIT. Check 5 asks whether every
+# $("x").onclick binds to an element that exists. It cannot see a BUTTON THAT NOTHING
+# BINDS TO - and that is what shipped: the Errands panel's Close button carried
+# data-close="mGoals", an attribute invented on the spot, which appears exactly once in
+# the file and which nothing anywhere reads. The button was inert, and the only way out of
+# the panel was the Escape key. A dead button is worse than a missing one: it is a door
+# with a handle that does not turn.
+#
+# TWO SIGNALS, both precise enough to be worth failing on:
+#   a declared id with no handler anywhere, and
+#   a data- attribute used ONCE in the whole file, which means it is a convention that
+#   exists only at the place it is written and is read by nobody.
+# A BUTTON DOES NOT HAVE TO BE WIRED WITH $("x").onclick TO BE WIRED. Three in this file
+# are handled by helpers that take the id or the element - holdTurn("camL",-1),
+# gHold($("gPour"),...), const nb=$("endNext") - and an earlier draft of this check called
+# all three dead. The honest question is not HOW it is wired but whether the id is
+# mentioned in the script at all: a button nothing ever names cannot be wired by anything.
+handled = set(re.findall(r'["\'"]([A-Za-z0-9_]+)["\'"]', js))
+dead, n = [], 0
+for b in re.finditer(r'<button\b[^>]*>', s):
+    tag = b.group(0)
+    n += 1
+    idm = re.search(r'\bid="([A-Za-z0-9_]+)"', tag)
+    if idm and idm.group(1) not in handled:
+        dead.append('#%s - declared, and nothing binds a handler to it' % idm.group(1))
+    for am in re.finditer(r'\b(data-[a-z-]+)=', tag):
+        attr = am.group(1)
+        # AND IT MAY BE READ IN ITS OTHER NAME. data-site is read as b.dataset.site, so
+        # counting the hyphenated form alone called a live attribute dead - which is the
+        # same shape of mistake as the bug this check exists for, made by the check.
+        parts = attr[5:].split("-")
+        camel = parts[0] + "".join(p.capitalize() for p in parts[1:])
+        reads = (len(re.findall(re.escape(attr), s)) - 1
+                 + len(re.findall(r'dataset\.' + re.escape(camel) + r'\b', s))
+                 + len(re.findall(r'getAttribute\(\s*["\']' + re.escape(attr), s)))
+        if reads < 1:
+            dead.append('%s on a <button> - written once and read nowhere, in either '
+                        'its hyphenated or its dataset form' % attr)
+if dead:
+    bad("%d button(s) wired to nothing:\n        " % len(dead)
+        + "\n        ".join(sorted(set(dead))))
+else:
+    ok("all %d declared buttons reach some wiring" % n)
+
 print("\n13. The globe agrees with the gazetteer")
 # ---- A METHODOLOGY FOR "MAKE THE MAP MORE ACCURATE" ----
 # The globe's land is a union of circles. Nudging one to fix a coast silently floods a sea

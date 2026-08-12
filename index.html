@@ -322,8 +322,11 @@
   /* THE WAY IN SITS BESIDE THE ARROW, because the arrow is the thing it adjusts. Small,
      out of the thumb zones, and it goes away with the rest of the HUD in a cutscene
      because it is inside #viewport like everything else. */
-  #goalBtn{position:absolute;left:50%;transform:translateX(-50%);bottom:96px;z-index:5;
-    padding:.28em .8em;border-radius:999px;cursor:pointer;
+  /* MEASURED AT PHONE WIDTH: 83 by 22 is a fine-looking chip and a poor thumb target -
+     the usual floor is about 44. Padded out vertically rather than made wider, so it stays
+     a chip and stops being a dare. */
+  #goalBtn{position:absolute;left:50%;transform:translateX(-50%);bottom:92px;z-index:5;
+    padding:.62em 1.1em;border-radius:999px;cursor:pointer;
     font-family:'IM Fell English SC',serif;letter-spacing:.05em;font-size:.72rem;
     text-transform:uppercase;color:var(--gold);background:rgba(24,20,14,.62);
     border:1px solid rgba(176,141,62,.45)}
@@ -678,11 +681,20 @@
     </div>
   </section>
 
-  <div class="modal" id="mGoals"><div class="sheet">
-    <h3>Errands</h3>
-    <div id="goalList"></div>
-    <div class="actbar"><button class="btn" data-close="mGoals">Close</button></div>
-  </div></div>
+  <!-- I INVENTED A CONVENTION THAT DOES NOT EXIST. This panel closed with
+       data-close="mGoals", and data-close appears exactly once in this file - here, written
+       by me. Nothing anywhere reads the attribute, so the button was inert and the only way
+       out of the panel was Escape. Every other modal in this game closes the same way: an
+       id'd button with an explicit handler beside the rest of the wiring. So does this one
+       now, and it borrows the furniture the others use as well, which it also was not. -->
+  <div class="modal mid" id="mGoals">
+    <div class="parchment deckle sheet" style="max-width:420px">
+      <div class="kicker">What you are about</div>
+      <h3>Errands</h3>
+      <div id="goalList"></div>
+      <button class="btn ghost wide mt" id="goalClose">Back</button>
+    </div>
+  </div>
 
   <section id="scene" class="screen">
     <div id="viewport">
@@ -15615,6 +15627,7 @@ function endLesson(){
 }
 /* the skip button was never wired to anything at all - give it both jobs */
 if($("goalBtn"))$("goalBtn").onclick=function(){openGoals();};
+if($("goalClose"))$("goalClose").onclick=function(){$("mGoals").classList.remove("on");};
 if($("cineSkip"))$("cineSkip").onclick=function(){
   if(LESSON.on)endLesson();
   else if(CS.active)endCutscene();
@@ -21202,7 +21215,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260812-1120";
+const BUILD="20260812-1350";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
