@@ -319,6 +319,14 @@
   .atDrawer>summary small{margin-left:auto;flex:none;opacity:.55;letter-spacing:0;
     text-transform:none;font-family:'EB Garamond',serif}
   .atChap{opacity:.62;font-style:italic}
+  /* THE WAY IN SITS BESIDE THE ARROW, because the arrow is the thing it adjusts. Small,
+     out of the thumb zones, and it goes away with the rest of the HUD in a cutscene
+     because it is inside #viewport like everything else. */
+  #goalBtn{position:absolute;left:50%;transform:translateX(-50%);bottom:96px;z-index:5;
+    padding:.28em .8em;border-radius:999px;cursor:pointer;
+    font-family:'IM Fell English SC',serif;letter-spacing:.05em;font-size:.72rem;
+    text-transform:uppercase;color:var(--gold);background:rgba(24,20,14,.62);
+    border:1px solid rgba(176,141,62,.45)}
   /* a road's stops sit UNDER the road and indented from it, so the nesting is visible at a
      glance rather than having to be worked out from the wording */
   .atSub{margin:.1em 0 .6em .85em}
@@ -670,6 +678,12 @@
     </div>
   </section>
 
+  <div class="modal" id="mGoals"><div class="sheet">
+    <h3>Errands</h3>
+    <div id="goalList"></div>
+    <div class="actbar"><button class="btn" data-close="mGoals">Close</button></div>
+  </div></div>
+
   <section id="scene" class="screen">
     <div id="viewport">
       <canvas id="world"></canvas>
@@ -682,6 +696,7 @@
         <button id="hudJump" title="Jump (space)">Jump</button>
       </div>
       <div id="guide"><span class="arw" id="guideArw">➤</span><span id="guideTxt"></span></div>
+      <button id="goalBtn" title="Errands (G)" aria-label="Choose what the arrow points at">Errands</button>
       <div id="hint">Drag left to walk · right to look · scroll to zoom · <b>F</b> to use</div>
       <div id="prompt"></div>
       <div id="gun">
@@ -7732,11 +7747,79 @@ function findSpot(test){
   for(let i=0;i<interactables.length;i++)if(test(interactables[i]))return interactables[i];
   return null;
 }
+/* ---- THE POINTER IS ADJUSTABLE NOW ----
+   Asked for: a quest menu to choose what the arrow follows. It followed whatever the
+   chapter's own next() returned, which is a good default and a bad only-option - a player
+   who wants to go and read the charter while the arrow is set on the sailor had nothing to
+   press, and no way to see what else was outstanding.
+   PINNED, NOT REPLACED. Choosing a goal pins the arrow to it; the chapter's next() is
+   still what runs when nothing is pinned, and a pin that has been finished is dropped
+   automatically so the arrow never points at something already done. Kept out of the save
+   whitelist on purpose: which errand you are following is a thing about this minute, not
+   about your record, and a save that restores it would be restoring the wrong thing. */
+let GOAL_PIN=null;
+function goalList(){
+  /* every interactable on this level that is a piece of chapter business, with whether it
+     is done - built from the same interactables the world already owns, so a thing added
+     tomorrow appears here with no second edit */
+  const out=[];
+  if(typeof interactables==="undefined")return out;
+  const kind={talk:"Speak with",doc:"Read",reck:"Sit with",steal:"",cannon:"",bell:"",idle:""};
+  interactables.forEach(function(it){
+    if(!it||!it.action)return;
+    if(kind[it.action]===undefined)return;
+    if(it.action==="idle")return;
+    let done=false, note="";
+    if(it.action==="talk"){done=npcDone(it.id);note=done?"spoken with":"has something to tell you";}
+    else if(it.action==="doc"){done=!!(it.data&&it.data.insight&&S.insight[it.data.insight.b]);
+      note=done?"read":"unread";}
+    else if(it.action==="reck"){done=false;
+      note=chapterReady()?"ready for you":(reckReady()+" of "+reckNeed()+" done");}
+    else if(it.action==="steal"){done=!!S.shipNote;note=done?"taken":"something is here";}
+    else if(it.action==="cannon"){done=!!S.firedGun;note=done?"secured":"loaded, and not yours to fire";}
+    else if(it.action==="bell"){note="";}
+    out.push({it:it,label:it.label,done:done,note:note,
+      verb:kind[it.action]||"Go to"});
+  });
+  return out;
+}
 function nextGoal(){
   if(!player)return null;
+  /* a pin wins, until it is finished */
+  if(GOAL_PIN){
+    const row=goalList().filter(function(r){return r.it===GOAL_PIN;})[0];
+    if(row&&!row.done)return {it:GOAL_PIN};
+    GOAL_PIN=null;
+  }
   const c=chapterOf(CURRENT_WORLD);
   return (c&&c.next)?c.next():null;
 }
+function renderGoals(){
+  const host=$("goalList");
+  if(!host)return;
+  host.innerHTML="";
+  const rows=goalList();
+  const note=document.createElement("div");
+  note.className="vNote";
+  note.textContent=rows.length
+    ? "Choose what the arrow should point at. It goes back to the chapter's own next errand when that one is finished, or when you clear it."
+    : "There is nothing to point at on this deck.";
+  host.appendChild(note);
+  const b0=document.createElement("button");
+  b0.className="atRow"+(GOAL_PIN?"":" sel");
+  b0.innerHTML="<b>Let the chapter lead</b><small>the arrow follows whatever comes next</small>";
+  b0.onclick=function(){GOAL_PIN=null;renderGoals();updateGuide();};
+  host.appendChild(b0);
+  rows.forEach(function(r){
+    const b=document.createElement("button");
+    b.className="atRow"+((GOAL_PIN===r.it)?" sel":"")+(r.done?" atChap":"");
+    b.innerHTML="<b>"+r.verb+" "+r.label+"</b><small>"+
+      (r.note||"")+(r.it.lvl!==plevel?(" \u00b7 "+LVL_NAME[r.it.lvl]):"")+"</small>";
+    b.onclick=function(){GOAL_PIN=r.it;renderGoals();updateGuide();};
+    host.appendChild(b);
+  });
+}
+function openGoals(){renderGoals();openModal("mGoals");}
 function updateGuide(){
   const g=$("guide"),o=$("hudObj");
   if(!g||!o)return;
@@ -7815,7 +7898,7 @@ function refreshPlayer(){
 /* ========== CONTROLS ==========
    Left half of the screen is a floating stick; right half turns the view.
    Keyboard: WASD to move, Q/E or drag to turn, Space/E to act, Esc to back out. */
-const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes","mAtlas"];
+const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes","mAtlas","mGoals"];
 function anyModalOpen(){for(let i=0;i<MODALS.length;i++)if($(MODALS[i]).classList.contains("on"))return true;return false;}
 function closeAllModals(){
   for(let i=0;i<MODALS.length;i++)$(MODALS[i]).classList.remove("on");
@@ -14719,7 +14802,13 @@ function playOpening(onDone){
    under orders in country they had been in for one afternoon. Men did not wander off
    alone; the ones who did got hurt. So the limit is a sentry's word, not a wall - and the
    guard party is already standing on that line. */
-const CAPE={SEA:66, BEACH:20, WOOD:-16, EDGE:430, TREE:-40, ROAM:250, WARN:200};
+/* MARSH_A and MARSH_B are the dry ground's half-lengths: a hundred and sixty feet along the
+   strand, ninety across it. Percy's party was ashore one afternoon under orders in country
+   they had been in for a few hours; a hundred and sixty feet of beach is more ground than
+   they used, and the marsh beyond it is what the Lynnhaven actually is. ROAM is now only a
+   backstop, out past the marsh where nobody reaches it. */
+const CAPE={SEA:66, BEACH:20, WOOD:-16, EDGE:430, TREE:-40, ROAM:300, WARN:120,
+  MARSH_A:165, MARSH_B:95};
 function capeGround(x,z){
   let y;
   if(z>CAPE.SEA)                       y=-2.6-(z-CAPE.SEA)*0.02;      /* sea floor */
@@ -14779,12 +14868,77 @@ function capeVert(x,z,y){
     +Math.sin(x*0.331-z*0.287)*0.016;
   const avg=(capeGround(x+7,z)+capeGround(x-7,z)+capeGround(x,z+7)+capeGround(x,z-7))*0.25;
   f*=1+Math.max(-0.24,Math.min(0.10,(y-avg)*0.070));
+  /* ---- AND THE MIRE, WHICH IS THE THING THAT TURNS YOU BACK ----
+     A boundary a player cannot SEE is a wall however it is shaped. So the ground beyond the
+     dry lens is coloured as what it is: wet reed and standing water, going dark and green-
+     grey, with the transition spread over twenty-odd feet so there is no line anywhere -
+     you notice the going has changed before you notice you have stopped.
+     Same owner as the collision, so what you can see and what you can walk cannot drift
+     apart. */
+  const md=Math.hypot(x-CAPE_MARK.x,z-CAPE_MARK.z)-
+           capeMarshEdge(Math.atan2(z-CAPE_MARK.z,x-CAPE_MARK.x));
+  if(z<=CAPE.BEACH&&md>-24){
+    const w=Math.max(0,Math.min(1,(md+24)/34));
+    const wet=RGB(mixHex(0x6f7a54,0x3f4a3e,Math.min(1,w*1.1)));
+    const dry=shadeRGB(base,f), k=w*0.92;
+    return shadeRGB([dry[0]+(wet[0]-dry[0])*k,
+                     dry[1]+(wet[1]-dry[1])*k,
+                     dry[2]+(wet[2]-dry[2])*k],1-w*0.16);
+  }
   return shadeRGB(base,f);
+}
+/* ---- WHERE THE DRY GROUND ENDS ----
+   An ellipse round the landing, long along the strand and short across it, with a wobble on
+   it so the edge is a shoreline and not a curve. Inside it is sand you can walk. Outside it
+   to the west and south is the Lynnhaven marsh - standing water, reed and mud - which is
+   drawn and coloured as marsh so a player reads it as ground he does not want rather than
+   as a limit he is being given.
+   ONE OWNER, so the collision, the colouring and the guard line cannot disagree about where
+   the edge is. */
+function capeMarshEdge(a){
+  /* the radius of the dry ground on a bearing, in feet */
+  const long=CAPE.MARSH_A, short=CAPE.MARSH_B;
+  const r=1/Math.sqrt(Math.pow(Math.cos(a)/long,2)+Math.pow(Math.sin(a)/short,2));
+  return r*(1+0.085*Math.sin(a*3.1)+0.055*Math.sin(a*5.7+1.3));
+}
+function capeMarsh(x,z){
+  const dx=x-CAPE_MARK.x, dz=z-CAPE_MARK.z;
+  /* the sea side is not marsh - that is water, and the beach runs along it */
+  if(dz>CAPE.BEACH)return false;
+  return Math.hypot(dx,dz)>capeMarshEdge(Math.atan2(dz,dx));
 }
 function capeBlocked(x,z){
   if(Math.abs(x)>CAPE.EDGE||z<-CAPE.EDGE||z>CAPE.SEA+10)return true;
-  /* the sentries. Circular, so the corners cannot be walked to. */
-  if(Math.hypot(x-CAPE_MARK.x,z-CAPE_MARK.z)>CAPE.ROAM)return true;
+  /* ---- THE GROUND TURNS YOU BACK, NOT A WALL ----
+     Asked for: something the player does not notice, historically accurate, and that does
+     not break immersion. What was here was an invisible cylinder at two hundred and fifty
+     feet, and an invisible cylinder is the most immersion-breaking object a game can have:
+     it teaches a player that the world is a set.
+
+     Three things instead, and none of them is a wall.
+
+     FIRST, THE LAND ITSELF. Cape Henry is a spit. West of the landing the ground falls into
+     the Lynnhaven marsh, and east it runs out into the sea; the dry ground a party can walk
+     is a lens, not a circle. So the boundary is drawn where the going stops being sand and
+     starts being water - and the marsh is DRAWN, in capeGround and in the colouring, so
+     what stops you is a thing you can see and would not have walked into anyway. Percy's
+     party found "faire meddowes and goodly tall Trees, with such Fresh-waters running
+     through the woods" - fresh water running through it is exactly what makes the west
+     side of this spit impassable to a man in shoes.
+
+     SECOND, THE SENTRIES, who were already in the fiction and are now on the line: the
+     guard party stands ON the boundary rather than near it, so a player walking out meets
+     men before he meets anything else.
+
+     THIRD, AND ONLY AS A LAST RESORT, the stop - moved out past the marsh so that in
+     practice nobody reaches it. It is still here because a floating-point world needs a
+     backstop, not because the player should ever feel it. */
+  const dx=x-CAPE_MARK.x, dz=z-CAPE_MARK.z;
+  const d=Math.hypot(dx,dz);
+  if(d>CAPE.ROAM)return true;
+  /* the marsh: a lens rather than a circle, wider along the strand than across it, so
+     walking the beach is easy and walking inland is not */
+  if(capeMarsh(x,z))return true;
   if(capeGround(x,z)<0.30)return true;                 /* you do not wade out */
   for(let i=0;i<colliders.length;i++){
     const c=colliders[i];
@@ -15460,6 +15614,7 @@ function endLesson(){
   if(cb)cb();
 }
 /* the skip button was never wired to anything at all - give it both jobs */
+if($("goalBtn"))$("goalBtn").onclick=function(){openGoals();};
 if($("cineSkip"))$("cineSkip").onclick=function(){
   if(LESSON.on)endLesson();
   else if(CS.active)endCutscene();
@@ -15836,10 +15991,15 @@ function strayCheck(){
   const d=Math.hypot(player.position.x-CAPE_MARK.x,player.position.z-CAPE_MARK.z);
   const now=IDLE_T;
   if(d<CAPE.WARN-25){STRAY_SAID=false;return;}
-  if(d>=CAPE.ROAM-6){
-    if(now-STRAY_T>7){
+  /* SAID ONCE, AND ABOUT THE GROUND. A man walking toward standing water is told what is
+     in front of him, which is what a sentry would actually say - not that he has reached
+     the end of the world. */
+  const edge=capeMarshEdge(Math.atan2(player.position.z-CAPE_MARK.z,
+                                      player.position.x-CAPE_MARK.x));
+  if(d>=edge-26){
+    if(now-STRAY_T>9){
       STRAY_T=now;
-      toast("\u201cFar enough. Nobody past the sentries \u2014 they had us here at dusk and they will again.\u201d");
+      toast("\u201cNot that way \u2014 it is all mire and standing water beyond the reeds.\u201d");
     }
     return;
   }
@@ -20985,7 +21145,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260812-0740";
+const BUILD="20260812-0930";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
