@@ -980,7 +980,7 @@ if(typeof THREE==="undefined"){$("err").style.display="grid";}
    Skin is a property of who a character IS, not a cosmetic the player picks.
    Later chapters add tones for the Powhatan and, from 1619, for Africans
    brought to Virginia -- which is why this is a table and not a constant. */
-const SKINS={ english:0xf0d2b6 };
+const SKINS={ english:0xf0d2b6, tidewater:0xb07a52 };
 function skinOf(eq){return SKINS[eq&&eq.skin?eq.skin:"english"]||SKINS.english;}
 
 /* ========== COSMETICS ========== */
@@ -12531,7 +12531,7 @@ function giveFire(){
        OWN pan flash, so the piece would have flashed twice with the arm already
        back up between them. Flash once, here, then fire straight from ignite. */
     const world=CURRENT_WORLD;
-    if(AMBUSH.on){AMBUSH.fired=true;AMBUSH.shots++;}
+    if(AMBUSH.on){AMBUSH.fired=true;AMBUSH.shots++;AMBUSH.justFired=true;}
     pan(function(){playSfx("fizz",0.3);panFlash();toast("Hang fire\u2026");});
     setTimeout(function(){
       if(CURRENT_WORLD!==world||!gunPiece)return;
@@ -12958,7 +12958,7 @@ function shotAMan(who,off,radius){
    before the match got to it. The bookkeeping stays immediate - the ambush counts
    the shot the moment it is taken - and only the ignition waits. */
 function discharge(hung){
-  if(AMBUSH.on){AMBUSH.fired=true;AMBUSH.shots++;}
+  if(AMBUSH.on){AMBUSH.fired=true;AMBUSH.shots++;AMBUSH.justFired=true;}
   const world=CURRENT_WORLD;      /* nothing may fire into a world that has ended */
   setTimeout(function(){
     if(CURRENT_WORLD!==world||!gunPiece)return;
@@ -16558,7 +16558,7 @@ const CHARTS={
   ch2:{kick:"Cape Henry \u00b7 the Captain\u2019s chart, spread on a chest",
     title:"The Mouth of the Bay",
     art:"cape", x:0.420,y:0.700,     /* beside the crosse, not on top of it */
-    gloss:"<b>You are here:</b> the southern cape at the mouth of the Chesapeake, named this month for the King\u2019s eldest son. "+
+    gloss:"<b>You are here:</b> the southern cape at the mouth of the Chesapeake. It has no English name yet \u2014 the cross goes up and the naming happens on the 29th, three days after the day you are standing in. "+
       "The northern cape across the water is Cape Charles, for his second. Neither had these names three weeks ago. "+
       "The fleet will not stay: there is no depth here for the ships and no cover from the sea. "+
       "Everything west of the two capes on this sheet is a guess, and the men who drew it never came here."}
@@ -17536,11 +17536,16 @@ CHART_ART.powhatan=function(c,spec){
      Low sand and pine, not cliff - Percy describes fair meadows and goodly tall trees.
      The deep channel runs in between the capes; it is the door to the whole bay, and it is
        why a fleet could enter at all.
-     THE CROSS was set up here on the 24th, and the first service held. Chapter II is this
-       ground, and the cross is the one built thing on it.
-     They were attacked here that same evening, going aboard. The chart does not draw the
-       fight - a chart is not a battle plan - but Paspahegh country lies west, and the shore
-       is not empty in this game or in the record.
+     THE CROSS WENT UP ON THE 29th, three days AFTER the landing - Percy is dated and
+       explicit: "The nine and twentieth day we set up a Crosse at Chesupioc Bay, and named
+       that place Cape Henry." This sheet said the 24th and put the attack on the same
+       evening, which reverses the order of the chapter's two events. The landing and the
+       attack are the 26th; the cross and the naming are the 29th. Since the chart is drawn
+       AS OF the 26th, the cross is marked as the place appointed for it rather than as a
+       thing already standing.
+     They were attacked here on the evening of the 26th, going back aboard. The chart does
+       not draw the fight - a chart is not a battle plan - but the ground is Chesepian
+       country and the shore is not empty in this game or in the record.
    Drawn with the same hand as the others: wobbled ink, hatched shores, ruled sea, toned
    paper, a rose, a cartouche, soundings in fathoms and a scale in leagues. */
 CHART_ART.cape=function(c,spec){
@@ -17590,7 +17595,7 @@ CHART_ART.cape=function(c,spec){
   };
   for(let k=0;k<10;k++)tree(0.045+((k*5)%10)*0.045, 0.845+((k*3)%4)*0.038, 0.038);
 
-  /* THE CROSSE, set up on the 24th */
+  /* THE PLACE APPOINTED FOR THE CROSSE. Not yet standing on the 26th - see above. */
   g.strokeStyle="#8f3f2f";g.lineWidth=W*0.0030;
   g.beginPath();
   g.moveTo(X(0.475),Y(0.640));g.lineTo(X(0.475),Y(0.700));
@@ -17616,7 +17621,7 @@ CHART_ART.cape=function(c,spec){
   g.fillText("The Maine Sea",X(0.760),Y(0.850));
   g.fillStyle="#8f3f2f";
   g.font="italic "+Math.round(W*0.018)+"px Georgia, serif";
-  g.fillText("the crosse sett up",X(0.296),Y(0.582));
+  g.fillText("where the crosse shall stand",X(0.268),Y(0.582));
   g.fillStyle=INK;
   g.font="italic "+Math.round(W*0.018)+"px Georgia, serif";
   g.fillText("Paspahegh country, westward",X(0.030),Y(0.628));
@@ -18036,7 +18041,8 @@ function sealedBox(){
 
    Historically: arrows wounded Archer and Morton at Cape Henry and the party
    withdrew. The Powhatan men are not obstacles and are not shown as targets. */
-const AMBUSH={on:false,t:0,phase:0,shots:0,fired:false,hits:0,done:false};
+const AMBUSH={on:false,t:0,phase:0,shots:0,fired:false,hits:0,done:false,
+  creep:false,justFired:false};
 const DUSK={t:0,on:false};
 /* THE AMBUSH HAS TO OUTLAST A RELOAD, and by enough that finishing one is a
    decision rather than a reflex. This was 40 against a reload of 38 - two
@@ -18157,21 +18163,341 @@ function applySky(k){
   if(fillLight)fillLight.intensity=0.30-0.22*k;
   if(shadowMesh)shadowMesh.material.opacity=1-k*0.88;
 }
+/* ================= THE MEN ON THE DUNE =================
+   Reported: "when the indians attack there's no native attacking, just arrows from nowhere."
+   That was exactly true. Arrows spawned at a random x, sixty to a hundred feet back inside
+   the pines, from nobody, on a timer, and the scene ended on a timer too.
+
+   WHO THEY WERE, AND WHAT WE ARE ALLOWED TO SAY. Neither eyewitness names them. Percy
+   writes only "the Savages"; Smith's True Relation (1608) has "certaine Indians"; the
+   Generall Historie (1624) has "fiue Salvages". The ground at Cape Henry, the Lynnhaven
+   and Great Neck was CHESEPIAN country - towns at Skicoak, Chesepioc and probably Apasus.
+   So these were most probably Chesepian men, and the game says "most probably" because
+   that is the truth. It does NOT say Powhatan: the ships had been in the bay a matter of
+   hours, and no order could have gone seventy miles to Werowocomoco and come back. This
+   was a local decision by local men defending a particular beach, which is a better fact
+   than an empire attacking.
+   There is no account of that evening from their side. Every word we have is from two
+   Englishmen, one of whom was not ashore. The codex says so.
+
+   FIVE, because five is the only number in the record - and Smith, who gives it, was not
+   ashore and wrote it seventeen years later, while Percy, who WAS ashore, does not count
+   them. Five is also what a player can actually follow at dusk.
+
+   WHAT PERCY SAW, which is the whole basis of the animation:
+     "creeping vpon all foure, from the Hills like Beares, with their Bowes in their mouthes"
+   Three modellable facts, and the old code had none of them. From the HILLS - the dune
+   ridge, not the deep wood. On ALL FOURE - hands and knees up the open sand. And the bow
+   carried CROSSWISE IN THE TEETH, precisely because both hands are on the ground.
+
+   THE RANGE. Smith: they "charged them within Pistoll shot" - twenty to thirty yards. They
+   closed before they loosed, so the shooting is nearly flat, not plunging.
+
+   WHAT ENDS IT, and this is the structural fix. Percy: "After they had spent their Arrowes,
+   and felt the sharpenesse of our shot, they retired into the Woods with a great noise, and
+   so left vs." Two conditions in that order: the arrows RAN OUT, and the English got some
+   fire away. So the scene is an AMMUNITION COUNT and not a clock. Each man carries six or
+   seven; the quiver shows them; they are removed one per shot; when a man is empty he goes,
+   and when the last man goes the beach is quiet. A player watching can see the supply run
+   down, which makes Percy's ending visible instead of narrated.
+
+   AND THE SHOUT IS AT THE FIRST FLIGHT, not before it - Smith: "Vpon the first flight of
+   arrowes, they gaue such horrible shouts and screeches". The approach is silent. The
+   second shout belongs to the withdrawal.
+
+   WHAT IS DELIBERATELY ABSENT. No metal of any kind: this is April 1607, before sustained
+   trade, and every point is quartz, antler or bone. No recurve - the eastern self bow is
+   one straight stave. No shield: a man crawling with his bow in his teeth is not carrying
+   one, and no account mentions one here. The war club is attested for these people at this
+   date but NOT at this engagement, and nobody came to blows, so it is slung and never
+   drawn. No horses, no feathered headdress, no pipe tomahawk - all of them wrong by
+   centuries or by a continent.
+   AND THEY CANNOT BE SHOT. There is no hit, no wound, no death and no score. The player is
+   the one being shot at. */
+const BOW_N=5;
+let BOWMEN=[];
+/* ---- WHY THESE MEN ARE NOT ON THE BEACH YET ----
+   Everything below is written and tested: seven states, the crawl with the stave in the
+   teeth, the flat shooting at pistol shot, the quiver that visibly empties, the withdrawal
+   as each man runs dry, and a scene that ends on the last arrow instead of on a clock.
+   Measured end to end: thirty-seven arrows over forty-four seconds, which outlasts the
+   thirty-eight second matchlock reload the scene exists to test.
+
+   WHAT IS NOT RIGHT IS THE FIGURE, and it is not a small thing. Every torso in this game's
+   wardrobe is a GARMENT - "none_torso" is not nothing, it is "Shirt & Slops", a loose linen
+   shirt over canvas slops, which is what an English seaman wore. Built with it, five
+   Chesepian bowmen came out dressed as the party they were shooting at. I tried laying a
+   bare chest and a hide clout over the shirt and it came out worse - a box that swallowed
+   the head.
+
+   So they are held. Putting real people in somebody else's clothes in a school game is a
+   worse fault than the arrows-from-nowhere this replaces, and it is the one thing the
+   research was most explicit about. What is owed is a bare-torso wardrobe piece and the
+   hair Percy describes - the right side shaved with a shell, the left worn long and knotted
+   - built properly in buildFigureRaw rather than pasted over it.
+   Turn this on when that exists. Nothing else has to change. */
+const BOWMEN_READY=false;
+/* Percy, of these people, within weeks: "Their Bowes are made of tough Hasell, their
+   strings of Leather", arrows of cane "an elle long" - 45 inches - "headed with very sharpe
+   stones... like a broad Arrow", others "with the ends of Deeres hornes". One unit is one
+   foot on this level, so an ell is 3.75 units and the stave is a man's height. */
+function buildBow(){
+  const g=new Geo(), W=RGB(0x9d7a46), WD=RGB(0x6f5530), STR=RGB(0x7d7260);
+  /* a shallow even arc, six blocks: no recurve, no grip wrap, no sight window */
+  const L=4.7, seg=6;
+  for(let i=0;i<seg;i++){
+    const t0=i/seg-0.5, t1=(i+1)/seg-0.5;
+    const b0=Math.cos(t0*2.1)*0.42, b1=Math.cos(t1*2.1)*0.42;
+    const th0=0.075-Math.abs(t0)*0.065, th1=0.075-Math.abs(t1)*0.065;
+    g.quad4([0,t0*L,b0-th0],[0,t1*L,b1-th1],[0.055,t1*L,b1+th1],[0.055,t0*L,b0+th0],W,W,WD,WD);
+    g.quad4([0.055,t0*L,b0+th0],[0.055,t1*L,b1+th1],[0,t1*L,b1-th1],[0,t0*L,b0-th0],WD,WD,W,W);
+  }
+  /* the string, from nock to nock - one thin box, and it is leather, not linen */
+  g.box(0.045,0,0.30,0.03,L*0.99,0.03,STR);
+  return g.mesh(false,true);
+}
+function buildQuiver(){
+  const g=new Geo(), HIDE=RGB(0x8a6a46), HID2=RGB(0x6d5136);
+  g.oct(0,0,0,0,0.34,0.34,0.30,0.30,2.0,HIDE,HID2);
+  return g.mesh(false,true);
+}
+/* the nocks showing above the shoulder ARE the ammunition count, so they are their own
+   little meshes and one is hidden per shot */
+function buildNocks(n){
+  const out=[];
+  for(let i=0;i<n;i++){
+    const g=new Geo();
+    const CANE=RGB(0xd8c98a), FTH=RGB(0x5a4a34);
+    g.box(0,0,0,0.05,1.5,0.05,CANE);
+    g.box(0,-0.6,0.05,0.04,0.42,0.10,FTH);
+    const m=g.mesh(false,true);
+    m.position.set((i%3-1)*0.13,1.0,-0.10+Math.floor(i/3)*0.12);
+    m.rotation.x=-0.22;
+    out.push(m);
+  }
+  return out;
+}
+function buildBowman(seed){
+  /* the rig comes from the house figure builder, so the crawl and the draw can use the
+     same joints everything else in this game uses. Bare above the waist, a breechclout,
+     and the hair Percy describes at Kecoughtan four days later: "they shave the right side
+     of their heads with a shell, the left side they weare of an ell long tied up with an
+     artificiall knot". */
+  const eq={skin:"tidewater",palette:"ink",cloak:"none_cloak",torso:"none_torso",
+            accessory:"none_acc",head:"none_head",build:"build_normal",face:"plain",
+            dye:{breech:"ink",stock:"ink"}};
+  const f=buildFigure(eq);
+  const p=f.userData.parts;
+  const bow=buildBow();
+  const quiver=buildQuiver();
+  const nocks=buildNocks(7+(seed%2));
+  if(p&&p.neck){
+    /* ---- THE BOW IN THE TEETH ----
+       Parented to the head, crosswise, tips clear of the sand. This is the single most
+       vivid thing in the record of this engagement and the old code had no representation
+       of it whatever. */
+    bow.position.set(0,0.30,0.34);
+    bow.rotation.set(0,0,Math.PI/2);
+    p.neck.add(bow);
+  }
+  f.add(quiver);
+  quiver.position.set(-0.30,3.6,-0.42);
+  quiver.rotation.set(0.22,0,0.30);
+  nocks.forEach(function(m){quiver.add(m);});
+  f.userData.bow=bow;f.userData.quiver=quiver;f.userData.nocks=nocks;
+  return f;
+}
+function bowmanTake(b){
+  /* one arrow gone, and the quiver shows it */
+  for(let i=b.fig.userData.nocks.length-1;i>=0;i--){
+    if(b.fig.userData.nocks[i].visible){b.fig.userData.nocks[i].visible=false;return;}
+  }
+}
+/* the bow moves from the teeth to the left hand as he rises, and back if he goes down */
+function bowInHand(b,inHand){
+  const f=b.fig, p=f.userData.parts, bow=f.userData.bow;
+  if(!p||!bow||b.inHand===inHand)return;
+  b.inHand=inHand;
+  if(inHand&&p.wristL){
+    /* ---- UPRIGHT IN THE BOW HAND ----
+       The stave is built along its own Y, and the left arm at full draw is rotated about
+       1.35 rad forward - so a child of the wrist inherits that and the bow came out lying
+       across the frame like a pole. Cancelled on X, and canted a little, which is how a
+       self bow is actually held. Caught by looking at it: the numbers all ran green while
+       the man was carrying a five-foot stave at forty-five degrees. */
+    p.wristL.add(bow);
+    bow.position.set(0.06,-0.10,0.14);
+    bow.rotation.set(1.35,0,0.16);
+  } else if(p.neck){
+    p.neck.add(bow);
+    bow.position.set(0,0.30,0.34);
+    bow.rotation.set(0,0,Math.PI/2);
+  }
+}
+function spawnBowmen(){
+  BOWMEN=[];
+  if(typeof capeGround!=="function")return;
+  /* prone in the marram behind the dune crest - on the seaward side of the pines, on the
+     DUNES, which is where Percy puts them. Spread along the ridge, not in a rank. */
+  for(let i=0;i<BOW_N;i++){
+    const x=-26+i*13+(srand(i*7.7)-0.5)*7;
+    const z=CAPE.WOOD+2+srand(i*3.3)*6;
+    const f=buildBowman(i);
+    f.position.set(x,capeGround(x,z),z);
+    f.rotation.y=Math.PI;                     /* facing the strand */
+    scene.add(f);
+    BOWMEN.push({fig:f,st:"lie",t:1.2+srand(i*11.3)*2.2,
+      arrows:f.userData.nocks.length,seed:i,inHand:false,shotHere:0,
+      tx:x,tz:z});
+  }
+}
+function despawnBowmen(){
+  BOWMEN.forEach(function(b){if(b.fig&&b.fig.parent)b.fig.parent.remove(b.fig);});
+  BOWMEN=[];
+}
+function bowmanArrow(b){
+  /* the arrow comes off HIS bow, at the player, nearly flat - twenty-five yards is no arc
+     to speak of. Most missed: aimed a little wide, and at what was exposed. */
+  if(!POOL.arrows||!player)return;
+  const m=POOL.arrows.take();
+  if(!m)return;
+  const px=b.fig.position.x, pz=b.fig.position.z;
+  const oy=capeGround(px,pz)+4.2;
+  const tx=player.position.x+(srand(IDLE_T*13.7+b.seed)-0.5)*11;
+  const tz=player.position.z+(srand(IDLE_T*9.1+b.seed*3)-0.5)*11;
+  const ty=WORLD.ground(tx,tz)+1.1;
+  ARROWS.push({m:m,t:0,life:0.42+Math.random()*0.16,flat:true,
+    x0:px,y0:oy,z0:pz,x1:tx,y1:ty,z1:tz,
+    near:Math.hypot(tx-player.position.x,tz-player.position.z)});
+  m.visible=true;
+  bowmanTake(b);
+  b.arrows--;b.shotHere++;
+}
+function updateBowmen(dt){
+  if(!BOWMEN.length||!player)return;
+  let alive=0;
+  for(let i=0;i<BOWMEN.length;i++){
+    const b=BOWMEN[i], f=b.fig, p=f.userData.parts;
+    if(b.st==="gone")continue;
+    alive++;
+    b.t-=dt;
+    const d=Math.hypot(f.position.x-player.position.x,f.position.z-player.position.z);
+    /* Percy's "felt the sharpenesse of our shot": an English piece going off near him puts
+       him behind the crest. Not a hit - he is never a target. */
+    if(AMBUSH.justFired&&d<70&&b.st!=="withdraw"&&b.st!=="gone"){
+      b.st="ground";b.t=1.0+srand(b.seed*5.1)*1.0;bowInHand(b,false);
+    }
+    if(b.st==="lie"){
+      if(p&&p.body)p.body.rotation.x=1.35;     /* prone */
+      f.position.y=capeGround(f.position.x,f.position.z)-1.2;
+      if(AMBUSH.creep&&b.t<=0){b.st="creep";b.t=0;}
+    } else if(b.st==="creep"){
+      /* on all fours, up the open sand, slowly, with the stave in his teeth */
+      if(p){
+        if(p.body)p.body.rotation.x+=(1.05-p.body.rotation.x)*Math.min(1,dt*3);
+        const sw=Math.sin(IDLE_T*4.2+b.seed)*0.5;
+        if(p.la)p.la.rotation.x=sw-0.9;
+        if(p.ra)p.ra.rotation.x=-sw-0.9;
+        if(p.ll)p.ll.rotation.x=-sw*0.7;
+        if(p.rl)p.rl.rotation.x=sw*0.7;
+      }
+      f.position.y=capeGround(f.position.x,f.position.z)-0.6;
+      const ux=player.position.x-f.position.x, uz=player.position.z-f.position.z;
+      const L=Math.hypot(ux,uz)||1;
+      f.rotation.y=Math.atan2(ux,uz);
+      if(d>66){f.position.x+=ux/L*2.6*dt;f.position.z+=uz/L*2.6*dt;}
+      else {b.st="shoot";b.t=0.5;b.shotHere=0;bowInHand(b,true);}
+    } else if(b.st==="shoot"){
+      if(p){
+        if(p.body)p.body.rotation.x+=(0.08-p.body.rotation.x)*Math.min(1,dt*6);
+        if(p.la)p.la.rotation.x+=(-1.35-p.la.rotation.x)*Math.min(1,dt*7);
+        if(p.ra)p.ra.rotation.x+=(-0.55-p.ra.rotation.x)*Math.min(1,dt*7);
+        if(p.ll)p.ll.rotation.x*=0.85;
+        if(p.rl)p.rl.rotation.x*=0.85;
+      }
+      f.position.y=capeGround(f.position.x,f.position.z);
+      const ux=player.position.x-f.position.x, uz=player.position.z-f.position.z;
+      f.rotation.y=Math.atan2(ux,uz);
+      if(b.t<=0){
+        if(b.arrows<=0){b.st="withdraw";b.t=0;playSfx("wind",0.22);}
+        else{
+          bowmanArrow(b);
+          /* ---- FOUR SECONDS AN ARROW, AND THE SCENE HAS TO OUTLAST A RELOAD ----
+             1.5s was a target-archer's cadence with a quiver at the hip. This is a
+             forty-five inch cane arrow drawn from a bag on the back, nocked on a leather
+             string and aimed at a man - four seconds is brisk for that.
+             It also fixes a regression I made: with seven arrows at 1.5s the whole
+             engagement finished in twenty-four seconds, and a matchlock reload is
+             thirty-eight. A player who committed to loading would never have got their
+             one shot away, which is the entire point of the scene. Seven or eight arrows
+             at four seconds is about forty of them and about forty seconds - which is
+             also, at last, close to what five quivers actually hold. */
+          b.t=3.8+srand(b.seed*2.7+b.arrows)*0.9;
+          if(b.shotHere>=3){b.st="shift";b.t=1.6+srand(b.seed*4.4)*1.4;
+            const side=(b.seed%2)?1:-1;
+            b.tx=f.position.x+side*(5+srand(b.seed)*7);b.tz=f.position.z;}
+        }
+      }
+    } else if(b.st==="shift"){
+      /* along the dune, upright, one arrow against the bow - so five men do not read as
+         five turrets */
+      if(p){
+        const sw=Math.sin(IDLE_T*7.5+b.seed)*0.55;
+        if(p.ll)p.ll.rotation.x=-sw;
+        if(p.rl)p.rl.rotation.x=sw;
+        if(p.body)p.body.rotation.x+=(0.14-p.body.rotation.x)*Math.min(1,dt*5);
+      }
+      f.position.y=capeGround(f.position.x,f.position.z);
+      const dx=b.tx-f.position.x, dz=b.tz-f.position.z, L=Math.hypot(dx,dz)||1;
+      if(L>1.0){f.position.x+=dx/L*7*dt;f.position.z+=dz/L*7*dt;f.rotation.y=Math.atan2(dx,dz);}
+      if(b.t<=0||L<=1.0){b.st="shoot";b.t=0.4;b.shotHere=0;}
+    } else if(b.st==="ground"){
+      if(p&&p.body)p.body.rotation.x+=(1.25-p.body.rotation.x)*Math.min(1,dt*7);
+      f.position.y=capeGround(f.position.x,f.position.z)-1.0;
+      bowInHand(b,false);
+      if(b.t<=0){
+        if(b.arrows<=0){b.st="withdraw";b.t=0;}
+        else{b.st="shoot";b.t=0.4;b.shotHere=0;bowInHand(b,true);}
+      }
+    } else if(b.st==="withdraw"){
+      /* back over the ridge and into the pines at a run, upright, shouting - Percy's
+         "with a great noise" belongs HERE, to the withdrawal */
+      if(p){
+        const sw=Math.sin(IDLE_T*11+b.seed)*0.8;
+        if(p.ll)p.ll.rotation.x=-sw;
+        if(p.rl)p.rl.rotation.x=sw;
+        if(p.la)p.la.rotation.x=sw*0.6;
+        if(p.ra)p.ra.rotation.x=-sw*0.6;
+        if(p.body)p.body.rotation.x+=(0.20-p.body.rotation.x)*Math.min(1,dt*5);
+      }
+      f.position.y=capeGround(f.position.x,f.position.z);
+      f.rotation.y=Math.PI*0+0;                 /* away from the strand, into the wood */
+      f.position.z-=17*dt;
+      if(f.position.z<CAPE.TREE-8){b.st="gone";f.visible=false;}
+    }
+  }
+  AMBUSH.justFired=false;
+  /* AND THE SCENE ENDS WITH THE LAST ARROW, not on a clock. "and so left vs." */
+  let anyLeft=false;
+  for(let i=0;i<BOWMEN.length;i++)if(BOWMEN[i].st!=="gone")anyLeft=true;
+  if(!anyLeft&&AMBUSH.on&&AMBUSH.t>6)endAmbush();
+}
 /* ---- arrows: they come AT you, and there is nothing to aim back at ---- */
 function arrowSpawn(){
   if(!POOL.arrows||!player)return;
   const m=POOL.arrows.take();
   if(!m)return;
-  /* out of the treeline, from a point you cannot see */
-  const fx=CAPE.TREE-6-Math.random()*40;
+  /* FROM THE DUNE, which is where Percy puts them - "from the Hills like Beares" - and not
+     from sixty to a hundred feet back inside the pines, which is where this used to spawn */
+  const fx=CAPE.WOOD+1+Math.random()*7;
   const ox=player.position.x+(Math.random()-0.5)*130;
   const oy=capeGround(ox,fx)+2.5+Math.random()*3;
   /* aimed near the player, deliberately not AT them - most arrows missed */
   const tx=player.position.x+(Math.random()-0.5)*17;
   const tz=player.position.z+(Math.random()-0.5)*17;
   const ty=WORLD.ground(tx,tz)+0.4;
-  const flight=0.85+Math.random()*0.5;
-  ARROWS.push({m:m,t:0,life:flight,
+  const flight=0.55+Math.random()*0.25;
+  ARROWS.push({m:m,t:0,life:flight,flat:true,
     x0:ox,y0:oy,z0:fx, x1:tx,y1:ty,z1:tz,
     near:Math.hypot(tx-player.position.x,tz-player.position.z)});
   m.visible=true;
@@ -18182,13 +18508,19 @@ function updateArrows(dt){
     const a=ARROWS[i];a.t+=dt;
     const k=Math.min(1,a.t/a.life);
     const x=a.x0+(a.x1-a.x0)*k, z=a.z0+(a.z1-a.z0)*k;
-    /* a shallow arc, so it reads as shot rather than thrown */
-    const y=a.y0+(a.y1-a.y0)*k+Math.sin(k*Math.PI)*3.2;
+    /* ---- FLAT, BECAUSE THEY CLOSED FIRST ----
+       Smith: they "charged them within Pistoll shot" - twenty to thirty yards. At that
+       range an ell-long cane arrow off a man's-height self bow is nearly flat, and the old
+       three-and-a-quarter-unit lob read as an arrow dropped out of the sky from somebody
+       who was never there. The old high arc is kept for anything not shot by a modelled
+       man, so nothing else that uses this changes. */
+    const arc=a.flat?0.55:3.2;
+    const y=a.y0+(a.y1-a.y0)*k+Math.sin(k*Math.PI)*arc;
     a.m.position.set(x,y,z);
     /* point it along its own flight */
     const nk=Math.min(1,k+0.04);
     a.m.lookAt(a.x0+(a.x1-a.x0)*nk,
-               a.y0+(a.y1-a.y0)*nk+Math.sin(nk*Math.PI)*3.2,
+               a.y0+(a.y1-a.y0)*nk+Math.sin(nk*Math.PI)*arc,
                a.z0+(a.z1-a.z0)*nk);
     if(k>=1){
       /* struck the sand: a small spurt where it lands, and it stays a moment */
@@ -18211,6 +18543,8 @@ function beginAmbush(){
   GUN.glow=0.05;
   if(itemState("matchlock")==="stowed")setItemState("matchlock","carried");
   refreshPlayer();
+  AMBUSH.creep=false;AMBUSH.justFired=false;
+  if(BOWMEN_READY)try{spawnBowmen();}catch(e){if(window.console)console.warn("bowmen",e);}
   toast("The light is going.");
 }
 function updateAmbush(dt){
@@ -18218,30 +18552,49 @@ function updateAmbush(dt){
   if(!AMBUSH.on)return;
   AMBUSH.t+=dt;
   const T=AMBUSH.t;
-  /* arrows begin once it is properly dark, then thicken */
-  if(T>7){
-    const rate=(T<16)?1.1:(T<30)?2.0:2.6;      /* per second */
+  /* ---- NO MORE ARROWS OUT OF NOWHERE ----
+     The rate-based spawner is gone. Every arrow in this scene now leaves a bow held by a
+     man who walked up that dune, and there are exactly as many of them as five quivers
+     hold. updateBowmen owns the shooting and owns the ending. */
+  if(BOWMEN_READY){
+    try{updateBowmen(dt);}catch(e){if(window.console)console.warn("bowmen",e);}
+  } else if(T>7){
+    /* until the figures are fit to be seen, the old spawner still runs - but it now shoots
+       from the DUNE at a flat trajectory rather than lobbing out of the pines sixty feet
+       further back, because that part of the research needed no new model at all */
+    const rate=(T<16)?1.1:(T<30)?2.0:2.6;
     AMBUSH.acc=(AMBUSH.acc||0)+dt*rate;
     while(AMBUSH.acc>=1){AMBUSH.acc-=1;arrowSpawn();}
+    if(T>=AMBUSH_LEN)endAmbush();
   }
   /* the scripted beats, in order, once each */
   const beat=function(i,at,fn){if(AMBUSH.phase===i&&T>=at){AMBUSH.phase++;fn();}};
-  beat(0,6.5,function(){playSfx("wind",0.3);toast("Something moves in the trees.");});
-  beat(1,9.0,function(){toast("Arrows \u2014 from the treeline.");playSfx("crack",0.35);});
-  beat(2,15.0,function(){
+  /* THE CUE IS THE MARRAM, NOT THE TREES. They were on the dunes - "from the Hills" - and
+     the old line pointed a player at the pines, sixty feet behind where anybody was. */
+  beat(0,5.0,function(){playSfx("wind",0.3);
+    toast("Something moves in the marram, up on the dune.");});
+  /* and the creep begins as the party turns for the boats, which is the tactical fact in
+     the source: Percy's "At night, when wee were going aboard" */
+  beat(1,7.5,function(){AMBUSH.creep=true;
+    toast("\u201cTo the boats \u2014 quietly. Keep your faces to the hill.\u201d");});
+  /* the shout goes up ON the first flight, not before it - Smith is explicit */
+  beat(2,12.0,function(){playSfx("crack",0.35);
+    toast("They are up, and all five loose together. The shouting starts after the arrows.");});
+  beat(3,17.0,function(){
     toast("Captain Archer is hit in both hands.");camKick=0.06;
     for(let i=0;i<npcMeshes.length;i++)
       if(npcMeshes[i].npc&&npcMeshes[i].npc.id==="archer")collapseFigure(npcMeshes[i].mesh);
   });
-  beat(3,26.0,function(){toast("Matthew Morton is down. They are still shooting.");camKick=0.05;});
-  /* held to the last ten seconds, so the order to withdraw lands after a player
-     who committed to loading has had their one shot rather than before it */
-  beat(4,AMBUSH_LEN-10,function(){toast("\u201cTo the boats. Now.\u201d");});
-  if(T>=AMBUSH_LEN)endAmbush();
+  beat(4,26.0,function(){toast("Mathew Morton is down. They are still shooting.");camKick=0.05;});
+  /* A LONG BACKSTOP, NOT A LENGTH. The scene ends when the last quiver is empty -
+     updateBowmen calls endAmbush. This only catches a wedged state machine, and it is
+     deliberately far past the thirty-five to forty arrows five men actually carry. */
+  if(T>=AMBUSH_LEN+40)endAmbush();
 }
 function endAmbush(){
   if(!AMBUSH.on)return;
-  AMBUSH.on=false;AMBUSH.done=true;
+  AMBUSH.on=false;AMBUSH.done=true;AMBUSH.creep=false;
+  try{despawnBowmen();}catch(e){}
   for(let i=ARROWS.length-1;i>=0;i--){POOL.arrows.give(ARROWS[i].m);}
   ARROWS.length=0;
   S.ambushFired=AMBUSH.fired;
@@ -20480,7 +20833,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260811-2320";
+const BUILD="20260812-0210";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
