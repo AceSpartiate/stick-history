@@ -860,5 +860,110 @@ else:
     ok("all %d handlers that write saved state either save or hand off" % len(_seen_h))
 
 
+print("\n17. The muster can be reached from every state a player can get into")
+# THE OLDEST RULE IN THE ADVENTURE GENRE - no sequence of reasonable actions may leave
+# the game unfinishable - and Chapter II broke it. The survey hands out twelve days; the
+# passage to each of three sites costs one and each of its three findings costs one, so
+# seeing everything costs exactly 3 + 9 = 12 and there is no slack at all. Sail about
+# looking at the chart, which is what a curious twelve-year-old does, and you could
+# arrive at nought daylight holding fewer than the three findings the scrivener wants,
+# with both doSurvey and travelTo refusing. The chapter could not then be finished.
+#
+# travelTo now refuses a passage that would put the muster out of reach. This walks
+# EVERY reachable state to prove it, rather than trusting that sentence - and it reads
+# the budget, the costs, the finding counts and the threshold out of the game so the
+# proof cannot drift away from the thing it is proving.
+_sites, _cost, _nsv = [], {}, {}
+_m = re.search(r'const SITES\s*=\s*\{', s)
+_i = _m.end() - 1
+_d = 0; _j = _i; _q = None
+while _j < len(s):
+    if not _q and s.startswith("/*", _j):
+        _e = s.find("*/", _j + 2); _j = len(s) if _e < 0 else _e + 2; continue
+    _c = s[_j]
+    if _q:
+        if _c == "\\": _j += 2; continue
+        if _c == _q: _q = None
+    elif _c in "\"'": _q = _c
+    elif _c == "{": _d += 1
+    elif _c == "}":
+        _d -= 1
+        if _d == 0: break
+    _j += 1
+_blk = s[_i:_j + 1]
+_ends = [m.start() for m in re.finditer(r'\n  [a-z]+:\{', _blk)] + [len(_blk)]
+for _k, _mm in enumerate(re.finditer(r'\n  ([a-z]+):\{', _blk)):
+    _name = _mm.group(1)
+    _seg = _blk[_mm.start():_ends[_k + 1]]
+    _sites.append(_name)
+    _cm = re.search(r'\bcost:\s*([0-9]+)', _seg)
+    _cost[_name] = int(_cm.group(1)) if _cm else 0
+    _nsv[_name] = len(re.findall(r'\{k:"', _seg.split("surveys:")[1])) if "surveys:" in _seg else 0
+_budget = sum(1 + _nsv[k] for k in _sites if not re.search(
+    r'\n  ' + k + r':\{[^\n]*home:\s*true', _blk))
+_need = int(re.search(r'const MUSTER_FINDINGS=([0-9]+)', s).group(1))
+_home = [k for k in _sites if re.search(r'\n  ' + k + r':\{[^\n]*home:\s*true', _blk)]
+_start = _home[0] if _home else _sites[0]
+
+def _reach(days, key, found):
+    want = max(0, _need - sum(found.values()))
+    if not want: return True
+    left = _nsv.get(key, 0) - found.get(key, 0)
+    if left >= want: return days >= want
+    return days >= (_cost[key] if _cost[key] else 1) + want
+
+# ---- AND WHETHER THE GAME ACTUALLY HAS THE GUARD IS READ, NOT ASSUMED ----
+# The first version of this walked the state space with the guard hard-coded into the
+# Python. Disabling the guard in index.html left the check green, because the check was
+# proving a property of its own model. Exactly the fault check 16 was written for,
+# wearing a different coat. So the guard is applied to the walk only if travelTo really
+# contains it, in code rather than in a comment - and if it does not, the walk goes
+# unguarded and the dead ends come back.
+_tv = re.search(r'function\s+travelTo\s*\([^)]*\)\s*\{', s)
+_tb = s[_tv.end():_tv.end() + 4000] if _tv else ""
+_tb = re.sub(r'/\*.*?\*/', ' ', _tb, flags=re.S)          # comments are not code
+_guarded = "if(!gateReachable(surveyDays()-cost,key))" in _tb.replace(" ", "")
+
+def _moves(st):
+    days, key, found = st[0], st[1], dict(st[2])
+    out = []
+    if found.get(key, 0) < _nsv.get(key, 0) and days >= 1:
+        nf = dict(found); nf[key] = nf.get(key, 0) + 1
+        out.append((days - 1, key, tuple(sorted(nf.items()))))
+    for j in _sites:
+        if j == key: continue
+        c = _cost[j]
+        if c and days < c: continue
+        if _guarded and not _reach(days - c, j, found): continue
+        out.append((days - c, j, st[2]))
+    return out
+
+_init = (_budget, _start, tuple(sorted({k: 0 for k in _sites}.items())))
+_seen, _stack, _dead, _tight = {_init}, [_init], [], None
+while _stack:
+    st = _stack.pop()
+    days, key, found = st[0], st[1], dict(st[2])
+    if sum(found.values()) >= _need: continue           # muster already open
+    mv = _moves(st)
+    if not mv:
+        _dead.append(st)
+        continue
+    if _tight is None or days < _tight[0]: _tight = st
+    for n in mv:
+        if n not in _seen:
+            _seen.add(n); _stack.append(n)
+if _dead:
+    bad("%d state(s) from which the muster can never be reached, e.g. %d day(s) at %s "
+        "holding %d finding(s)" % (len(_dead), _dead[0][0], _dead[0][1],
+                                   sum(dict(_dead[0][2]).values())))
+else:
+    ok("%d reachable states walked, %d days from %s, %d findings wanted - no dead end%s"
+       % (len(_seen), _budget, _start, _need,
+          "" if _guarded else " (and travelTo has NO reachability guard)"))
+    if _tight:
+        print("  note  tightest survivable state: %d day(s) at %s holding %d finding(s)"
+              % (_tight[0], _tight[1], sum(dict(_tight[2]).values())))
+
+
 print("\n" + ("PASS" if not fail else "FAILED %d check(s)" % len(fail)))
 sys.exit(0 if not fail else 1)

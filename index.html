@@ -17256,6 +17256,46 @@ function surveyBudget(){
 }
 function siteOf(w){for(const k in SITES)if(SITES[k].world===w)return SITES[k];return null;}
 function surveyDays(){return (S.survey&&S.survey.days)||0;}
+/* ---- THE MUSTER MUST ALWAYS STILL BE REACHABLE ----
+   The oldest rule in the adventure genre is that no sequence of reasonable actions may
+   leave the game unfinishable, and Chapter II broke it. surveyBudget() hands out
+   twelve days; the passage to each of the three sites costs one and each of its three
+   findings costs one, so seeing everything costs exactly 3 + 9 = 12. Zero slack. And
+   the cape itself costs a day to return to.
+   That is wrong twice over. A player who plans perfectly can afford all nine findings,
+   so the trade-off the chart promises does not exist for them - and a player who sails
+   about looking at the map, which is what a curious twelve-year-old does, spends the
+   days that were meant for findings and can arrive at nought daylight holding one or
+   two. The muster wants three. At that point doSurvey and travelTo both refuse and
+   CHAPTER II CANNOT BE FINISHED on that save.
+
+   So a passage is now allowed only if the muster is still reachable after it. The
+   arithmetic is small: you need MUSTER_FINDINGS findings, every site holds three, so
+   standing on a site you need one day per finding still wanted, and standing on the
+   cape you need a passage as well. Findings are never blocked - a finding always
+   advances the gate, so spending a day on one cannot strand you.
+
+   Check 17 proves this by walking every reachable state rather than trusting the
+   paragraph above. */
+const MUSTER_FINDINGS=3;
+function findingsHeld(){
+  return (S.survey&&S.survey.found)?Object.keys(S.survey.found).length:0;
+}
+function findingsWanted(){return Math.max(0,MUSTER_FINDINGS-findingsHeld());}
+/* Days needed to reach the muster from a standing start at `key`, worst case. */
+function daysToMuster(key){
+  const want=findingsWanted();
+  if(!want)return 0;
+  const st=SITES[key];
+  /* On a site with findings still to take, it is one day each. On the cape - or on a
+     site you have already stripped - it is a passage first. */
+  const left=st&&st.surveys?st.surveys.filter(function(sv){
+    return !found(key+"."+sv.k);
+  }).length:0;
+  if(left>=want)return want;
+  return (st&&st.cost?st.cost:1)+want;      /* a passage, then three at the next place */
+}
+function gateReachable(days,key){return days>=daysToMuster(key);}
 function spendDay(n){
   if(!S.survey)S.survey={days:surveyBudget(),found:{},visited:{}};
   S.survey.days=Math.max(0,S.survey.days-(n||1));
@@ -18753,6 +18793,23 @@ function travelTo(key){
   }
   const cost=site.cost||0;
   if(cost&&surveyDays()<cost){toast("Not enough daylight left to make the passage.");return;}
+  /* AND THE PASSAGE MAY NOT COST YOU THE MUSTER. See gateReachable: a trip that would
+     leave too little daylight to note the findings the scrivener wants is refused, and
+     said out loud, so a player is stopped one day early instead of stranded three days
+     late. */
+  /* NOT `cost&&` - THE FREE PASSAGE IS THE ONE THAT STRANDS YOU. The cape has no cost,
+     so sailing back to the beach is free; but from the beach the muster is four days
+     away (a passage, then three findings), and from a site it is three. Returning with
+     three days in hand therefore turns a finishable state into an unfinishable one at
+     no charge, and a guard that only inspects paid passages waves it through. Every
+     passage is asked the same question. */
+  if(!gateReachable(surveyDays()-cost,key)){
+    const want=findingsWanted();
+    toast("If you spend the day on that passage you will not have daylight left to note "+
+          (want===1?"the last thing":want+" more things")+
+          " \u2014 and the scrivener will not sit with you without them.");
+    return;
+  }
   closeAllModals();setPaused(false);
   /* A NEW SHORE IS A CLEAN SLATE. The green button kept the last world's prompt -
      "Speak: John Capper", on an empty beach forty miles away - because nothing
@@ -18805,7 +18862,12 @@ function openChart(){
     g+='<div style="margin-top:1em;border-top:1px solid var(--line);padding-top:.7em">'+
        '<b>Daylight left: '+surveyDays()+'</b>'+
        '<div style="font-style:italic;font-size:.85rem;margin:.3em 0 .5em">'+
-       'Seventeen days were spent choosing where to sit down. You have twelve, and there is more to look at than that.</div>'+
+       /* This said "there is more to look at than that", which is not true of a player
+         who takes the shortest route: three passages and nine findings is exactly the
+         twelve. It now states the arithmetic instead of promising a scarcity the
+         numbers do not deliver, and says what the daylight buys. Whether twelve is the
+         right number is a balance question and a separate one. */
+      'Seventeen days were spent choosing where to sit down. You have twelve, and a day goes on every passage and every thing you stop to look at.</div>'+
        rows+'</div>';
   }
   $("mapGloss").innerHTML=g;
@@ -21822,7 +21884,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260813-0617";
+const BUILD="20260813-0706";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
