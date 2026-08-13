@@ -7495,7 +7495,7 @@ function animate(){
      shadow beneath them to say they were off the sand - which is the whole of what that shot
      is for. The caster already knows how to do it: it samples the ground live and shrinks the
      disc by how far he is above it. It only had to be asked. */
-  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}
+  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}
   if(CAMLOCK.on){
     updateFx(dt);updateFlog(dt);updateShadows();
     cam.position.lerp(CAMLOCK.pos,Math.min(1,dt*3.5));
@@ -17738,7 +17738,8 @@ function buildThinSite(root,key){
   for(let i=0;i<site.surveys.length;i++){
     const sv=site.surveys[i], sp=site.spots[i];
     interactables.push({id:"sv_"+sv.k,label:sv.verb,x:sp[0],z:sp[1],
-      y:G(sp[0],sp[1]),lvl:LVL.MAIN,r:9,action:"survey",data:{site:key,sv:sv}});
+      y:G(sp[0],sp[1]),lvl:LVL.MAIN,r:9,action:"survey",
+      data:{site:key,sv:sv,spot:sp}});
   }
   interactables.push({id:"boat",label:"The Shallop",x:site.land[0]+6,z:site.land[1]+6,
     y:G(site.land[0]+6,site.land[1]+6),lvl:LVL.MAIN,r:11,action:"chart"});
@@ -19459,6 +19460,268 @@ function drawChart(spec,into){
   const art=CHART_ART[(spec&&spec.art)||"bay"]||CHART_ART.bay;
   art(c,spec);
 }
+/* ========== WHAT SURVEYING ACTUALLY WAS ==========
+   Reported: the activities at the scouting places are not historically accurate. They were
+   not activities at all - each was a click that printed a sentence, and a sentence about
+   sounding a channel teaches nothing about sounding a channel.
+
+   The correction comes from the document the men were carrying. The Virginia Council's
+   "Instructions given by way of advice" (1606) do not say "find somewhere nice"; they set
+   out a TEST, and the test is what these scenes are of:
+     - a safe port on "Some navigable River making Choise of Such a one as runneth furthest
+       into the Land", and if there is a choice, the one "that bendeth most towards the
+       northwest" - because they were still looking for a way through to the South Sea;
+     - far enough up it that "A Bark of fifty tuns will float", ideally "a hundred miles
+       from the Rivers mouth and the farther up the better";
+     - NOT near the entrance, where they could be seen and attacked from the sea;
+     - "the Strongest most fertile and wholesome place", and "neither must You plant in a
+       low and moist place, because it will prove unhealthfull";
+     - not in heavy timber, because "all the men You have Shall not be able to Cleanse
+       twenty acres in a Year".
+   So each survey act is now the player carrying out one clause of that document, and the
+   narration says which clause. A player who does all of them has read the instructions
+   without being handed them - and can then watch the council ignore them, which is the
+   argument of the whole chapter.
+
+   ONE SCENE BUILDER for all of them, keyed on the finding's own `k`. Three near-identical
+   scene functions would drift apart the way the three matchlocks did. */
+const SURVEY_SCENE={
+  /* SOUNDING. The one act with a tool in it, so it gets the tool. A hand lead is a
+     tapered weight on a marked line; its base is hollowed and filled with tallow so that
+     it comes up wearing whatever it landed on. That is "arming the lead", and it is why a
+     sounding answers two questions at once - how deep, and what is down there to hold an
+     anchor. Both mattered more than depth alone to a captain choosing a berth. */
+  /* Every height here is one of the figure's own measurements - feet 0, knee 1.30, hip
+     2.35, shoulder 2.01 to 4.11, head 4.20 to 5.47 - and every frame is quoted, the same
+     way the execution shots are. The yaw is per shot and it matters more than usual: the
+     lead is THROWN, and a throw staged across the frame leaves the lens in a tenth of a
+     second. Shot two therefore stands behind him and looks out over the water with him, so
+     the lead flies away down the middle of the frame instead of out of the side of it. */
+  depth:{
+    at:"water",
+    shots:[
+      {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.4,pose:"stand",
+       line:"The Council\u2019s instructions are particular about this. Find a river that runs furthest into the land, and get far enough up it that a bark of fifty tons will float."},
+      /* Over his shoulder at three quarters, NOT square behind. Square behind put the
+         throw directly down the lens: the lead flew away to a point and the line - which
+         is the thing the shot is about - was end-on and therefore invisible. Off the
+         quarter it runs across the frame as a diagonal and stays a line. Frame -1.95 to
+         7.00, so he holds one side of it and the bay is the rest. */
+      {dist:8,height:4.6,lookH:3.0,yaw:Math.PI*0.72,t:5.0,cut:true,throw:true,sfx:"splash",
+       line:"The lead goes out ahead of you, and you count the marks on the line as they pass your hand."},
+      /* round in front, level. Frame 2.00 to 5.90 - hip to a hand above his head, so his
+         face is in the top third and the lead he is reading is in the middle. At 4.3/3.6
+         the frame topped out at 5.40 and took his head off; at 2.6 out the lead was nearer
+         the lens than he was and filled two thirds of the picture with a black slab. */
+      {dist:3.67,height:3.95,lookH:3.95,front:true,t:5.0,cut:true,haul:true,
+       line:"The base of the lead is hollowed and filled with tallow, so it comes up wearing whatever it landed on. Sand will hold an anchor. Soft mud will not."}]},
+  /* the same act, asked of a bank rather than a channel - Archer's Hope fails on it */
+  berth:{
+    at:"water",
+    shots:[
+      {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.4,pose:"stand",
+       line:"Not the channel this time \u2014 the bank. Everything a ship carries has to come out of her and get ashore, and a ship that cannot lie against the bank has to send it all in by boat."},
+      {dist:8,height:4.6,lookH:3.0,yaw:Math.PI*0.72,t:5.0,cut:true,throw:true,sfx:"splash",
+       line:"So you sound in close, where a hull would have to sit."},
+      {dist:3.67,height:3.95,lookH:3.95,front:true,t:5.0,cut:true,haul:true,
+       line:"The line comes up short. It keeps coming up short."}]},
+  /* GROUND. No tool, so it is done with a posture: down on one knee, a handful turned
+     over, then up to look at what is standing in it. The timber IS the reading - big
+     straight trees say deep ground, and also say a year of clearing you do not have. */
+  ground:{
+    at:"spot",
+    shots:[
+      /* frame -3.58 to 8.29 - the whole man and the ground he is kneeling on */
+      {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.2,pose:"kneel",
+       line:"You are told to plant in the strongest, most fertile and wholesome place \u2014 and not in a low and moist one, because that will prove unhealthful."},
+      /* ---- A CLOSE-UP OF A KNEELING FIGURE NEEDS A POSE THIS RIG HAS NOT GOT ----
+         Twice tried, twice wrong. poseFigure("kneel") rotates the hips and tips the body
+         0.42 forward but never lowers the ROOT, so the figure does not kneel down - it
+         pitches over, and at two and a half feet the frame is a thigh, at five it is a man
+         falling on his face across the diagonal. The fault is in the pose, not the camera,
+         and posing a real kneel is a job of its own.
+         So this shot uses the framing that three captures have now proved - eleven out,
+         camera 3.9, looking 2.7, frame -3.58 to 8.29 - and shows the whole of him at the
+         work. Less intimate than intended and correct, which is the right way round. */
+      {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.35,t:4.8,cut:true,pose:"kneel",
+       line:"There is no instrument for this. You go down on a knee and turn a handful over, and you look at what is already growing in it."},
+      /* and up at the timber, from the same proved distance so he stays whole in frame */
+      {dist:11,height:3.9,lookH:3.4,yaw:Math.PI*0.5,t:5.0,cut:true,pose:"stand",up:true,
+       line:"Standing timber is the honest answer. It says how deep the ground is \u2014 and how long it would take to clear, which the instructions put at more than a year for twenty acres."}]},
+  /* WATER. Tasted, because that is what they had. The scene is careful about the limit of
+     what they understood: they could taste salt, and they could not see the rest. */
+  water:{
+    at:"spot",
+    shots:[
+      {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.0,pose:"kneel",
+       line:"Water is tested by drinking it. There is no other way to do it here, and no one aboard can do better."},
+      /* Held at four rather than at 1.9. The arithmetic for a 1.9 close-up is the same
+         arithmetic that framed the execution's face correctly - but this man has both
+         forearms RAISED to his mouth, and at that distance the camera sits inside them:
+         the capture is two sleeves and a hat. A close-up has to be framed round the pose,
+         not round the head. */
+      {dist:4.0,height:4.2,lookH:3.6,front:true,t:5.0,cut:true,pose:"stand",drink:true,
+       line:"Salt you can taste at once. It is May, and the river is low \u2014 by August the tide will push salt further up than this."},
+      {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.2,cut:true,pose:"stand",
+       line:"What you cannot taste is the rest of it. They had no way to know that a river they drank from and emptied into was the same river."}]},
+  /* THE SEA. The clause about not planting near the entrance, which is the one clause
+     Jamestown Island actually satisfies - and it is the reason a bad site won. */
+  sea:{
+    at:"water",
+    shots:[
+      {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.0,pose:"stand",
+       line:"You are told not to settle near the mouth of the river."},
+      /* behind his shoulder, looking out with him: he holds the near edge and the bay is
+         the rest of the frame, which is the point of the line over it */
+      {dist:5.5,height:5.0,lookH:4.4,yaw:Math.PI,t:4.8,cut:true,pose:"stand",shade:true,
+       line:"From here you can see clean out of the bay. Which means that anything standing in can see you, and Spain has taken an English plantation off this coast before."},
+      {dist:15,height:4.6,lookH:2.6,yaw:Math.PI*0.5,t:5.0,cut:true,pose:"stand",
+       line:"Whatever else is wrong with a place a hundred miles up the river, nobody finds it from the sea by accident."}]}
+};
+/* the lead, its line, and the small state that throws them */
+let SOUND={on:false,t:0,mode:0,lead:null,cord:null,from:null,to:null};
+function buildSoundGear(){
+  clearSoundGear();
+  const g=new Geo();
+  /* a hand lead: tapered, seven pound, with the hollow in the base showing */
+  g.oct(0,0,0,1.05,0.34,0.34,0.46,0.46,0.0,RGB(0x53565e),RGB(0x3a3d44));
+  g.box(0,0.06,0,0.30,0.12,0.30,RGB(0x7a6a44));      /* the tallow in the hollow */
+  SOUND.lead=g.mesh(false,false);scene.add(SOUND.lead);
+  const c=new Geo();
+  c.box(0,0.5,0,0.055,1.0,0.055,RGB(0xd6c9a4));      /* unit tall, standing on its origin */
+  SOUND.cord=c.mesh(false,false);scene.add(SOUND.cord);
+}
+function clearSoundGear(){
+  if(SOUND.lead){scene.remove(SOUND.lead);SOUND.lead=null;}
+  if(SOUND.cord){scene.remove(SOUND.cord);SOUND.cord=null;}
+  SOUND.on=false;SOUND.t=0;
+}
+const CORD_UP=new THREE.Vector3(0,1,0);
+function cordBetween(ax,ay,az,bx,by,bz){
+  if(!SOUND.cord)return;
+  const dx=bx-ax,dy=by-ay,dz=bz-az, L=Math.hypot(dx,dy,dz)||0.001;
+  SOUND.cord.position.set(ax,ay,az);
+  SOUND.cord.scale.set(1,L,1);
+  SOUND.cord.quaternion.setFromUnitVectors(CORD_UP,new THREE.Vector3(dx/L,dy/L,dz/L));
+}
+/* Driven from the frame loop, like the hanging is, so that skipping the scene stops it
+   dead instead of leaving timers firing into a world that has moved on. */
+function updateSounding(dt){
+  if(!SOUND.on||!player||!SOUND.lead)return;
+  SOUND.t+=dt;
+  /* HAND, not chest. The figure's wrist sits at 2.01 to 2.48 above the feet with the arm
+     hanging, and the first pass took 3.5 off the top of my head - so the line came out of
+     the middle of his ribs. With the throwing arm raised the hand reaches about 3.6, which
+     is where it now leaves from. */
+  const fy=player.position.y;
+  const hx=player.position.x, hy=fy+3.6, hz=player.position.z;
+  if(SOUND.mode===1){                       /* the throw: out, then down */
+    const k=Math.min(1,SOUND.t/2.0);        /* two seconds of flight in a five-second shot */
+    const tx=SOUND.to[0],tz=SOUND.to[2];
+    const x=hx+(tx-hx)*k, z=hz+(tz-hz)*k;
+    /* an arc while it is in the air, then it goes under and keeps going */
+    const y=(k<0.62)?(hy+Math.sin(k/0.62*Math.PI)*2.6-(k/0.62)*(hy-0.1))
+                    :(0.1-((k-0.62)/0.38)*3.4);
+    SOUND.lead.position.set(x,y,z);
+    cordBetween(hx,hy,hz,x,Math.max(y,-0.2),z);
+  } else if(SOUND.mode===2){                /* hauled up, and read */
+    /* held out in FRONT of him - toward +z, which is where the third shot's camera is -
+       so the lead is between him and the lens rather than hidden behind his own arm */
+    const k=Math.min(1,SOUND.t/1.1);
+    SOUND.lead.position.set(hx+0.20,fy+3.05+k*0.30,hz+0.50);
+    SOUND.lead.rotation.z=0.30;
+    cordBetween(hx+0.20,fy+3.6,hz+0.50,
+                SOUND.lead.position.x,SOUND.lead.position.y+1.05,SOUND.lead.position.z);
+  }
+}
+/* the water's edge nearest a spot, walked out rather than assumed: the sites are all the
+   same terrain shape with different numbers, so the shoreline is in a different place at
+   each of them and no constant would be right at more than one */
+function waterEdge(x,z){
+  const G=WORLD.ground;
+  let best=[x,z];
+  for(let d=0;d<=140;d+=2){
+    const zz=z+d;
+    if(G(x,zz)<-0.35){best=[x,zz-3];break;}
+  }
+  return best;
+}
+/* ---- and the scene itself ----
+   `d` is the interactable's data, exactly as doSurvey receives it. onDone runs whether the
+   scene played out or was skipped, because the day is spent either way and a finding that
+   only lands for patient players is a finding some players cannot get. */
+function surveyCutscene(d,onDone){
+  const sc=SURVEY_SCENE[d.sv.k];
+  if(!sc||!player||typeof playCutscene!=="function"){if(onDone)onDone();return;}
+  const sp=(d.spot||[player.position.x,player.position.z]);
+  const at=(sc.at==="water")?waterEdge(sp[0],sp[1]):sp;
+  const px=at[0], pz=at[1], py=WORLD.ground(px,pz);
+  /* He faces the water for the wet acts and inland for the dry ones. The CAMERA's yaw is
+     per shot - see the note on the sounding: where the camera stands decides whether a
+     throw crosses the frame or runs down the middle of it. */
+  const yaw=(sc.at==="water")?0:Math.PI*0.85;
+  const steps=[];
+  for(let i=0;i<sc.shots.length;i++){
+    const sh=sc.shots[i];
+    steps.push({
+      /* `front` means "stand where he is looking", which is not a fixed compass bearing:
+         the wet acts turn him to the water and the dry ones turn him inland, so a shot that
+         wants his FACE has to ask the figure, not a constant. Written as a constant, the
+         drinking close-up played at Archer's Hope - a dry act, facing inland - and filled
+         the frame with the back of his head. */
+      shot:{of:["player"],dist:sh.dist,height:sh.height,lookH:sh.lookH,
+            yaw:(sh.front?yaw:(sh.yaw===undefined?Math.PI/2:sh.yaw)),cut:!!sh.cut},
+      t:sh.t, sfx:sh.sfx, gain:0.3, narrate:sh.line,
+      do:(function(sh){return function(){
+        if(!player)return;
+        player.position.set(px,py,pz);
+        player.rotation.y=yaw;
+        /* ---- WHY NOBODY KNEELS IN THESE SCENES YET ----
+           poseFigure("kneel") folds the legs and tips the body 0.42 forward but never
+           lowers the ROOT, so the figure does not kneel down - it stands on nothing and
+           pitches over. Three captures of it: at 2.6 out the frame was a thigh, at 5.0 a
+           man falling on his face across the diagonal, and dropping the root by 1.05 to
+           seat the knee buried him to the waist instead. The fault is in the rig, not the
+           camera, and a real kneel wants a pose written for it - the root lowered, the
+           weight over the folded shin, the far foot planted. Until that exists these acts
+           are played standing, which is honest and is not broken. */
+        if(sh.pose)poseFigure(player,(sh.pose==="kneel"?"stoop":sh.pose),7);
+        if(sh.up&&player.userData.parts&&player.userData.parts.neck)
+          player.userData.parts.neck.rotation.x=-0.55;   /* looking up at the timber */
+        if(sh.shade&&player.userData.parts){
+          const q=player.userData.parts;
+          if(q.ra)q.ra.rotation.x=-1.75;                 /* a hand up against the light */
+          if(q.elbowR)q.elbowR.rotation.x=-1.10;
+        }
+        if(sh.drink&&player.userData.parts){
+          const q=player.userData.parts;                 /* both hands up, cupped */
+          if(q.la)q.la.rotation.x=-1.55; if(q.ra)q.ra.rotation.x=-1.60;
+          if(q.elbowL)q.elbowL.rotation.x=-1.25; if(q.elbowR)q.elbowR.rotation.x=-1.30;
+          if(q.neck)q.neck.rotation.x=0.30;
+        }
+        if(sh.throw||sh.haul){                           /* the arm that holds the line */
+          const q=player.userData.parts;
+          if(q&&q.ra)q.ra.rotation.x=sh.throw?-1.95:-1.45;
+          if(q&&q.elbowR)q.elbowR.rotation.x=sh.throw?-0.35:-1.05;
+          if(q&&q.la)q.la.rotation.x=sh.haul?-1.30:-0.20;
+          if(q&&q.elbowL)q.elbowL.rotation.x=sh.haul?-1.15:-0.25;
+        }
+        if(sh.throw){
+          buildSoundGear();
+          SOUND.to=[px,0,pz+13];SOUND.mode=1;SOUND.t=0;SOUND.on=true;
+        }
+        if(sh.haul){SOUND.mode=2;SOUND.t=0;SOUND.on=true;}
+      };})(sh)
+    });
+  }
+  setPaused(true);
+  playCutscene({steps:steps,skippable:true},function(){
+    clearSoundGear();
+    if(player)poseFigure(player,"stand",3);
+    setPaused(false);
+    if(onDone)onDone();
+  });
+}
 /* ---- going and finding out, which costs a day ---- */
 function doSurvey(d){
   if(!d||!d.sv)return;
@@ -19480,10 +19743,15 @@ function doSurvey(d){
     return;
   }
   spendDay(1);
-  recordFinding(d.site,d.sv);
-  playSfx("click",0.25);
-  toast(d.sv.d);
-  refreshSurveyHud();
+  /* The finding is recorded when the scene ENDS, not before it starts, so that the thing
+     you learn arrives at the end of the thing you did. The day is spent up front either
+     way - a player who skips has still spent it, and the scene is skippable. */
+  surveyCutscene(d,function(){
+    recordFinding(d.site,d.sv);
+    playSfx("click",0.25);
+    toast(d.sv.d);
+    refreshSurveyHud();
+  });
 }
 /* ---- and travelling, which costs a day too ---- */
 /* THE SURVEY DOES NOT BEGIN UNTIL THE CHAPTER HAS. Found by testing: the
