@@ -20045,12 +20045,13 @@ const CAPE_DOC={
   parts:[
    {q:"The six and twentieth day of Aprill, about foure a clocke in the morning, wee descried the Land of Virginia.",
     g:"George Percy, who kept an account of the voyage. After four months at sea they raised land at first light."},
-   {q:"...wee set up a Crosse at Chesupioc Bay, and named that place Cape Henry.",
-    g:"Named for Henry, Prince of Wales, the King's eldest son. <b>Robert Hunt</b>, the chaplain you may have met aboard ship, gave the first Anglican service in the colony here."},
+   {q:"The nine and twentieth day we set up a Crosse at Chesupioc Bay, and named that place Cape Henry.",
+    g:"Named for Henry, Prince of Wales, the King's eldest son. <b>Percy dates this to the twenty-ninth</b> \u2014 three days after the landing you are standing in. This chapter puts the whole of that week into one afternoon so you can walk it, and this is the seam. "+
+      "You will also read that <b>Robert Hunt</b> gave a service at this cross. No document written in 1607 says so: Percy is the only witness who mentions the cross at all, and he records neither a chaplain nor a prayer. It is a later tradition, and a good example of a story that has been told so often it sounds like evidence."},
    {q:"At night, when wee were going aboard, there came the Savages creeping upon all foure, from the Hills, like Beares, with their Bowes in their mouthes...",
     g:"Percy again, on what happened that same evening. <b>Gabriel Archer</b> was shot through both hands and a sailor, <b>Matthew Morton</b>, was badly wounded. The English had been ashore less than a day."}
   ],
-  insight:{g:"known",b:"Cape Henry",s:"The English first landed at Cape Henry on 26 April 1607, set up a cross and held a service. That same evening they were attacked; Gabriel Archer was shot through both hands and a sailor wounded."}
+  insight:{g:"known",b:"Cape Henry",s:"The English first landed at Cape Henry on 26 April 1607 and were attacked at dusk as they went back to the boats; Gabriel Archer was shot through both hands and a sailor wounded."}
 };
 
 /* ---- CHAPTER TWO'S CONTENT, UNDER ITS OWN NAME AT LAST ----
@@ -20162,13 +20163,21 @@ CONTENT.ch2={
         "The decision was taken by majority vote of all the men"],a:0},
 
     /* ---- Cape Henry itself ---- */
-    {stim:"On 26 April 1607 the party came ashore at Cape Henry, set up a cross, and heard a service. That same evening they were attacked; Gabriel Archer was shot through both hands and a sailor, Matthew Morton, was badly wounded.",
+    /* ---- THE PREMISE OF THIS QUESTION WAS NOT TRUE ----
+       It read "came ashore, set up a cross, and heard a service... that same evening
+       they were attacked", and asked what the cross and the attack ON THE SAME DAY
+       show. Percy puts the cross on the twenty-ninth, three days later, and no 1607
+       document records a service at it at all. A graded question may not rest on a
+       date the sources do not support, however well the reasoning behind it works.
+       The reasoning does still work - it just rests on the landing and the naming
+       rather than on a single afternoon. */
+    {stim:"On 26 April 1607 about thirty Englishmen came ashore at Cape Henry and spent the day walking the country. At dusk, as they were getting back into the boats, they were attacked: Gabriel Archer was shot through both hands and a sailor, Mathew Morton, was badly wounded. Three days later they set up a cross there and named the cape for the King's eldest son.",
      need:["Cape Henry"],
-     q:"Taken together, the cross and the attack on the same day BEST show that -",
-     o:["the English claimed the land on the day they arrived, and the people already there contested it",
+     q:"Taken together, the landing, the naming and the attack BEST show that -",
+     o:["the English took possession of country that was already occupied, and the people there contested it",
         "the Powhatan had agreed in advance to the English landing",
         "the English landing was unopposed and peaceful",
-        "the cross was raised in response to the attack"],a:0},
+        "the English gave up their claim once they met resistance"],a:0},
 
     {stim:"The English had been ashore less than a day when they were attacked.",
      need:["Cape Henry"],
@@ -20434,10 +20443,12 @@ const CHAPTERS=[
      wrongWhy:"One or two shots a minute means a man is helpless while reloading. The answer is that they must fight together - firing in volleys and covering each other - because a lone firer has one shot and then a minute of nothing."},
     {id:"capehenry",when:function(){return S.insight["Cape Henry"];},
      q:"What happened at Cape Henry on 26 April 1607, and how did the day end?",
+     /* The cross was not required here any more: it went up on the twenty-ninth, and a
+        student who answers this question accurately for the 26th should not be marked
+        short for leaving out something that had not happened yet. */
      need:[["land","landed","ashore","first","arriv","cape henry"],
-           ["cross","service","pray","prayer","thanks","named"],
            ["attack","attacked","fight","fought","wound","arrow","shot at","ambush","set upon","drove"]],
-     model:"The English came ashore for the first time, set up a cross and held a service of thanks, and named the cape for the King's son. That same evening they were attacked by the people whose country it was, and men were wounded.",
+     model:"About thirty men came ashore for the first time and spent the day walking the country. At dusk, as they were going back to the boats, they were attacked by the people whose country it was, and two men were wounded \u2014 Gabriel Archer through both hands, and a sailor called Mathew Morton.",
      wrongWhy:"Three things belong in the answer: the first landing, the cross and the service of thanks, and the attack that same evening. The day began with a ceremony claiming the place and ended with the English discovering it was not empty."},
     {id:"box",when:function(){return S.insight["The Seven Named in the Box"];},
      q:"The Company sent the names of the council sealed in a box, not to be opened until landfall. Why do you think they did that?",
@@ -21811,7 +21822,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260813-0601";
+const BUILD="20260813-0617";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
