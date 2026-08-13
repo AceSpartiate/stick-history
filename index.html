@@ -3190,6 +3190,21 @@ let IDLE_T=0;
 let PROMPT_HTML="";
 let BG=false;
 function solid(x,z,hw,hd,lvl){if(BG)return;colliders.push({x:x,z:z,hw:hw,hd:hd,lvl:(lvl===undefined?LVL.MAIN:lvl)});}
+/* ---- SOLID TO A BALL, NOT TO A MAN ----
+   solid() does two jobs, and the camp needs only one of them. The note beside buildCamp
+   is right and stands: "a prop you can walk through is a far smaller fault than a prop
+   that walls a man off from being spoken to - which has already happened twice on this
+   beach." Those props sit exactly where men are working, so giving them colliders to
+   make them shootable would buy a red cross at the price of an unreachable NPC.
+   So the two jobs are separated. shootable() registers a box that stops a BALL and
+   nothing else: you walk through the casks as before, and a shot into them stops in
+   them. `top` is how high the thing stands - a cask is not a tent - and defaults to the
+   same assumption solidAt makes for a movement collider. */
+let shootables=[];
+function shootable(x,z,hw,hd,top,lvl){
+  if(BG)return;
+  shootables.push({x:x,z:z,hw:hw,hd:hd,top:top,lvl:(lvl===undefined?LVL.MAIN:lvl)});
+}
 
 /* ========== GEOMETRY ACCUMULATOR ==========
    Surfaces that used to be hundreds of little boxes are now emitted as vertex
@@ -6775,6 +6790,7 @@ function disposeWorld(){
      their materials; drop the references so the next world builds fresh ones */
   fxRoot=null;POOL.smoke=null;POOL.trace=null;POOL.impacts=null;POOL.arrows=null;
   CH1_SHORE=null;               /* a coastline must not outlive the world it is in */
+  shootables=[];                /* nor may last chapter's casks stop this chapter's ball */
   CROWD_HITS.length=0;
   /* CROWD too, and it was leaking: it is filled by buildShoreParty and was only
      emptied there, so standing in Chapter I the registry still held all thirty-six
@@ -13518,13 +13534,21 @@ function flightTime(arm,dist){
    over the camp into the trees. */
 const SOLID_TOP=5.5;
 function solidAt(x,y,z){
-  if(typeof colliders==="undefined"||!colliders.length)return false;
   const g=WORLD.ground?WORLD.ground(x,z):0;
-  if(y>g+SOLID_TOP)return false;
-  for(let i=0;i<colliders.length;i++){
-    const c=colliders[i];
-    if(c.lvl!==plevel)continue;
-    if(Math.abs(x-c.x)<c.hw&&Math.abs(z-c.z)<c.hd)return true;
+  if(typeof colliders!=="undefined"){
+    for(let i=0;i<colliders.length;i++){
+      const c=colliders[i];
+      if(c.lvl!==plevel)continue;
+      if(y<=g+SOLID_TOP&&Math.abs(x-c.x)<c.hw&&Math.abs(z-c.z)<c.hd)return true;
+    }
+  }
+  /* and the things that stop a ball without stopping a man, each at its own height */
+  if(typeof shootables!=="undefined"){
+    for(let i=0;i<shootables.length;i++){
+      const c=shootables[i];
+      if(c.lvl!==plevel)continue;
+      if(y<=g+(c.top||SOLID_TOP)&&Math.abs(x-c.x)<c.hw&&Math.abs(z-c.z)<c.hd)return true;
+    }
   }
   return false;
 }
@@ -20329,6 +20353,9 @@ registerWorld("ch2",function(root){
      tents in this period were the preserve of officers, which is exactly why the
      captain's chart lives under the captain's canvas. */
   buildCamp(P,-8,22);
+  /* The camp itself: the fly, its poles and the table under it. Shootable, not solid -
+     the chart is the chapter's travel hub and a man must always be able to walk to it. */
+  shootable(-8,22,7.0,6.0,7.0);
   /* ---- THREE PARTIES WERE WORKING ON AIR, AND THIS IS WHAT THEY NEEDED ----
      Measured by counting prop vertices standing above the sand within ten feet of each
      party. The camp had 572, the shallop 106, the cross 32 - and:
@@ -20364,17 +20391,20 @@ registerWorld("ch2",function(root){
     const sz=ashore(sx,46.5+(i%2)*1.4);
     const sy=capeGround(sx,sz);
     P.oct(sx,sz,sy+0.1,sy+2.0,2.0,2.0,2.0,2.0,0.18,cask,hoopC);
+    shootable(sx,sz,1.1,1.1,2.2);            /* a cask on its end */
   }
   {
     const cxa=-62.5, cza=ashore(cxa,46.0), cya=capeGround(cxa,cza);
     P.box(cxa,cya+1.0,cza,3.4,2.0,2.6,crate);
     P.box(cxa+0.4,cya+2.4,cza+0.5,2.8,0.8,2.2,crate);
+    shootable(cxa,cza,1.9,1.6,3.0);          /* the stores, crated */
   }
   /* THE DRUM, on its side by the drummer at (18,10) - a drum is head, shell and hoops */
   {
     const dx=18.9,dz=10.8,dy=capeGround(dx,dz);
     P.oct(dx,dz,dy+0.1,dy+1.7,2.2,2.2,2.2,2.2,0.10,RGB(0xb8a06a),RGB(0x8d7748));
     P.box(dx,dy+0.9,dz,2.35,0.22,2.35,hoopC);
+    shootable(dx,dz,1.2,1.2,1.9);            /* the drum */
   }
   /* THE SMITH'S BLOCK: an anvil on a stump, at (-30,14) where he actually stands */
   {
@@ -20382,6 +20412,7 @@ registerWorld("ch2",function(root){
     P.oct(ax,az,ay,ay+1.7,2.3,2.3,2.1,2.1,0.14,RGB(0x6b5433),RGB(0x4a3a22));
     P.box(ax,ay+2.0,az,1.9,0.55,0.8,iron);
     P.box(ax+0.95,ay+2.05,az,1.0,0.42,0.6,iron);
+    shootable(ax,az,1.3,1.2,2.6);            /* the smith's stock and anvil */
   }
   const chartX=-8, chartZ=24.6;
   interactables.push({id:"capechart",label:"The Captain's Chart",
@@ -22404,7 +22435,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260813-1116";
+const BUILD="20260813-1120";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
