@@ -11210,6 +11210,19 @@ function renderVoices(){
         if(!S.voicePref)S.voicePref={};
         S.voicePref[row.k]=vo.name;
         VOICE_SET[row.k]=vo;
+        /* ---- AND THE ONE SETTING THIS PANEL EXISTS FOR DID NOT SURVIVE A RELOAD ----
+           The rate chip forty lines up sets S.voicePref.rate and then calls saveGame().
+           This one set S.voicePref[row.k] and called renderVoices(), which redraws the
+           panel so the choice LOOKS taken, and never wrote it to disk. Verified against
+           localStorage: after choosing a rate the stored blob gained it; after choosing
+           a voice the stored blob was unchanged while the live state had it. So a
+           reader picked a voice they could bear to listen to, closed the tab, and came
+           back to the automatic guess.
+           The note on sayRate says "stored inside S.voicePref, which is already in the
+           save whitelist, so this persists" - true of the object, and it was read as
+           true of everything put into it. Being in the whitelist is not saving; it is
+           only permission to be saved. */
+        saveGame();
         renderVoices();
         /* hear it at once, in the pitch that part will actually use */
         speak(row.k==="male"?"Stand to your arms. Six motions, in order."
@@ -21614,7 +21627,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260812-1842";
+const BUILD="20260812-1907";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

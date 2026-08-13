@@ -734,5 +734,131 @@ else:
     print("  note  land covers %.1f%% of the sphere (the Earth is 29.2%%), score %d/%d"
           % (100*land_w/tot_w, okc, tot))
 
+print("\n16. A setting the reader chose survives them closing the game")
+# THE VOICE PANEL EXISTS BECAUSE OF A REPORT - "there has to be a better set of voices
+# that will work when playing online" - and the one setting it is FOR did not persist.
+# The rate chip set S.voicePref.rate and called saveGame(). The voice chip set
+# S.voicePref[row.k] and called renderVoices(), which redraws the panel so the choice
+# LOOKS taken, and never wrote it to disk. Verified against localStorage before the
+# fix: choosing a rate changed the stored blob, choosing a voice did not.
+#
+# The note on sayRate says S.voicePref is "already in the save whitelist, so this
+# persists" - true of the object, and read as true of everything put into it. BEING IN
+# THE WHITELIST IS NOT SAVING. It is only permission to be saved, and check 11 - which
+# verifies the whitelist - passes either way. This is the check for the other half.
+#
+# WHAT A DEFERRED BODY COSTS THE READER. A first pass looked for saveGame() anywhere
+# inside renderVoices and found one - inside the RATE handler nested within it, which
+# runs on a click that has not happened. A save in a body that runs later proves
+# nothing about the call that installed it, so handler and timer bodies are blanked
+# out before the question is asked. The check was fooled by exactly the shape of the
+# bug it was written for.
+_persist = set(re.findall(r'S\.([A-Za-z_][A-Za-z0-9_]*)',
+                          re.search(r'function saveBlob\(\)\{(.*?)\n\}', s, re.S).group(1)))
+
+def _close(i):
+    """The brace that closes the one at i - COUNTING NEITHER STRINGS NOR COMMENTS.
+    The first version of this counted raw characters, and in a file that is mostly
+    prose in string literals and long comments full of braces, every range it
+    returned was wrong. It did not announce itself: the check ran green and reported
+    four handlers. It was only caught by taking the fix back OUT of index.html and
+    finding that the check still passed - which is the only test of a check that
+    means anything. _beats_of has carried a scanner that knows about strings and
+    comments since check 14; this is the same one."""
+    d, j, instr = 0, i, None
+    while j < len(s):
+        if not instr:
+            if s.startswith("/*", j):
+                e = s.find("*/", j + 2); j = len(s) if e < 0 else e + 2; continue
+            if s.startswith("//", j):
+                e = s.find("\n", j + 2); j = len(s) if e < 0 else e + 1; continue
+        c = s[j]
+        if instr:
+            if c == "\\": j += 2; continue
+            if c == instr: instr = None
+        elif c in "\"'": instr = c
+        elif c == "{": d += 1
+        elif c == "}":
+            d -= 1
+            if d == 0: return j
+        j += 1
+    return len(s) - 1
+
+_defer = []
+for _m in re.finditer(r'(?:onclick|onchange|oninput|ontouchend)\s*=\s*function\s*\([^)]*\)\s*\{', s):
+    _defer.append((_m.end() - 1, _close(_m.end() - 1)))
+for _m in re.finditer(r'addEventListener\(\s*["\'][a-z]+["\']\s*,\s*function\s*\([^)]*\)\s*\{', s):
+    _defer.append((_m.end() - 1, _close(_m.end() - 1)))
+for _m in re.finditer(r'set(?:Timeout|Interval)\(\s*function\s*\([^)]*\)\s*\{', s):
+    _defer.append((_m.end() - 1, _close(_m.end() - 1)))
+
+# names that are properties holding a function - commit, onBuy, do, when. A handler
+# that calls one of these is HANDING OFF, and where it hands off to cannot be read
+# here. The wardrobe's Buy button restores S.equip and then calls p.commit(), the
+# item's own buy path, which charges the Ink and saves. That is correct and this
+# check must not call it a fault.
+_cb = set(re.findall(r'\b([A-Za-z_]\w*)\s*:\s*function\s*\(', s))
+_cb |= set(re.findall(r'\b([A-Za-z_]\w*)\s*:\s*(?:[A-Za-z_]\w*\.)?(?:on[A-Z]\w*|commit)\b', s))
+
+def _live(a, b):
+    """What actually RUNS when this handler runs: the body, minus every deferred body
+    inside it, minus comments, minus string contents.
+
+    THE COMMENTS MATTER, AND THIS IS THE THIRD TIME. Blanking deferred bodies alone
+    still passed with the bug reinstated - because the comment written ABOVE the fix
+    explains the bug and contains the words saveGame(). The check read its own
+    documentation as evidence that the code saved. A scanner over this file has to
+    ignore prose everywhere it looks, not only where it counts braces: almost all of
+    this file is prose, and any pattern matched against the raw text will sooner or
+    later match an explanation of itself."""
+    out, j, instr = [], a, None
+    while j <= b:
+        if not instr:
+            if s.startswith("/*", j):
+                e = s.find("*/", j + 2); e = b if e < 0 else e + 1
+                out.append(" " * (min(e, b) - j + 1)); j = min(e, b) + 1; continue
+            if s.startswith("//", j):
+                e = s.find("\n", j + 2); e = b if e < 0 else e
+                out.append(" " * (min(e, b) - j + 1)); j = min(e, b) + 1; continue
+        c = s[j]
+        if instr:
+            out.append(" ")
+            if c == "\\": out.append(" "); j += 2; continue
+            if c == instr: instr = None
+            j += 1; continue
+        if c in "\"'":
+            instr = c; out.append(" "); j += 1; continue
+        out.append(c); j += 1
+    txt = list("".join(out))
+    for x, y in _defer:
+        if x > a and y <= b:
+            for k in range(x - a, min(y - a + 1, len(txt))): txt[k] = " "
+    return "".join(txt)
+
+def _inner(pos):
+    best = None
+    for x, y in _defer:
+        if x < pos < y and (best is None or (y - x) < (best[1] - best[0])): best = (x, y)
+    return best
+
+_lost, _seen_h = {}, set()
+for _m in re.finditer(r'S\.([A-Za-z_][A-Za-z0-9_]*)\s*(?:\[[^\]]*\]|\.[A-Za-z_]\w*)?\s*(?:\+|-|\|\|)?=(?!=)', s):
+    if _m.group(1) not in _persist: continue
+    _h = _inner(_m.start())
+    if not _h: continue                       # not in a handler: some other flow saves it
+    _seen_h.add(_h)
+    _body = _live(_h[0], _h[1])
+    if re.search(r'\b(saveGame|checkpoint)\s*\(', _body): continue
+    if any(_c.group(1) in _cb for _c in
+           re.finditer(r'(?<=[\w\)\]])\.\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(', _body)): continue
+    _lost[_h] = (s[:_m.start()].count("\n") + 1, _m.group(1))
+if _lost:
+    bad("%d handler(s) change a saved setting and never save it:\n        " % len(_lost)
+        + "\n        ".join("S.%s written at line %d, no save in that handler" % (k, ln)
+                            for ln, k in sorted(_lost.values())))
+else:
+    ok("all %d handlers that write saved state either save or hand off" % len(_seen_h))
+
+
 print("\n" + ("PASS" if not fail else "FAILED %d check(s)" % len(fail)))
 sys.exit(0 if not fail else 1)
