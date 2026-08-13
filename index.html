@@ -9860,6 +9860,7 @@ function spawnSmoke(x,y,z,vx,vy,vz,size){
 }
 function updateFx(dt){
   updateBall(dt);            /* runs in cutscenes too - line 7413 ticks updateFx */
+  updateLanding(dt);         /* and so does the boat pulling for the beach */
   if(knock){
     knock.t+=dt;
     const f=Math.max(0,1-knock.t/0.55);
@@ -10225,6 +10226,163 @@ function fireCannon(d){
     if(d.grp)d.grp.position.x+=d.side*1.6*K;
     seizedAtTheMast();
   });
+}
+/* ========== HOW THEY ACTUALLY GOT ASHORE ==========
+   Chapter I ended with the player looking at Virginia from a deck and Chapter II began
+   with them already standing on the strand, so the one physical question a student
+   would ask - how did you get from the ship to the beach? - was never answered. It is
+   worth answering carefully, because the obvious guess is wrong.
+
+   WHAT THE SOURCES SAY, and it is not much:
+     THE SHIPS ANCHORED. Smith, A True Relation (1608): "Anchoring in this Bay twentie
+     or thirtie went a shore with the Captain." Nobody drove a ship ashore, and no
+     source records the depth of that anchorage or how far off she lay.
+     THE SHALLOP DID NOT EXIST YET. Percy: "The seven and twentieth day we began to
+     build up our Shallop" - the day AFTER. So the party cannot have used her, and a
+     cutscene that shows them rowing the shallop ashore on the 26th is simply wrong.
+     Purchas then prints "The eighteenth day we lanched our Shallop", which is a
+     compositor's error for the eight and twentieth; the launch date rests on that
+     emendation and is not quoted here as fact.
+     SO IT WAS A SHIP'S BOAT. Deduction, not testimony - but the fleet demonstrably
+     carried them: Percy at the Isle of Moneta on 9 April, three weeks earlier, "laded
+     two Boats full in the space of three houres."
+     ABOUT THIRTY WENT. Smith, Proceedings (1612): "Mr Wingfield, Gosnoll, and Newport,
+     with 30 others."
+   AND WHAT THEY DO NOT SAY is in the narration too, because a gap stated is a lesson
+   and a gap filled quietly is a lie: how far out the ships lay, how many boats went,
+   and how the wounded were got back aboard that evening are all unrecorded.
+
+   The scene plays in Chapter I's own world, which already has the three ships at
+   anchor, the water, and Cape Henry swept along the eastern arc - so it costs one boat
+   and no new geometry. The boat is buildShallop's hull, which is the same family of
+   open boat a ship's boat belongs to; what made the shallop unavailable on the 26th was
+   that she was in pieces, not that she was a different shape. */
+let LAND_BOAT=null;
+const LANDING={on:false,t:0,dur:1,from:null,to:null};
+function landingBoat(){
+  const G=new Geo();
+  /* buildShallop's stations are in FEET, and Chapter I is 1.35 units to the foot while
+     a built figure stands about 5.5 units. The boat is scaled to the FIGURES rather
+     than to the ship, so the men in her read at the right size - which is what the
+     shot is about. */
+  buildShallop(G,0,0,0,0,0.03);
+  const m=G.mesh(false,false);
+  m.scale.setScalar(0.70);
+  (worldRoot||scene).add(m);
+  const men=[];
+  const EQ=[{skin:"english",palette:"slate",cloak:"none_cloak",torso:"none_torso",
+             accessory:"none_acc",head:"head_cap",build:"build_normal",face:"plain"},
+            {skin:"english",palette:"company",cloak:"cloak_weathered",torso:"torso_merchant",
+             accessory:"none_acc",head:"head_feather",build:"build_normal",face:"stern"},
+            {skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
+             accessory:"none_acc",head:"head_cap",build:"build_normal",face:"shrewd"},
+            {skin:"english",palette:"lostcolony",cloak:"none_cloak",torso:"torso_doublet",
+             accessory:"none_acc",head:"head_capotain",build:"build_normal",face:"mild"}];
+  for(let i=0;i<4;i++){
+    const f=buildFigure(EQ[i%EQ.length]);
+    /* sat on the thwarts: knees up, facing across the boat as a man at an oar does */
+    const q=f.userData.parts;
+    if(q){q.ll.rotation.x=-1.30;q.rl.rotation.x=-1.22;
+          q.la.rotation.x=0.55;q.ra.rotation.x=0.48;}
+    f.position.set((i%2?1:-1)*1.5, 1.1, -5.5+i*3.6);
+    f.rotation.y=(i%2?-1:1)*1.35;
+    m.add(f);
+    men.push(f);
+  }
+  return m;
+}
+function landingStart(from,to,dur){
+  LANDING.on=true;LANDING.t=0;LANDING.dur=dur||1;
+  LANDING.from=from;LANDING.to=to;
+}
+function updateLanding(dt){
+  if(!LAND_BOAT)return;
+  if(LANDING.on){
+    LANDING.t=Math.min(LANDING.dur,LANDING.t+dt);
+    const k=LANDING.t/LANDING.dur;
+    /* eased, because a boat under oars does not start and stop like a lift */
+    const e=k<0.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    const a=LANDING.from,b=LANDING.to;
+    LAND_BOAT.position.set(a[0]+(b[0]-a[0])*e, a[1]+(b[1]-a[1])*e, a[2]+(b[2]-a[2])*e);
+    LAND_BOAT.rotation.y=Math.atan2(b[0]-a[0],b[2]-a[2])+Math.PI/2;
+    if(LANDING.t>=LANDING.dur)LANDING.on=false;
+  }
+  /* she lifts and falls on the swell whether she is under way or not */
+  LAND_BOAT.position.y+=Math.sin(IDLE_T*1.7)*0.012;
+  LAND_BOAT.rotation.z=0.03+Math.sin(IDLE_T*1.3)*0.022;
+}
+function landingCutscene(){
+  /* where the strand actually is on the eastern arc, asked of the coastline itself
+     rather than guessed - see CH1_SHORE */
+  let shore=560;
+  if(CH1_SHORE){
+    for(let u=200;u<1100;u+=8){ if(u>=CH1_SHORE(u,0)){shore=u;break;} }
+  }
+  const alongside=[26,0.7,8], offing=[shore*0.45,0.7,2], beach=[shore-16,0.7,0];
+  return {skippable:true,steps:[
+    {do:function(){
+       if(!LAND_BOAT)LAND_BOAT=landingBoat();
+       LAND_BOAT.visible=true;
+       LAND_BOAT.position.set(alongside[0],alongside[1],alongside[2]);
+       LAND_BOAT.rotation.y=Math.PI/2;
+       /* FROM OFF THE BOWS, NOT FROM ON TOP OF THE GODSPEED. The first stand was
+          (-150,52,150) and the Godspeed lies at (-168,140) - the camera was all but
+          inside her, so the frame held one ship and the fleet the line is about was
+          out of shot. From ahead the three lie in depth: Susan at 300, Godspeed at
+          440, Discovery at 560, all inside the 860 the fog allows. */
+       cam.position.set(5,78,-300);CS.lastLook.set(5,14,60);
+     },
+     cam:{to:[8,70,-268],look:[5,12,130]},
+     t:5.2,sfx:"wind",gain:0.16,
+     narrate:"The six and twentieth of April. Land was descried about four in the morning, and by afternoon the fleet lay at anchor inside the southern cape. No one drove a ship ashore \u2014 they anchored, and kept the water under them."},
+
+    {do:function(){cam.position.set(58,17,44);CS.lastLook.set(20,7,8);},
+     cam:{to:[50,15,36],look:[24,5,8]},
+     t:5.4,sfx:"creak",gain:0.3,
+     narrate:"The shallop was still in pieces in the hold. They would not begin to build her up until tomorrow, and would not launch her for two days after that. So they hoisted out a ship's boat."},
+
+    {do:function(){landingStart(alongside,offing,9.5);
+                   cam.position.set(52,9,-16);CS.lastLook.set(shore*0.3,6,4);},
+     cam:{to:[86,11,-10],look:[shore*0.42,5,3]},
+     t:5.6,
+     narrate:"About thirty men went in her \u2014 Wingfield, Gosnold and the Captain among them, and a hundred and more left aboard to watch them go."},
+
+    /* HIGHER THAN IT WANTS TO BE. The swell is drawn as low flat slabs, which is right
+       at a distance and reads as floating plate glass when the camera sits at 11 units
+       and one of them passes between the eye and the boat. From 26 they foreshorten
+       back into a running sea. */
+    {do:function(){cam.position.set(offing[0]-70,28,-58);CS.lastLook.set(offing[0],5,0);},
+     cam:{to:[offing[0]-40,24,-46],look:[offing[0]+40,3,0]},
+     t:5.6,
+     narrate:"Nobody wrote down how far off she lay, nor how many boats went down, nor who pulled at the oars. What they wrote down is that they went."},
+
+    /* ---- THE LAST STRETCH, NOT THE WHOLE PASSAGE ----
+       This ran her from the offing to the beach across the length of the shot, with the
+       camera already standing at the landing place - so for most of the shot the boat
+       was BEHIND the camera and the frame held nothing but the treeline. She starts
+       close in now and grounds inside the shot, which also means the beat works whether
+       the step lasts its written six seconds or the thirteen a spoken line stretches it
+       to.
+       And the stand is on the water: shore+34 was a radius of 748 against a shoreline
+       at 712, which is inside Cape Henry's dune looking out of it - the same trap the
+       cannon's second camera fell into. */
+    {do:function(){landingStart([beach[0]-95,beach[1],beach[2]-9],beach,4.2);
+                   /* Close enough that she is the subject. At 120 out she grounded
+                      correctly and read as a speck against a mile of treeline; the last
+                      beat of the scene is thirty men stepping onto that country, so she
+                      has to be big enough to be them. Radius 638 against a shore of
+                      712, so still afloat. */
+                   cam.position.set(beach[0]-62,11,-50);CS.lastLook.set(beach[0]-24,4,-10);},
+     cam:{to:[beach[0]-48,9,-40],look:[beach[0]-6,2.5,-2]},
+     t:6.0,sfx:"splash",gain:0.22,
+     narrate:"She grounded on a low sandy point, and thirty men stepped out onto a country no Englishman had stood in for twenty years."},
+
+    {fade:"out",t:1.2},
+    {do:function(){
+       if(LAND_BOAT)LAND_BOAT.visible=false;
+       LANDING.on=false;
+     },wait:0.2}
+  ]};
 }
 /* ========== HE SHOWS YOU HOW TO CARRY IT ==========
    The first hit used to end in a results panel, which left the player holding a
@@ -11784,7 +11942,21 @@ function showEnding(worldId){
     if(nx){
       nb.style.display="block";
       nb.textContent=e.nextLabel||("Chapter "+nx.n+" — "+nx.t);
-      nb.onclick=function(){openIntro(e.nextWorld);};
+      nb.onclick=function(){
+      /* ---- THE LANDING GOES HERE ----
+         Chapter I's world is still standing at this moment - three ships at anchor, the
+         water, and the cape - so the boat can pull for the beach in it before the
+         Chapter II card comes up. Guarded: if anything about the scene is not
+         available, the button does what it always did. */
+      if(e.nextWorld==="ch2"&&CURRENT_WORLD==="ch1"&&typeof landingCutscene==="function"){
+        show("game");
+        try{
+          playCutscene(landingCutscene(),function(){openIntro(e.nextWorld);});
+          return;
+        }catch(err){if(window.console)console.warn("landing",err);}
+      }
+      openIntro(e.nextWorld);
+    };
     } else nb.style.display="none";
   }
   show("ending");
@@ -21884,7 +22056,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260813-0706";
+const BUILD="20260813-0718";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
