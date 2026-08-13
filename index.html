@@ -1109,7 +1109,7 @@ const S={ink:0,unlocked:new Set(["none_cloak","none_torso","none_acc","none_head
      them for good, so finishing one can never strand them and a class can be sent
      back to a particular afternoon without replaying the voyage. */
   reached:{ch1:true},
-  corrections:0,reckTries:0,firedGun:false,faces:new Set(),admin:false,talkErr:{}};
+  corrections:0,reckTries:0,lashCount:0,firedGun:false,faces:new Set(),admin:false,talkErr:{}};
 
 /* ========== SAVE AND RESUME ==========
    Everything the game has promised to remember. The consequence system tells the
@@ -1127,6 +1127,11 @@ function saveBlob(){
     v:SAVE_VERSION,
     world:(typeof CURRENT_WORLD!=="undefined"&&CURRENT_WORLD)||"ch1",
     ink:S.ink, corrections:S.corrections, reckTries:S.reckTries,
+    /* HOW MANY TIMES YOU HAVE BEEN BROUGHT TO THE WHIP. Persisted because the ladder is
+       the point: one correct answer buys the first flogging, two the second, three the
+       third, and there is no fourth. If closing the tab reset it, closing the tab would
+       be a pardon. */
+    lashCount:S.lashCount||0,
     /* Sets do not survive JSON */
     unlocked:Array.from(S.unlocked), paletteUnlocked:Array.from(S.paletteUnlocked),
     codexKeys:Array.from(S.codexKeys), faces:Array.from(S.faces),
@@ -1166,6 +1171,7 @@ function applyBlob(d){
   if(!d||d.v!==SAVE_VERSION)return false;
   try{
     S.ink=d.ink||0;S.corrections=d.corrections||0;S.reckTries=d.reckTries||0;
+    S.lashCount=d.lashCount||0;
     S.unlocked=new Set(d.unlocked||[]);
     S.paletteUnlocked=new Set(d.paletteUnlocked||["ink"]);
     S.codexKeys=new Set(d.codexKeys||[]);
@@ -1241,7 +1247,7 @@ function newRun(){
   S.ambushFired=false;S.ambushShots=0;S.pending=null;
   S.shipNote=false;S.chapterDone=false;S.firedGun=false;
   S.reached={ch1:true};
-  S.corrections=0;S.reckTries=0;S.chartSeen={};
+  S.corrections=0;S.reckTries=0;S.lashCount=0;S.chartSeen={};
   if(typeof AMBUSH!=="undefined")AMBUSH.done=false;
 }
 /* named so the player knows what a checkpoint is: a boundary, not an autosave */
@@ -10384,6 +10390,133 @@ function landingCutscene(){
      },wait:0.2}
   ]};
 }
+/* ========== THE SENTENCE ==========
+   Lifted out of shotAMan so more than one thing can order it. Killing a man was the only
+   route to an execution; failing to account for yourself at the whip is now another, and
+   a fourth flogging is a third.
+
+   WHICH DEATH YOU GET IS DECIDED BY WHAT YOU ARE WEARING, and that is Jamestown's own
+   precedent. George Kendall - a gentleman and a councillor - was executed by firing
+   squad in 1607. James Read, a blacksmith, was sentenced to HANG in 1608 for striking at
+   the president, and a gallows was built for him. Same colony, same year, same
+   authority: the gentleman was shot and the tradesman was to be hanged.
+
+   WHAT IS SHOWN, in this order: the rope; the face, framed so close the rope is out of
+   shot, and afraid; the feet, off the ground; then the kicking stops. WHAT IS NEVER
+   SHOWN: the neck, and the body at the moment of the drop. The camera is at ankle height
+   for the third shot and eye height for the second and there is nothing between them.
+   The audience finishes it themselves, and nothing gruesome is drawn. */
+function executionSteps(tx,ty,tz,steps){
+  const gentle=(S.equip.torso==="torso_merchant"||S.equip.head==="head_feather");
+  if(gentle){
+    steps.push({shot:{of:["player"],dist:10*K,height:7*K,lookH:5.5*K},t:5.0,
+      do:function(){
+        if(player){player.position.set(tx,ty,tz);player.rotation.y=0.4;}
+      },
+      narrate:"You are stood against the trees. The sentence is read from the Company\u2019s instructions, and four men are told off with their pieces \u2014 because you came aboard dressed as a gentleman, and a gentleman is shot."});
+    steps.push({shot:{of:["player"],dist:16*K,height:9*K,lookH:6*K},t:2.8,
+      sfx:"boom",gain:0.5,shake:0.06,fade:"out",narrate:"They do it quickly."});
+  } else {
+    /* ---- A HANGING THAT IS ACTUALLY A HANGING ----
+       This was two shots and the words "They do it quickly." Nothing was built, the
+       figure stood on the ground, and it did not read as an execution at all.
+       WHAT IS SHOWN, and in this order: the rope. Then the face, framed so close that
+       the rope is out of shot - and afraid, which is a face this game did not own until
+       now. Then the feet, off the ground, kicking. Then the kicking stops.
+       WHAT IS NEVER SHOWN: the neck, and the whole body at the moment of the drop. The
+       camera is at ankle height for the third shot and at eye height for the second,
+       and there is no shot between them. It is the oldest way of doing this and it
+       works because the audience finishes it themselves. Nothing gruesome is drawn,
+       and nothing needs to be. */
+    const limbY=ty+11.0, neckY=ty+6.6;
+    steps.push({shot:{of:["player"],dist:5.0*K,height:ty+9.4-((player&&player.position.y)||ty),lookH:9.0*K,tight:true},t:4.6,
+      sfx:"creak",gain:0.4,
+      do:function(){
+        if(player){player.position.set(tx,ty,tz);player.rotation.y=0.4;}
+        buildHangRope(tx,ty,tz,limbY,neckY);
+      },
+      narrate:"A rope goes over a limb. The sentence is read from the Company\u2019s instructions, and it is short \u2014 you came aboard in a labourer\u2019s slops, and a labouring man is hanged."});
+    /* THE FACE. Held close enough that the rope is outside the frame. */
+    /* FRAMED SO THE ROPE IS OUT OF SHOT, and the number is derived, not chosen: at
+       dist 1.7*K = 2.30 ft with a 56 degree vertical field, the half-height in frame is
+       2.30*tan(28) = 1.22 ft. Looking at 5.2 the frame runs 3.98 to 6.42 and the noose
+       at 6.6 is above it. My first pass looked at 6.8 and put the noose dead centre. */
+    steps.push({shot:{of:["player"],dist:1.7*K,height:4.0*K,lookH:3.85*K,tight:true},t:4.4,
+      do:function(){
+        HANG_FACE=S.equip.face;S.equip.face="afraid";
+        if(typeof refreshPlayer==="function")refreshPlayer();
+        if(player){player.position.set(tx,ty,tz);player.rotation.y=0.4;}
+      },
+      narrate:"They ask if you have anything to say. You find that you have not."});
+    /* THE FEET. Camera at ankle height, so the frame stops at the shins. */
+    steps.push({shot:{of:["player"],dist:3.4*K,height:1.15*K,lookH:1.0*K,tight:true},t:5.6,
+      sfx:"creak",gain:0.5,
+      do:function(){
+        if(player)player.position.set(tx,ty+2.05,tz);
+        HANG_T=0;HANG_ON=true;
+      },
+      narrate:"\u2014"});
+    steps.push({shot:{of:["player"],dist:4.2*K,height:1.15*K,lookH:1.0*K,tight:true},t:4.8,
+      fade:"out",
+      do:function(){HANG_ON=false;},
+      narrate:"And then the wood is quiet again, and the drill goes on without you."});
+  }
+  return steps;
+}
+/* Order the sentence from anywhere. `reason` is the beat that says why. */
+function executeThePlayer(reason){
+  const tx=(CURRENT_WORLD==="ch2")?CAPE_MARK.x-16:-6*K;
+  const tz=(CURRENT_WORLD==="ch2")?CAPE.TREE+10:18*K;
+  const ty=WORLD.ground(tx,tz);
+  const world=CURRENT_WORLD;
+  const steps=[{shot:{of:["player"],dist:13*K,height:8*K,lookH:5*K},t:4.6,narrate:reason}];
+  executionSteps(tx,ty,tz,steps);
+  if($("mLash"))$("mLash").classList.remove("on");
+  endFlogging();
+  setPaused(true);
+  playCutscene({steps:steps,skippable:false},function(){
+    HANG_ON=false;clearHangRope();
+    if(HANG_FACE!==null){S.equip.face=HANG_FACE;HANG_FACE=null;
+      if(typeof refreshPlayer==="function")refreshPlayer();}
+    if(player){player.rotation.z=0;
+      const pp=player.userData&&player.userData.parts;
+      if(pp){["hipL","hipR","kneeL","kneeR"].forEach(function(k){
+        if(pp[k])pp[k].rotation.x=0;});}}
+    $("cineFade").style.transition="opacity .8s linear";
+    $("cineFade").style.opacity="0";
+    result(false,"Executed",
+      "The expedition goes on without you, which is in its way the most historically "+
+      "ordinary thing that could have happened.\n\nYou begin this chapter again. Nothing "+
+      "you learned is taken from you - your Ink, your wardrobe and your Historian's Notes "+
+      "are all kept. Only the day is lost, and days can be lived again.",
+      ["Notes kept","Ink kept","The chapter begins again"],
+      function(){restartChapter(world);});
+  });
+}
+/* ---- AND YOU BEGIN THE CHAPTER AGAIN ----
+   The old ending sent you to enterWorld("ch1") whatever chapter you had died in, so a man
+   hanged on the strand at Cape Henry woke on the Susan Constant four months earlier. The
+   chapter you died in is the chapter you start again.
+   WHAT GOES is the chapter's PROGRESS - the box, the survey, the council, the muster, the
+   day's incidents and the count against your name. WHAT STAYS is everything you learned,
+   because a student who has understood something has understood it whether or not they
+   were hanged for something else. That is the same bargain the drowning already offers. */
+function restartChapter(world){
+  const w=world||CURRENT_WORLD||"ch1";
+  S.chapterDone=false;S.reckTries=0;S.pending=null;
+  S.boxOpened=false;S.councilDone=false;S.councilWarned=false;
+  S.heardKendall=false;S.reportedKendall=null;
+  S.shotAMan=false;S.killedAMan=false;S.firedGun=false;
+  S.lashCount=0;                       /* a new man carries no count */
+  S.corrections=0;
+  if(typeof surveyBudget==="function")S.survey={days:surveyBudget(),found:{},visited:{}};
+  if(typeof AMBUSH!=="undefined"){AMBUSH.done=false;AMBUSH.on=false;}
+  saveGame();
+  setPaused(false);
+  if(renderer){enterWorld(w);resize();}
+  setChapterLabel();
+  toast("You begin the day again.");
+}
 /* ========== HE SHOWS YOU HOW TO CARRY IT ==========
    The first hit used to end in a results panel, which left the player holding a
    musket with no idea that it could be slung, grounded, or brought back out. He
@@ -10554,24 +10687,45 @@ const CAMLOCK={on:false,pos:null,look:null};
 /* set when a cutscene hid the held piece, so it can be given back exactly as it was */
 let GUN_HID_BY_CS=false;
 let FLOG=null;
-function beginFlogging(){
+/* ---- AND IT HAPPENS ASHORE TOO ----
+   Reported: "when punished I did not see the lashing happen like I do in Chapter 1."
+   True, and by construction: LASH_CAUSE.shot carried mast:false, openLashes read that
+   as "do not run the flogging at all", and the whole scene was skipped. But the reason
+   for mast:false is only that there is no MAST on a beach - the cause's own lead says
+   so, "no boatswain here and no mast to tie you to, only the tree" - and being tied to
+   a tree and struck is not less of a flogging. `at` moves the whole scene to a post of
+   its own choosing; without it, nothing about Chapter I changes. */
+function beginFlogging(at){
   if(!scene||!player)return;
-  plevel=LVL.MAIN;
-  const y=LVL_Y[LVL.MAIN], pz=-3.2*K;
-  player.position.set(0,y,pz);player.rotation.y=0;player.rotation.z=0;
+  const ashore=!!at;
+  if(!ashore)plevel=LVL.MAIN;
+  const y=ashore?at.y:LVL_Y[LVL.MAIN];
+  const px=ashore?at.x:0, pz=ashore?at.z:-3.2*K;
+  player.position.set(px,y,pz);player.rotation.y=ashore?0.4:0;player.rotation.z=0;
   setChapterLabel();
-  const cap=buildFigure(CH.captain.eq);
-  cap.position.set(1.9*K,y,pz-6.2*K);cap.rotation.y=0;scene.add(cap);
+  /* CH.captain is Chapter I's; Chapter II's content has no captain at all, so this
+     threw the moment the shore flogging started calling beginFlogging. Whoever holds the
+     whip here is whoever this chapter has to hold it. */
+  const cap=buildFigure((ashore&&at&&at.eq)||(CH.captain&&CH.captain.eq)||
+    (typeof SERJEANT!=="undefined"&&SERJEANT.eq)||S.equip);
+  if(ashore)cap.position.set(px+4.2,y,pz+3.4);
+  else cap.position.set(1.9*K,y,pz-6.2*K);
+  cap.rotation.y=ashore?-2.3:0;scene.add(cap);
   const cp=cap.userData.parts;
   if(cp&&cp.ra){
     const lash=box(0.05,0.95,0.05,0x4a3423);lash.position.set(0,-0.98,0);cp.ra.add(lash);
     const tail=box(0.04,0.34,0.04,0x3d2a1a);tail.position.set(0.03,-1.62,0.02);
     tail.rotation.z=0.35;cp.ra.add(tail);
   }
-  FLOG={cap:cap,t:0,next:1.5,stroke:-1,hit:false,jolt:0,y:y,pz:pz,count:0};
+  FLOG={cap:cap,t:0,next:1.5,stroke:-1,hit:false,jolt:0,y:y,pz:pz,px:px,count:0};
   CAMLOCK.on=true;
-  CAMLOCK.pos=new THREE.Vector3(7.0*K,y+7.0,pz+12.5);
-  CAMLOCK.look=new THREE.Vector3(0,y+5.0,pz-2.2*K);
+  if(ashore){
+    CAMLOCK.pos=new THREE.Vector3(px-13,y+8.5,pz+15);
+    CAMLOCK.look=new THREE.Vector3(px,y+5.0,pz);
+  } else {
+    CAMLOCK.pos=new THREE.Vector3(7.0*K,y+7.0,pz+12.5);
+    CAMLOCK.look=new THREE.Vector3(0,y+5.0,pz-2.2*K);
+  }
   if(cam)cam.position.set(CAMLOCK.pos.x+4,CAMLOCK.pos.y+2,CAMLOCK.pos.z+6);
   playSfx("wind",0.16);
 }
@@ -10845,9 +10999,36 @@ function pickLashes(cause){
 /* `cause` is one of the LASH_CAUSE keys. It is guarded because this is handed straight
    to result() as a callback in two places, and result calls its callback with its own
    argument - so a bare openLashes would arrive here holding a button index. */
+/* Where a man is tied when there is no mast: the tree at the edge of the wood, which
+   is the same tree the sentence is carried out at if it comes to that. */
+function ashorePost(){
+  const x=(CURRENT_WORLD==="ch2")?CAPE_MARK.x-16:0;
+  const z=(CURRENT_WORLD==="ch2")?CAPE.TREE+10:0;
+  return {x:x,z:z,y:WORLD.ground(x,z),
+          eq:(typeof SERJEANT!=="undefined"&&SERJEANT.eq)||null};
+}
+/* ---- HOW MANY TIMES YOU HAVE BEEN BROUGHT TO IT ----
+   Reported: "if I can answer a lash question correctly then sure, I should be allowed
+   to continue, but if I do it again it should require two, then all three, and a fourth
+   time should skip to the execution."
+   That is the ladder. It is also, as it happens, how a ship's discipline actually
+   worked: the same offence twice is not the same offence. S.lashCount is the number of
+   times this run has been brought to the whip, and it survives a reload, so closing the
+   tab does not reset your record. */
+function lashesRequired(){return Math.min(3,Math.max(1,S.lashCount||0));}
+function ordinalTimes(n){return ["","first","second","third","fourth"][Math.min(4,n||1)]||(n+"th");}
 function openLashes(cause){
   const key=(typeof cause==="string"&&LASH_CAUSE[cause])?cause:"plain";
   const cz=LASH_CAUSE[key];
+  S.lashCount=(S.lashCount||0)+1;
+  /* THE FOURTH TIME THERE ARE NO QUESTIONS. A company that has flogged a man three
+     times and had him back a fourth has stopped believing the flogging works. */
+  if(S.lashCount>=4){
+    S.pending=null;incur("brought to the lash a fourth time");
+    executeThePlayer("You have been brought to the whip four times. The Captain does not "+
+      "order a fifth.");
+    return;
+  }
   lash={i:0,wrong:0,cause:key,set:pickLashes(key)};
   const k=$("lashKicker"),l=$("lashLead");
   if(k)k.textContent=cz.kicker;
@@ -10856,7 +11037,7 @@ function openLashes(cause){
      closing the tab here resumes the flogging rather than escaping it. */
   S.pending={lash:key};
   incur("lashes ordered: "+key);
-  if(cz.mast!==false)beginFlogging();
+  beginFlogging(cz.mast===false?ashorePost():null);
   $("mLash").classList.add("on");setPaused(true);renderLash();
 }
 function renderLash(){
@@ -10882,26 +11063,57 @@ function endLashes(){
   const cz=LASH_CAUSE[(lash&&lash.cause)||"plain"]||LASH_CAUSE.plain;
   /* served, however it ended - drowning included, which returns early below */
   S.pending=null;incur("lashes served");
-  /* Every answer wrong used to drown you wherever you were standing. Drowning is a
-     death for a man lashed at a mainmast with the sea alongside; ashore at Cape Henry
-     there is no water to put him in, so the shore path simply ends and the count is
-     what he carries. */
-  /* AND THE SET HAS TO BE LONG ENOUGH FOR "ALL WRONG" TO MEAN ANYTHING. Chapter I
-     always had at least three fair questions so this never arose; Chapter II gates most
-     of its bank on the drill, and a man who somehow earns a flogging before taking it
-     draws a set of one - where a single wrong answer would be a total failure. Two is
-     the floor for the worst outcome. */
-  if(lash&&lash.set.length>=2&&lash.wrong>=lash.set.length&&!cz.ashore){drownEnding();return;}
+  /* ---- WHAT YOU HAD TO GET RIGHT, AND WHAT HAPPENS IF YOU DID NOT ----
+     Reported: "I failed the lashes, and they let me go... I killed someone, was lashed,
+     and failed the questions. I should have been hung or shot."
+     Both halves were true. Ashore, failing every question printed "Cut down, and none
+     the wiser" and put you straight back on the strand - the count stood against your
+     name and nothing else did. At sea it drowned you, but only if you got EVERY answer
+     wrong, so two of three wrong was a pass for ever.
+
+     THE LADDER. The number you must get right is the number of times you have been
+     brought to the whip: one the first time, two the second, three the third. There is
+     no fourth - openLashes sends a man who has been flogged three times straight to the
+     sentence without asking him anything, because a company that has flogged the same
+     man three times has stopped believing the flogging works.
+
+     AND THE FORM OF THE SENTENCE IS THE CHAPTER'S OWN. At sea, over the side, which is
+     the death a mainmast and an ocean afford. Ashore, the tree - shot or hanged by what
+     you are wearing, on Jamestown's own precedent. Both scenes already existed; what
+     was missing was anything that could order them.
+
+     Capped at the length of the set, so a thin bank can never demand more answers than
+     it asked - Chapter II gates most of its questions on the drill, and a man flogged
+     before he has taken it draws a short set. */
+  const need=Math.min(lashesRequired(),(lash&&lash.set.length)||1);
+  const right=((lash&&lash.set.length)||0)-((lash&&lash.wrong)||0);
+  if(right<need){
+    incur("could not answer under the lash");
+    if(cz.ashore){
+      $("mLash").classList.remove("on");
+      executeThePlayer(right?
+        ("You answered "+right+" of the "+lash.set.length+", and this is the "+
+         ordinalTimes(S.lashCount)+" time you have been brought to it. That is not enough.")
+        :("You could not answer for it at all, and this is the "+ordinalTimes(S.lashCount)+
+          " time you have been brought to answer."));
+      return;
+    }
+    drownEnding();return;
+  }
   $("mLash").classList.remove("on");endFlogging();
+  const more=(S.lashCount<3)?(" A second offence will want "+(S.lashCount+1)+
+    " answers of you, and a third will want all three."):
+    (" There is nothing left above this. Come back a fourth time and no one will ask you anything.");
   if(cz.ashore){
-    const bad=(lash&&lash.set.length>=2&&lash.wrong>=lash.set.length);
-    result(!bad,bad?"Cut down, and none the wiser":"Cut down",
-      bad?"You are cut down having answered for nothing, and the men who carried you back say very little. The count stands against your name, and so does the fact that you could not account for it."
-         :"You are cut down. Bloodied, and able to say why - which is the only part of this the Captain will remember. The drill goes on, and you are put back into it.",
+    result(true,"Cut down",
+      "You are cut down. Bloodied, and able to say why \u2014 which is the only part of this the Captain will remember. "+
+      "You answered "+right+" of "+lash.set.length+", and "+need+" was wanted."+more,
       ["Back to the strand"],function(){setPaused(false);});
     return;
   }
-  result(true,"It is done","The flogging ends. Bloodied but wiser, you are thrown back among the men - free to try the casks once more.",["Try the casks again"],function(){setPaused(false);});
+  result(true,"It is done","The flogging ends. Bloodied but wiser, you are thrown back among the men \u2014 free to try the casks once more. "+
+    "You answered "+right+" of "+lash.set.length+", and "+need+" was wanted."+more,
+    ["Try the casks again"],function(){setPaused(false);});
 }
 
 
@@ -13636,60 +13848,7 @@ function shotAMan(who,off,radius){
        gentleman was shot and the tradesman was to be hanged.
        So the player's own dress decides it, which makes the wardrobe mean
        something it has never meant before. */
-    const gentle=(S.equip.torso==="torso_merchant"||S.equip.head==="head_feather");
-    if(gentle){
-      steps.push({shot:{of:["player"],dist:10*K,height:7*K,lookH:5.5*K},t:5.0,
-        do:function(){
-          if(player){player.position.set(tx,ty,tz);player.rotation.y=0.4;}
-        },
-        narrate:"You are stood against the trees. The sentence is read from the Company\u2019s instructions, and four men are told off with their pieces \u2014 because you came aboard dressed as a gentleman, and a gentleman is shot."});
-      steps.push({shot:{of:["player"],dist:16*K,height:9*K,lookH:6*K},t:2.8,
-        sfx:"boom",gain:0.5,shake:0.06,fade:"out",narrate:"They do it quickly."});
-    } else {
-      /* ---- A HANGING THAT IS ACTUALLY A HANGING ----
-         This was two shots and the words "They do it quickly." Nothing was built, the
-         figure stood on the ground, and it did not read as an execution at all.
-         WHAT IS SHOWN, and in this order: the rope. Then the face, framed so close that
-         the rope is out of shot - and afraid, which is a face this game did not own until
-         now. Then the feet, off the ground, kicking. Then the kicking stops.
-         WHAT IS NEVER SHOWN: the neck, and the whole body at the moment of the drop. The
-         camera is at ankle height for the third shot and at eye height for the second,
-         and there is no shot between them. It is the oldest way of doing this and it
-         works because the audience finishes it themselves. Nothing gruesome is drawn,
-         and nothing needs to be. */
-      const limbY=ty+11.0, neckY=ty+6.6;
-      steps.push({shot:{of:["player"],dist:5.0*K,height:ty+9.4-((player&&player.position.y)||ty),lookH:9.0*K,tight:true},t:4.6,
-        sfx:"creak",gain:0.4,
-        do:function(){
-          if(player){player.position.set(tx,ty,tz);player.rotation.y=0.4;}
-          buildHangRope(tx,ty,tz,limbY,neckY);
-        },
-        narrate:"A rope goes over a limb. The sentence is read from the Company\u2019s instructions, and it is short \u2014 you came aboard in a labourer\u2019s slops, and a labouring man is hanged."});
-      /* THE FACE. Held close enough that the rope is outside the frame. */
-      /* FRAMED SO THE ROPE IS OUT OF SHOT, and the number is derived, not chosen: at
-         dist 1.7*K = 2.30 ft with a 56 degree vertical field, the half-height in frame is
-         2.30*tan(28) = 1.22 ft. Looking at 5.2 the frame runs 3.98 to 6.42 and the noose
-         at 6.6 is above it. My first pass looked at 6.8 and put the noose dead centre. */
-      steps.push({shot:{of:["player"],dist:1.7*K,height:4.0*K,lookH:3.85*K,tight:true},t:4.4,
-        do:function(){
-          HANG_FACE=S.equip.face;S.equip.face="afraid";
-          if(typeof refreshPlayer==="function")refreshPlayer();
-          if(player){player.position.set(tx,ty,tz);player.rotation.y=0.4;}
-        },
-        narrate:"They ask if you have anything to say. You find that you have not."});
-      /* THE FEET. Camera at ankle height, so the frame stops at the shins. */
-      steps.push({shot:{of:["player"],dist:3.4*K,height:1.15*K,lookH:1.0*K,tight:true},t:5.6,
-        sfx:"creak",gain:0.5,
-        do:function(){
-          if(player)player.position.set(tx,ty+2.05,tz);
-          HANG_T=0;HANG_ON=true;
-        },
-        narrate:"\u2014"});
-      steps.push({shot:{of:["player"],dist:4.2*K,height:1.15*K,lookH:1.0*K,tight:true},t:4.8,
-        fade:"out",
-        do:function(){HANG_ON=false;},
-        narrate:"And then the wood is quiet again, and the drill goes on without you."});
-    }
+    executionSteps(tx,ty,tz,steps);
   } else {
     steps.push({shot:{of:["player"],dist:12*K,height:7.4*K,lookH:5*K},t:5.2,
       narrate:"\u201cHe will live. You will not do that twice.\u201d "+
@@ -13751,10 +13910,8 @@ function shotAMan(who,off,radius){
         "You are dead, and the expedition goes on without you \u2014 which is, in its way, the most historically ordinary thing that could have happened. "+
         "This is recorded, and it will be read back at the muster.",
         ["No ink","Recorded: a man killed"],function(){
-          setPaused(false);
-          /* returned to the deck, where the chapter began */
-          if(renderer)enterWorld("ch1");
-          resize();
+          /* the chapter you died in, not the one the game happened to start in */
+          restartChapter();
         });
     } else {
       checkpoint("recorded against your name");
@@ -13884,6 +14041,16 @@ function ignite(hung){
   if(man&&(!best||man.along<best.along)){
     shotTrail(o,d,man.along);
     arrive(man.along,function(){
+    /* ---- AND A MAN GETS THE SAME MARK EVERYTHING ELSE GETS ----
+       Reported: "when I shoot someone I don't see a red X appear on their body where
+       they were hit." Quite right - markImpact was called for the butt, for the sand,
+       for the water and for an arrow in the beach, and not for the one target where it
+       matters most. There was blood and a collapse and no mark, so the one shot in the
+       game with a consequence attached was the only one that did not say where it
+       struck. It faces back down the line of fire like all the others, and it is placed
+       from the same geometry that decided whether the man lives. */
+    markImpact(o.x+d.x*man.along,o.y+d.y*man.along,o.z+d.z*man.along,d,man.along,
+               {life:20,floor:-9999});
     for(let i=0;i<5;i++){
       spawnPuff(POOL.smoke,o.x+d.x*man.along,o.y+d.y*man.along,o.z+d.z*man.along,
         (Math.random()-0.5)*3,(Math.random()-0.2)*2.4,(Math.random()-0.5)*3,
@@ -22198,7 +22365,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260813-0840";
+const BUILD="20260813-1111";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

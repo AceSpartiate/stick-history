@@ -411,8 +411,10 @@ print("\n12. A consequence is banked the moment it is earned")
 AGAINST = r"firedGun|shotAMan|killedAMan|corrections|incidents|talkErr|ambushFired|ambushShots|pending"
 # where the save format itself is written, and where a run is deliberately wiped
 # newRun AND resetRun both exist and both deliberately wipe the record
+# restartChapter joins them: being executed wipes the chapter's progress on purpose, and
+# it calls saveGame() itself at the end of the wipe.
 EXEMPT_FN = ("saveBlob", "applyBlob", "newRun", "resetRun", "musterCode",
-             "readMuster", "applyMuster")
+             "readMuster", "applyMuster", "restartChapter")
 
 lines = s.split("\n")
 def fn_at(i):
