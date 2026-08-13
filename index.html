@@ -16495,7 +16495,14 @@ const SHORE_TASKS=[
    the record singles out get something that will matter later. */
 const SHORE_SAYS={
   "William Laxon":["\u201cShe came aboard in pieces and numbered, and every number is in my head. Two days and she swims.\u201d"],
-  "Edward Pising":["\u201cGarboard strake first, then work up. You cannot hurry a boat.\u201d"],
+  /* ---- THEY ARE A DAY EARLY, AND ONE OF THEM SAYS SO ----
+   Percy: "The seven and twentieth day we began to build up our Shallop." Work started
+   the day AFTER this one, and the chapter shows the whole landing week as a single
+   afternoon - the same compression the cross is under, and it deserves the same
+   labelling rather than a silent assertion. So the man who would be laying the first
+   plank says he is not laying it today. Laxon's "two days and she swims" is then exactly
+   right counted from here: begun on the twenty-seventh, launched on the twenty-eighth. */
+   "Edward Pising":["\u201cWe lay no plank today. Today she comes out of the hold and gets counted, every piece against Laxon's numbers. Tomorrow we start at the garboard strake, and you cannot hurry a boat.\u201d"],
   "Thomas Emry":["\u201cI would rather be building this than a fort. A boat can leave.\u201d"],
   "Robert Small":["\u201cThirty foot of shallop, and every joint of her cut in London by men who never saw this beach.\u201d"],
   "Anas Todkill":["\u201cI keep a note of things. Somebody will want to know how this was done, and the gentlemen will not remember.\u201d"],
@@ -20822,11 +20829,31 @@ const CHAPTERS=[
        {t:"Speak with the men on the strand"+(met?" ("+met+" of 34)":""),
          done:met>=5,opt:true},
        {t:S.boxOpened?"The Council was read out":"See the day out on this beach",
-         done:!!S.boxOpened,goal:true,locked:!S.insight["Proved the Piece"]}
+         done:!!S.boxOpened,goal:true,locked:!S.insight["Proved the Piece"]},
+       /* ---- AND THE CHAPTER IS NOT OVER WHEN THE BEACH IS ----
+          The beach reported "Chapter complete" the moment the box was read, and the
+          chapter's assessment - the muster - is three sites, a council and a fortnight
+          later. A student who is told they have finished has every reason to stop, so
+          the errands now carry what is actually left the moment the boats open. */
+       {t:"Look at the country before they choose ("+findingsHeld()+" of "+MUSTER_FINDINGS+
+          " findings, "+sitesSurveyed()+" of "+MUSTER_SITES+" places)",
+         done:musterOpen(),goal:true,locked:!S.boxOpened},
+       {t:S.councilDone?"The council has chosen":"Call the council when you have seen enough",
+         done:!!S.councilDone,goal:true,locked:!S.boxOpened},
+       {t:"Stand the muster at the scrivener's desk",
+         done:!!S.chapterDone,goal:true,locked:!S.councilDone}
      ];
    },
    status:function(){
-     if(S.boxOpened)return "Chapter complete";
+     /* "Complete" is reserved for the muster. The landing is a day, not a chapter. */
+     if(S.chapterDone)return "Chapter complete";
+     if(S.boxOpened){
+       /* And once everything the scrivener wants is in hand, say THAT instead. A status
+          line still reading "the boats are yours" when the only thing left is to sit
+          down is the same fault as "Chapter complete", one step further along. */
+       if(S.councilDone&&musterOpen())return "Ready \u00b7 the scrivener will sit with you";
+       return "The landing is done \u00b7 the boats are yours";
+     }
      if(AMBUSH.on)return "Arrows \u00b7 get to the boats";
      if(!S.insight["The Six Motions"])return "Find Captain Kendall \u00b7 he has the drill";
      if(!S.insight["Proved the Piece"])return "Prove the piece at the mark";
@@ -22171,7 +22198,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260813-0826";
+const BUILD="20260813-0840";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
