@@ -14305,7 +14305,20 @@ function gunSmoke(scale){
          two to four seconds, effectively gone by six or seven. That matches the
          researched 1-2 s to a usable sight picture in a light breeze and 2-6 s in
          light air, and it is why the ease is 2.0 and not 0.55. */
+      /* ---- AND IT DOES NOT CLOSE BEFORE THE BALL LANDS ----
+         Reported: "the red x is only appearing after the smoke clears - it should appear
+         when the bullet hits the target." The mark was already being made at the right
+         instant and drawn over the smoke - renderOrder 4 - but a cross eleven pixels
+         across at forty yards, behind a cloud that is three feet wide and four feet from
+         your eye, is present in the buffer and absent from the picture.
+         The research settles which one moves. The ball reaches forty yards in 0.099 s;
+         the puff "needs 0.05 to 0.2 s to fill the sight line". They are the same order,
+         so a shooter really does see the strike in the instant before the smoke takes
+         it. Ours formed on the same tick as the report and closed the line first.
+         A tenth of a second of delay, spread across the twelve puffs, and the order is
+         the true one: the report, the strike, and then the smoke over it. */
       {size:1.4*scale, col:0x7d7a70, op:0.82, life:9.0, grow:0.95, ease:2.0,
+       delay:0.10+i*0.012,
        cap:{x:o.x,y:o.y,z:o.z,r:SMOKE_CAP_FT}});
   }
 }
@@ -22515,7 +22528,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260813-1138";
+const BUILD="20260813-1214";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
