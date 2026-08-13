@@ -13071,6 +13071,27 @@ function gPaint(){
    `slingLesson()` at the end of the function never ran. */
 const PROVED_INSIGHT={g:"known",b:"What the Piece Could Actually Do",
   s:"A matchlock caliver would drive a ball through armour at a hundred paces, which is why every company carried them. What it would not do is pick out one particular man at that distance: it is a smoothbore firing a ball deliberately cast under its own bore, and past forty yards or so it is a guess. That is why soldiers were drilled to fire together rather than to aim. And it took the better part of a minute to load again. Reach was never this weapon's problem at Jamestown. The minute was."};
+/* ---- HE COMES OVER AND CORRECTS YOU ----
+   Proving the piece is a skill gate and the day's end is locked behind it. It is not a
+   dead end - the drill stays open, any scoring hit counts, and the near mark is twice
+   the apparent size of the far one - but at forty seconds a reload a student with poor
+   aim can spend a very long time, and the weapon is DESIGNED to be inaccurate. Silence
+   while that happens teaches nothing except that the game is unfair.
+   So the serjeant does what a serjeant does. First he tells you what you are doing
+   wrong and where to aim. Then, if it goes on, he puts a rest under the barrel - which
+   is what a rest was FOR, and is the most historically ordinary help available. */
+function aimMiss(){
+  if(!GUN.active||S.insight["Proved the Piece"])return;
+  GUN.misses=(GUN.misses||0)+1;
+  if(GUN.misses===3){
+    toast("Kendall, from behind you: \u201cYou are snatching at her. Hold the aim ON after "+
+          "she goes, not before \u2014 and take the near mark, not the far one.\u201d");
+  } else if(GUN.misses===6&&!GUN.rest){
+    GUN.rest=true;
+    toast("Kendall sets a forked rest under the barrel. \u201cShe weighs ten pound and you "+
+          "have been holding her up with your arms. Let the wood do it.\u201d");
+  }
+}
 function serjeantHit(inner,dist){
   if(S.insight["Proved the Piece"])return;
   S.insight["Proved the Piece"]=true;S.ink+=12;
@@ -13792,7 +13813,7 @@ function ignite(hung){
      doing four fifths of the work. Worst case here is about 3.5 degrees, which at twenty
      yards misses a man almost every time - which is the lesson the drill is for. */
   const spread=A.spread+(1-GUN.ramQ)*0.014+chargeErr*0.025+(hung?0.020:0)
-    +(1-(GUN.steady||0))*0.010+(CONDITIONS.weather||0)*0.012;
+    +(1-(GUN.steady||0))*0.010*(GUN.rest?0.3:1)+(CONDITIONS.weather||0)*0.012;
   const o=cam.getWorldPosition(new THREE.Vector3());
   const d=cam.getWorldDirection(new THREE.Vector3());
   /* ---- SCATTER ACROSS THE SHOT, NOT ACROSS THE WORLD ----
@@ -13900,6 +13921,7 @@ function ignite(hung){
       if(GUN.onHit)GUN.onHit(inner,best.along);
     } else {
       toast("Into the butt, wide of the mark \u2014 "+spotWords(spotShot(o,d,best.t))+".");
+      aimMiss();
     }
     });
   } else {
@@ -13923,6 +13945,7 @@ function ignite(hung){
       toast(p.kind==="water"?"Into the water, clean away."
                             :"Clean away \u2014 the ball went into the trees.");
     }
+    aimMiss();
     });
   }
 }
@@ -17450,24 +17473,82 @@ function surveyDays(){return (S.survey&&S.survey.days)||0;}
    Check 17 proves this by walking every reachable state rather than trusting the
    paragraph above. */
 const MUSTER_FINDINGS=3;
+/* ---- AND FROM MORE THAN ONE PLACE ----
+   Three findings opened the muster, and one site holds three. So a player could survey
+   Jamestown Island alone, never see Archer's Hope's loam or the channel at Point
+   Comfort, and sit the assessment having never made the comparison the chapter exists
+   to teach. Every site here is good at exactly the thing the others are bad at; that IS
+   the lesson, and it cannot be learned from one of them.
+   Two, not three, because three would force the whole survey and the daylight is meant
+   to make you choose. Two is the smallest number that requires a comparison. */
+const MUSTER_SITES=2;
 function findingsHeld(){
   return (S.survey&&S.survey.found)?Object.keys(S.survey.found).length:0;
 }
-function findingsWanted(){return Math.max(0,MUSTER_FINDINGS-findingsHeld());}
-/* Days needed to reach the muster from a standing start at `key`, worst case. */
-function daysToMuster(key){
-  const want=findingsWanted();
-  if(!want)return 0;
+function findingsAt(key){
   const st=SITES[key];
-  /* On a site with findings still to take, it is one day each. On the cape - or on a
-     site you have already stripped - it is a passage first. */
-  const left=st&&st.surveys?st.surveys.filter(function(sv){
-    return !found(key+"."+sv.k);
-  }).length:0;
-  if(left>=want)return want;
-  return (st&&st.cost?st.cost:1)+want;      /* a passage, then three at the next place */
+  if(!st||!st.surveys)return 0;
+  let n=0;
+  for(let i=0;i<st.surveys.length;i++)if(found(key+"."+st.surveys[i].k))n++;
+  return n;
 }
-function gateReachable(days,key){return days>=daysToMuster(key);}
+function sitesSurveyed(){
+  let n=0;
+  for(const k in SITES)if(findingsAt(k)>0)n++;
+  return n;
+}
+function musterOpen(){
+  return findingsHeld()>=MUSTER_FINDINGS&&sitesSurveyed()>=MUSTER_SITES;
+}
+/* Days needed to reach the muster from a standing start at `key`.
+   BY SEARCH, NOT BY ALGEBRA. "Three findings from two sites" has four cases - already
+   spread or not, current site able to supply the count or not - and writing it as one
+   arithmetic expression I got two of them wrong in a way that would have blocked the
+   only move a player had left. The state space is four sites by four counts, so an
+   exhaustive walk costs nothing and cannot be subtly wrong. */
+function daysToMuster(key,plus){
+  const keys=Object.keys(SITES);
+  const cap={},cost={};
+  keys.forEach(function(k){
+    cap[k]=(SITES[k].surveys||[]).length;
+    cost[k]=SITES[k].cost||0;
+  });
+  const start=[];
+  keys.forEach(function(k){start.push(findingsAt(k));});
+  /* `plus` is a finding you have not taken yet - "what would I be looking at if I noted
+     this one?" - so doSurvey can ask the same question travelTo asks. */
+  if(plus){
+    for(let i=0;i<keys.length;i++)
+      if(plus.indexOf(keys[i]+".")===0&&start[i]<cap[keys[i]]){start[i]++;break;}
+  }
+  function open(f){
+    let held=0,sites=0;
+    for(let i=0;i<f.length;i++){held+=f[i];if(f[i]>0)sites++;}
+    return held>=MUSTER_FINDINGS&&sites>=MUSTER_SITES;
+  }
+  if(open(start))return 0;
+  const seen={}, q=[[0,keys.indexOf(key),start]];
+  let head=0;
+  while(head<q.length){
+    const cur=q[head++], d=cur[0], at=cur[1], f=cur[2];
+    const sig=at+"|"+f.join(",");
+    if(seen[sig]!==undefined)continue;
+    seen[sig]=d;
+    if(open(f))return d;
+    /* take a finding here */
+    if(at>=0&&f[at]<cap[keys[at]]){
+      const nf=f.slice();nf[at]++;
+      q.push([d+1,at,nf]);
+    }
+    /* or make a passage */
+    for(let j=0;j<keys.length;j++){
+      if(j===at)continue;
+      q.push([d+cost[keys[j]],j,f]);
+    }
+  }
+  return 1e9;                               /* unreachable: refuse every passage */
+}
+function gateReachable(days,key,plus){return days>=daysToMuster(key,plus);}
 function spendDay(n){
   if(!S.survey)S.survey={days:surveyBudget(),found:{},visited:{}};
   S.survey.days=Math.max(0,S.survey.days-(n||1));
@@ -18938,6 +19019,20 @@ function doSurvey(d){
   const key=d.site+"."+d.sv.k;
   if(found(key)){toast("You have already noted that.");return;}
   if(surveyDays()<1){toast("There is no daylight left for it.");return;}
+  /* ---- AND A FINDING CAN STRAND YOU NOW, WHICH IT COULD NOT BEFORE ----
+     While the muster wanted three findings and nothing else, every finding advanced the
+     gate, so spending a day on one was always safe - the comment on gateReachable said
+     exactly that. Wanting them from TWO PLACES makes it false. The third finding at a
+     single site satisfies the count, fails the spread, and spends the day that was going
+     to pay for the passage: check 17 found it at once, one day at Archer's Hope holding
+     three of Archer's Hope. So the rule is the same rule for every action now - nothing
+     you can do may leave the muster out of reach - and it is the search that decides,
+     not a special case. */
+  if(!gateReachable(surveyDays()-1,d.site,key)){
+    toast("Note that one and the day is gone, and with it the passage you need to set a "+
+          "second place against this one. Look somewhere else first.");
+    return;
+  }
   spendDay(1);
   recordFinding(d.site,d.sv);
   playSfx("click",0.25);
@@ -18976,10 +19071,15 @@ function travelTo(key){
      no charge, and a guard that only inspects paid passages waves it through. Every
      passage is asked the same question. */
   if(!gateReachable(surveyDays()-cost,key)){
-    const want=findingsWanted();
-    toast("If you spend the day on that passage you will not have daylight left to note "+
-          (want===1?"the last thing":want+" more things")+
-          " \u2014 and the scrivener will not sit with you without them.");
+    /* Named in the same terms the muster names them, so the refusal and the gate cannot
+       describe the shortfall differently. */
+    const want=Math.max(0,MUSTER_FINDINGS-findingsHeld());
+    const spread=sitesSurveyed()<MUSTER_SITES;
+    toast("Spend the day on that passage and you will not have daylight left for what the "+
+          "scrivener wants"+
+          (want?" \u2014 "+want+" more thing"+(want===1?"":"s")+" to note":"")+
+          (spread?((want?", and ":" \u2014 ")+"a second place to set against the first"):"")+
+          ".");
     return;
   }
   closeAllModals();setPaused(false);
@@ -19064,7 +19164,16 @@ function openChart(){
     cb.innerHTML="Call the council"+
       '<small style="display:block;font-size:.72rem;opacity:.8">'+
       (anyFound?"You have been and looked. Say so, while it is still open."
-               :"You have surveyed nothing. There is nothing you could tell them.")+"</small>";
+               :"You have surveyed nothing. There is nothing you could tell them.")+
+      /* ---- SAY THAT IT IS A DOOR THAT SHUTS ----
+         endCouncil latches councilWarned at the instant it resolves - whether you held
+         the water or the farming finding AT THAT MOMENT - and the muster reads it back.
+         That is the best idea in the chapter and it stays. What was wrong is that
+         nothing said so, so the student most likely to press this early is the one who
+         has understood least. Stated it is a decision; unstated it is a trap. */
+      '<small style="display:block;font-size:.7rem;opacity:.62;margin-top:.35em">'+
+      "Once they have chosen, what you knew at the time is what the record will show."+
+      "</small></small>";
     cb.disabled=!anyFound;
     $("mapGloss").appendChild(cb);
     cb.onclick=function(){$("mMap").classList.remove("on");openCouncil();};
@@ -20504,7 +20613,13 @@ CONTENT.ch2={
   ready:function(){
     const miss=[];
     const n=(S.survey&&S.survey.found)?Object.keys(S.survey.found).length:0;
-    if(n<3)miss.push("more of this country than you have seen ("+n+" of 3 findings)");
+    if(n<MUSTER_FINDINGS)miss.push("more of this country than you have seen ("+n+" of "+MUSTER_FINDINGS+" findings)");
+    /* AND FROM MORE THAN ONE PLACE - see MUSTER_SITES. Named separately from the count
+       so a player who has three findings at one site is told the real reason. */
+    const sv=sitesSurveyed();
+    if(sv<MUSTER_SITES)
+      miss.push("a second place to set against the first (you have looked at "+
+                (sv===1?"one":String(sv))+")");
     if(!S.councilDone)miss.push("the council, which has not yet chosen");
     return {ok:!miss.length, missing:miss};
   },
@@ -22056,7 +22171,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260813-0718";
+const BUILD="20260813-0826";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

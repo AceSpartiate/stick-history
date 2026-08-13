@@ -902,15 +902,39 @@ for _k, _mm in enumerate(re.finditer(r'\n  ([a-z]+):\{', _blk)):
 _budget = sum(1 + _nsv[k] for k in _sites if not re.search(
     r'\n  ' + k + r':\{[^\n]*home:\s*true', _blk))
 _need = int(re.search(r'const MUSTER_FINDINGS=([0-9]+)', s).group(1))
+# AND THE MUSTER WANTS THEM FROM MORE THAN ONE PLACE. Read, not assumed - if the game
+# stops requiring a spread this walk stops requiring one too.
+_nsit = int(re.search(r'const MUSTER_SITES=([0-9]+)', s).group(1))
 _home = [k for k in _sites if re.search(r'\n  ' + k + r':\{[^\n]*home:\s*true', _blk)]
 _start = _home[0] if _home else _sites[0]
 
+def _open(found):
+    return (sum(found.values()) >= _need
+            and sum(1 for v in found.values() if v > 0) >= _nsit)
+
+def _days_to(key, found):
+    """Exact, by the same search the game does - three findings from two sites has four
+    cases and an arithmetic shortcut got two of them wrong."""
+    if _open(found): return 0
+    seen, q, head = set(), [(0, key, tuple(sorted(found.items())))], 0
+    while head < len(q):
+        d, at, f = q[head]; head += 1
+        if (at, f) in seen: continue
+        seen.add((at, f))
+        fd = dict(f)
+        if _open(fd): return d
+        if fd.get(at, 0) < _nsv.get(at, 0):
+            nf = dict(fd); nf[at] = nf.get(at, 0) + 1
+            q.append((d + 1, at, tuple(sorted(nf.items()))))
+        # (the search itself is unguarded - it is asking what is POSSIBLE, not what the
+        #  guard permits; the guard is applied in _moves, to the player's actions)
+        for j in _sites:
+            if j == at: continue
+            q.append((d + _cost[j], j, f))
+    return 10 ** 9
+
 def _reach(days, key, found):
-    want = max(0, _need - sum(found.values()))
-    if not want: return True
-    left = _nsv.get(key, 0) - found.get(key, 0)
-    if left >= want: return days >= want
-    return days >= (_cost[key] if _cost[key] else 1) + want
+    return days >= _days_to(key, found)
 
 # ---- AND WHETHER THE GAME ACTUALLY HAS THE GUARD IS READ, NOT ASSUMED ----
 # The first version of this walked the state space with the guard hard-coded into the
@@ -923,13 +947,19 @@ _tv = re.search(r'function\s+travelTo\s*\([^)]*\)\s*\{', s)
 _tb = s[_tv.end():_tv.end() + 4000] if _tv else ""
 _tb = re.sub(r'/\*.*?\*/', ' ', _tb, flags=re.S)          # comments are not code
 _guarded = "if(!gateReachable(surveyDays()-cost,key))" in _tb.replace(" ", "")
+_sv = re.search(r'function\s+doSurvey\s*\([^)]*\)\s*\{', s)
+_sb = re.sub(r'/\*.*?\*/', ' ', s[_sv.end():_sv.end() + 2500], flags=re.S) if _sv else ""
+_surveyguard = "if(!gateReachable(surveyDays()-1,d.site,key))" in _sb.replace(" ", "")
 
 def _moves(st):
     days, key, found = st[0], st[1], dict(st[2])
     out = []
     if found.get(key, 0) < _nsv.get(key, 0) and days >= 1:
         nf = dict(found); nf[key] = nf.get(key, 0) + 1
-        out.append((days - 1, key, tuple(sorted(nf.items()))))
+        # THE SAME GUARD APPLIES TO A FINDING. Under a two-site gate a finding no longer
+        # always advances you, so doSurvey asks the same question travelTo does.
+        if not _surveyguard or _reach(days - 1, key, nf):
+            out.append((days - 1, key, tuple(sorted(nf.items()))))
     for j in _sites:
         if j == key: continue
         c = _cost[j]
@@ -943,7 +973,7 @@ _seen, _stack, _dead, _tight = {_init}, [_init], [], None
 while _stack:
     st = _stack.pop()
     days, key, found = st[0], st[1], dict(st[2])
-    if sum(found.values()) >= _need: continue           # muster already open
+    if _open(found): continue                           # muster already open
     mv = _moves(st)
     if not mv:
         _dead.append(st)
@@ -957,9 +987,12 @@ if _dead:
         "holding %d finding(s)" % (len(_dead), _dead[0][0], _dead[0][1],
                                    sum(dict(_dead[0][2]).values())))
 else:
-    ok("%d reachable states walked, %d days from %s, %d findings wanted - no dead end%s"
-       % (len(_seen), _budget, _start, _need,
-          "" if _guarded else " (and travelTo has NO reachability guard)"))
+    ok("%d reachable states walked, %d days from %s, %d findings from %d sites wanted "
+       "- no dead end%s"
+       % (len(_seen), _budget, _start, _need, _nsit,
+          "" if (_guarded and _surveyguard) else
+          " (guards: travelTo %s, doSurvey %s)" % ("yes" if _guarded else "NO",
+                                                   "yes" if _surveyguard else "NO")))
     if _tight:
         print("  note  tightest survivable state: %d day(s) at %s holding %d finding(s)"
               % (_tight[0], _tight[1], sum(dict(_tight[2]).values())))
