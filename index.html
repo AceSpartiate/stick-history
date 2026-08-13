@@ -6954,6 +6954,7 @@ function enterWorld(id){
   LIT=0;                    /* the light budget is per world, not per session */
   plevel=LVL.MAIN;
   WORLD.ground=function(x,z){return deckHeight(x,z);};
+  WORLD.hull=true;                        /* a deck for a ground means a ship around it */
   WORLD.sea=-9999;                        /* no open water inside a hull */
   WORLD.blocked=function(x,z){return blocked(x,z);};
   WORLDS[id](worldRoot);
@@ -7485,9 +7486,18 @@ function animate(){
     GUN_HID_BY_CS=false;
     if(gunPiece)gunPiece.visible=true;
   }
-  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateCutscene(dt);renderer.render(scene,cam);return;}
+  /* ---- AND THE SHADOWS MUST FOLLOW, WHICH THEY DID NOT ----
+     updateShadows() is fifty lines below, past three early returns, so it ran only on frames
+     where the player had the camera. Every cutscene in the game has therefore been playing
+     over shadows frozen wherever their casters last stood while the player was walking about.
+     Found looking for one: the hanged man is placed at the gallows by the scene, so his blob
+     stayed at the landing point thirty-seven feet away, and the shot of his feet had no
+     shadow beneath them to say they were off the sand - which is the whole of what that shot
+     is for. The caster already knows how to do it: it samples the ground live and shrinks the
+     disc by how far he is above it. It only had to be asked. */
+  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}
   if(CAMLOCK.on){
-    updateFx(dt);updateFlog(dt);
+    updateFx(dt);updateFlog(dt);updateShadows();
     cam.position.lerp(CAMLOCK.pos,Math.min(1,dt*3.5));
     cam.lookAt(CAMLOCK.look);
     renderer.render(scene,cam);return;
@@ -7503,7 +7513,7 @@ function animate(){
     player.position.y=WORLD.ground(player.position.x,player.position.z)+JUMP.y;
   if(AMBUSH.on||DUSK.on){updateAmbush(dt);updateArrows(dt);}
   if(LESSON.on){
-    updateFx(dt);updateLesson(dt);
+    updateFx(dt);updateLesson(dt);updateShadows();
     renderer.render(scene,cam);return;
   }
   /* loading a matchlock is done standing still - you are at the mark */
@@ -9591,6 +9601,22 @@ function csActor(id){
    Below decks the camera hunts for an angle with actual room, pulls in until
    it clears the hull and the furniture, and stays under the deck beams. */
 function csRoom(x,z,y){
+  /* ---- A HULL THAT IS NOT THERE MUST NOT CROWD THE CAMERA ----
+     This measured the SHIP'S half-beam in every world, including the ones with no ship in
+     them. Standing on the strand at Cape Henry, forty-six feet off a centreline belonging
+     to a vessel two hundred miles and four months away, it returned -34.57. Everything
+     downstream then went wrong quietly: the yaw search had twenty angles all scoring about
+     -34 and picked between them on a tiebreak, and the pull-in loop below - which exists to
+     get the camera out of a bulkhead - dragged EVERY shot in Chapters II onward down to its
+     4.5 floor.
+     That is the whole of the reported fault. Measured at the gallows: the rope shot wanted
+     to stand 4.19 out and look up, and framed 9.79 to 17.06 feet above the ground with the
+     condemned man's head at 5.47 - he was not in the picture at all, which is exactly what
+     was seen. The heights were never the problem.
+     So the hull is asked about only where there is a hull. WORLD.hull is set beside
+     WORLD.ground, because the world that replaces the ground is the world that has left the
+     ship; check 19 holds the two together. */
+  if(!WORLD.hull)return 999;
   if(z<SHIP.Z_BOW+2||z>SHIP.Z_STERN-2)return -99;
   let m=(halfBeam(z,y)-1.1*K)-Math.abs(x);
   if(m<=0)return m;
@@ -9674,8 +9700,24 @@ function csNext(){
   if(s.shot){
     const fr=csShot(s.shot);
     s._cam={to:fr.to,look:fr.look};
-    CS.camFrom=(s.shot.hold?cam.position.clone():new THREE.Vector3(fr.from[0],fr.from[1],fr.from[2]));
-    CS.lookFrom=CS.lastLook.clone();
+    /* ---- AND A CUT IS A CUT ----
+       Every shot glided: the camera eased from the last one's position AND the last one's
+       look target across the whole step. For a scene that drifts around a deck that is
+       right and it stays the default. For a scene built out of cuts it is a fault, and it
+       is the second half of the reported one. The face shot's own numbers are a clean head
+       shot - camera 4.9, looking 4.9, frame 4.10 to 5.70 against a head spanning 4.20 to
+       5.47 - but it inherited the ROPE shot's look target twelve feet up, so for the first
+       half of a five-second step the camera was still swinging down out of the sky. A
+       capture taken in the middle of the face shot therefore showed rope and sky, which is
+       what it showed, and the numbers were innocent both times I checked them.
+       `cut:true` starts the shot where it ends: no glide, no inherited aim. */
+    if(s.shot.cut){
+      CS.camFrom=new THREE.Vector3(fr.to[0],fr.to[1],fr.to[2]);
+      CS.lookFrom=new THREE.Vector3(fr.look[0],fr.look[1],fr.look[2]);
+    } else {
+      CS.camFrom=(s.shot.hold?cam.position.clone():new THREE.Vector3(fr.from[0],fr.from[1],fr.from[2]));
+      CS.lookFrom=CS.lastLook.clone();
+    }
   } else if(s.cam){CS.camFrom=cam.position.clone();CS.lookFrom=CS.lastLook.clone();}
   if(s.fade){
     $("cineFade").style.transition="opacity "+(s.t||1)+"s linear";
@@ -10434,18 +10476,36 @@ function landingCutscene(){
 
    WHAT IS SHOWN, in this order: the rope; the face, framed so close the rope is out of
    shot, and afraid; the feet, off the ground; then the kicking stops. WHAT IS NEVER
-   SHOWN: the neck, and the body at the moment of the drop. The camera is at ankle height
-   for the third shot and eye height for the second and there is nothing between them.
+   SHOWN: the neck, and the body at the moment of the drop. The third shot sits below his
+   soles and looks level, so the sand stops at the horizon and his feet hang above it; the
+   second is at his eye; and there is nothing between them.
    The audience finishes it themselves, and nothing gruesome is drawn. */
-function executionSteps(tx,ty,tz,steps){
+/* ---- EVERY HEIGHT BELOW IS MEASURED OFF THE FIGURE ----
+   buildFigure, sampled part by part with the feet at nought: ankle 0.22, knee 1.30, hip
+   2.35, shoulder 2.01 to 4.11, HEAD 4.20 to 5.47. He is five foot six, and every number in
+   this function is one of those numbers.
+   The old ones were not. They were written in K - 1.35 units to Chapter I's foot - against a
+   figure that is the same size in every world, so they described a man about eight feet
+   tall. neckY sat at 6.6: one and an eighth ABOVE the crown of his head. The noose hung in
+   the air over him and the hoist pulled him up THROUGH it.
+   The frame is quoted the same way throughout. The camera's vertical field is 56 degrees, so
+   at horizontal distance D, looking down by pitch p, the frame at the man covers
+   camY - D*tan(p-28) at the top down to camY - D*tan(p+28) at the bottom. Each shot states
+   what that comes to. The camera stands off his left side - yaw pi/2 - for all four, so the
+   limb is seen broadside instead of end-on and the sequence never crosses the line. */
+const EXEC_YAW=Math.PI/2;
+function executionSteps(tx,ty,tz,steps,site){
   const gentle=(S.equip.torso==="torso_merchant"||S.equip.head==="head_feather");
+  const gx=(site&&site.tx!==undefined)?site.tx:tx, gz=(site&&site.tz!==undefined)?site.tz:tz-7;
   if(gentle){
-    steps.push({shot:{of:["player"],dist:10*K,height:7*K,lookH:5.5*K},t:5.0,
+    /* frame -3.58 to +8.29 above his feet: he is 46% of frame height, stood in the open */
+    steps.push({shot:{of:["player"],dist:11,height:3.9,lookH:2.7,yaw:EXEC_YAW},t:5.0,
       do:function(){
-        if(player){player.position.set(tx,ty,tz);player.rotation.y=0.4;}
+        if(player){player.position.set(tx,ty,tz);player.rotation.y=EXEC_YAW-0.42;}
       },
       narrate:"You are stood against the trees. The sentence is read from the Company\u2019s instructions, and four men are told off with their pieces \u2014 because you came aboard dressed as a gentleman, and a gentleman is shot."});
-    steps.push({shot:{of:["player"],dist:16*K,height:9*K,lookH:6*K},t:2.8,
+    /* in to -2.40 .. +6.29, so he is 63% of it, and the volley lands on a closer man */
+    steps.push({shot:{of:["player"],dist:9,height:3.6,lookH:2.7,yaw:EXEC_YAW,cut:true},t:2.8,
       sfx:"boom",gain:0.5,shake:0.06,fade:"out",narrate:"They do it quickly."});
   } else {
     /* ---- A HANGING THAT IS ACTUALLY A HANGING ----
@@ -10455,39 +10515,73 @@ function executionSteps(tx,ty,tz,steps){
        the rope is out of shot - and afraid, which is a face this game did not own until
        now. Then the feet, off the ground, kicking. Then the kicking stops.
        WHAT IS NEVER SHOWN: the neck, and the whole body at the moment of the drop. The
-       camera is at ankle height for the third shot and at eye height for the second,
-       and there is no shot between them. It is the oldest way of doing this and it
+       third shot is below his soles looking level and the second is at his eye, and there
+       is no shot between them. It is the oldest way of doing this and it
        works because the audience finishes it themselves. Nothing gruesome is drawn,
        and nothing needs to be. */
-    const limbY=ty+11.0, neckY=ty+6.6;
-    steps.push({shot:{of:["player"],dist:5.0*K,height:ty+9.4-((player&&player.position.y)||ty),lookH:9.0*K,tight:true},t:4.6,
+    const RISE=2.05;                     /* how far off the ground the hoist leaves him */
+    /* The noose is set where his THROAT WILL BE once he is up - 4.35 above his feet, the
+       base of the head - not where it is now. Before the hoist it hangs a little over his
+       head, which is a rope waiting to be used and is what the first shot is of. */
+    const limbY=ty+9.5, neckY=ty+RISE+4.35;
+    /* THE ROPE. Composed backwards from where the three things should sit: his feet a tenth
+       of the way up the frame, the limb eight tenths. That fixes the frame at ty-1.36 to
+       ty+12.21, so the camera stands level at 5.43 and 12.76 out. He lands in the bottom
+       half at 10% to 50%, the noose at 57% just clear of his head, the limb at 80%, and the
+       rope's fall of three feet one between them. The first pass framed to 11.0 with the
+       limb at 10.0 - a foot off the top edge, against a canopy the same colour as it. */
+    steps.push({shot:{of:["player"],dist:12.76,height:5.43,lookH:5.43,yaw:EXEC_YAW,cut:true},t:4.6,
       sfx:"creak",gain:0.4,
       do:function(){
-        if(player){player.position.set(tx,ty,tz);player.rotation.y=0.4;}
-        buildHangRope(tx,ty,tz,limbY,neckY);
+        if(player){player.position.set(tx,ty,tz);player.rotation.y=EXEC_YAW-0.42;}
+        buildHangRope(tx,ty,tz,limbY,neckY,gx,gz);
       },
       narrate:"A rope goes over a limb. The sentence is read from the Company\u2019s instructions, and it is short \u2014 you came aboard in a labourer\u2019s slops, and a labouring man is hanged."});
-    /* THE FACE. Held close enough that the rope is outside the frame. */
-    /* FRAMED SO THE ROPE IS OUT OF SHOT, and the number is derived, not chosen: at
-       dist 1.7*K = 2.30 ft with a 56 degree vertical field, the half-height in frame is
-       2.30*tan(28) = 1.22 ft. Looking at 5.2 the frame runs 3.98 to 6.42 and the noose
-       at 6.6 is above it. My first pass looked at 6.8 and put the noose dead centre. */
-    steps.push({shot:{of:["player"],dist:1.7*K,height:4.0*K,lookH:3.85*K,tight:true},t:4.4,
+    /* THE FACE, framed so the rope is out of shot. Camera 4.9, looking level at 4.9, one
+       and a half out: the frame runs 4.10 to 5.70 against a head spanning 4.20 to 5.47, so
+       he fills four fifths of it and the noose at 6.40 is above the top edge. `cut` matters
+       more than the numbers here - without it the camera spends half the step still
+       swinging down from the rope shot's aim, which is the fault that was reported.
+       Backed off from 1.50 to 1.65 after looking: at 1.50 the frame topped out at 5.70 and
+       took the crown of his hat with it. */
+    steps.push({shot:{of:["player"],dist:1.65,height:4.9,lookH:4.9,yaw:EXEC_YAW,cut:true},t:4.4,
       do:function(){
         HANG_FACE=S.equip.face;S.equip.face="afraid";
         if(typeof refreshPlayer==="function")refreshPlayer();
-        if(player){player.position.set(tx,ty,tz);player.rotation.y=0.4;}
+        if(player){player.position.set(tx,ty,tz);player.rotation.y=EXEC_YAW;}
       },
       narrate:"They ask if you have anything to say. You find that you have not."});
-    /* THE FEET. Camera at ankle height, so the frame stops at the shins. */
-    steps.push({shot:{of:["player"],dist:3.4*K,height:1.15*K,lookH:1.0*K,tight:true},t:5.6,
+    /* ---- THE FEET, WHICH TOOK THREE PASSES AND TWO OF THEM WERE ARITHMETIC ----
+       Pass one put the camera at ankle height looking DOWN. The frame it computes is right -
+       ty-0.54 to ty+2.95, top edge at mid-shin - but that number only describes the vertical
+       plane through the man. Everything else in a downward shot is ground, and the capture
+       was a field of grass with one boot in the corner.
+       Pass two dropped the camera below his soles and looked LEVEL, on the reasoning that
+       the horizon would then sit mid-frame and the sand would stop there. It does, and the
+       capture was still a field of grass: his feet were at 72% exactly as computed, but
+       small, dark, and against a dark treeline, over a featureless lower half. Correct
+       framing is not the same as a legible picture, and I had now proved that twice.
+       Pass three is composed from what the shot has to SAY: his feet are off the ground, so
+       the sand directly beneath them must be in frame and there must be daylight between.
+       Camera 1.15 ABOVE his soles - ty+3.20, three feet up from the sand - looking down at
+       ty+1.20 from 2.4 out. Frame ty-2.69 to ty+2.70: the sand under him at the halfway
+       line, his soles at 88%, and thirty-eight percent of the frame of clear air between the
+       two. Top edge 0.65 above his feet, which is still the shin.
+       And he is turned side-on to it. The legs swing about x, so a figure facing the camera
+       kicks straight up the lens and reads as nothing; in profile the same kick crosses the
+       frame. HANG_YAW carries that, and the sway of 0.30 either side is left alone because a
+       body on a rope does turn. */
+    steps.push({shot:{of:["player"],dist:2.4,height:1.15,lookH:-0.85,yaw:EXEC_YAW,cut:true},t:5.6,
       sfx:"creak",gain:0.5,
       do:function(){
-        if(player)player.position.set(tx,ty+2.05,tz);
+        if(player)player.position.set(tx,ty+RISE,tz);
+        HANG_YAW=EXEC_YAW-Math.PI/2;      /* side-on, so the kick crosses the frame */
         HANG_T=0;HANG_ON=true;
       },
       narrate:"\u2014"});
-    steps.push({shot:{of:["player"],dist:4.2*K,height:1.15*K,lookH:1.0*K,tight:true},t:4.8,
+    /* and the same frame, easing back off him. `hold` rather than `cut`: this one is not a
+       new shot, it is the same shot letting go. */
+    steps.push({shot:{of:["player"],dist:2.9,height:1.15,lookH:-0.85,yaw:EXEC_YAW,hold:true},t:4.8,
       fade:"out",
       do:function(){HANG_ON=false;},
       narrate:"And then the wood is quiet again, and the drill goes on without you."});
@@ -10507,25 +10601,37 @@ function executionSteps(tx,ty,tz,steps){
    inside fourteen feet wins, and the search runs along the strand just seaward of the
    wood's edge where the ground is still dry. */
 function executionSite(){
-  if(CURRENT_WORLD!=="ch2")return {x:-6*K,z:18*K};
+  if(CURRENT_WORLD!=="ch2")return {x:-6*K,z:18*K,tx:-6*K,tz:18*K-7};
   const trunks=(typeof shootables!=="undefined")
     ? shootables.filter(function(c){return c.hw<=0.6;}) : [];
+  /* ---- AND A HANGING NEEDS A TREE, WHICH THIS SEARCH USED TO RULE OUT ----
+     The old search swept open ground and scored a spot by how FEW trunks stood within
+     fourteen feet of it. It worked: it returned x -46, z -2 with `near` of nought - not one
+     tree within fourteen feet, on a beach, under a rope that therefore hung from nothing at
+     all. Optimising for the clear camera angle optimised the gallows away.
+     So the search is over TREES now, not over ground. Each front-rank trunk is a candidate
+     gallows; the man stands seven feet seaward of it, out from under the wood where the
+     camera can see him; and the trunk that wins is the one whose standing-place has the
+     fewest OTHER trunks around it. The result is what was wanted in the first place - one
+     tree, and room. */
   let best=null;
-  for(let x=CAPE_MARK.x-46;x<=CAPE_MARK.x+34;x+=6){
-    for(let z=CAPE.WOOD+2;z<=CAPE.WOOD+22;z+=4){
-      if(capeBlocked(x,z))continue;
-      let near=0;
-      for(let i=0;i<trunks.length;i++){
-        const t=trunks[i];
-        if(Math.hypot(t.x-x,t.z-z)<14)near++;
-      }
-      /* and it should not be on top of the firing mark or the camp */
-      const clutter=Math.hypot(x-CAPE_MARK.x,z-CAPE_MARK.z)<16?3:0;
-      const score=near+clutter;
-      if(!best||score<best.score)best={x:x,z:z,score:score,near:near};
+  for(let i=0;i<trunks.length;i++){
+    const t=trunks[i];
+    if(t.z<CAPE.WOOD-14||t.z>CAPE.WOOD+18)continue;   /* the rank facing the strand */
+    if(Math.abs(t.x-CAPE_MARK.x)>90)continue;         /* and within sight of the camp */
+    const sx=t.x, sz=t.z+7;
+    if(capeBlocked(sx,sz))continue;
+    let near=0;
+    for(let j=0;j<trunks.length;j++){
+      if(j===i)continue;
+      if(Math.hypot(trunks[j].x-sx,trunks[j].z-sz)<20)near++;
     }
+    /* and it should not be on top of the firing mark or the camp */
+    const clutter=Math.hypot(sx-CAPE_MARK.x,sz-CAPE_MARK.z)<18?4:0;
+    const score=near+clutter;
+    if(!best||score<best.score)best={x:sx,z:sz,tx:t.x,tz:t.z,score:score,near:near};
   }
-  return best||{x:CAPE_MARK.x-16,z:CAPE.WOOD+8};
+  return best||{x:CAPE_MARK.x-16,z:CAPE.WOOD+8,tx:CAPE_MARK.x-16,tz:CAPE.WOOD+1};
 }
 /* Order the sentence from anywhere. `reason` is the beat that says why. */
 function executeThePlayer(reason){
@@ -10533,8 +10639,20 @@ function executeThePlayer(reason){
   const tx=site.x, tz=site.z;
   const ty=WORLD.ground(tx,tz);
   const world=CURRENT_WORLD;
-  const steps=[{shot:{of:["player"],dist:13*K,height:8*K,lookH:5*K},t:4.6,narrate:reason}];
-  executionSteps(tx,ty,tz,steps);
+  /* ---- AND THE FIRST SHOT IS AT THE GALLOWS TOO ----
+     This step carried no `do`, so csShot framed the player wherever they happened to be
+     standing when sentence was passed - by the camp, in the trees, halfway up the strand -
+     and the cut to the rope was an unexplained teleport. He is stood in the clearing before
+     a word of it is read. Frame -3.58 to +8.29 above his feet: the whole man, and the room
+     around him. */
+  /* `cut`, and not for style: playCutscene seeds the aim from where the player is STANDING
+     when the scene opens, and this step's `do` then teleports him to the clearing. Left to
+     glide, the shot spends its length panning off the beach he was sentenced on. Measured at
+     60% through: still aiming twelve feet adrift in z. */
+  const steps=[{shot:{of:["player"],dist:11,height:3.9,lookH:2.7,yaw:EXEC_YAW,cut:true},t:4.6,
+    narrate:reason,
+    do:function(){ if(player){player.position.set(tx,ty,tz);player.rotation.y=EXEC_YAW-0.42;} }}];
+  executionSteps(tx,ty,tz,steps,site);
   if($("mLash"))$("mLash").classList.remove("on");
   endFlogging();
   setPaused(true);
@@ -10843,7 +10961,7 @@ function endFlogging(){
    side so the limb reads as bearing weight rather than as a stick with string on it, and
    the noose - a ring of eight short segments, which at this distance is a loop.
    NOTHING BELOW THE NOOSE IS EVER FRAMED. See the shots. */
-let HANG_ROPE=null, HANG_ON=false, HANG_T=0, HANG_FACE=null;
+let HANG_ROPE=null, HANG_ON=false, HANG_T=0, HANG_FACE=null, HANG_YAW=0.4;
 /* The kick, and the going quiet. Driven from the frame loop rather than a stack of
    setTimeouts, so that skipping or ending the scene stops it dead instead of leaving
    timers to fire into a world that has moved on. Two seconds of real struggle, then it
@@ -10854,29 +10972,43 @@ function updateHang(dt){
   HANG_T+=dt;
   const p=player.userData.parts;
   const fade=Math.max(0,1-Math.max(0,HANG_T-2.0)/3.0);
-  const amp=0.62*fade*fade;
+  /* 0.62 threw the boots clean out of the top of a frame two and a half feet tall. The kick
+     has to be inside the shot that is looking at it. */
+  const amp=0.44*fade*fade;
   const w=HANG_T*11.0;
   if(p.hipL)p.hipL.rotation.x= Math.sin(w)*amp;
   if(p.hipR)p.hipR.rotation.x=-Math.sin(w)*amp;
   if(p.kneeL)p.kneeL.rotation.x=-Math.abs(Math.sin(w*1.3))*amp*1.1;
   if(p.kneeR)p.kneeR.rotation.x=-Math.abs(Math.cos(w*1.3))*amp*1.1;
   /* and he turns on the rope, which does not stop when the kicking does */
-  player.rotation.y=0.4+Math.sin(HANG_T*0.7)*0.30;
+  player.rotation.y=HANG_YAW+Math.sin(HANG_T*0.7)*0.30;
   player.rotation.z=Math.sin(w*0.5)*amp*0.10;
 }
-function buildHangRope(tx,ty,tz,limbY,neckY){
+function buildHangRope(tx,ty,tz,limbY,neckY,gx,gz){
   const g=new Geo(), c=RGB(0x9c8b63), cd=RGB(0x6f6244);
   const R=0.07;
+  /* ---- AND A LIMB TO GO OVER ----
+     There was none. The scene said "a rope goes over a limb" and drew a rope hanging out of
+     empty sky, because the site search rewarded ground with no trees near it. The limb is
+     drawn now, running out of the trunk the site was chosen FOR - tapered, and dropping
+     eight inches over its length, because a branch bearing a man bends. */
+  if(gx===undefined){gx=tx;gz=tz-7;}
+  const bark=RGB(0x5b4a33), barkD=RGB(0x3e3122);
+  g.beam8([gx,limbY+0.75,gz],[tx,limbY,tz],0.62,0.19,barkD,bark,1,1);
   /* the fall: limb down to the neck */
   g.box(tx,(limbY+neckY)/2,tz,R*2,limbY-neckY,R*2,c);
-  /* the standing part, hitched away to a second limb - a rope has two ends */
-  const hx=tx+2.6, hy=limbY-0.5;
+  /* the standing part, carried back along the limb and belayed to the trunk - a rope has
+     two ends, and the second one is what makes the limb read as bearing weight */
   for(let i=0;i<6;i++){
     const t0=i/6, t1=(i+1)/6;
-    const x0=tx+(hx-tx)*t0, x1=tx+(hx-tx)*t1;
-    const y0=limbY-Math.sin(t0*1.1)*0.9, y1=limbY-Math.sin(t1*1.1)*0.9;
-    g.box((x0+x1)/2,(y0+y1)/2,tz,Math.abs(x1-x0)+R*2,Math.abs(y1-y0)+R*2,R*2,cd);
+    const x0=tx+(gx-tx)*t0, x1=tx+(gx-tx)*t1;
+    const z0=tz+(gz-tz)*t0, z1=tz+(gz-tz)*t1;
+    const y0=limbY+t0*0.75-Math.sin(t0*Math.PI)*0.55;
+    const y1=limbY+t1*0.75-Math.sin(t1*Math.PI)*0.55;
+    g.beam8([x0,y0,z0],[x1,y1,z1],R,R,cd,cd,1,1);
   }
+  /* and down the trunk, to a hitch a man could hold */
+  g.beam8([gx,limbY+0.75,gz],[gx+0.45,limbY-3.4,gz+0.2],R,R,cd,cd,1,1);
   /* the noose */
   const nr=0.42;
   for(let i=0;i<8;i++){
@@ -17574,7 +17706,7 @@ function buildThinSite(root,key){
   const G=function(x,z){return siteGround(key,x,z);};
   scene.background=new THREE.Color(T.sky);
   scene.fog=new THREE.Fog(T.fog,240,860);      /* < cam.far 900; see SKY_DAY */
-  WORLD.ground=G; WORLD.sea=0;
+  WORLD.ground=G; WORLD.hull=false; WORLD.sea=0;
   WORLD.blocked=function(x,z){return Math.hypot(x,z)>430||G(x,z)<-0.6;};
   const SPAN=900,N=4,CH_=SPAN/N,DIV=12;
   const near=RGB(T.near),far=RGB(T.far),back=RGB(T.back),wet=RGB(T.wet);
@@ -20228,6 +20360,7 @@ registerWorld("ch2",function(root){
   scene.background=new THREE.Color(0x9dbccb);
   scene.fog=new THREE.Fog(0xa9c3cd,230,860);   /* < cam.far 900; see SKY_DAY */
   WORLD.ground=capeGround;
+  WORLD.hull=false;                       /* open strand: the camera has the whole beach */
   WORLD.sea=0;                            /* the Chesapeake, for splashes */
   WORLD.blocked=capeBlocked;
 

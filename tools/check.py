@@ -20,6 +20,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC  = os.path.join(ROOT, "index.html")
 s    = open(SRC, encoding="utf-8").read()
 fail = []
+def nth_newline(txt, n):
+    """Index of the nth newline in txt, or len(txt) if there are fewer."""
+    i = -1
+    for _ in range(n):
+        j = txt.find("\n", i + 1)
+        if j < 0: return len(txt)
+        i = j
+    return i
 def ok(msg):   print("  ok    " + msg)
 def bad(msg):  print("  FAIL  " + msg); fail.append(msg)
 
@@ -998,6 +1006,47 @@ else:
     if _tight:
         print("  note  tightest survivable state: %d day(s) at %s holding %d finding(s)"
               % (_tight[0], _tight[1], sum(dict(_tight[2]).values())))
+
+
+print("\n19. A world that replaces the ground says whether it has a hull")
+# csRoom() measures how much room the camera has by asking the SHIP's half-beam at that
+# point, and it was asked in every world. On the strand at Cape Henry it returned -34.57 -
+# forty-six feet off a centreline belonging to a vessel that is not in the scene - so the
+# yaw search picked between twenty equally impossible angles on a tiebreak and the pull-in
+# loop dragged every cutscene shot in the chapter down to its 4.5 floor. The execution
+# framed 9.79 to 17.06 feet above the sand with the condemned man's head at 5.47: he was
+# not in the picture, and the heights were never the problem.
+#
+# WORLD.hull carries the answer. The rule that keeps it true is positional: the function
+# that replaces WORLD.ground is the one that has left the ship, so it must set WORLD.hull
+# in the same breath. That is a convention, and a convention nobody checks is a comment.
+_gsets = [m for m in re.finditer(r'WORLD\.ground\s*=', s)]
+_missing = []
+for m in _gsets:
+    # the same statement, or within the next four lines of it
+    seg = s[m.start(): m.start() + 400]
+    seg = seg[: nth_newline(seg, 4)]
+    if not re.search(r'WORLD\.hull\s*=', seg):
+        _missing.append(s[:m.start()].count("\n") + 1)
+if not _gsets:
+    bad("no WORLD.ground assignment found at all - this check has lost its subject")
+elif _missing:
+    bad("%d place(s) set WORLD.ground without saying whether there is a hull "
+        "(line%s %s) - csRoom will measure a ship that is not there"
+        % (len(_missing), "" if len(_missing) == 1 else "s",
+           ", ".join(str(n) for n in _missing)))
+else:
+    ok("all %d worlds that set their own ground also declare WORLD.hull" % len(_gsets))
+
+# and the guard itself has to still be in csRoom, or the flag is decoration
+_cs = body_of(s, "csRoom")
+if _cs is None:
+    bad("csRoom not found")
+elif not re.search(r'if\s*\(\s*!\s*WORLD\.hull\s*\)\s*return', _cs):
+    bad("csRoom no longer consults WORLD.hull - every hull-less world is back to "
+        "measuring the ship's beam")
+else:
+    ok("csRoom asks WORLD.hull before it measures a beam")
 
 
 print("\n" + ("PASS" if not fail else "FAILED %d check(s)" % len(fail)))
