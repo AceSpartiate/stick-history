@@ -13107,8 +13107,33 @@ function panFlash(){
       bx:0.16,by:0.16,bz:0.16,life:0.42,op:0.9,grow:2.4,delay:0,ease:1.4});
   }
 }
+/* How far the teaching aid is allowed to run. The trail is not the ball - the ball
+   is welcome to go into the trees, and the toast says when it has. The TRAIL is a
+   drawing of where the shot went, and a drawing that leaves the picture is not
+   teaching anything. */
+function traceReach(o){
+  let far=0;
+  for(let i=0;i<TARGETS.length;i++){
+    const t=TARGETS[i];
+    far=Math.max(far,Math.hypot(t.x-o.x,t.y-o.y,t.z-o.z));
+  }
+  return Math.max(150,far*1.4);
+}
 function shotTrail(o,d,dist){
   if(!GUN_AID.trace)return;
+  /* ---- IT WAS RUNNING TO THE HORIZON ----
+     Reported: "the smoke continued propagating for what appears to be an infinite
+     distance." Measured: traceShot marches a STRAIGHT ray - deliberately, because
+     every mark on this range is set at the shooter's own eye height so that a level
+     aim is a centred aim - and a level ray never descends. So every shot that missed
+     came back kind:"air" at the full 420, and the trail was laid all 420 feet of it,
+     forty puffs ending in one FIFTEEN FEET across. That is not a fall of shot, it is
+     a wall of smoke to the treeline.
+     Cut to the range being taught, and the last third fades out rather than stopping
+     dead, so it reads as a shot going away instead of as smoke that ran out. */
+  const reach=traceReach(o);
+  const gone=dist>reach;
+  if(gone)dist=reach;
   /* The last version was near-white - 0xdedacd - which measures 1.17:1 against
      Cape Henry's dry sand. That is invisible: no amount of size or count fixes a
      puff the same brightness as the ground behind it. A mid warm grey reads
@@ -13130,7 +13155,10 @@ function shotTrail(o,d,dist){
           smoke - but white measured 1.17:1 against this beach and vanished.
           This is dense-smoke-in-its-own-shadow grey: a legibility choice, made
           knowingly, and about as dark as it can go before it reads as exhaust. */
-       col:0x6f6d64, op:0.86,       /* 3.4:1 on sand, 2.8:1 on sky */
+       /* and where the ball went past the end of the picture, the last third of the
+          trail thins away, so it reads as a shot going away rather than as smoke
+          that stopped */
+       col:0x6f6d64, op:0.86*(gone?Math.max(0,1-Math.max(0,k-0.62)/0.38):1),
        life:15.0,                   /* powder smoke hangs; let it hang */
        grow:0.09,                   /* spreads slowly rather than ballooning */
        delay:k*0.42,                /* lays itself outward, so the eye follows */
@@ -13572,7 +13600,8 @@ function ignite(hung){
     if(along<4)continue;
     const closest=new THREE.Vector3(o.x+d.x*along,o.y+d.y*along,o.z+d.z*along);
     const off=Math.hypot(closest.x-t.x,closest.y-t.y,closest.z-t.z);
-    if(off<t.r&&(!best||along<best.along))best={t:t,off:off,along:along};
+    /* the BODY stops the ball; the mark is what scores it, further down */
+    if(off<(t.body||t.r)&&(!best||along<best.along))best={t:t,off:off,along:along};
   }
   /* a man in front of the mark takes it instead */
   if(man&&(!best||man.along<best.along)){
@@ -13598,11 +13627,21 @@ function ignite(hung){
         {size:0.4,col:0xa88a5c,op:0.85,life:0.9,grow:0.8});
     }
     playSfx("hit",0.35);
-    GUN.hits++;
+    /* ---- STRUCK IS NOT SCORED ----
+       A ball in the straw is a ball that stopped: it gets the cross, the dust and the
+       sound, and it is told where it went. It does not count, and it does not advance
+       the drill - GUN.onHit is what the lesson reads, and the lesson is about putting
+       one INSIDE the mark at a range where a smoothbore can barely do it. */
+    const scored=best.off<best.t.r;
     const inner=best.off<best.t.r*0.42;
-    toast(inner?"In the mark, at "+Math.round(best.along/3)+" yards."
-               :"On the butt \u2014 "+spotWords(spotShot(o,d,best.t))+".");
-    if(GUN.onHit)GUN.onHit(inner,best.along);
+    if(scored){
+      GUN.hits++;
+      toast(inner?"In the mark, at "+Math.round(best.along/3)+" yards."
+                 :"On the mark \u2014 "+spotWords(spotShot(o,d,best.t))+".");
+      if(GUN.onHit)GUN.onHit(inner,best.along);
+    } else {
+      toast("Into the butt, wide of the mark \u2014 "+spotWords(spotShot(o,d,best.t))+".");
+    }
   } else {
     const p=traceShot(o,d);
     shotTrail(o,d,p.dist);
@@ -19688,7 +19727,19 @@ registerWorld("ch2",function(root){
   TARGETS.push(buildStumpMark(P,CAPE_MARK.x+60,CAPE_MARK.z,-1,0,eyeY));  /* 20 yards */
 
   const straw=RGB(0xbfae76),frame=RGB(0x5a4326),white=RGB(0xefe6cd),red=RGB(0x8f2f28);
-  const mx=CAPE_MARK.x+120,mz=CAPE_MARK.z+3,my=eyeY-5.0;                /* 40 yards */
+  /* ---- AND THE NEAR MARK WAS STANDING IN FRONT OF THE FAR ONE ----
+     Found while measuring the butt's new body: a shot aimed at the centre of the
+     forty-yard butt stopped at fifty-eight feet, because the twenty-yard stump was
+     in the way. The line from the firing mark to the butt passed 1.45 feet from the
+     stump's centre, and the stump's mark is 2.6 - so the far mark could not be shot
+     at, and the falloff between twenty and forty yards, which the comment above
+     calls the lesson and which this whole range exists to teach, was unreachable.
+     It was three feet of lateral offset where the geometry needs 5.4 to clear at
+     all. Ten, so that the whole of the butt's scoring mark is shootable and not
+     merely its far edge; the range is still sqrt(120^2+10^2) = 120.4 feet, which is
+     the same forty yards. rangeLane derives from the farthest target, so the drill's
+     firing lane follows this on its own. */
+  const mx=CAPE_MARK.x+120,mz=CAPE_MARK.z+10,my=eyeY-5.0;               /* 40 yards */
   P.box(mx,eyeY,mz,0.8,10,10,straw);
   P.box(mx+0.5,eyeY+5.2,mz,0.8,0.8,11,frame);
   P.box(mx+0.5,eyeY,mz-5.5,0.8,10.6,0.8,frame);
@@ -19708,7 +19759,19 @@ registerWorld("ch2",function(root){
      see. It also repairs "In the mark": that test is off < r*0.42, which at 2.6
      is 1.09 and the red centre's own radius is 1.1 - they agree. At 5.2 the game
      called it a centre hit two feet outside the red. */
-  TARGETS.push({x:mx-0.6,y:eyeY,z:mz,r:WHITE/2});
+  /* ---- AND THE STRAW STOPS A BALL, WHICH IT DID NOT ----
+     Reported: "I shot the big target. No red X appeared where it was hit, the smoke
+     continued past it." Exactly so. `r` is the WHITE MARK's half width - 2.6 - and it
+     was the only test a shot met, while the butt a player is looking at is ten feet
+     of straw. Measured from the firing mark: a ball three feet off centre scored
+     nothing, left no mark, and carried on down the beach, because outside the
+     bullseye this thing was not there at all.
+     Two radii now, and they mean different things. `r` is what SCORES, and it stays
+     the white mark, so the falloff between twenty and forty yards - the lesson the
+     comment above calls the lesson - is untouched. `body` is what the ball can HIT,
+     and it is the straw: half of ten. The stump needs none; its round IS its mark,
+     so the two agree there and always did. */
+  TARGETS.push({x:mx-0.6,y:eyeY,z:mz,r:WHITE/2,body:5.0});
 
   root.add(P.mesh(false,false));
 
@@ -21627,7 +21690,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260812-1907";
+const BUILD="20260812-1935";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
