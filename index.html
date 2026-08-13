@@ -13503,13 +13503,46 @@ function flightTime(arm,dist){
   if(!k)return dist/v;
   return (Math.exp(k*dist)-1)/(k*v);
 }
-/* march the ray until it meets ground or water; refine by bisection */
+/* ---- AND SOMETHING SOLID STOPS A BALL ----
+   Asked for: the mark must appear on ANYTHING you shoot. It appeared on the butt, the
+   stump, a man, the sand, the water and wherever an arrow came down - and on nothing
+   else, because traceShot only ever asked the GROUND and the SEA where they were. A
+   ball put into the cross on the point, the shallop on the strand, a cask, a chest or a
+   tent went straight through it and marked the sand somewhere beyond, which teaches
+   that the scenery is painted on.
+   The world already keeps the list: `colliders`, 43 of them, the same boxes that stop
+   you walking into things. They are plan-view footprints with no height, so a height is
+   ASSUMED - one figure, stated here rather than hidden: SOLID_TOP feet above the ground
+   under them, which is about a cask on its side, a boat's gunwale, a chest, or the foot
+   of the cross. A ball above that passes over, which is why you can still shoot clean
+   over the camp into the trees. */
+const SOLID_TOP=5.5;
+function solidAt(x,y,z){
+  if(typeof colliders==="undefined"||!colliders.length)return false;
+  const g=WORLD.ground?WORLD.ground(x,z):0;
+  if(y>g+SOLID_TOP)return false;
+  for(let i=0;i<colliders.length;i++){
+    const c=colliders[i];
+    if(c.lvl!==plevel)continue;
+    if(Math.abs(x-c.x)<c.hw&&Math.abs(z-c.z)<c.hd)return true;
+  }
+  return false;
+}
+/* march the ray until it meets ground, water or something solid; refine by bisection */
 function traceShot(o,d,maxRange){
   const MAX=maxRange||420, sea=(WORLD.sea===undefined)?-9999:WORLD.sea;
   function surfAt(x,z){return Math.max(WORLD.ground(x,z),sea);}
   let prev=0;
   for(let s=3;s<=MAX;s+=3){
     const x=o.x+d.x*s, y=o.y+d.y*s, z=o.z+d.z*s;
+    if(solidAt(x,y,z)){
+      let lo=prev,hi=s;
+      for(let k=0;k<10;k++){
+        const m=(lo+hi)/2;
+        if(solidAt(o.x+d.x*m,o.y+d.y*m,o.z+d.z*m))hi=m;else lo=m;
+      }
+      return {x:o.x+d.x*hi,y:o.y+d.y*hi,z:o.z+d.z*hi,dist:hi,kind:"solid"};
+    }
     if(y<=surfAt(x,z)){
       let lo=prev,hi=s;
       for(let k=0;k<10;k++){
@@ -14098,9 +14131,15 @@ function ignite(hung){
     if(p.kind!=="air"){
       shotImpact(p,d);
       /* a scar in the sand or a ring on the water, so a miss leaves evidence too */
-      markImpact(p.x,p.y+0.06,p.z,d,p.dist);
+      /* a mark in a solid thing stays where the ball stopped: the lift exists to keep a
+         cross from being buried in the beach, and a ball in a cask is not on the beach */
+      markImpact(p.x,p.y+0.06,p.z,d,p.dist,
+                 (p.kind==="solid")?{floor:-9999}:null);
     }
     playSfx(p.kind==="water"?"splash":"hit",0.22);
+    if(p.kind==="solid")toast("Into the "+
+      (CURRENT_WORLD==="ch2"?"gear on the strand":"ship's furniture")+
+      " \u2014 and nothing there was a mark.");
     /* name the miss against the near mark, so it can be corrected */
     const s=TARGETS.length?spotShot(o,d,TARGETS[0]):null;
     if(p.kind!=="air"&&s&&s.along>4&&Math.abs(s.up)<40&&Math.abs(s.right)<40){
@@ -22365,7 +22404,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260813-1111";
+const BUILD="20260813-1116";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
