@@ -11385,8 +11385,15 @@ const SOURCES=[
    lines:[
     {t:"The six and twentieth day of Aprill, about foure a clocke in the morning, wee descried the Land of Virginia.",
      n:"First sight of the country, at dawn. Chapter I ends and Chapter II begins on this line."},
-    {t:"The foure and twentieth day we set up a Crosse at Chesupioc Bay, and named that place Cape Henry.",
-     n:"Naming a place that already had a name, for the King's eldest son. The claim is made in the act."},
+    /* ---- THIS WAS MISQUOTED, IN THE ONE PLACE A MISQUOTE IS UNFORGIVABLE ----
+       It read "The foure and twentieth day". Percy wrote "The nine and twentieth day",
+       and this is the historian's notebook - the feature whose whole purpose is to
+       teach a student to read a source and check it. Verified against the text printed
+       in Purchas and transcribed at Virtual Jamestown.
+       The right date also makes the source BETTER: the cross went up three days after
+       the landing, so the naming was not part of the first hour ashore. */
+    {t:"The nine and twentieth day we set up a Crosse at Chesupioc Bay, and named that place Cape Henry.",
+     n:"Three days after they first landed. Naming a place that already had a name, for the King's eldest son \u2014 the claim is made in the act, and it was made at leisure, not in the first rush ashore."},
     {t:"At night, when wee were going aboard, there came the Savages creeping upon all foure, from the Hills, like Beares, with their Bowes in their mouthes, charged us very desperately in the faces, hurt Captaine Gabrill Archer in both his hands, and a sayler in two places of the body very dangerous.",
      n:"The evening of the same day. Read it twice: once for WHAT it reports - Archer's hands, a wounded sailor, the attack - and once for HOW it reports it. Calling men Savages and likening them to bears tells you about Percy. It does not tell you about the Powhatan, who left no written account of that evening at all."}
    ]},
@@ -11800,7 +11807,25 @@ function showEnding(worldId){
      rifled musket  base .04  fouling .35              - shot 20 is worse than 1
      cartridge      base .01  supply .40               - the arm stops being the limit */
 const ARMS={
+  /* ---- HOW FAST THE BALL ACTUALLY GOES ----
+     mv is feet per second at the muzzle; drag is the exponential retardation per foot,
+     v(s)=mv*e^(-drag*s). Both come from research done for this, and they are chosen
+     together so they reproduce a published flight-time table rather than being picked
+     to feel right:
+       Doppler radar on a reproduction 17th-century musket measured 298-484 m/s, with
+       most shots clustering at 410-440. The Graz Landeszeughaus trials on ORIGINAL
+       pieces gave 449-482 m/s but used modern powder, so they are an upper bound on a
+       weapon loaded in 1607, not a description of one. 400 m/s = 1312 ft/s is the
+       middle of the honest band (350-450 m/s).
+       Retardation for a round lead ball at these speeds is about 1.94 m/s per metre
+       travelled - the worst-shaped projectile in common use - which is 0.001344 per
+       foot.
+     Checked against the researched table: this pair gives 0.0476 s at 20 yards,
+     0.0992 s at 40 and 0.2817 s at 100, against 0.0476, 0.0993 and 0.2779 computed
+     independently. Flight time barely depends on calibre - the area-to-mass ratio goes
+     as 1/diameter - so one figure serves musket and caliver alike, within 3%. */
   matchlock:{name:"matchlock caliver",ignition:"match",steps:6,reload:38,
+    mv:1312, drag:0.001344,
     base:0.12,drivers:{match:0.30,weather:0.30,fouling:0,supply:0},
     /* ---- SPREAD IS THE TANGENT OF THE HALF-ANGLE, AND 0.028 WAS 1.6 DEGREES ----
        Measured against the old figure with the game's own maths: a PERFECTLY loaded
@@ -11908,9 +11933,20 @@ const SERP_REST=0.30, SERP_FIRE=-0.93;
    SERP_RATE is how fast the arm swings; the fall peaks at serpT 0.5, so the
    moment the coal is in the powder is half of that. Derived, so re-tuning the
    swing carries the flash and the report along with it. */
-const SERP_RATE=2.1;                     /* the arm's fall and return, per second */
+/* ---- THE LOCK TIME, BROUGHT INSIDE THE RESEARCHED BAND ----
+   This was 2.1, which put the serpentine's fall at 0.238 s, and PAN_LAG at 0.055 s -
+   0.293 s from sear to charge. The component budget for a matchlock is serpentine fall
+   50-150 ms, coal to priming 10-50 ms, pan through the touch hole 10-30 ms: 75-250 ms
+   in total, best estimate 100-150. For scale, flintlock lock time IS well measured at
+   40-60 ms, so a matchlock should be slower than that but not five times slower.
+   3.33 puts the fall at 150 ms - the top of the band, because the fall is also the
+   animation and this game wants it SEEN - and the touch hole at 25 ms. 175 ms total.
+   HONESTLY FLAGGED: no published measurement of matchlock lock time could be found.
+   That band is a construction from component times, not a stopwatch on a real weapon.
+   It is better grounded than 0.293 s was, and that is the whole claim being made. */
+const SERP_RATE=3.33;                    /* the arm's fall and return, per second */
 const SERP_TOUCH=0.5/SERP_RATE;          /* trigger -> match in the pan */
-const PAN_LAG=0.055;                     /* pan -> charge, through the touch hole */
+const PAN_LAG=0.025;                     /* pan -> charge, through the touch hole */
 /* How long the ball takes to fall from a hand's breadth above the muzzle into the
    bore. One constant, read by BOTH the animation and the timer that ends the
    step, because they were two numbers and only one of them existed. */
@@ -13032,6 +13068,36 @@ function giveFire(){
    which is worth something in a classroom. Set GUN_AID.trace to false and the
    fall of shot alone carries the feedback. */
 const GUN_AID={trace:true};
+/* ========== THE BALL HAS A SPEED, AND EVERYTHING PAST THE MUZZLE IS TIMED OFF IT ==========
+   Reported: "the red x is taking far too long to appear after firing the gun. the x needs
+   to appear the instant the bullet hits it. bullet travel times need to be real."
+
+   Two faults, in opposite directions, and neither of them was the ball:
+
+     THERE WAS NO FLIGHT TIME AT ALL. markImpact was called inside ignite() on the same
+     tick as the report, so at forty yards the mark appeared 0.12 seconds EARLY - before
+     the ball could possibly have got there.
+
+     AND THE TRAIL TOOK A FLAT 0.42 SECONDS whatever the range. Timed from the trigger:
+     the charge fires at 0.293 s - serpentine 0.238, touch hole 0.055, which is the lock
+     time and is real - and the trail did not reach the mark until 0.713 s. The eye
+     follows the smoke, so a shot READ as arriving at seven tenths of a second when the
+     ball was there in twelve hundredths. Three and a half times too slow, and that is
+     what "far too long" was.
+
+   Now the trail lays itself out as the ball passes each point, and the mark, the dust,
+   the sound and the scoring all happen when the ball ARRIVES. At the drill's ranges that
+   is nearly instant, which is the truth about a musket at forty yards. It matters more
+   the further out a shot goes, and it will matter a great deal in a battle. */
+function flightTime(arm,dist){
+  if(!(dist>0))return 0;
+  const v=(arm&&arm.mv)||1000, k=(arm&&arm.drag)||0;
+  /* A round lead ball sheds speed fast - it is the worst shape there is for holding
+     velocity - so this is not a constant-speed model. v(s)=v0*e^(-k*s) integrates to a
+     closed form for the time, which costs one exp() per shot instead of a march. */
+  if(!k)return dist/v;
+  return (Math.exp(k*dist)-1)/(k*v);
+}
 /* march the ray until it meets ground or water; refine by bisection */
 function traceShot(o,d,maxRange){
   const MAX=maxRange||420, sea=(WORLD.sea===undefined)?-9999:WORLD.sea;
@@ -13099,12 +13165,14 @@ function panFlash(){
                                G_PAN[2]+(Math.random()-0.5)*0.12);
     gunPiece.localToWorld(lp);
     m.position.copy(lp);
-    m.scale.setScalar(0.16);
+    m.scale.setScalar(0.42);
     m.material.color.setHex(i<2?0xffd27a:0xbfb8a8).convertSRGBToLinear();
     m.material.opacity=0.9;
     smoke.push({m:m,pool:POOL.smoke,t:0,
       vx:(Math.random()-0.5)*1.2,vy:1.6+Math.random(),vz:(Math.random()-0.5)*1.2,
-      bx:0.16,by:0.16,bz:0.16,life:0.42,op:0.9,grow:2.4,delay:0,ease:1.4});
+      /* the priming is 0.3-0.6 g and throws its own puff a foot or so across, a few
+         hundredths of a second before the charge - three inches from the cheek */
+      bx:0.42,by:0.42,bz:0.42,life:0.75,op:0.9,grow:1.8,delay:0,ease:1.2});
   }
 }
 /* How far the teaching aid is allowed to run. The trail is not the ball - the ball
@@ -13134,6 +13202,8 @@ function shotTrail(o,d,dist){
   const reach=traceReach(o);
   const gone=dist>reach;
   if(gone)dist=reach;
+  /* how long the ball takes to cross the drawn part, so each puff appears as it passes */
+  const tof=flightTime(ARMS[GUN.arm],dist);
   /* The last version was near-white - 0xdedacd - which measures 1.17:1 against
      Cape Henry's dry sand. That is invisible: no amount of size or count fixes a
      puff the same brightness as the ground behind it. A mid warm grey reads
@@ -13161,7 +13231,11 @@ function shotTrail(o,d,dist){
        col:0x6f6d64, op:0.86*(gone?Math.max(0,1-Math.max(0,k-0.62)/0.38):1),
        life:15.0,                   /* powder smoke hangs; let it hang */
        grow:0.09,                   /* spreads slowly rather than ballooning */
-       delay:k*0.42,                /* lays itself outward, so the eye follows */
+       /* ---- LAID AT THE BALL'S OWN SPEED, NOT AT A FLAT 0.42 ----
+          The old figure was the same for a shot at twenty yards and one at a hundred,
+          and it was slower than the ball at every range. This is the moment the ball
+          passes THIS puff. */
+       delay:k*tof,
        /* well under 1, so it holds for most of its life and then goes: still
           two thirds visible at five seconds, and half of that at ten */
        ease:0.62});
@@ -13603,9 +13677,20 @@ function ignite(hung){
     /* the BODY stops the ball; the mark is what scores it, further down */
     if(off<(t.body||t.r)&&(!best||along<best.along))best={t:t,off:off,along:along};
   }
+  /* ---- NOTHING HAPPENS AT THE FAR END UNTIL THE BALL IS THERE ----
+     The same rule the lock already follows at the near end: wait for the cause. The
+     world is captured so a shot cannot land in a chapter that has ended, which is the
+     guard discharge() has carried since it was written. */
+  const world=CURRENT_WORLD;
+  function arrive(dist,fn){
+    const t=flightTime(A,dist);
+    if(t<=0.004){fn();return;}                 /* inside a frame: do not defer it */
+    setTimeout(function(){if(CURRENT_WORLD!==world)return;fn();},t*1000);
+  }
   /* a man in front of the mark takes it instead */
   if(man&&(!best||man.along<best.along)){
     shotTrail(o,d,man.along);
+    arrive(man.along,function(){
     for(let i=0;i<5;i++){
       spawnPuff(POOL.smoke,o.x+d.x*man.along,o.y+d.y*man.along,o.z+d.z*man.along,
         (Math.random()-0.5)*3,(Math.random()-0.2)*2.4,(Math.random()-0.5)*3,
@@ -13614,12 +13699,14 @@ function ignite(hung){
     /* placement decides it, using the same geometry the marks use - a centre
        hit kills, a hit at the edge of the man wounds him */
     shotAMan(man.t,man.off,man.t.r);
+    });
     return;
   }
   if(best){
     /* stop the trail at the mark, and leave a hole in it */
     shotTrail(o,d,best.along);
     const hx=o.x+d.x*best.along, hy=o.y+d.y*best.along, hz=o.z+d.z*best.along;
+    arrive(best.along,function(){
     markImpact(hx,hy,hz,d,best.along);
     for(let i=0;i<4;i++){
       spawnPuff(POOL.smoke,hx,hy,hz,
@@ -13642,9 +13729,11 @@ function ignite(hung){
     } else {
       toast("Into the butt, wide of the mark \u2014 "+spotWords(spotShot(o,d,best.t))+".");
     }
+    });
   } else {
     const p=traceShot(o,d);
     shotTrail(o,d,p.dist);
+    arrive(Math.min(p.dist,traceReach(o)),function(){
     if(p.kind!=="air"){
       shotImpact(p,d);
       /* a scar in the sand or a ring on the water, so a miss leaves evidence too */
@@ -13662,6 +13751,7 @@ function ignite(hung){
       toast(p.kind==="water"?"Into the water, clean away."
                             :"Clean away \u2014 the ball went into the trees.");
     }
+    });
   }
 }
 const FX_V=new THREE.Vector3(),FX_O=new THREE.Vector3();
@@ -13678,24 +13768,55 @@ function gunSmoke(scale){
      per-frame paths quietly become garbage generators */
   const f=cam.getWorldDirection(FX_V);
   const o=cam.getWorldPosition(FX_O);
-  /* Black powder smoke SHOULD blind you for a moment - that is true of the
-     thing, and worth feeling. What it must not do is sit in the sight line for
-     three seconds and hide the fall of shot. So it is thrown hard forward and
-     out to the side and given a shorter life: it blots the view, then clears,
-     and the trail is still hanging there when it does. */
-  for(let i=0;i<8;i++){
-    const side=(i%2?1:-1)*(1.0+Math.random()*1.6);
+  /* ---- SIZED TO THE POWDER, NOT TO CONVENIENCE ----
+     Measured before this change: the cloud was 2.0 ft across at the shot, 4.6 ft at
+     three seconds, thrown twenty feet down the beach, and gone by 5.5 s. Every one of
+     those is wrong, and the last two were wrong ON PURPOSE - the note that stood here
+     said the smoke "must not sit in the sight line", so it was thrown hard forward and
+     sideways to clear the view. The research says the opposite is the truth of the
+     thing: a single shot obscures the shooter's own view of a forty-yard mark
+     completely, within a tenth of a second, and he stays blind for 1-2 s in a light
+     breeze and 5-15 s in dead calm. With a forty-second reload, that costs the player
+     nothing and teaches the thing itself.
+
+     The numbers, from a 15 g charge (surviving bandolier charges measure 11-17 g):
+       black powder yields 271 cm3 of gas per gram, so 4.1 litres, and it is 56% SOLID
+       by weight - about 8 g of potassium carbonate and sulphate aerosol, of which
+       maybe 4-8 g gets out of the barrel. That is what makes it white and opaque.
+       At 0.1 s it is a forward JET, 1-2 m long and under 1 m wide, hugging the barrel.
+       By 0.5-2 s it is a roiling ball 2-3 m - 7 to 10 feet - across.
+       It rises at only 0.3 m/s: about a foot in two seconds, because after swallowing
+       ten kilos of air it is barely 2 K warmer than the morning.
+       It never settles out. A 0.5 micron particle falls 6.5 cm an hour. It goes only
+       by dilution: 30 s to stop being a conspicuous cloud, 1-3 minutes to truly clear. */
+  for(let i=0;i<12;i++){
+    const side=(i%2?1:-1)*(0.5+Math.random()*1.1);
     spawnPuff(POOL.smoke,
       o.x+f.x*4.2+(Math.random()-0.5)*1.4,
       o.y+f.y*4.2-0.35+(Math.random()-0.5)*1.0,
       o.z+f.z*4.2+(Math.random()-0.5)*1.4,
-      f.x*11+(-f.z)*side*6.5,
-      1.7+Math.random()*1.1,
-      f.z*11+(f.x)*side*6.5,
+      f.x*7+(-f.z)*side*2.6,
+      0.9+Math.random()*0.5,                 /* 0.3 m/s: it barely rises at all */
+      f.z*7+(f.x)*side*2.6,
       /* Longer-lived than before - it used to snap out after under two seconds,
          which is nothing like powder smoke - but thrown harder sideways so it
          drifts out of the sight line rather than parking in it. */
-      {size:1.2*0.7*scale, col:0x7d7a70, op:0.80, life:5.5, grow:0.85, ease:0.7,
+      /* 1.4 ft a puff at the muzzle and half again as much every second: twelve of
+         them make a jet about 4 ft long at a tenth of a second and a ball 8-9 ft across
+         by two seconds, which is the researched 2-3 m. Fourteen seconds of life with a
+         slow ease, so it hangs like powder smoke instead of snapping out. */
+      /* ---- AND IT THINS AS IT SWELLS, WHICH THE FIRST CUT LEFT OUT ----
+         Sized right but faded wrong, the cloud reached eighteen feet across at six
+         seconds while still 60% opaque, the camera ended up INSIDE it, and the frame
+         went uniformly grey. That is not what smoke does. The research gives the
+         optical depth against diameter directly - 5% transmittance at a cloud 2-5 m
+         across, but 74% at 7-16 m - which is the 1/D^2 you would expect from a fixed
+         mass of aerosol spread over a growing front. So the fade has to be steep and
+         the growth moderate: dense enough to blind at half a second, thinning through
+         two to four seconds, effectively gone by six or seven. That matches the
+         researched 1-2 s to a usable sight picture in a light breeze and 2-6 s in
+         light air, and it is why the ease is 2.0 and not 0.55. */
+      {size:1.4*scale, col:0x7d7a70, op:0.82, life:9.0, grow:0.95, ease:2.0,
        cap:{x:o.x,y:o.y,z:o.z,r:SMOKE_CAP_FT}});
   }
 }
@@ -21690,7 +21811,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260812-1935";
+const BUILD="20260813-0601";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
