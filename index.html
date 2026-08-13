@@ -10494,10 +10494,43 @@ function executionSteps(tx,ty,tz,steps){
   }
   return steps;
 }
+/* ---- IT HAS TO HAPPEN SOMEWHERE YOU CAN SEE ----
+   Asked for an unobstructed cutscene, and watched, it was nothing of the kind. The site
+   was CAPE.TREE+10, which is z=-30 with the wood's edge at -16 - the gallows stood
+   INSIDE the wood, twelve trunks within thirty feet, and the establishing shot was four
+   dark trunks across the frame with the condemned man somewhere behind them.
+   A hanging needs a limb, so it cannot simply move onto open sand. It needs a CLEARING
+   at the edge of the wood: close enough that there is a tree to throw a rope over,
+   open enough that the camera has somewhere to stand. So one is looked for rather than
+   assumed - the front rank's trunks are registered as shootables, with positions, so
+   the game already knows where every tree is. The candidate with the fewest trunks
+   inside fourteen feet wins, and the search runs along the strand just seaward of the
+   wood's edge where the ground is still dry. */
+function executionSite(){
+  if(CURRENT_WORLD!=="ch2")return {x:-6*K,z:18*K};
+  const trunks=(typeof shootables!=="undefined")
+    ? shootables.filter(function(c){return c.hw<=0.6;}) : [];
+  let best=null;
+  for(let x=CAPE_MARK.x-46;x<=CAPE_MARK.x+34;x+=6){
+    for(let z=CAPE.WOOD+2;z<=CAPE.WOOD+22;z+=4){
+      if(capeBlocked(x,z))continue;
+      let near=0;
+      for(let i=0;i<trunks.length;i++){
+        const t=trunks[i];
+        if(Math.hypot(t.x-x,t.z-z)<14)near++;
+      }
+      /* and it should not be on top of the firing mark or the camp */
+      const clutter=Math.hypot(x-CAPE_MARK.x,z-CAPE_MARK.z)<16?3:0;
+      const score=near+clutter;
+      if(!best||score<best.score)best={x:x,z:z,score:score,near:near};
+    }
+  }
+  return best||{x:CAPE_MARK.x-16,z:CAPE.WOOD+8};
+}
 /* Order the sentence from anywhere. `reason` is the beat that says why. */
 function executeThePlayer(reason){
-  const tx=(CURRENT_WORLD==="ch2")?CAPE_MARK.x-16:-6*K;
-  const tz=(CURRENT_WORLD==="ch2")?CAPE.TREE+10:18*K;
+  const site=executionSite();
+  const tx=site.x, tz=site.z;
   const ty=WORLD.ground(tx,tz);
   const world=CURRENT_WORLD;
   const steps=[{shot:{of:["player"],dist:13*K,height:8*K,lookH:5*K},t:4.6,narrate:reason}];
@@ -22482,7 +22515,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260813-1132";
+const BUILD="20260813-1138";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
