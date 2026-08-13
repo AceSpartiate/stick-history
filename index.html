@@ -3189,7 +3189,22 @@ let IDLE_T=0;
    it goes stale rather than only when the selected spot happens to change */
 let PROMPT_HTML="";
 let BG=false;
-function solid(x,z,hw,hd,lvl){if(BG)return;colliders.push({x:x,z:z,hw:hw,hd:hd,lvl:(lvl===undefined?LVL.MAIN:lvl)});}
+/* ---- EVERY SOLID THING SAYS WHETHER IT STOPS A PROJECTILE, AND HOW HIGH ----
+   `stops` is that value. It is a HEIGHT in feet above the ground beneath the box:
+     omitted  - the default, SOLID_TOP, which is about a cask, a chest or a boat's rail;
+     a number - the real height of the thing, for anything taller or shorter;
+     0        - a shot passes clean through it, however solidly it stops a man.
+   The last one is not a curiosity. A person's collider is registered here so you cannot
+   walk through them, but a BALL must never be stopped by it: livePeople() already tests
+   the shot against every man from his LIVE mesh position, and the collider is a fossil
+   of where he stood when the world was built. clearTheRange moves the men off the firing
+   lane and does not move their colliders with them, so leaving these at the default
+   would have put invisible ball-stoppers across the range the moment it was cleared. */
+function solid(x,z,hw,hd,lvl,stops){
+  if(BG)return;
+  colliders.push({x:x,z:z,hw:hw,hd:hd,lvl:(lvl===undefined?LVL.MAIN:lvl),
+    stops:(stops===undefined?SOLID_TOP:stops)});
+}
 /* ---- SOLID TO A BALL, NOT TO A MAN ----
    solid() does two jobs, and the camp needs only one of them. The note beside buildCamp
    is right and stands: "a prop you can walk through is a far smaller fault than a prop
@@ -13533,13 +13548,16 @@ function flightTime(arm,dist){
    of the cross. A ball above that passes over, which is why you can still shoot clean
    over the camp into the trees. */
 const SOLID_TOP=5.5;
+let LAST_SOLID_TREE=false;
 function solidAt(x,y,z){
+  LAST_SOLID_TREE=false;
   const g=WORLD.ground?WORLD.ground(x,z):0;
   if(typeof colliders!=="undefined"){
     for(let i=0;i<colliders.length;i++){
       const c=colliders[i];
       if(c.lvl!==plevel)continue;
-      if(y<=g+SOLID_TOP&&Math.abs(x-c.x)<c.hw&&Math.abs(z-c.z)<c.hd)return true;
+      if(!c.stops)continue;                       /* declared to let shot through */
+      if(y<=g+c.stops&&Math.abs(x-c.x)<c.hw&&Math.abs(z-c.z)<c.hd)return true;
     }
   }
   /* and the things that stop a ball without stopping a man, each at its own height */
@@ -13547,7 +13565,10 @@ function solidAt(x,y,z){
     for(let i=0;i<shootables.length;i++){
       const c=shootables[i];
       if(c.lvl!==plevel)continue;
-      if(y<=g+(c.top||SOLID_TOP)&&Math.abs(x-c.x)<c.hw&&Math.abs(z-c.z)<c.hd)return true;
+      if(y<=g+(c.top||SOLID_TOP)&&Math.abs(x-c.x)<c.hw&&Math.abs(z-c.z)<c.hd){
+        LAST_SOLID_TREE=(c.hw<=0.6);            /* a trunk, not a cask */
+        return true;
+      }
     }
   }
   return false;
@@ -13556,8 +13577,16 @@ function solidAt(x,y,z){
 function traceShot(o,d,maxRange){
   const MAX=maxRange||420, sea=(WORLD.sea===undefined)?-9999:WORLD.sea;
   function surfAt(x,z){return Math.max(WORLD.ground(x,z),sea);}
+  /* ---- THE STEP MUST BE FINER THAN THE THINNEST THING IT CAN HIT ----
+     This marched in threes, which is fine against ground and water because they are
+     continuous - but a tree trunk is one foot across and a cask two, and a three-foot
+     step walks straight over both. Aimed dead at a trunk at fifty-five feet the trace
+     came back "air at 420": it had sampled either side of the tree and never inside it.
+     Six tenths of a foot is under half the narrowest box in the game, so nothing thinner
+     than the step can hide between samples. It costs 700 iterations instead of 140, once
+     per shot rather than once per frame. */
   let prev=0;
-  for(let s=3;s<=MAX;s+=3){
+  for(let s=0.6;s<=MAX;s+=0.6){
     const x=o.x+d.x*s, y=o.y+d.y*s, z=o.z+d.z*s;
     if(solidAt(x,y,z)){
       let lo=prev,hi=s;
@@ -13565,7 +13594,9 @@ function traceShot(o,d,maxRange){
         const m=(lo+hi)/2;
         if(solidAt(o.x+d.x*m,o.y+d.y*m,o.z+d.z*m))hi=m;else lo=m;
       }
-      return {x:o.x+d.x*hi,y:o.y+d.y*hi,z:o.z+d.z*hi,dist:hi,kind:"solid"};
+      solidAt(o.x+d.x*hi,o.y+d.y*hi,o.z+d.z*hi);   /* set the flag at the point itself */
+      return {x:o.x+d.x*hi,y:o.y+d.y*hi,z:o.z+d.z*hi,dist:hi,kind:"solid",
+              tree:LAST_SOLID_TREE};
     }
     if(y<=surfAt(x,z)){
       let lo=prev,hi=s;
@@ -14161,9 +14192,9 @@ function ignite(hung){
                  (p.kind==="solid")?{floor:-9999}:null);
     }
     playSfx(p.kind==="water"?"splash":"hit",0.22);
-    if(p.kind==="solid")toast("Into the "+
-      (CURRENT_WORLD==="ch2"?"gear on the strand":"ship's furniture")+
-      " \u2014 and nothing there was a mark.");
+    if(p.kind==="solid")toast(p.tree?"Into a tree \u2014 and a tree is not a mark."
+      :("Into the "+(CURRENT_WORLD==="ch2"?"gear on the strand":"ship's furniture")+
+        " \u2014 and nothing there was a mark."));
     /* name the miss against the near mark, so it can be corrected */
     const s=TARGETS.length?spotShot(o,d,TARGETS[0]):null;
     if(p.kind!=="air"&&s&&s.along>4&&Math.abs(s.up)<40&&Math.abs(s.right)<40){
@@ -20245,6 +20276,16 @@ registerWorld("ch2",function(root){
   }
   /* the front rank: dense, and every fifth one a full tree so the wall has
      detail where the player can actually resolve it */
+  /* ---- AND THE WOOD STOPS A BALL ----
+     Asked for. Only the FRONT RANK is registered: it is the rank a shot from the strand
+     reaches first, so a ball stopped here never reaches the mid wood behind it, and
+     registering all nine hundred trunks would be nine hundred boxes tested per step of
+     every trace for no visible difference.
+     A trunk is a foot across, not a tree's worth of canopy - 0.55 either side of centre.
+     That matters: a loblolly stand runs eight to fifteen feet between trunks, so most
+     shots into the wood still go between them and are still honestly reported as gone
+     into the trees. Hitting one is luck, which is what hitting a tree is. The whole
+     height of the tree stops it, because it is a tree. */
   for(let c=0;c<64;c++){
     const cx=-SPAN/2+30+srand(c*4.1)*(SPAN-60);
     const cz=-14-srand(c*6.7)*64;
@@ -20252,6 +20293,7 @@ registerWorld("ch2",function(root){
       const h=46+srand(n*2.7)*36;
       if(n%3===0)conifer(T,x,gy,z,h,n,capeVert(x,z,gy));
       else treeMid(T,x,gy,z,h,n);
+      shootable(x,z,0.55,0.55,h);
     });
   }
   /* the mid wood */
@@ -20353,9 +20395,14 @@ registerWorld("ch2",function(root){
      tents in this period were the preserve of officers, which is exactly why the
      captain's chart lives under the captain's canvas. */
   buildCamp(P,-8,22);
-  /* The camp itself: the fly, its poles and the table under it. Shootable, not solid -
-     the chart is the chapter's travel hub and a man must always be able to walk to it. */
-  shootable(-8,22,7.0,6.0,7.0);
+  /* The TABLE under the fly, and only that. The first cut of this registered the whole
+     camp as a solid block fourteen feet by twelve and seven high, and it sits between the
+     firing mark and the wood - so every shot toward the treeline stopped dead in the
+     canvas at six feet, which is both wrong and infuriating. A fly is canvas on poles: it
+     does not stop a musket ball, you shoot under it, and only what is standing on the
+     ground beneath it can be hit. Shootable and not solid, because the chart is the
+     chapter's travel hub and a man must always be able to walk to it. */
+  shootable(-8,22,3.0,1.6,3.0);
   /* ---- THREE PARTIES WERE WORKING ON AIR, AND THIS IS WHAT THEY NEEDED ----
      Measured by counting prop vertices standing above the sand within ten feet of each
      party. The camp had 572, the shallop 106, the cross 32 - and:
@@ -20501,7 +20548,7 @@ registerWorld("ch2",function(root){
     f.position.set(m.pos[0],gy,m.pos[1]);f.rotation.y=m.face;
     root.add(f);
     npcMeshes.push({npc:m,mesh:f});
-    solid(m.pos[0],m.pos[1],1.0,1.0,LVL.MAIN);
+    solid(m.pos[0],m.pos[1],1.0,1.0,LVL.MAIN,0);   /* livePeople does the shooting */
     interactables.push({id:m.id,label:m.name,x:m.pos[0],z:m.pos[1]+3,y:gy,
       lvl:LVL.MAIN,r:7,action:"talk",data:m});
   });
@@ -20509,7 +20556,7 @@ registerWorld("ch2",function(root){
   const serj=buildFigure(SERJEANT.eq);
   serj.position.set(sx,sy,sz);serj.rotation.y=1.5;root.add(serj);
   npcMeshes.push({npc:SERJEANT,mesh:serj});
-  solid(sx,sz,1.0,1.0,LVL.MAIN);
+  solid(sx,sz,1.0,1.0,LVL.MAIN,0);               /* likewise the serjeant */
   interactables.push({id:"kendall",label:SERJEANT.name,x:sx,z:sz+3,y:sy,
     lvl:LVL.MAIN,r:8,action:"talk",data:SERJEANT});
 
@@ -22435,7 +22482,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260813-1120";
+const BUILD="20260813-1132";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
