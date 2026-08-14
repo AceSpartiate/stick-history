@@ -1049,5 +1049,47 @@ else:
     ok("csRoom asks WORLD.hull before it measures a beam")
 
 
+print("\n20. A change to the game carries a new build id")
+# THE UPDATER IS ONLY AS GOOD AS THE THING IT COMPARES. index.html carries BUILD;
+# version.txt carries the same id; the page fetches version.txt with cache no-store and
+# reloads itself when the two disagree. Check 10 proves they agree with EACH OTHER, and
+# they agreed perfectly through four commits in one afternoon that changed the impact
+# mark, the cutscene camera, the execution and the survey - because I never ran
+# tools/stamp.py. Every player's updater fetched version.txt, read the id it already had,
+# and correctly concluded it was current. The fixes were on the server and nobody could
+# get them, and the bug was reported back to me as "is this pushed?".
+#
+# So: if index.html is staged with changes, its BUILD must not be the one in HEAD. That is
+# the whole rule, and it is the one check 10 cannot make, because a stale pair is a
+# perfectly consistent pair.
+_head_html = None
+if shutil.which("git") is not None:
+    _r = subprocess.run(["git", "show", "HEAD:index.html"], capture_output=True, cwd=ROOT)
+    if _r.returncode == 0:
+        _head_html = _r.stdout.decode("utf-8", "replace")
+    _st = subprocess.run(["git", "diff", "--cached", "--name-only"],
+                         capture_output=True, cwd=ROOT)
+    _staged_names = _st.stdout.decode("utf-8", "replace").split() if _st.returncode == 0 else []
+else:
+    _staged_names = []
+
+if _head_html is None:
+    print("  skip  no git, or no HEAD to compare against")
+elif "index.html" not in _staged_names:
+    ok("index.html is not staged - nothing to deploy, nothing to stamp")
+else:
+    _new = staged("index.html")
+    _old_id = stamp_pair(_head_html, "x")[0]
+    _new_id = stamp_pair(_new, "x")[0] if _new else None
+    if _new_id is None:
+        bad("the staged index.html has no `const BUILD=\"...\"` to stamp")
+    elif _new_id == _old_id:
+        bad("index.html has changed but still says BUILD %s - run `python tools/stamp.py` "
+            "or every copy already out there will decide it is up to date and keep "
+            "serving the old game" % _new_id)
+    else:
+        ok("staged index.html carries a new build id (%s, was %s)" % (_new_id, _old_id))
+
+
 print("\n" + ("PASS" if not fail else "FAILED %d check(s)" % len(fail)))
 sys.exit(0 if not fail else 1)

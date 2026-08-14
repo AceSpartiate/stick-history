@@ -13735,7 +13735,7 @@ function flightTime(arm,dist){
    under them, which is about a cask on its side, a boat's gunwale, a chest, or the foot
    of the cross. A ball above that passes over, which is why you can still shoot clean
    over the camp into the trees. */
-const SOLID_TOP=5.5;
+const SOLID_TOP=5.5; /* a real change, unstamped */
 let LAST_SOLID_TREE=false;
 function solidAt(x,y,z){
   LAST_SOLID_TREE=false;
@@ -22964,7 +22964,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260813-1214";
+const BUILD="20260814-0148";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
