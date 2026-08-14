@@ -17841,11 +17841,14 @@ const SITES={
   james:{name:"Jamestown Island",world:"james",cost:1,chapter:"ch2",
     gloss:"A low island up the river, joined to the bank by a neck of sand.",
     arrive:"Dead trees standing in the shallows, and the smell of the marsh coming off it. The boat touches the bank without sounding — the water is that deep, right up to the roots.",
-    land:[6,56], spots:[[-30,44],[44,6],[-8,-26]],
+    land:[6,56], spots:[[-30,44],[44,6],[-8,-26],[-14,-38]],
     surveys:[
       {k:"depth", verb:"Sound the depth", d:"Six fathom hard against the bank. You could moor a ship to the trees and step ashore off her deck."},
       {k:"water", verb:"Taste the water", d:"Brackish, and this is May. By August the river will push salt this far and further."},
-      {k:"ground",verb:"Walk the ground", d:"Marsh, and thick with mosquitoes. Nobody lives here — in a country where the good ground is already farmed, that is not an accident."}]}
+      {k:"ground",verb:"Walk the ground", d:"Marsh, and thick with mosquitoes. Nobody lives here — in a country where the good ground is already farmed, that is not an accident."},
+      /* The other half of that sentence, and the one the English had already been told.
+         See buildPaspaheghGround. */
+      {k:"whose", verb:"Ask whose ground this is", d:"Paspahegh's. Nobody lives on the island, but a place with nobody on it is not a place with no owner — and you were fed by these people on the fourth of May, nine days ago."}]}
 };
 /* terrain constants per site: same shape, different numbers */
 SITE_TERRAIN.comfort={sea:74,shore:26,flat:-20,deep:-3.2,fall:0.05,rise:2.4,inland:1.9,roll:0.9,
@@ -17972,8 +17975,10 @@ function buildKecoughtan(root,G){
   for(let r=0;r<9;r++)for(let c=0;c<14;c++){
     const cx=40+c*4.2, cz=-4-r*4.6;
     const gy=G(cx,cz);
-    K.box(cx,gy+0.9,cz,0.24,1.8,0.24,(r+c)%2?CORN:CORN2);
-    K.box(cx,gy+1.5,cz,1.5,0.14,0.30,CORN2);
+    const hh=1.6+srand(r*4.1+c*6.3)*0.7;         /* see the note in the Paspahegh field */
+    K.box(cx,gy+hh*0.5,cz,0.24,hh,0.24,(r+c)%2?CORN:CORN2);
+    K.box(cx+0.52,gy+hh*0.80,cz,1.10,0.13,0.28,CORN2,0.52);
+    K.box(cx-0.48,gy+hh*0.60,cz,0.95,0.12,0.26,CORN,-0.45);
   }
   /* a fire, and the drying rack over it */
   const ASH=RGB(0x4a453c), EMBER=RGB(0x8c3a1c), POLE=RGB(0x6d5a3c);
@@ -18050,7 +18055,55 @@ SITE_TERRAIN.james.dress=function(root,G){
      game had been asserting it in a line of text while drawing empty water. */
   buildFleet(D,[[-52,92,1.0],[38,104,0.92],[112,120,0.82]],62);
   root.add(D.mesh(false,false));
+  buildPaspaheghGround(root,G);
 };
+/* ========== WHOSE GROUND THIS IS ==========
+   The island really was empty, and the game is right to say so - that finding stands. What
+   it did not say is that empty is not the same as unowned. Jamestown Island sat in the
+   country of the PASPAHEGH, and the English knew it: on the fourth of May, nine days before
+   they chose this place, a party of them had been received by the Paspahegh, feasted, and
+   spoken to at length by their leader. They settled here anyway.
+   Nothing is built ON the island, because nothing was there. What is built is the far side
+   of the neck - the mainland, cleared and planted, worked ground with people in it - which
+   is the other half of the same sentence and is what makes "nobody lives here" mean
+   something. The good ground was taken. That is WHY this ground was free.
+   What the record will not carry: how much of it they understood. */
+function buildPaspaheghGround(root,G){
+  const F=new Geo();
+  const CORN=RGB(0x6f8a3e), CORN2=RGB(0x577030), STUB=RGB(0x7d6b48);
+  /* beyond the marsh and across the neck, far enough to read as somewhere else */
+  for(let r=0;r<10;r++)for(let c=0;c<20;c++){
+    const cx=-150+c*15.5, cz=-58-r*5.0;
+    const gy=G(cx,cz);
+    /* ---- A LEAF, NOT A CROSSBAR ----
+       The first pass hung a symmetric 1.6-wide bar across the top of every stalk, and at
+       fifty feet a field of those reads as a field of small CROSSES. In a scene about who
+       owns this ground and what happened to them, that is an image the game must not put
+       on the screen by accident. Two leaves, angled, offset to one side, and the stalks
+       vary in height - which is also what corn looks like. */
+    const hh=1.7+srand(r*7.7+c*3.3)*0.7;
+    F.box(cx,gy+hh*0.5,cz,0.26,hh,0.26,(r+c)%2?CORN:CORN2);
+    F.box(cx+0.55,gy+hh*0.82,cz,1.15,0.14,0.30,CORN2,0.55);
+    F.box(cx-0.50,gy+hh*0.62,cz,1.00,0.13,0.28,CORN,-0.48);
+  }
+  /* and the burnt stumps of the clearing that made room for it - Powhatan fields were
+     opened by girdling and firing the timber, not by felling it, so the stumps stand */
+  for(let i=0;i<26;i++){
+    const x=-150+srand(i*3.1+700)*300, z=-52-srand(i*5.9+700)*56;
+    F.beam8([x,G(x,z),z],[x,G(x,z)+4.5+srand(i*2.3+700)*3,z],0.7,0.5,STUB,STUB,1,1);
+  }
+  root.add(F.mesh(false,false));
+  /* people at the work, far off across the neck. Not a welcoming party and not a threat -
+     a town's fields being worked on an ordinary day in May, which is what was there. */
+  const AT=[[-58,-64,1.9],[6,-72,4.4],[64,-60,3.1]];
+  for(let i=0;i<AT.length;i++){
+    const f=tidewaterFigure();
+    f.position.set(AT[i][0],G(AT[i][0],AT[i][1]),AT[i][1]);
+    f.rotation.y=AT[i][2];
+    poseFigure(f,(i===1)?"stand":"stoop",i*5+2);
+    root.add(f);
+  }
+}
 registerWorld("comfort",function(root){buildThinSite(root,"comfort");});
 registerWorld("archers",function(root){buildThinSite(root,"archers");});
 registerWorld("james",  function(root){buildThinSite(root,"james");});
@@ -19752,6 +19805,31 @@ const SURVEY_SCENE={
       /* and back out, with the sentence the whole chapter turns on */
       {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:6.0,cut:true,pose:"stand",
        line:"Your instructions said to judge the ground by the people standing on it. If the naturals be strong and clean made, it is a true sign of a wholesome soil. Here is your answer."}]},
+  /* ---- WHOSE GROUND THIS IS ----
+     The one act in the survey with no instrument in it, because the question it asks is not
+     a question the Council thought to ask. Their instructions are thorough about depth,
+     timber, soil and defence and say nothing whatever about who already lives there - the
+     nearest they come is telling the English to read the health of the ground off the
+     bodies of the people on it, which is a use for a person rather than a question about
+     one. So this act is the player noticing the gap.
+     THE LAST BEAT IS SOURCE CRITICISM AND IT IS THE POINT OF THE WHOLE THING. Percy records
+     Wowinchapuncke offering the English as much land as they desired. Historians have
+     doubted ever since that a weroance would or could say such a thing, and the game does
+     not resolve it - it hands a twelve-year-old a primary source, tells them it is the only
+     account we have, and tells them who wrote it and what he wanted. That is the skill the
+     standards actually ask for and it is sitting in the record. */
+  whose:{
+    at:"spot",
+    shots:[
+      {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.4,pose:"stand",
+       line:"Nothing lives on this island. That is your finding and it is a true one — but empty is not the same as unowned."},
+      /* behind him, looking inland with him at the worked ground beyond the neck */
+      {dist:14,height:5.4,lookH:4.2,yaw:0,t:5.6,cut:true,pose:"stand",
+       line:"Across the neck the ground is cleared and planted, and somebody is working it. The good land here was taken long ago. That is why this land was free."},
+      {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.6,cut:true,pose:"stand",
+       line:"You have met them. On the fourth of May the Paspahegh received your party, fed them, and their leader spoke at length. That was nine days ago."},
+      {dist:9,height:4.4,lookH:3.4,front:true,t:6.0,cut:true,pose:"stand",
+       line:"Percy wrote that their weroance offered the English as much land as they desired. Whether a man could give his country away is a question to ask of the man who wrote it down."}]},
   /* THE SEA. The clause about not planting near the entrance, which is the one clause
      Jamestown Island actually satisfies - and it is the reason a bad site won. */
   sea:{
@@ -21923,6 +22001,14 @@ const PATCH_NOTES=[
      "A game with the ambush and not the welcome is not telling half the story, it is telling a different one. So Kecoughtan is built: four mat-covered houses, a fire, worked fields, and people at their own work — three of them standing out in front, because a player should meet people before they meet buildings, which is the order it happened in.",
      "There is a fourth thing to do at Point Comfort now, and the orders are why. The Council told them to judge how healthy ground was by looking at the people already living on it: “if the naturals be Strong and Clean made it is a true sign of a wholesome Soil”. You are meant to stand in a fed town and draw a conclusion. They did, and settled somewhere else.",
      "You have thirteen days for the survey now rather than twelve, because the day allowance is worked out from what there is to see and adjusted itself.",
+     "<b>And whose ground Jamestown Island was</b>",
+     "The island really was empty, and the game was right to say so. What it never said is that empty is not the same as unowned. It was Paspahegh country, and the English knew it: nine days before they chose the place, a party of them had been received by the Paspahegh, fed, and spoken to at length by their leader. There is a fourth thing to do at Jamestown Island now and it asks that question.",
+     "Nothing is built on the island, because nothing was there. What is built is the far side of the neck — cleared, planted, worked ground with people in it, and the girdled stumps of the timber that was fired to make room for it. The good land was already taken, which is exactly why this land was free.",
+     "The last beat hands you a primary source and asks you to weigh it. Percy wrote that the Paspahegh weroance offered the English as much land as they desired. Historians have doubted ever since that he said any such thing. The game does not settle it for you — it tells you that this is the only account there is, who wrote it, and what he wanted.",
+     "<b>The ships go where you go</b>",
+     "Point Comfort had the fleet lying off it and the other two places had empty water, which quietly taught that the survey was made in a small boat from a fixed base. It was not. The ships made the passages and the shallop put men ashore. Archer’s Hope now has them standing well off, because the berth there is shoal and that IS the finding — everything landed would have to be carried out to them. Jamestown has them close in with cables ashore, because that is the one thing that site had which the better ground did not.",
+     "<b>The black screen, and what caused it</b>",
+     "For a short while the game would not start at all: no character, no working buttons, a black screen. One line of the patch notes below carried a scrap of the tool used to write them, which threw an error while the notes were being built, and because that happens as the page loads it took everything else down with it. Mended, and the page is now actually opened and played before anything is published, which is how it should have been caught.",
      "<b>A note for the classroom</b>",
      "Percy records being fed by people he calls Savages, in the same breath. Both halves of that are kept, deliberately. The game names Kecoughtan, Paspahegh and the weroance accurately; the seventeenth-century sources say what they say. The friction between the two is the thing worth teaching, and smoothing it would teach that the past was gentler than it was."]},
   {when:"4 August 2026",
@@ -23154,7 +23240,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-0214";
+const BUILD="20260814-0227";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
