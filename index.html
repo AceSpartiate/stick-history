@@ -5481,7 +5481,11 @@ function buildTweenLevel(root){
    * Grounded position records which world it was left in, so a musket set down
      on Cape Henry is still on Cape Henry when you come back, and is not waiting
      on the deck of the Susan Constant. */
-const ITEM_STATES=["absent","stowed","carried","ground"];
+/* "rack" is a fifth place, and it is not on you: it is the stand at the gun where the long
+   tools live. See CREW_TOOLS. A racked thing is not held - itemHeld() is stowed-or-carried -
+   so the action bar rightly ignores it, and it can only be taken up while you are at the
+   gun, which is the whole point of it being there rather than on your back. */
+const ITEM_STATES=["absent","stowed","carried","ground","rack"];
 const ITEMS={
   matchlock:{
     name:"Matchlock Caliver",
@@ -5599,6 +5603,8 @@ function drawItem(id){
   if(!ITEMS[id])return false;
   const st=itemState(id);
   if(st==="absent"||st==="ground")return false;
+  /* a racked tool comes off the stand, and only while you are standing at it */
+  if(st==="rack"&&!(typeof GG!=="undefined"&&GG.on))return false;
   if(st==="carried")return true;
   stowHands();
   if(id==="matchlock"&&typeof setGunCarried==="function")setGunCarried(true);
@@ -5609,6 +5615,10 @@ function drawItem(id){
 function stowHands(){
   const held=itemInHands();
   if(!held)return;
+  /* a stave goes back in the rack, not onto your shoulders */
+  if(rackTool(held)){
+    setItemState(held,"rack");renderCarry();saveGame();return;
+  }
   let home=slotOf(held);
   if(twoHanded(held)&&home!=="back"){
     home="back";setSlot(held,"back");
@@ -5741,13 +5751,13 @@ function renderCarry(){
    recoils inboard and has to be hauled back out on her tackle before she can fire again,
    and there is nobody to haul but you. */
 const CREW_TOOLS={
-  worm:    {name:"Worm",         short:"Worm",   hands:2, slot:"back",
+  worm:    {rack:true, name:"Worm",         short:"Worm",   hands:2, slot:"back",
             weight:"a long stave, a screw of iron at the end",
             desc:"A corkscrew on a stave, for dragging out the burnt remains of the last cartridge. What it misses can still be alight."},
-  sponge:  {name:"Sponge",       short:"Sponge", hands:2, slot:"back",
+  sponge:  {rack:true, name:"Sponge",       short:"Sponge", hands:2, slot:"back",
             weight:"a stave and a wet fleece",
             desc:"A wet fleece on a stave, run down the bore to quench anything the worm left. A gun crew that hurries this loses a man to the next charge."},
-  rammer:  {name:"Rammer",       short:"Rammer", hands:2, slot:"back",
+  rammer:  {rack:true, name:"Rammer",       short:"Rammer", hands:2, slot:"back",
             weight:"a stave and a wooden head",
             desc:"Seats the cartridge and the wad hard against the breech. Loose powder burns instead of throwing, and a ball that is not seated can roll out again."},
   prickr:  {name:"Priming Wire", short:"Wire",   hands:1, slot:"beltL",
@@ -5758,6 +5768,23 @@ const CREW_TOOLS={
             desc:"A slow match held at arm's length in a forked staff, so the man giving fire is not standing over the touch hole when she goes."}
 };
 for(const k in CREW_TOOLS)ITEMS[k]=CREW_TOOLS[k];
+/* ---- WHERE THE STAVES ACTUALLY STOOD ----
+   Three of these were declared slot "back" and a slot holds one thing, so pressing 1
+   fetched the worm for ever and the drill could not get past sponging - found by driving
+   it, three hundred fetches of the same stave.
+   The bug was the model, not the number key. A worm is nine feet of stave and a rammer
+   longer; a man does not carry them across his shoulders and no gun crew ever did. They
+   stood in a rack at the gun, with the piece, and were taken up and put back one at a time
+   as the drill called for them - which is exactly the constraint the drill is about, and
+   it is tighter than carrying them, not looser: you cannot walk away with the sponge.
+   So they are `rack:true` and they live in the gun's stand. The priming wire and the
+   linstock stay on the man, because those are small and personal and he was expected to
+   have them. The action bar shows what is ON YOU; the rack is somewhere you are. */
+function rackTool(id){return !!(ITEMS[id]&&ITEMS[id].rack);}
+function stockTheRack(){
+  for(const k in CREW_TOOLS)
+    if(rackTool(k)&&itemState(k)!=="carried")setItemState(k,"rack");
+}
 /* ========== THE EIGHT MOTIONS OF A GREAT GUN ==========
    The spine of the cannon drill, written as data before anything animates it - the same
    shape RELOAD_STAGES has carried for the matchlock, with two things added that a shoulder
@@ -5859,6 +5886,10 @@ function stageCheck(i){
     return {ok:false,st:st,why:"You have no "+nm+". That motion cannot be made without one."};
   if(state==="ground")
     return {ok:false,st:st,why:"The "+nm+" is where you set it down."};
+  if(state==="rack"){
+    const hands=held?("You have the "+ITEMS[held].name.toLowerCase()+" in your hands. "):"";
+    return {ok:false,st:st,why:hands+"The "+nm+" is in the rack at the gun."};
+  }
   const where=CARRY_NAME[slotOf(st.tool)].toLowerCase();
   const key=["back","beltL","beltR"].indexOf(slotOf(st.tool))+1;
   const hands=held?("You have the "+ITEMS[held].name.toLowerCase()+" in your hands. "):"";
@@ -5893,6 +5924,7 @@ function openGunDrill(){
   const blocked=firstBlocked();
   GG.on=true;GG.i=0;GG.fails=0;
   stowForDrill(null);            /* both hands empty; the first motion asks for its tool */
+  stockTheRack();                /* and the staves are standing at the gun, as they were */
   ggBegin();openModal("mGun");
   if(blocked)toast(blocked.why);
 }
@@ -24168,7 +24200,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-2328";
+const BUILD="20260814-2350";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
