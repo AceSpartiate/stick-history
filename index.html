@@ -10063,6 +10063,18 @@ function spawnSmoke(x,y,z,vx,vy,vz,size){
   return spawnPuff(POOL.smoke,x,y,z,vx,vy,vz,{size:size,col:0xbfbdb4});
 }
 function updateFx(dt){
+  /* ---- THE SKY HAS TO BE WHERE YOU ARE ----
+     Reported as a large grey sphere hanging over Kecoughtan, and that is exactly what it
+     was. skyDome is a 60-foot sphere drawn inside-out with depth testing off, which paints
+     as background from anywhere INSIDE it - and it sat at the world origin while the player
+     walked away from it. Measured at Point Comfort: the camera 72 out from a dome of 60, so
+     outside its own sky, seeing the far wall of it as a disc with the scene's clear colour
+     all round. It never showed at the cape because that landing keeps you near the origin.
+     A sky is not a thing in the world with a position, so it is given the camera's. Done
+     here because updateFx is the one function every render path calls before it renders -
+     the main loop, the cutscene branch, the camera-lock branch and the lesson branch - and
+     a sky that lags a frame behind the eye is a sky that shows its edge again. */
+  if(skyDome&&cam)skyDome.position.copy(cam.position);
   updateBall(dt);            /* runs in cutscenes too - line 7413 ticks updateFx */
   updateLanding(dt);         /* and so does the boat pulling for the beach */
   if(knock){
@@ -17974,9 +17986,14 @@ const SITES={
 SITE_TERRAIN.comfort={sea:74,shore:26,flat:-20,deep:-3.2,fall:0.05,rise:2.4,inland:1.9,roll:0.9,
   sky:0x9dbccb,fog:0xa9c3cd,water:0x2f5d6b,near:0xd9c9a2,far:0xc2ad84,back:0x7c8b5a,wet:0xa79471,
   trees:30,treeZ:-70,treeH:36,seed:11};
+/* The site the company wanted, and it was reading as a beach with a few sticks on it. The
+   arrival line promises "timber standing sixty feet and straight as a mast, and the ground
+   under it black" - so the ground gets darker the further in you go, from the wet sand at
+   the water to loam under the trees, and the far band is nearly black rather than olive.
+   The narrow strip of pale sand stays: this is a creek bank, not a dune. */
 SITE_TERRAIN.archers={sea:70,shore:22,flat:-14,deep:-1.1,fall:0.012,rise:3.0,inland:3.4,roll:1.5,
-  sky:0xa8c4cf,fog:0xb2c9d0,water:0x40684f,near:0xbdb184,far:0x8f9a5c,back:0x5f7a42,wet:0x8d8a63,
-  trees:52,treeZ:-40,treeH:48,seed:29};
+  sky:0xa8c4cf,fog:0xb2c9d0,water:0x40684f,near:0xa89c74,far:0x5f6f39,back:0x3c4f26,wet:0x8d8a63,
+  trees:78,treeZ:-30,treeH:56,seed:29};
 SITE_TERRAIN.james={sea:78,shore:34,flat:-8,deep:-3.6,fall:0.05,rise:1.5,inland:0.9,roll:0.5,
   sky:0x9fb6bd,fog:0xaebfc2,water:0x3c5348,near:0x9a9a6e,far:0x7f8a5c,back:0x6b7a4e,wet:0x8a8a68,
   trees:38,treeZ:-30,treeH:40,seed:47};
@@ -18137,10 +18154,30 @@ SITE_TERRAIN.archers.dress=function(root,G){
      z -10 to -100 even the BASE of these trees sat above the top of the screen -
      the same fault as the fleet, and for the same reason. Standing them either
      side of the landing point puts them across the view instead of beyond it. */
-  for(let i=0;i<16;i++){
+  /* ---- THE TIMBER IS THE WHOLE ARGUMENT FOR THIS PLACE ----
+     Sixteen trees, all conifers, all in two files either side of the landing - which from
+     the beach read as scrub on a sandbar. Half the company wanted to settle here for what
+     is standing on it, so it has to look like it is worth wanting: forty-four stems now,
+     mixed rather than all one species (the Virginia forest was not a plantation), running
+     back in depth instead of standing in two lines, and tall. The gap down the middle is
+     kept on purpose - you land in it, and a wall of trunks across the landing point would
+     hide the thing you came to look at. */
+  for(let i=0;i<44;i++){
     const side=(i%2?1:-1);
-    const x=side*(34+srand(i*7.3+90)*70), z=26-srand(i*4.1+90)*58;
-    conifer(D,x,G(x,z),z,58+srand(i*2.9+90)*18,i+90,[0.24,0.30,0.16]);
+    const x=side*(26+srand(i*7.3+90)*96), z=30-srand(i*4.1+90)*104;
+    const h=60+srand(i*2.9+90)*22;
+    if(i%3===0)treeMid(D,x,G(x,z),z,h*0.86,i+90);
+    else conifer(D,x,G(x,z),z,h,i+90,[0.20,0.27,0.13]);
+  }
+  /* and the black ground showing through it: fallen needle litter and low brush, which is
+     what "the ground under it black" actually looks like from standing height */
+  const LOAM=RGB(0x2f3a1f), BRUSH=RGB(0x46592c);
+  for(let i=0;i<70;i++){
+    const x=(srand(i*5.1+140)*2-1)*180, z=18-srand(i*3.7+140)*110;
+    const gy=G(x,z);
+    if(gy<0.2)continue;
+    D.box(x,gy+0.08,z,5+srand(i*2.2+140)*9,0.16,4+srand(i*6.4+140)*8,LOAM);
+    if(i%2)D.box(x+2,gy+0.7,z-1,1.6,1.4,1.6,BRUSH);
   }
   /* STANDING OFF, and that is the finding. The berth here is shoal, so they cannot come in
      to the bank however much the company wants this ground - Percy, of Archer's Hope: "If
@@ -23360,7 +23397,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-0354";
+const BUILD="20260814-0402";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
