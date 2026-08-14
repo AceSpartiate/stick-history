@@ -193,6 +193,19 @@
      and moved with a transform instead, which the compositor can do on its own without
      touching layout - the two translates compose, so the -50%/-100% centring is unchanged
      and the label lands on exactly the same pixel. */
+  /* The action bar. The HANDS slot is the piece button that was already there - it
+     carries the icon, the label and the reload fill, and a two-handed thing fills it
+     wide, which is the condensing asked for. These three are what is stowed. */
+  #slots{display:flex;gap:6px;align-items:flex-end;margin-right:8px}
+  .slotb{position:relative;width:44px;height:44px;border-radius:8px;
+    background:rgba(13,11,7,.52);border:1px solid rgba(240,230,205,.28);
+    color:#f0e6cd;font-family:'IM Fell English SC',serif;padding:0;overflow:hidden}
+  .slotb b{position:absolute;top:1px;left:4px;font-size:10px;font-weight:400;opacity:.55}
+  .slotb span{display:block;padding:12px 3px 3px;font-size:9px;line-height:1.05;
+    white-space:normal;opacity:.92}
+  .slotb.full{border-color:var(--gold-bright);background:rgba(40,32,16,.66)}
+  .slotb.empty span{opacity:.32}
+  .slotb.inhand{outline:2px solid var(--gold-bright);outline-offset:-2px}
   .lbl{position:absolute;left:0;top:0;will-change:transform;transform:translate(-50%,-100%);font-family:'IM Fell English SC',serif;
     color:#f0e6cd;font-size:12px;text-shadow:0 1px 3px #000,0 0 8px #000;white-space:nowrap;text-align:center;line-height:1.25;
     background:rgba(13,11,7,.46);padding:.12em .5em;border-radius:7px}
@@ -738,6 +751,11 @@
         <button class="camb" id="zOut" title="Zoom out">−</button>
       </div>
       <button id="action"></button>
+      <div id="slots">
+        <button class="slotb" id="slotBack"  data-slot="back"  title="Slung across your back (1)"><b>1</b><span></span></button>
+        <button class="slotb" id="slotBeltL" data-slot="beltL" title="Left of your belt (2)"><b>2</b><span></span></button>
+        <button class="slotb" id="slotBeltR" data-slot="beltR" title="Right of your belt (3)"><b>3</b><span></span></button>
+      </div>
       <button id="gunBtn" title="The piece (G)">
         <canvas id="gunIcon" width="88" height="40"></canvas>
         <span class="glab" id="gunLab">Take her up<small>slung</small></span>
@@ -1148,7 +1166,7 @@ function saveBlob(){
        resume: the man un-finished himself and the quiz gate closed behind the player. */
     spoke:S.spoke,
     equip:S.equip, voicePref:S.voicePref,
-    items:S.items, itemAt:S.itemAt, incidents:S.incidents, chartSeen:S.chartSeen,
+    items:S.items, slot:S.slot, itemAt:S.itemAt, incidents:S.incidents, chartSeen:S.chartSeen,
     survey:S.survey,
     shotAMan:!!S.shotAMan, killedAMan:!!S.killedAMan,
     boxOpened:!!S.boxOpened, smithRecognised:!!S.smithRecognised,
@@ -1187,7 +1205,7 @@ function applyBlob(d){
     if(d.equip)S.equip=d.equip;
     if(!S.equip.dye)S.equip.dye={torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"};
     if(d.voicePref)S.voicePref=d.voicePref;
-    S.items=d.items||{};S.itemAt=d.itemAt||{};S.incidents=d.incidents||[];
+    S.items=d.items||{};S.slot=d.slot||{};S.itemAt=d.itemAt||{};S.incidents=d.incidents||[];
     S.chartSeen=d.chartSeen||{};
     S.survey=d.survey||{days:surveyBudget(),found:{},visited:{}};
     S.shotAMan=!!d.shotAMan;S.killedAMan=!!d.killedAMan;
@@ -1244,7 +1262,7 @@ function clearSave(){try{if(window.localStorage)window.localStorage.removeItem(S
 function newRun(){
   S.insight={};
   S.met={};S.flawless={};S.talkErr={};
-  S.items={};S.itemAt={};S.incidents=[];
+  S.items={};S.slot={};S.itemAt={};S.incidents=[];
   S.shotAMan=false;S.killedAMan=false;
   S.boxOpened=false;S.smithRecognised=false;
   S.survey={days:surveyBudget(),found:{},visited:{}};
@@ -5416,6 +5434,8 @@ const ITEM_STATES=["absent","stowed","carried","ground"];
 const ITEMS={
   matchlock:{
     name:"Matchlock Caliver",
+    hands:2,          /* both of them: it cannot be worn on a belt */
+    slot:"back",      /* and slung is where it lives when it is not in them */
     weight:"about ten pounds",
     desc:"Four feet of barrel, a serpentine to hold the match, and a length of cord that must be kept alight. Slung, it is a weight across your back; in your hands it is forty seconds from empty to ready.",
     /* THE SAME WEAPON, AT THE SAME SCALE. These two are the piece as the world
@@ -5462,6 +5482,88 @@ const ITEMS={
     }
   }
 };
+/* ========== FOUR PLACES A THING CAN BE ON YOU ==========
+   Asked for: an action bar with the hands, the back and two on the belt, and the number
+   keys drawing between them.
+   ADDITIVE, DELIBERATELY. S.items[id] already carries the one state that matters for
+   whether a thing exists and whether it is out - absent, stowed, carried, ground - and it
+   is read in a dozen places and written into every save. Reshaping it into slots would
+   have meant migrating saves mid-chapter for a system that today holds ONE item. So the
+   slot is recorded ALONGSIDE it: S.slot[id] says WHERE a stowed thing is stowed, and
+   nothing that already worked has to learn a new shape. An old save has no S.slot at all
+   and every item falls back to the place its own table says it belongs. */
+/* CARRY_SLOTS, not SLOTS: the wardrobe has owned `const SLOTS` since it was written, and a
+   second one is a redeclaration the parser refuses outright. Caught by check 1 before it
+   could ever run - and the near-identical `SLOTS.forEach` in both is why the rename had to
+   be done with long anchors rather than a blanket substitution. */
+const CARRY_SLOTS=["back","beltL","beltR"];
+const CARRY_NAME={back:"Across your back",beltL:"Left of your belt",beltR:"Right of your belt"};
+function slotOf(id){
+  const want=(S.slot&&S.slot[id])||(ITEMS[id]&&ITEMS[id].slot)||"back";
+  return (CARRY_SLOTS.indexOf(want)<0)?"back":want;
+}
+function setSlot(id,sl){if(!S.slot)S.slot={};S.slot[id]=sl;}
+function twoHanded(id){return !!(ITEMS[id]&&ITEMS[id].hands===2);}
+function itemInHands(){
+  for(const id in ITEMS)if(itemState(id)==="carried")return id;
+  return null;
+}
+function itemInSlot(sl){
+  for(const id in ITEMS)if(itemState(id)==="stowed"&&slotOf(id)===sl)return id;
+  return null;
+}
+/* ---- THE NUMBER KEYS ----
+   Toggle on repeat, as asked: press the key of the thing already in your hands and it goes
+   back where it lives. Otherwise whatever is in your hands is stowed first - to its OWN
+   slot, not to the one you pressed - and the new thing comes up.
+   A two-handed piece cannot go on a belt. Rather than refuse the key, it swings to the
+   back and says so, which is what a man would do with a caliver he needed both hands off. */
+function drawFromSlot(sl){
+  const held=itemInHands();
+  if(held&&slotOf(held)===sl&&!twoHanded(held)){stowHands();return;}
+  if(held&&twoHanded(held)&&sl==="back"&&slotOf(held)==="back"){stowHands();return;}
+  const want=itemInSlot(sl);
+  if(!want){toast("Nothing there.");return;}
+  if(held)stowHands();
+  if(typeof setGunCarried==="function"&&want==="matchlock")setGunCarried(true);
+  else setItemState(want,"carried");
+  renderCarry();saveGame();
+}
+function stowHands(){
+  const held=itemInHands();
+  if(!held)return;
+  let home=slotOf(held);
+  if(twoHanded(held)&&home!=="back"){
+    home="back";setSlot(held,"back");
+    toast("A caliver will not sit on a belt \u2014 it goes across your back.");
+  }
+  if(typeof setGunCarried==="function"&&held==="matchlock")setGunCarried(false);
+  else setItemState(held,"stowed");
+  renderCarry();saveGame();
+}
+/* renderCarry, not renderSlots: the wardrobe declared function renderSlots long before
+   this did, and a second function declaration does not collide loudly - it silently wins or
+   loses depending on which is parsed last. Mine lost. Nothing threw, no check fired, the
+   bar simply never drew, and the only way to see it was to call it and watch the DOM not
+   change. The same trap as const SLOTS one screen up, without the parser to catch it. */
+function renderCarry(){
+  const host=$("slots");if(!host)return;
+  const held=itemInHands();
+  /* the bar is for a player who has something to carry */
+  let any=false;
+  for(const id in ITEMS)if(itemHeld(id))any=true;
+  host.style.display=any?"flex":"none";
+  CARRY_SLOTS.forEach(function(sl){
+    const b=host.querySelector('[data-slot="'+sl+'"]');
+    if(!b)return;
+    const id=itemInSlot(sl);
+    const isHand=(held&&slotOf(held)===sl);
+    b.className="slotb"+(id?" full":" empty")+(isHand?" inhand":"");
+    const lab=b.querySelector("span");
+    lab.textContent=id?ITEMS[id].name.split(" ")[0]:(isHand?"in hand":"\u2014");
+    b.title=(id?ITEMS[id].name:(isHand?"In your hands":"Empty"))+" \u2014 "+CARRY_NAME[sl];
+  });
+}
 function itemState(id){return (S.items&&S.items[id])||"absent";}
 function setItemState(id,st){if(!S.items)S.items={};S.items[id]=st;}
 function itemHeld(id){const st=itemState(id);return st==="stowed"||st==="carried";}
@@ -17012,6 +17114,24 @@ function endLesson(){
 /* the skip button was never wired to anything at all - give it both jobs */
 if($("goalBtn"))$("goalBtn").onclick=function(){openGoals();};
 if($("goalClose"))$("goalClose").onclick=function(){$("mGoals").classList.remove("on");};
+/* ---- the bar, by hand and by number ---- */
+/* By id and one at a time, not through a querySelector loop: check 15 reads this file to
+   prove no button is wired to nothing, and a helper-wired button is invisible to it. It
+   flagged all three, correctly - a static scan cannot follow a selector built at runtime. */
+if($("slotBack")) $("slotBack").onclick =function(){drawFromSlot("back");};
+if($("slotBeltL"))$("slotBeltL").onclick=function(){drawFromSlot("beltL");};
+if($("slotBeltR"))$("slotBeltR").onclick=function(){drawFromSlot("beltR");};
+window.addEventListener("keydown",function(e){
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const t=e.target;
+  if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.isContentEditable))return;
+  /* not while a sheet is up: the numbers belong to the deck, not to a modal */
+  if(document.querySelector(".modal.on"))return;
+  const i=["1","2","3"].indexOf(e.key);
+  if(i<0)return;
+  e.preventDefault();
+  drawFromSlot(CARRY_SLOTS[i]);
+});
 if($("cineSkip"))$("cineSkip").onclick=function(){
   if(LESSON.on)endLesson();
   else if(CS.active)endCutscene();
@@ -23580,7 +23700,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-1021";
+const BUILD="20260814-1055";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
