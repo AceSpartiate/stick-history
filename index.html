@@ -5911,7 +5911,7 @@ function stageCheck(i){
    difficulty in the table IS the difficulty on the screen and cannot drift from it.
    Nothing here is timed to the frame rate: everything moves by dt, so a Chromebook at 30
    frames is the same drill as a desktop at 60, only smoother or less so. */
-const GG={on:false,i:0,t:0,prog:0,need:0,mark:0,dir:1,done:false,fails:0};
+const GG={on:false,i:0,t:0,prog:0,need:0,mark:0,dir:1,done:false,fails:0,onDone:null};
 function ggStage(){return GREAT_GUN_STAGES[GG.i]||null;}
 function ggBegin(){
   const st=ggStage();if(!st)return;
@@ -5920,15 +5920,15 @@ function ggBegin(){
   GG.need=p.strokes||p.turns||p.pulls||1;
   ggPaint();
 }
-function openGunDrill(){
+function openGunDrill(onDone){
   const blocked=firstBlocked();
-  GG.on=true;GG.i=0;GG.fails=0;
+  GG.on=true;GG.i=0;GG.fails=0;GG.onDone=onDone||null;
   stowForDrill(null);            /* both hands empty; the first motion asks for its tool */
   stockTheRack();                /* and the staves are standing at the gun, as they were */
   ggBegin();openModal("mGun");
   if(blocked)toast(blocked.why);
 }
-function closeGunDrill(){GG.on=false;$("mGun").classList.remove("on");setPaused(false);}
+function closeGunDrill(){GG.on=false;GG.onDone=null;$("mGun").classList.remove("on");setPaused(false);}
 /* ---- what the press does, which depends on what is being done ---- */
 function ggPress(){
   if(!GG.on)return;
@@ -5962,8 +5962,12 @@ function ggPass(){
     if(!GG.on)return;
     GG.i++;
     if(GG.i>=GREAT_GUN_STAGES.length){
+      const done=GG.onDone;
       closeGunDrill();
       toast("She is run out and primed. "+(GG.fails?("Two and a half minutes, and "+GG.fails+" motion"+(GG.fails===1?"":"s")+" to do again."):"Not a motion wasted."));
+      /* whoever asked for the drill gets told, and only on the last motion - standing away
+         from the gun is not loading it */
+      if(done)setTimeout(done,300);
       return;
     }
     ggBegin();
@@ -11016,8 +11020,23 @@ function cannonFallSteps(d,sol){
      t:3.2,narrate:words[1]});
   return out;
 }
+/* ---- SHE DOES NOT GO OFF UNTIL SHE IS LOADED ----
+   Reported at the start of all this: far too easy to fire a cannon by accident. Two things
+   were wrong and the reach was only the first. The second is that pressing the button WAS
+   the shot - one press, three thousand pound of gun, and a seizure at the mast.
+   The drill stands between them now. Two and a half minutes of it, worm to linstock, and
+   the discharge is what happens when the last motion is made. Standing away from the gun
+   part way through does nothing at all, which is the point: nothing is recorded against you
+   for approaching a gun, only for firing one.
+   S.firedGun and the count against your name moved into the discharge with it. They were at
+   the top of this function, so a player who opened the drill and thought better of it would
+   have been marked down for a shot that never happened. */
 function fireCannon(d){
   if(S.firedGun){toast("The guns are secured. You have done enough.");return;}
+  openGunDrill(function(){dischargeCannon(d);});
+}
+function dischargeCannon(d){
+  if(S.firedGun)return;
   S.firedGun=true;S.corrections+=2;
   incur("fired a gun");        /* the reported exploit: this was memory-only until now */
   boom();
@@ -24200,7 +24219,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-2350";
+const BUILD="20260814-2352";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
