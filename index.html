@@ -5755,6 +5755,47 @@ const GREAT_GUN_STAGES=[
   {k:"fire",      tool:"linstock", f:0.10, doing:"ready to give fire",
    note:"Match at arm's length in the fork, and stand out of her recoil."}
 ];
+/* ---- AND THE MOTION REFUSES THE WRONG HANDS ----
+   The gate the whole action bar was built to make possible. A motion states the tool it
+   wants; this asks whether you are holding it, and if you are not it says so in terms a
+   player can act on rather than a grey button.
+   THE REFUSAL IS THE TEACHING and it is worth more than the permission. It names the tool,
+   says WHY that motion needs it, and tells you where the thing is and which key brings it
+   up - so a pupil who has never read a word about gun drill learns the sequence by being
+   turned back from it, which is roughly how the sequence was learnt at the time.
+   Four states, and each gets its own sentence: right tool in hand; wrong tool in hand;
+   the tool somewhere on you; and no such tool at all. The last matters because the drill
+   will be able to start before every piece of kit has been issued. */
+function stageAt(i){return GREAT_GUN_STAGES[i]||null;}
+function stageCheck(i){
+  const st=stageAt(i);
+  if(!st)return {ok:false,why:"There is no such motion."};
+  if(!st.tool)return {ok:true,st:st};                  /* bare hands, and both of them */
+  const held=itemInHands();
+  if(held===st.tool)return {ok:true,st:st};
+  const want=ITEMS[st.tool], nm=want?want.name.toLowerCase():st.tool;
+  const state=itemState(st.tool);
+  if(state==="absent")
+    /* `doing` is a gerund phrase for "...is worming her out", so it cannot be dropped into
+       this frame - the first draft read "she cannot be worming her out without one". */
+    return {ok:false,st:st,why:"You have no "+nm+". That motion cannot be made without one."};
+  if(state==="ground")
+    return {ok:false,st:st,why:"The "+nm+" is where you set it down."};
+  const where=CARRY_NAME[slotOf(st.tool)].toLowerCase();
+  const key=["back","beltL","beltR"].indexOf(slotOf(st.tool))+1;
+  const hands=held?("You have the "+ITEMS[held].name.toLowerCase()+" in your hands. "):"";
+  return {ok:false,st:st,
+          why:hands+"For "+st.doing+" you want the "+nm+" \u2014 "+where.toLowerCase()+
+              ", key "+key+"."};
+}
+/* the same question asked of the whole drill: what is the first motion you cannot make? */
+function firstBlocked(){
+  for(let i=0;i<GREAT_GUN_STAGES.length;i++){
+    const c=stageCheck(i);
+    if(!c.ok)return {i:i,k:GREAT_GUN_STAGES[i].k,why:c.why};
+  }
+  return null;
+}
 
 function itemState(id){return (S.items&&S.items[id])||"absent";}
 function setItemState(id,st){if(!S.items)S.items={};S.items[id]=st;}
@@ -23918,7 +23959,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-2159";
+const BUILD="20260814-2217";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
