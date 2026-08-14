@@ -5736,23 +5736,32 @@ for(const k in CREW_TOOLS)ITEMS[k]=CREW_TOOLS[k];
    spine to hang from. */
 const GREAT_GUN_STAGES=[
   {k:"worm",      tool:"worm",     f:0.09, doing:"worming her out",
+   game:"turn",  par:{turns:3,  tol:0.28},
    note:"Drag out what the last cartridge left. What you miss can still be alight."},
   {k:"sponge",    tool:"sponge",   f:0.10, doing:"sponging the bore",
+   game:"stroke",par:{strokes:2, tol:0.22},
    note:"Wet fleece the length of the bore, and no hurrying it."},
   {k:"cartridge", tool:null,       f:0.07, doing:"the cartridge home",
+   game:"place", par:{tol:0.30},
    note:"A serge bag of powder, down the muzzle by hand."},
   {k:"wad",       tool:null,       f:0.06, doing:"the wad after it",
+   game:"place", par:{tol:0.34},
    note:"Junk or oakum, to hold the ball against the roll of the ship."},
   {k:"ram",       tool:"rammer",   f:0.16, doing:"ramming home",
+   game:"stroke",par:{strokes:4, tol:0.20},
    note:"Hard against the breech. Loose powder burns instead of throwing."},
   {k:"prick",     tool:"prickr",   f:0.05, doing:"pricking the cartridge",
+   game:"aim",   par:{band:0.16},
    note:"Down the touch hole, to tear the bag open so the priming can reach it."},
   {k:"prime",     tool:null,       f:0.06, doing:"priming the touch hole",
+   game:"pour",  par:{lo:0.42,hi:0.68},
    note:"Fine powder, filled and no more."},
   /* the beat nobody expects, and a third of the work */
   {k:"runout",    tool:null,       f:0.31, doing:"running her out",
+   game:"haul",  par:{pulls:9, slip:0.40},
    note:"Three thousand pound of gun and carriage, hauled out on her tackle until the muzzle is clear of the side. There is nobody on the other fall but you."},
   {k:"fire",      tool:"linstock", f:0.10, doing:"ready to give fire",
+   game:"aim",   par:{band:0.22},
    note:"Match at arm's length in the fork, and stand out of her recoil."}
 ];
 /* ---- AND THE MOTION REFUSES THE WRONG HANDS ----
@@ -5766,6 +5775,28 @@ const GREAT_GUN_STAGES=[
    Four states, and each gets its own sentence: right tool in hand; wrong tool in hand;
    the tool somewhere on you; and no such tool at all. The last matters because the drill
    will be able to start before every piece of kit has been issued. */
+/* ---- HOW LONG THE WHOLE THING TAKES, AND WHAT EACH MOTION ASKS OF THE HANDS ----
+   A trained gun crew of six could get a round away in about two minutes. The player has
+   nobody, so the drill is set at two and a half and every motion takes its own share of
+   that - GREAT_GUN_STAGES.f, which already sums to one, so the seconds fall out of the
+   table rather than being typed in twice and drifting apart.
+   FIVE KINDS OF EFFORT, and they are different on purpose. A drill where every motion is
+   the same bar filled the same way teaches that loading a gun is one thing done eight
+   times, which is the opposite of true.
+     turn    the worm screwed round and drawn back, a few full turns
+     stroke  a long two-handed push and pull, counted - sponging twice, ramming four times
+     place   a thing set in the muzzle and let go: little skill, some care
+     aim     a small target hit once - the touch hole, and the match to it
+     pour    a measure held between two marks, too little and it will not carry
+     haul    repeated pulls on a fall that SLIPS BACK if you rest, which is the run-out
+   `tol` and `band` are how much slop each allows; smaller is harder. Ramming is the
+   tightest of the counted ones because a charge not seated is the shot that does nothing,
+   and pricking is the tightest overall because the touch hole is a quarter inch wide. */
+const GREAT_GUN_SECONDS=150;
+function stageSeconds(i){
+  const st=GREAT_GUN_STAGES[i];
+  return st?+(GREAT_GUN_SECONDS*st.f).toFixed(1):0;
+}
 function stageAt(i){return GREAT_GUN_STAGES[i]||null;}
 function stageCheck(i){
   const st=stageAt(i);
@@ -23959,7 +23990,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-2217";
+const BUILD="20260814-2301";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
