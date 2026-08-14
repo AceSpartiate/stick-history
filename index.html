@@ -5457,6 +5457,9 @@ const ITEMS={
   matchlock:{
     name:"Matchlock Caliver",
     hands:2,          /* both of them: it cannot be worn on a belt */
+    short:"Caliver",  /* a chip is 44 pixels across and "Matchlock" broke across two lines
+                         with a lone k on the second. This is also what they called it: a
+                         caliver is the lighter shoulder piece, which is the one this is. */
     slot:"back",      /* and slung is where it lives when it is not in them */
     weight:"about ten pounds",
     desc:"Four feet of barrel, a serpentine to hold the match, and a length of cord that must be kept alight. Slung, it is a weight across your back; in your hands it is forty seconds from empty to ready.",
@@ -5663,11 +5666,46 @@ function renderCarry(){
        keeps the NAME and takes the light. */
     b.className="slotb"+((id||isHand)?" full":" empty")+(isHand?" inhand":"");
     const lab=b.querySelector("span");
-    lab.textContent=id?ITEMS[id].name.split(" ")[0]
-                      :(isHand?ITEMS[held].name.split(" ")[0]:"\u2014");
+    /* every item gets to say what it is called on a chip, because the first word of its
+       full name is not reliably short enough - and the gun crew's kit below is worse */
+    const nm=function(k){return ITEMS[k].short||ITEMS[k].name.split(" ")[0];};
+    lab.textContent=id?nm(id):(isHand?nm(held):"\u2014");
     b.title=(id?ITEMS[id].name:(isHand?"In your hands":"Empty"))+" \u2014 "+CARRY_NAME[sl];
   });
 }
+/* ========== WHAT A GUN CREW CARRIES ==========
+   The first piece of the cannon drill, and the reason the slot bar was built before it.
+   These are catalogue entries, not possessions: nothing grants them yet, and ITEMS has
+   always been a list of things that CAN exist rather than things you have - itemHeld()
+   is what decides whether one is drawn anywhere.
+   The order below is the order of the drill, which is the point of writing them down
+   first. Worm and sponge clear and quench what the last shot left, because a live ember
+   in the barrel meets the next cartridge and takes your arms off; the cartridge and wad
+   go down; the rammer seats them; the priming wire pricks the cartridge open through the
+   touch hole; the linstock carries the fire.
+   TWO OF THEM ARE TWO-HANDED and that is the whole shape of the thing. A man alone must
+   put down what he is holding to pick up the next, eight times, and the bar makes that
+   cost visible - which is why the run-out is the beat nobody expects: a demi-culverin
+   recoils inboard and has to be hauled back out on her tackle before she can fire again,
+   and there is nobody to haul but you. */
+const CREW_TOOLS={
+  worm:    {name:"Worm",         short:"Worm",   hands:2, slot:"back",
+            weight:"a long stave, a screw of iron at the end",
+            desc:"A corkscrew on a stave, for dragging out the burnt remains of the last cartridge. What it misses can still be alight."},
+  sponge:  {name:"Sponge",       short:"Sponge", hands:2, slot:"back",
+            weight:"a stave and a wet fleece",
+            desc:"A wet fleece on a stave, run down the bore to quench anything the worm left. A gun crew that hurries this loses a man to the next charge."},
+  rammer:  {name:"Rammer",       short:"Rammer", hands:2, slot:"back",
+            weight:"a stave and a wooden head",
+            desc:"Seats the cartridge and the wad hard against the breech. Loose powder burns instead of throwing, and a ball that is not seated can roll out again."},
+  prickr:  {name:"Priming Wire", short:"Wire",   hands:1, slot:"beltL",
+            weight:"a foot of stiff wire",
+            desc:"Pushed down the touch hole to tear the cartridge open, so the priming can reach the powder inside it."},
+  linstock:{name:"Linstock",     short:"Match",  hands:1, slot:"beltR",
+            weight:"a forked staff and a length of match",
+            desc:"A slow match held at arm's length in a forked staff, so the man giving fire is not standing over the touch hole when she goes."}
+};
+for(const k in CREW_TOOLS)ITEMS[k]=CREW_TOOLS[k];
 function itemState(id){return (S.items&&S.items[id])||"absent";}
 function setItemState(id,st){if(!S.items)S.items={};S.items[id]=st;}
 function itemHeld(id){const st=itemState(id);return st==="stowed"||st==="carried";}
@@ -23830,7 +23868,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-2118";
+const BUILD="20260814-2147";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
