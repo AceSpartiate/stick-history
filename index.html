@@ -695,7 +695,7 @@
   <div class="modal mid" id="mGoals">
     <div class="parchment deckle sheet" style="max-width:420px">
       <div class="kicker">What you are about</div>
-      <h3>Errands</h3>
+      <h3>Your Task</h3>
       <div id="goalList"></div>
       <button class="btn ghost wide mt" id="goalClose">Back</button>
     </div>
@@ -713,7 +713,7 @@
         <button id="hudJump" title="Jump (space)">Jump</button>
       </div>
       <div id="guide"><span class="arw" id="guideArw">➤</span><span id="guideTxt"></span></div>
-      <button id="goalBtn" title="Errands (G)" aria-label="Choose what the arrow points at">Errands</button>
+      <button id="goalBtn" title="Your Task (G)" aria-label="What you are meant to be doing, and where the arrow points">Your Task</button>
       <div id="hint">Drag left to walk · right to look · scroll to zoom · <b>F</b> to use</div>
       <div id="prompt"></div>
       <div id="gun">
@@ -5381,7 +5381,12 @@ function buildTweenLevel(root){
         const muzzle=new THREE.Vector3(sd*(hbw+1.2*K),y+2.1*K,z);
         CANNONS.push({x:cx,z:z,side:sd,muzzle:muzzle,grp:grp});
         interactables.push({id:"gun"+i+(sd>0?"S":"P"),label:"Cannon",x:cx-sd*2.6*K,z:z,
-          y:y,lvl:LVL.TWEEN,r:6*K,action:"cannon",data:{muzzle:muzzle,side:sd,grp:grp}});
+          /* ---- SIX FEET WAS ARM'S LENGTH FROM A GUN YOU NEVER MEANT TO TOUCH ----
+             Reported: too easy to fire a cannon by accident. Six feet of reach on a piece
+             that stands in a row of them meant the prompt was up while you were walking
+             PAST it, and a demi-culverin is not something you set off in passing. Three
+             feet: you have to stop at the gun you mean. */
+          y:y,lvl:LVL.TWEEN,r:3*K,action:"cannon",data:{muzzle:muzzle,side:sd,grp:grp}});
       }
     }
   }
@@ -8005,11 +8010,22 @@ function renderGoals(){
   const host=$("goalList");
   if(!host)return;
   host.innerHTML="";
+  /* what you are supposed to be doing, first and in the same shape as the pause sheet */
+  const task=document.createElement("div");
+  host.appendChild(task);
+  if(!objectivesInto(task)){
+    task.className="vNote";
+    task.textContent="Nothing is asked of you here yet.";
+  }
   const rows=goalList();
+  const hr=document.createElement("h4");
+  hr.className="center";hr.style.cssText="margin:14px 0 2px;opacity:.75";
+  hr.textContent="Point the arrow";
+  host.appendChild(hr);
   const note=document.createElement("div");
   note.className="vNote";
   note.textContent=rows.length
-    ? "Choose what the arrow should point at. It goes back to the chapter's own next errand when that one is finished, or when you clear it."
+    ? "The arrow follows the chapter unless you send it somewhere else."
     : "There is nothing to point at on this deck.";
   host.appendChild(note);
   const b0=document.createElement("button");
@@ -12249,8 +12265,17 @@ function objectiveRows(){
   if(!c||!c.goals)return [];
   try{return c.goals()||[];}catch(e){return [];}
 }
-function renderObjectives(){
-  const host=$("pauseObj");if(!host)return;
+/* ---- ONE TASK LIST, WHEREVER IT IS ASKED FOR ----
+   Reported: the panel behind the pause menu is better than the Errands button - simpler,
+   and it says what you are supposed to be doing. It is, and the reason is that they were
+   never the same thing. `pauseObj` lists the chapter's OBJECTIVES; the Errands sheet is a
+   picker for what the guide arrow points at, which is a setting rather than an answer to
+   "what now?".
+   So the list is drawn by one function and both panels call it. The picker survives, under
+   the list and under its own quieter heading, because pinning the arrow is genuinely useful
+   and deleting it to satisfy a rename would be the wrong trade. */
+function objectivesInto(host){
+  if(!host)return 0;
   host.innerHTML="";
   const rows=objectiveRows();
   for(let i=0;i<rows.length;i++){
@@ -12262,7 +12287,9 @@ function renderObjectives(){
       (r.goal&&!r.done?"  \u2014 "+reckReady()+" of "+reckNeed()+" asked out":"")+"</span>";
     host.appendChild(d);
   }
+  return rows.length;
 }
+function renderObjectives(){objectivesInto($("pauseObj"));}
 function openPause(){$("mPause").classList.add("on");setPaused(true);renderObjectives();
 }
 $("pauseResume").onclick=function(){$("mPause").classList.remove("on");setPaused(false);};
@@ -23553,7 +23580,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-1015";
+const BUILD="20260814-1021";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
