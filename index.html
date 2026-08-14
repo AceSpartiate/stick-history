@@ -9890,14 +9890,37 @@ function makePools(){
   XG.box(0,0,0,1.414,0.30,0.02,XR,-Math.PI/4);
   const XGEOM=XG.mesh(false,true).geometry;
   SHARED.add(XGEOM);                       /* shared: never disposed with one mark */
-  POOL.impacts=new Pool(24,function(){
+  /* ---- AND IT HAS TO BE VISIBLE THROUGH YOUR OWN SMOKE ----
+   Reported three times, and twice I fixed the wrong thing. The mark is not late.
+   Measured from the trigger: 235 ms at nineteen feet, about 320 at forty yards - and of
+   that, 175 is the LOCK, the serpentine falling and the pan carrying fire to the charge,
+   while only 99 is the ball in the air. It is created within a frame of the ball
+   arriving, at full opacity, and it already drew after the smoke in render order.
+   And you still could not see it, because at 280 ms the screen IS smoke. Twelve puffs a
+   foot and a half across, four feet from the eye, each subtending twenty-two degrees of
+   a fifty-six degree field. Captured and looked at rather than reasoned about: the sight
+   line is a grey slab from about a tenth of a second until most of a second later, and
+   the mark is created in the middle of that window.
+   The obscuration is REAL and it stays. A man who fires a matchlock cannot see what he
+   hit, the plume is sized to the record, and that is worth teaching. But the cross is
+   not a thing in the world - it is a fall-of-shot mark, the same aid a range officer
+   would give you - and an aid that is behind the weather is no aid. depthTest off and
+   last in the queue, so it is drawn THROUGH the smoke rather than merely after it.
+   The smoke's own delay stays where the research put it, because the order of the beats
+   - report, strike, smoke - is still right. It was never going to be enough on its own:
+   a cloud that takes 0.05s to start filling the sight line still fills it long before a
+   mark thirty-four seconds long has finished being looked at. */
+POOL.impacts=new Pool(24,function(){
     const m=new THREE.Mesh(XGEOM,new THREE.MeshBasicMaterial({
       vertexColors:true,transparent:true,opacity:1,side:THREE.DoubleSide,
-      depthWrite:false}));
-    /* after the smoke, and only after the smoke. Depth testing still applies, so a
-       dune between you and the mark still hides it - it is the game's own transparent
-       effects this beats, not the world. */
-    m.renderOrder=4;
+      depthWrite:false,depthTest:false}));
+    /* Drawn last and depth-tested against nothing. That note used to say "depth testing
+       still applies, so a dune between you and the mark still hides it" - which was true,
+       and was the bug: the thing hiding it was never a dune, it was the shooter's own
+       smoke, and depth testing does not distinguish. The mark is placed where the ball
+       STOPPED, so there is by construction nothing solid between it and the eye that fired
+       the shot; what it now punches through is weather. */
+    m.renderOrder=12;
     fxRoot.add(m);return m;
   });
 }
@@ -13918,7 +13941,19 @@ function markImpact(x,y,z,d,dist,o){
   if(!POOL.impacts)return;
   const mk=POOL.impacts.take();
   if(!mk)return;
-  const size=0.20+dist*0.0075;
+  /* ---- AND IT HAS TO BE BIG ENOUGH TO BE A MARK ----
+     0.20 + dist*0.0075 gives 1.1 units at forty yards. Worked out as an angle rather than
+     admired as a number: 1.1 across at 120 feet subtends 0.0092 radians, and the frame at
+     that range is 127 feet tall, so the cross is 0.86% of the picture. On the canvas I have
+     been capturing at, that is TWO PIXELS. It was never being hidden by the smoke at forty
+     yards - there was nothing there to hide. I called it eleven pixels in an earlier commit
+     and that was wrong.
+     A fall-of-shot mark is an aid, so it wants a roughly constant ANGULAR size rather than a
+     constant real one - which is what the dist term is for, and it was an order of magnitude
+     too weak. 0.30 + dist*0.035 holds it near two degrees at any range: 1.0 at twenty feet,
+     2.4 at twenty yards, 4.5 at forty, and still under four percent of frame height, which
+     is a clear mark and not a billboard. */
+  const size=0.30+dist*0.035;
   mk.position.set(x-d.x*0.30,y-d.y*0.30,z-d.z*0.30);
   mk.scale.set(size,size,1);              /* z is the bar's own thickness; leave it */
   /* Facing back down the line of fire, which is the one orientation that is always
