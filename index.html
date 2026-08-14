@@ -21816,7 +21816,117 @@ CONTENT.ch2={
      o:["Use it carefully for what it witnessed, while treating its judgements as the writer's own",
         "Discard it entirely, since a hostile writer cannot report facts",
         "Accept all of it, since the writer was present and the others were not",
-        "Use it only where another source repeats it word for word"],a:0}
+        "Use it only where another source repeats it word for word"],a:0},
+
+    /* ================= ADDED, BECAUSE THE PAPER HAD NO CHOICE IN IT =================
+       Measured before writing these: reckPool() returned SIX fair questions and the paper
+       asks six, so every pupil in a room sat the identical paper next to people they could
+       compare with, and the two-map composition could never be met because only one map
+       item was ever fair. Chapter I draws its six from thirty-five.
+       So the count is not the only thing that matters here - the GATING is. A question is
+       fair when the player had the chance to learn its subject, and enough of these are
+       ungated that a paper can always be built: anyone who lands, drills and sits the
+       muster has met the orders, the piece and the boats, whatever they surveyed. The rest
+       hang off findings, so a player who went and looked is asked about what they saw. */
+
+    /* ---- maps. All on the capes frame, which is the one this chapter is set in, and all
+       reading the SAME drawn sheet from different directions - which is what a document
+       question set does. Two are ungated so RECK_MAPS can always be filled. ---- */
+    {stim:"The map shows the bay, the river running west from it, and three possible sites. X stands on the open cape facing the Atlantic; Y lies well up the river; Z lies far inland at the head of navigation.",
+     map:"capes",
+     q:"The Company\u2019s orders required a place a bark of fifty tons could still reach. Which site does that requirement rule OUT?",
+     o:["Z, because the head of navigation is where a laden bark can no longer pass",
+        "X, because an open cape has no fresh water",
+        "Y, because the river narrows above it",
+        "None of them, since a bark of fifty tons draws very little"],a:0},
+
+    {stim:"The map shows the bay, the river running west from it, and three possible sites. X stands on the open cape facing the Atlantic; Y lies well up the river; Z lies far inland at the head of navigation.",
+     map:"capes",
+     q:"Choosing Y over X trades one advantage for another. Which trade is it?",
+     o:["Harder for an enemy to reach, but slower to supply from the sea",
+        "Better fresh water, but poorer soil",
+        "Closer to the Powhatan towns, but further from the fishing",
+        "A safer anchorage, but a longer march to the falls"],a:0},
+
+    {stim:"The map shows the bay, the river running west from it, and three possible sites. X stands on the open cape facing the Atlantic; Y lies well up the river; Z lies far inland at the head of navigation.",
+     map:"capes",
+     evid:["comfort.depth","james.depth","archers.berth"],
+     q:"The map marks the sites but carries no soundings. What must a surveyor do that the map cannot do for him?",
+     o:["Sound the depth himself, because a chart of positions says nothing about how deep the water lies",
+        "Take the latitude again, because the map\u2019s scale may be wrong",
+        "Count the Powhatan towns, because the map leaves them out",
+        "Wait for a spring tide, because the depth changes every day"],a:0},
+
+    {stim:"The map shows the bay, the river running west from it, and three possible sites. X stands on the open cape facing the Atlantic; Y lies well up the river; Z lies far inland at the head of navigation.",
+     map:"capes",
+     evid:["comfort.hosts","james.whose"],
+     q:"The sheet shows rivers, capes and English marks, and no towns at all. A historian should read that absence as \u2014",
+     o:["a record of what the mapmaker thought worth setting down, not of who lived there",
+        "proof that the country between the capes was empty",
+        "evidence that the Powhatan built nothing that lasted",
+        "a mistake by an engraver working from memory"],a:0},
+
+    /* ---- the orders, which every player is handed whatever they survey ---- */
+    {stim:"The Council\u2019s instructions told the settlers to judge how healthy a place was by looking at the people already living there: \u201cif the naturals be Strong and Clean made it is a true sign of a wholesome Soil.\u201d",
+     q:"What does that instruction assume?",
+     o:["That people who have lived somewhere a long time are evidence of what the ground will support",
+        "That the English would be able to question the inhabitants directly",
+        "That healthy people are found only on land nobody else wants",
+        "That the Powhatan would agree to share their fields"],a:0},
+
+    {stim:"The shallop was carried across the Atlantic in pieces and built up on the beach after the landing. The fleet stayed with the exploring party.",
+     q:"Which best describes how the survey of the bay was actually carried out?",
+     o:["The ships moved from place to place and the shallop put men ashore",
+        "The shallop was rowed the whole way between every site",
+        "The settlers marched overland between the sites",
+        "The Discovery carried the party while the other two ships waited at sea"],a:0},
+
+    {stim:"A matchlock is fired by lowering a burning cord into priming powder. Between the trigger and the charge going off there is a pause you can measure.",
+     q:"Why does that pause make the piece hard to aim?",
+     o:["The muzzle can move in the time between the trigger and the shot",
+        "The powder burns unevenly at long range",
+        "The ball loses speed while the powder catches",
+        "The smoke blocks the view before the ball leaves the barrel"],a:0},
+
+    {stim:"Jamestown Island had nobody living on it, in a country where the better ground was already farmed.",
+     q:"For a surveyor, an empty place in a settled country is best treated as \u2014",
+     o:["a question about why it is empty",
+        "land that belongs to nobody",
+        "the safest choice available",
+        "proof that the soil is poor"],a:0},
+
+    /* ---- and the ones that belong to people who went and looked ---- */
+    {stim:"On the twenty-sixth of April the English were attacked in the dark at Cape Henry. On the thirtieth, four days later, they were received at Kecoughtan, fed, given tobacco, and danced for.",
+     evid:["comfort.hosts"],
+     q:"Holding both of those together best supports which conclusion?",
+     o:["Powhatan towns judged the English for themselves rather than acting as one people",
+        "The first account must be exaggerated, since the second is friendly",
+        "The English had made a treaty in the four days between",
+        "The Powhatan had no leaders able to direct them"],a:0},
+
+    {stim:"George Percy wrote that the Paspahegh weroance offered the English \u201cas much land as we would desire to take\u201d. Percy was one of the settlers, and his is the only account of that meeting.",
+     evid:["james.whose"],
+     q:"How should a historian handle that sentence?",
+     o:["As evidence of what Percy wanted recorded, while asking what a weroance could actually have meant",
+        "Accept it, because an eyewitness is the strongest kind of source",
+        "Discard it, because settlers always wrote badly of the Powhatan",
+        "Accept it only if a Powhatan account repeats it"],a:0},
+
+    {stim:"Archer\u2019s Hope had deep soil, standing timber and fresh water, and much of the company wanted it. Percy: \u201cIf it had not been disliked because the ship could not ride near the shore, we had settled there.\u201d",
+     evid:["archers.berth"],
+     q:"What does that decision show about how a site was chosen?",
+     o:["A place had to be suppliable by ship before anything else about it counted",
+        "The company preferred defence to farmland in every case",
+        "Wingfield overruled the company for reasons of his own",
+        "Fresh water mattered less to them than timber did"],a:0},
+
+    {stim:"At the island they took, the ships lay so close in that they were moored to the trees, in six fathom of water.",
+     evid:["james.depth"],
+     q:"The chief practical advantage of that was that \u2014",
+     o:["stores could be landed straight from the ship instead of ferried in by boat",
+        "the ships were hidden from the sea by the trees",
+        "the settlers could get away quickly if they were attacked",
+        "the water alongside was fresh enough to drink"],a:0}
   ]},
   /* Chapter II is ready when it has been LOOKED AT and the decision has been made. Three
      findings rather than all nine, because the muster asks what you made of the evidence
@@ -22208,6 +22318,10 @@ const PATCH_NOTES=[
      "A class played this on Chromebooks and reported it as laggy. Two things came out of chasing it. The labels over people and doors were being moved with properties that make the browser redo its page layout, sixty times a second, and were looking up the same two bits of themselves every frame to do it — about seventy-six needless lookups a frame with a deckful of labels. They are moved a cheaper way now and nothing about them looks different.",
      "The second is a way to find out rather than guess. Open the game with <b>?diag</b> on the end of the address and it shows what the machine is really doing in the corner: frame rate, how much it is drawing, the size of the picture, and what graphics hardware the browser says it is using. THAT LAST LINE IS THE IMPORTANT ONE. If it mentions SwiftShader or software, the Chromebook is drawing without its graphics chip, and that is a setting on the machine rather than anything in the game — no amount of tuning here will touch it.",
      "Measured on a desktop for comparison: Chapter I draws about 37,000 triangles in 138 calls and takes well under half a millisecond of processor time a frame. That is a small scene, which is why the fault is worth pinning down rather than guessing at.",
+     "<b>The Chapter II paper, which every pupil used to sit identically</b>",
+     "Counted before touching it: the chapter held eighteen questions but only SIX that a player could fairly be asked, and the paper asks six. So every pupil in a room sat the same six questions next to people they could compare with. The two-map rule could not be met either, because only one map question was ever askable.",
+     "Twelve more, four of them maps. Measured after: a player who has done the bare minimum — three findings from two places — now draws from fourteen, and two hundred papers came out as a hundred and eighty-seven different ones. A player who surveyed everything draws from twenty-three and got a hundred and ninety-nine different papers out of two hundred. Every paper now carries its two maps.",
+     "The new questions ask what this chapter actually teaches: what the Company\u2019s orders required and what they assumed, why a place with the best soil on the river was refused, what six fathom against a bank is worth, which boat really made the passages, why a matchlock is hard to aim, and how to read a map that shows rivers and English marks and no towns at all. Two of them hand a pupil a single sentence from Percy and ask what a historian does with it.",
      "<b>A note for the classroom</b>",
      "Percy records being fed by people he calls Savages, in the same breath. Both halves of that are kept, deliberately. The game names Kecoughtan, Paspahegh and the weroance accurately; the seventeenth-century sources say what they say. The friction between the two is the thing worth teaching, and smoothing it would teach that the past was gentler than it was."]},
   {when:"4 August 2026",
@@ -23439,7 +23553,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-1002";
+const BUILD="20260814-1015";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
