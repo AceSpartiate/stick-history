@@ -11676,10 +11676,16 @@ function rkEnd(){
     refreshPlayer();$("resBtn").textContent="See how the chapter ends";
     /* the chapter's own boundary, and the one that most needs to survive a
        closed tab: the unlocks, the earned face and twenty Ink all land here */
-    checkpoint("Chapter I complete");
+    /* ---- WHICH CHAPTER, ASKED RATHER THAN ASSUMED ----
+       Both of these said "ch1" outright, from when there was only one chapter to finish.
+       Found by testing the muster's FAIL path, which was the thing being looked for: fail
+       it, retry, pass, and Chapter II hands you the end of Chapter I. The checkpoint said
+       so too, so a save made at the end of the second chapter was labelled as the first. */
+    checkpoint((chapterOf(CURRENT_WORLD)?("Chapter "+chapterOf(CURRENT_WORLD).n):"Chapter")+" complete");
   } else {S.reckTries++;$("resBtn").textContent="Study and retry";saveGame();}
   updateInk();openModal("mResult");
-  $("resBtn").onclick=function(){$("mResult").classList.remove("on");if(passed)showEnding("ch1");else setPaused(false);};
+  const endWorld=CURRENT_WORLD;   /* captured now: the ending belongs to the chapter that was sat */
+  $("resBtn").onclick=function(){$("mResult").classList.remove("on");if(passed)showEnding(endWorld);else setPaused(false);};
 }
 
 /* ========== WARDROBE ========== */
@@ -17878,7 +17884,19 @@ function buildThinSite(root,key){
       y:G(sp[0],sp[1]),lvl:LVL.MAIN,r:9,action:"survey",
       data:{site:key,sv:sv,spot:sp}});
   }
-  interactables.push({id:"boat",label:"The Shallop",x:site.land[0]+6,z:site.land[1]+6,
+  /* ---- WHAT THE SHALLOP IS FOR, WHICH THE LABEL HAD BACKWARDS ----
+     The ships now stand off every site instead of only Point Comfort, which was the first
+     half of this. The second half is what the player is told they are doing. A prompt
+     reading "The Shallop" over a button that opens the chart and sails you forty miles says
+     the survey was made by rowing a small boat from place to place. It was not. Percy, the
+     thirtieth of April: "we came with our ships to Cape Comfort" - and THEN "the Captain
+     caused the shallop to be manned" to get men onto the beach. The fleet made the
+     passages; the shallop crossed the last two hundred yards, and on the fifth of May she
+     went in "manned with Muskets and Targatiers", which is not how anyone describes a ferry.
+     So the boat is what you go back to the ships IN, and the chart is where the next passage
+     is argued. The prompt says that now. */
+  interactables.push({id:"boat",label:"Back to the Boat",
+    x:site.land[0]+6,z:site.land[1]+6,
     y:G(site.land[0]+6,site.land[1]+6),lvl:LVL.MAIN,r:11,action:"chart"});
   player=buildFigure(S.equip);
   player.position.set(site.land[0],G(site.land[0],site.land[1]),site.land[1]);
@@ -17910,7 +17928,7 @@ const SITES={
 
   comfort:{name:"Point Comfort",world:"comfort",cost:1,chapter:"ch2",
     gloss:"A low point inside the capes, where the deep channel runs close in.",
-    arrive:"The fleet is riding at anchor off the point, close enough to hail. Good holding ground, they say, and after four months of open water that is a comfort.",
+    arrive:"The ships came down and anchored off the point, and the shallop set you on the beach. Good holding ground, they say, and after four months of open water that is a comfort.",
     /* The town spot stands OFF the town, not in it. At [-6,2] it was eighteen inches from
        the wall of the nearest house and the establishing shot was a brown slab: the wide
        needs the town in front of the player at a distance a town can be seen at. */
@@ -17929,7 +17947,7 @@ const SITES={
      colony, which is the whole argument of Phase 4 in one site. */
   archers:{name:"Archer's Hope",world:"archers",cost:1,chapter:"ch2",
     gloss:"A creek off the north bank. Fine ground, and the men who saw it wanted it.",
-    arrive:"Timber standing sixty feet and straight as a mast, and the ground under it black. Half the company would settle here tomorrow.",
+    arrive:"The ships lie well out — they cannot come nearer — and the shallop pulls you the rest of the way in. Timber standing sixty feet and straight as a mast, and the ground under it black. Half the company would settle here tomorrow.",
     land:[8,54], spots:[[-40,10],[34,-22],[24,46]],
     surveys:[
       {k:"ground",verb:"Walk the ground", d:"Deep loam, standing timber, and open ground a plough could take. The best land you have set foot on."},
@@ -17942,7 +17960,7 @@ const SITES={
      soften it into bad luck. */
   james:{name:"Jamestown Island",world:"james",cost:1,chapter:"ch2",
     gloss:"A low island up the river, joined to the bank by a neck of sand.",
-    arrive:"Dead trees standing in the shallows, and the smell of the marsh coming off it. The boat touches the bank without sounding — the water is that deep, right up to the roots.",
+    arrive:"The ships stood right in and made fast to the trees, and you stepped ashore almost off the deck. Dead trees standing in the shallows, and the smell of the marsh coming off it — but the water is six fathom hard against the bank, and every other place you have seen would have made you lighter it all in by boat.",
     land:[6,56], spots:[[-30,44],[44,6],[-8,-26],[-14,-38]],
     surveys:[
       {k:"depth", verb:"Sound the depth", d:"Six fathom hard against the bank. You could moor a ship to the trees and step ashore off her deck."},
@@ -23342,7 +23360,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-0344";
+const BUILD="20260814-0354";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
