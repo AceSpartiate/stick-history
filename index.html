@@ -5996,7 +5996,17 @@ function toggleGun(){
 function refreshGunUI(){
   const b=$("gunBtn"), lab=$("gunLab"), fb=$("fireBtn");
   if(!b||!lab||!fb)return;
-  const show=gunHeld()&&!GUN.active;
+  /* ---- AND IT IS NOT A WARDROBE ----
+     This showed whenever the piece was HELD, slung or not, so with the action bar in it
+     there were two controls for taking her up: a chip you can tap and a button underneath
+     saying "Take her up / on your back". Clutter, correctly called. The bar owns stowing
+     and drawing now - by number on a keyboard and by tapping the chip on a phone, which is
+     the same coverage this button had - so this one appears only when she is in your hands,
+     where it is the piece's own state and the reload it is counting.
+     Coverage is exactly equal and not merely similar: the bar is shown whenever any item is
+     held, which is the same condition that used to show this. Nobody can be left with a
+     slung piece and no way to reach it. */
+  const show=gunInHands()&&!GUN.active;
   b.classList.toggle("on",show);
   if(show){
     const inh=gunInHands();
@@ -23820,7 +23830,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-1400";
+const BUILD="20260814-2118";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
