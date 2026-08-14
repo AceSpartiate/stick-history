@@ -353,7 +353,12 @@
   /* MEASURED AT PHONE WIDTH: 83 by 22 is a fine-looking chip and a poor thumb target -
      the usual floor is about 44. Padded out vertically rather than made wider, so it stays
      a chip and stops being a dare. */
-  #goalBtn{position:absolute;left:50%;transform:translateX(-50%);bottom:92px;z-index:5;
+  /* ABOVE THE ACTION BAR, not under it. The bar sits at bottom 62 and stands 44 tall, so
+     its top edge is 106 up; this was at 92 with a lower z-index, and the two overlapped by
+     fourteen pixels with the chips drawn over the button. Measured, both rects: goalBtn
+     113 to 143, slots 129 to 173. 116 clears it with ten pixels of air, and both are
+     anchored to the BOTTOM so the gap holds at any height of screen. */
+  #goalBtn{position:absolute;left:50%;transform:translateX(-50%);bottom:116px;z-index:5;
     padding:.62em 1.1em;border-radius:999px;cursor:pointer;
     font-family:'IM Fell English SC',serif;letter-spacing:.05em;font-size:.72rem;
     text-transform:uppercase;color:var(--gold);background:rgba(24,20,14,.62);
@@ -23868,7 +23873,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-2147";
+const BUILD="20260814-2151";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
