@@ -21872,7 +21872,31 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    list nobody finishes is a list nobody reads.
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
-  {when:"4 August 2026 · latest",
+  {when:"14 August 2026 · latest",
+   head:"Kecoughtan, the shot mark, and the executions you could not see",
+   lines:[
+     "<b>First, the reason none of this reached you</b>",
+     "The game checks for its own updates by comparing a build id against the copy on the server, and it does that well. It had nothing to find. Ten changes went up over two sittings and the id was never changed, so every copy fetched it, read back the number it already had, and correctly decided it was current. The fixes were live and unreachable. The build stamp on the title screen should now read <b>20260814</b> or later; anything starting 202608 with a lower number is an old copy.",
+     "<b>The red cross where your shot lands</b>",
+     "It was two pixels wide at forty yards. Not hidden, not late " + D + " two pixels, on a mark the width of a hand at the far butt. It is sized by angle now, so it stays about the same size in your view whether you hit the stump at twenty yards or the butt at forty.",
+     "It also draws THROUGH your own smoke. That smoke is not a bug and it is not going away: a matchlock throws a cloud across your whole sight line and a man firing one genuinely cannot see what he hit, which is worth knowing. But the cross is a range marker rather than a thing in the world, so it now sits on top of the smoke instead of behind it.",
+     "Timed, from the trigger: about three tenths of a second at forty yards. Only a tenth of that is the ball. The rest is the LOCK " + D + " the serpentine falling and the fire creeping through the touch hole to the charge " + D + " and that delay is real, is why a matchlock is hard to aim, and stays.",
+     "<b>The hanging is a hanging now</b>",
+     "It was there and you could not see it. The camera in Chapter II was measuring the width of the ship " + D + " on a beach, two hundred miles from the ship " + D + " and dragging every shot in the chapter to the closest distance it was allowed. The rope shot framed the sky above the man" + AP + "s head. He was not in the picture.",
+     "Beyond that, the man was hanged from nothing: the clearing was chosen for having the FEWEST trees near it, so the rope came out of open air. It looks for a tree to use now, stands you seven feet clear of it, and draws the limb.",
+     "And the noose used to hang more than a foot above the top of your head, so the drop pulled you up through it. Every height in that scene is now measured off the figure itself. Four shots: the rope, the face, the feet, and the stillness " + D + " and the feet shot finally stops at the shins, as it always claimed to.",
+     "The ladder of punishments works as intended: one lash question right the first time, two the second, three the third, and the fourth time nobody asks.",
+     "<b>Surveying is something you do</b>",
+     "Each act at a scouting place was a click that printed a sentence. They are scenes now, and each one carries out a clause of the actual orders the ships sailed with. The Council told them to find a river running furthest inland, deep enough that a bark of fifty tons would float, not near the mouth where they could be seen from the sea, not on low and moist ground, and not in heavy timber " + D + " because " + Q1 + "all the men You have Shall not be able to Cleanse twenty acres in a Year" + Q2 + ". A student who does the survey has read the instructions without being handed them, and can then watch the council ignore them.",
+     "Sounding the depth has the tool in it: a lead on a marked line, its base hollowed and filled with tallow so it comes up wearing whatever it landed on. Depth is half the question " + D + " a captain also wants to know whether the bottom is sand that will hold an anchor or mud that will not.",
+     "<b>There is a town at Point Comfort, and there always was</b>",
+     "This is the biggest correction and it is an absence rather than a mistake. Powhatan people appeared in this game in one place only: the men who shoot at you in the dark at Cape Henry. That is in the record. So is what happened four days later, which was not in the game at all. Percy, the thirtieth of April: they came to Cape Comfort, saw five men on the shore, rowed in, and were taken up to their town " + Q1 + "which is called Kecoughtan" + Q2 + " " + D + " where they were fed, given tobacco, and danced for. They went back on the fourth of May.",
+     "A game with the ambush and not the welcome is not telling half the story, it is telling a different one. So Kecoughtan is built: four mat-covered houses, a fire, worked fields, and people at their own work " + D + " three of them standing out in front, because a player should meet people before they meet buildings, which is the order it happened in.",
+     "There is a fourth thing to do at Point Comfort now, and the orders are why. The Council told them to judge how healthy ground was by looking at the people already living on it: " + Q1 + "if the naturals be Strong and Clean made it is a true sign of a wholesome Soil" + Q2 + ". You are meant to stand in a fed town and draw a conclusion. They did, and settled somewhere else.",
+     "You have thirteen days for the survey now rather than twelve, because the day allowance is worked out from what there is to see and adjusted itself.",
+     "<b>A note for the classroom</b>",
+     "Percy records being fed by people he calls Savages, in the same breath. Both halves of that are kept, deliberately. The game names Kecoughtan, Paspahegh and the weroance accurately; the seventeenth-century sources say what they say. The friction between the two is the thing worth teaching, and smoothing it would teach that the past was gentler than it was."]},
+  {when:"4 August 2026",
    head:"The opening, rebuilt",
    lines:[
      "<b>The way below has moved forward, and the waist is clear</b>",
@@ -23101,7 +23125,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-0200";
+const BUILD="20260814-0206";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

@@ -1091,5 +1091,47 @@ else:
         ok("staged index.html carries a new build id (%s, was %s)" % (_new_id, _old_id))
 
 
+print("\n21. The patch notes are not older than the build")
+# TWICE NOW the player has been the one to notice a release. First version.txt was never
+# re-stamped, so the auto-updater had nothing to find (check 20). Then the updater worked,
+# the new build arrived, and the Patch Notes screen still said "4 August 2026 - latest"
+# through ten changes across two sittings - so the game was current and told him it was
+# not. Both are the same fault wearing different clothes: the code shipped and the thing
+# that REPORTS the code to a human did not.
+#
+# The rule is deliberately slack. Not every commit earns a note, and a check that demanded
+# one would just teach me to write empty ones. But a build three days newer than the
+# newest note means a release went out unannounced, and that is worth stopping for.
+_MONTHS = {"january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+           "july": 7, "august": 8, "september": 9, "october": 10, "november": 11,
+           "december": 12}
+_pn = re.search(r'const PATCH_NOTES=\[\s*\{when:"([^"]*)"', s)
+_bd = re.search(r'const BUILD="(\d{4})(\d{2})(\d{2})-', s)
+if not _pn:
+    bad("no PATCH_NOTES array, or its first entry has no `when`")
+elif not _bd:
+    bad("no build stamp to compare the notes against")
+else:
+    _wm = re.match(r'\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})', _pn.group(1))
+    if not _wm or _wm.group(2).lower() not in _MONTHS:
+        bad("the newest patch note is dated %r, which this check cannot read - it wants "
+            "`D Month YYYY`" % _pn.group(1))
+    else:
+        import datetime
+        _note = datetime.date(int(_wm.group(3)), _MONTHS[_wm.group(2).lower()],
+                              int(_wm.group(1)))
+        _build = datetime.date(int(_bd.group(1)), int(_bd.group(2)), int(_bd.group(3)))
+        _gap = (_build - _note).days
+        if _gap > 3:
+            bad("the build is %s and the newest patch note is %s - %d days apart. A "
+                "release has gone out that the game never told anybody about; add an "
+                "entry to the TOP of PATCH_NOTES" % (_build, _note, _gap))
+        elif _gap < 0:
+            print("  note  the newest patch note (%s) is dated after the build (%s)"
+                  % (_note, _build))
+        else:
+            ok("newest note %s, build %s - %d day(s) apart" % (_note, _build, _gap))
+
+
 print("\n" + ("PASS" if not fail else "FAILED %d check(s)" % len(fail)))
 sys.exit(0 if not fail else 1)
