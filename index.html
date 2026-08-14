@@ -203,6 +203,16 @@
      the rect came back at 0,0.
      Sat directly over the piece button rather than beside it: the viewport is 459 across on
      a phone and three 44px chips plus a 142px button will not share a row there. */
+  /* The track: one strip that all six kinds of effort draw on, because six bespoke
+     widgets is six things to get wrong and a Chromebook to pay for. `ggFill` is how far
+     the motion has come, `ggMark` is a travelling marker for the ones you must time, and
+     `ggBand` is the window it has to be stopped in. Whichever are not wanted are hidden. */
+  #ggTrack{position:relative;height:30px;margin:12px 0 6px;border-radius:6px;
+    background:rgba(30,24,14,.30);border:1px solid rgba(74,58,34,.45);overflow:hidden}
+  #ggFill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(120,150,90,.55)}
+  #ggBand{position:absolute;top:0;bottom:0;background:rgba(200,160,60,.30);
+    border-left:1px solid rgba(200,160,60,.7);border-right:1px solid rgba(200,160,60,.7)}
+  #ggMark{position:absolute;top:0;bottom:0;width:3px;background:#e8dcb4}
   #slots{position:absolute;left:50%;bottom:62px;transform:translateX(-50%);
     display:flex;gap:6px;align-items:flex-end;z-index:6}
   .slotb{position:relative;width:44px;height:44px;border-radius:8px;
@@ -723,6 +733,20 @@
   <!-- WHAT YOU CARRY, in detail. The bar says where a thing is; this says what it is and
        lets you put it down. Its own sheet rather than a panel inside the pause menu,
        because it is opened mid-play with I and closed again in a second. -->
+  <!-- THE GREAT GUN. A sheet rather than a HUD strip: the drill takes two and a half
+       minutes and wants the deck behind it quiet. One control, because a man at a gun has
+       two hands and both are full - everything is done with the same press. -->
+  <div class="modal mid" id="mGun">
+    <div class="parchment deckle sheet" style="max-width:340px" data-read>
+      <div class="kick" id="ggCount"></div>
+      <h3 id="ggTitle">The Great Gun</h3>
+      <div class="vNote" id="ggNote"></div>
+      <div id="ggTrack"><div id="ggBand"></div><div id="ggMark"></div><div id="ggFill"></div></div>
+      <div class="vNote" id="ggTell"></div>
+      <button class="btn wide mt" id="ggDo">Lay hold</button>
+      <button class="btn ghost wide mt" id="ggQuit">Stand away from the gun</button>
+    </div>
+  </div>
   <div class="modal mid" id="mKit">
     <div class="parchment deckle sheet" style="max-width:340px" data-read>
       <div class="kick">What you carry</div>
@@ -5559,6 +5583,29 @@ function drawFromSlot(sl){
   else setItemState(want,"carried");
   renderCarry();saveGame();
 }
+/* ---- AND YOU CAN ASK FOR A PARTICULAR THING ----
+   drawFromSlot answers "what is in that slot", which is the right question for a number key
+   and the wrong one at a gun. The worm, the sponge and the rammer are all long staves and
+   all declared slot "back", and a slot holds ONE thing - so pressing 1 fetched the worm
+   for ever and the drill could not get past sponging. Found by driving the whole sequence
+   and watching it fetch the same stave three hundred times.
+   THE HONEST FIX IS WHERE THE STAVES LIVE. A man does not carry a nine-foot rammer across
+   his shoulders; the long tools stand in a rack AT THE GUN and are taken up as each motion
+   wants them, which is both what happened and what makes the drill work. That is a change
+   to the kit's shape and it wants its own pass. This is the smaller true half of it: you
+   can name what you want, so the drill can hand you the right stave, and the number keys
+   go on answering the question they were built for. */
+function drawItem(id){
+  if(!ITEMS[id])return false;
+  const st=itemState(id);
+  if(st==="absent"||st==="ground")return false;
+  if(st==="carried")return true;
+  stowHands();
+  if(id==="matchlock"&&typeof setGunCarried==="function")setGunCarried(true);
+  else setItemState(id,"carried");
+  renderCarry();saveGame();
+  return true;
+}
 function stowHands(){
   const held=itemInHands();
   if(!held)return;
@@ -5818,6 +5865,130 @@ function stageCheck(i){
   return {ok:false,st:st,
           why:hands+"For "+st.doing+" you want the "+nm+" \u2014 "+where.toLowerCase()+
               ", key "+key+"."};
+}
+/* ========== THE DRILL, AS A THING YOU DO ==========
+   ONE INPUT. A man at a gun has two hands and both are full, so every motion is worked with
+   the same press - the button, Space, or a tap - and what the press MEANS is what changes.
+   That is also the only honest way to give six kinds of effort to a thumb.
+     turn / stroke / haul   press once per turn, stroke or pull. HAUL SLIPS BACK if you
+                            rest: let go of the rhythm and the gun runs in again, which is
+                            the whole of why running out alone is the long part.
+     place                  press while the marker is anywhere in the band - generous
+     aim / pour             press while it is in a narrow one, or in the pour's case
+                            release between two marks
+   The marker travels and bounces; the band is drawn from the stage's own tolerance, so the
+   difficulty in the table IS the difficulty on the screen and cannot drift from it.
+   Nothing here is timed to the frame rate: everything moves by dt, so a Chromebook at 30
+   frames is the same drill as a desktop at 60, only smoother or less so. */
+const GG={on:false,i:0,t:0,prog:0,need:0,mark:0,dir:1,done:false,fails:0};
+function ggStage(){return GREAT_GUN_STAGES[GG.i]||null;}
+function ggBegin(){
+  const st=ggStage();if(!st)return;
+  GG.t=0;GG.prog=0;GG.mark=0;GG.dir=1;GG.done=false;
+  const p=st.par||{};
+  GG.need=p.strokes||p.turns||p.pulls||1;
+  ggPaint();
+}
+function openGunDrill(){
+  const blocked=firstBlocked();
+  GG.on=true;GG.i=0;GG.fails=0;
+  stowForDrill(null);            /* both hands empty; the first motion asks for its tool */
+  ggBegin();openModal("mGun");
+  if(blocked)toast(blocked.why);
+}
+function closeGunDrill(){GG.on=false;$("mGun").classList.remove("on");setPaused(false);}
+/* ---- what the press does, which depends on what is being done ---- */
+function ggPress(){
+  if(!GG.on)return;
+  const st=ggStage();if(!st||GG.done)return;
+  const chk=stageCheck(GG.i);
+  if(!chk.ok){
+    /* the press takes up what the motion wants, if it is on you - one control, so the
+       button that works the gun is also the button that reaches for the tool */
+    if(st.tool&&drawItem(st.tool)){ggPaint();return;}
+    toast(chk.why);return;
+  }
+  const g=st.game, p=st.par||{};
+  if(g==="turn"||g==="stroke"||g==="haul"){
+    GG.prog++;
+    if(GG.prog>=GG.need)ggPass();
+  } else {
+    /* the timed ones: is the marker inside the window? */
+    const half=(g==="aim")?(p.band||0.18)/2:(p.tol||0.28)/2;
+    const centre=(g==="pour")?(((p.lo||0.4)+(p.hi||0.7))/2):0.5;
+    if(Math.abs(GG.mark-centre)<=half)ggPass();
+    else ggFail("Not there. "+st.note);
+  }
+  ggPaint();
+}
+function ggPass(){
+  GG.done=true;
+  playSfx("click",0.3);
+  const st=ggStage();
+  $("ggTell").textContent=st.note;
+  setTimeout(function(){
+    if(!GG.on)return;
+    GG.i++;
+    if(GG.i>=GREAT_GUN_STAGES.length){
+      closeGunDrill();
+      toast("She is run out and primed. "+(GG.fails?("Two and a half minutes, and "+GG.fails+" motion"+(GG.fails===1?"":"s")+" to do again."):"Not a motion wasted."));
+      return;
+    }
+    ggBegin();
+  },700);
+}
+function ggFail(why){
+  GG.fails++;GG.prog=Math.max(0,GG.prog-1);GG.mark=0;GG.dir=1;
+  $("ggTell").textContent=why;
+  playSfx("hit",0.18);
+}
+/* ---- the clock and the marker ---- */
+function updateGunDrill(dt){
+  if(!GG.on||GG.done)return;
+  const st=ggStage();if(!st)return;
+  const g=st.game, p=st.par||{};
+  GG.t+=dt;
+  if(g==="turn"||g==="stroke"||g==="haul"){
+    /* AND THE FALL SLIPS. Rest on the run-out and she runs back in - the one motion that
+       punishes stopping, because that is the one that did. */
+    if(g==="haul")GG.prog=Math.max(0,GG.prog-(p.slip||0.4)*dt);
+  } else {
+    GG.mark+=GG.dir*dt*0.62;
+    if(GG.mark>1){GG.mark=1;GG.dir=-1;}
+    if(GG.mark<0){GG.mark=0;GG.dir=1;}
+  }
+  ggPaint();
+}
+function ggPaint(){
+  if(!GG.on)return;
+  const st=ggStage();if(!st)return;
+  const g=st.game, p=st.par||{};
+  const n=GREAT_GUN_STAGES.length;
+  $("ggCount").textContent="Motion "+(GG.i+1)+" of "+n+"  \u00b7  about "+stageSeconds(GG.i)+"s";
+  $("ggTitle").textContent=st.doing.charAt(0).toUpperCase()+st.doing.slice(1);
+  const chk=stageCheck(GG.i);
+  $("ggNote").textContent=chk.ok?st.note:chk.why;
+  const counted=(g==="turn"||g==="stroke"||g==="haul");
+  $("ggFill").style.width=counted?Math.round(Math.min(1,GG.prog/GG.need)*100)+"%":"0";
+  $("ggMark").style.display=counted?"none":"block";
+  $("ggBand").style.display=counted?"none":"block";
+  if(!counted){
+    const half=(g==="aim")?(p.band||0.18)/2:(p.tol||0.28)/2;
+    const centre=(g==="pour")?(((p.lo||0.4)+(p.hi||0.7))/2):0.5;
+    $("ggBand").style.left=Math.round((centre-half)*100)+"%";
+    $("ggBand").style.width=Math.round(half*200)+"%";
+    $("ggMark").style.left=Math.round(GG.mark*100)+"%";
+  }
+  if(!chk.ok&&st.tool&&itemHeld(st.tool))
+    $("ggDo").textContent="Take up the "+ITEMS[st.tool].name.toLowerCase();
+  else if(!chk.ok)
+    $("ggDo").textContent="You want the "+(st.tool?ITEMS[st.tool].name.toLowerCase():"gun");
+  else $("ggDo").textContent=counted
+    ? (g==="haul"?"Haul  ("+Math.floor(GG.prog)+" of "+GG.need+")":"Again  ("+Math.floor(GG.prog)+" of "+GG.need+")")
+    : "Now";
+  /* never disabled: a control that cannot be pressed teaches nothing, and this one either
+     hands you the tool or tells you why it cannot */
+  $("ggDo").disabled=false;
 }
 /* the same question asked of the whole drill: what is the first motion you cannot make? */
 function firstBlocked(){
@@ -8497,7 +8668,7 @@ function refreshPlayer(){
 /* ========== CONTROLS ==========
    Left half of the screen is a floating stick; right half turns the view.
    Keyboard: WASD to move, Q/E or drag to turn, Space/E to act, Esc to back out. */
-const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes","mAtlas","mGoals","mKit"];
+const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes","mAtlas","mGoals","mKit","mGun"];
 function anyModalOpen(){for(let i=0;i<MODALS.length;i++)if($(MODALS[i]).classList.contains("on"))return true;return false;}
 function closeAllModals(){
   for(let i=0;i<MODALS.length;i++)$(MODALS[i]).classList.remove("on");
@@ -10475,6 +10646,7 @@ function updateFx(dt){
      the main loop, the cutscene branch, the camera-lock branch and the lesson branch - and
      a sky that lags a frame behind the eye is a sky that shows its edge again. */
   if(skyDome&&cam)skyDome.position.copy(cam.position);
+  updateGunDrill(dt);          /* every render path reaches here; see the sky, above */
   updateBall(dt);            /* runs in cutscenes too - line 7413 ticks updateFx */
   updateLanding(dt);         /* and so does the boat pulling for the beach */
   if(knock){
@@ -17421,6 +17593,12 @@ window.addEventListener("keydown",function(e){
   drawFromSlot(CARRY_SLOTS[i]);
 });
 if($("kitClose"))$("kitClose").onclick=function(){$("mKit").classList.remove("on");};
+if($("ggDo"))$("ggDo").onclick=function(){ggPress();};
+if($("ggQuit"))$("ggQuit").onclick=function(){closeGunDrill();};
+window.addEventListener("keydown",function(e){
+  if(!GG.on||e.repeat)return;
+  if(e.key===" "||e.key==="Enter"){e.preventDefault();ggPress();}
+});
 if($("slotCarry"))$("slotCarry").onclick=function(){openKit();};
 if($("cineSkip"))$("cineSkip").onclick=function(){
   if(LESSON.on)endLesson();
@@ -23990,7 +24168,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-2301";
+const BUILD="20260814-2328";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
