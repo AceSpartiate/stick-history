@@ -7377,6 +7377,14 @@ function blocked(x,z){
   if(z<zf||z>za)return true;
   const lim=halfBeam(z,y)-(plevel<=LVL.TWEEN?2.2*K:1.5*K);
   if(Math.abs(x)>lim)return true;
+  if(inCollider(x,z,R))return true;
+  return false;
+}
+/* The same question the ship asks, asked where there is no ship. The survey sites had no
+   way to ask it at all: their blocked() tested the map edge and the waterline and nothing
+   else, so a collider placed at one of them did nothing whatever. */
+function inCollider(x,z,R){
+  if(typeof colliders==="undefined")return false;
   for(let i=0;i<colliders.length;i++){
     const c=colliders[i];
     if(c.lvl!==plevel)continue;
@@ -17880,7 +17888,18 @@ function buildThinSite(root,key){
   scene.background=new THREE.Color(T.sky);
   scene.fog=new THREE.Fog(T.fog,240,860);      /* < cam.far 900; see SKY_DAY */
   WORLD.ground=G; WORLD.hull=false; WORLD.sea=0;
-  WORLD.blocked=function(x,z){return Math.hypot(x,z)>430||G(x,z)<-0.6;};
+  /* ---- AND YOU COULD WALK THROUGH A HOUSE ----
+     Found on foot at Kecoughtan: the camera went straight into a yehakin and the frame
+     filled with the inside of a windowless brown box. The houses are drawn into a merged
+     mesh and had no colliders - but that was only half of it, because this predicate never
+     consulted colliders in the first place. It tested the edge of the map and the
+     waterline, so ANY solid() placed at a survey site has been doing nothing at all.
+     A wall you can walk through is a small fault; a wall that traps you is a large one, so
+     the houses are the only things given one and the reachability of every survey spot is
+     proved by flood fill rather than assumed - the same way the day economy is. */
+  WORLD.blocked=function(x,z){
+    return Math.hypot(x,z)>430||G(x,z)<-0.6||inCollider(x,z,1.0);
+  };
   const SPAN=900,N=4,CH_=SPAN/N,DIV=12;
   const near=RGB(T.near),far=RGB(T.far),back=RGB(T.back),wet=RGB(T.wet);
   /* wound a-d-c-b so the quads face UP, same as the cape */
@@ -18121,6 +18140,11 @@ function buildKecoughtan(root,G){
   for(let i=0;i<HOUSE.length;i++){
     const h=HOUSE[i];
     yehakin(K,h[0],G(h[0],h[1]),h[1],h[2],h[3],h[4],h[5]);
+    /* A house is a house. The footprint is whichever way it was turned - yehakin swaps
+       length for width on `turn` - and the height is passed on so a ball stops in the
+       wall rather than sailing through the town. */
+    const L=h[5]?h[3]:h[2], W=h[5]?h[2]:h[3];
+    solid(h[0],h[1],L/2,W/2,LVL.MAIN,h[4]);
   }
   /* THE CORN, which is the argument of the place. Powhatan towns sat in cleared ground with
      the fields worked around them, and the Council's instruction about judging soil by the
@@ -23415,7 +23439,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-0414";
+const BUILD="20260814-1002";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
