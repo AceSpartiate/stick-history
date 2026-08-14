@@ -188,7 +188,12 @@
      A faint plate rather than a heavier shadow: a shadow scales with the backdrop it is
      fighting and always loses to a light, whereas a plate is a constant. Kept low enough
      that it reads as vellum behind the words rather than as a UI box in the world. */
-  .lbl{position:absolute;transform:translate(-50%,-100%);font-family:'IM Fell English SC',serif;
+  /* left/top are LAYOUT properties: writing them moves the browser's layout engine, and
+     these are written for every visible label on every other frame. Anchored at the origin
+     and moved with a transform instead, which the compositor can do on its own without
+     touching layout - the two translates compose, so the -50%/-100% centring is unchanged
+     and the label lands on exactly the same pixel. */
+  .lbl{position:absolute;left:0;top:0;will-change:transform;transform:translate(-50%,-100%);font-family:'IM Fell English SC',serif;
     color:#f0e6cd;font-size:12px;text-shadow:0 1px 3px #000,0 0 8px #000;white-space:nowrap;text-align:center;line-height:1.25;
     background:rgba(13,11,7,.46);padding:.12em .5em;border-radius:7px}
   .lbl b{display:block;font-weight:400} .lbl i{color:var(--gold-bright);font-style:normal;font-size:11px}
@@ -6927,6 +6932,21 @@ function updateShadows(){
   shadowMesh.instanceMatrix.needsUpdate=true;
 }
 
+/* ---- A SAVING I MEASURED, WROTE, AND THEN THREW AWAY ----
+   Chapter I keeps 1208 objects in the graph and every one recomposes its local matrix every
+   frame, though almost none of them have moved since the world was built. Freezing the
+   static ones is the obvious answer and I implemented it.
+   Then I went looking for what animates. bellMesh.rotation.z is driven by updateBell every
+   frame, and the bell is ordinary world scenery indistinguishable from a cask by anything a
+   walk over the graph can see. Freezing it stops the bell swinging - silently, with no
+   error, in a way nobody would connect to a performance change. There is no reason to think
+   the bell is the only one.
+   The saving was 0.102 ms a frame on this machine, so perhaps six tenths of a millisecond
+   on a Chromebook. That is not worth a class of silent visual breakage, and the honest thing
+   is to write down that I measured it and declined it rather than leave a tempting gap.
+   If it is ever wanted, the safe shape is the opposite of what I wrote: movers declare
+   themselves when they are BUILT, and the freeze skips whatever is declared - not a walk
+   that guesses from the outside. */
 function enterWorld(id){
   if(!WORLDS[id]){console.warn("no world '"+id+"'");return null;}
   disposeWorld();
@@ -7016,11 +7036,57 @@ function setTier(t){
   console.log("graphics tier -> "+t+" (res x"+GFX.res+", effects x"+GFX.fx+")");
   return true;
 }
+/* ---- WHAT THE MACHINE IS ACTUALLY DOING ----
+   A class of students reported the game as very laggy on their Chromebooks and I could not
+   reproduce it: measured here, Chapter I renders in 0.39 ms of CPU with 40,572 triangles
+   and 138 draw calls, which no hardware-accelerated machine should struggle with. That
+   leaves questions I cannot answer from this desk - whether the tier has already dropped to
+   low, what the canvas is actually being asked to fill, and above all whether WebGL is on
+   the GPU at all. A managed Chromebook that has fallen back to SwiftShader renders in
+   SOFTWARE, and would crawl on a scene a tenth this size.
+   So the game can be asked. Open it with ?diag on the end of the address and it shows the
+   numbers in the corner. It is off unless asked for, costs nothing when off, and the line
+   that matters most is the renderer string: if it says SwiftShader or "Software", the
+   problem is not the game and no amount of optimising will touch it. */
+let DIAG=null, DIAG_T=0;
+function diagOn(){return /[?&]diag\b/.test(location.search);}
+function gpuName(){
+  try{
+    const gl=renderer&&renderer.getContext&&renderer.getContext();
+    if(!gl)return "no context";
+    const e=gl.getExtension("WEBGL_debug_renderer_info");
+    return e?String(gl.getParameter(e.UNMASKED_RENDERER_WEBGL)):String(gl.getParameter(gl.RENDERER));
+  }catch(err){return "unavailable";}
+}
+function updateDiag(dt){
+  if(!diagOn())return;
+  if(!DIAG){
+    DIAG=document.createElement("div");
+    DIAG.style.cssText="position:fixed;left:6px;top:6px;z-index:99999;font:11px/1.35 monospace;"+
+      "color:#d8f0c0;background:rgba(0,0,0,.72);padding:6px 8px;border-radius:5px;"+
+      "white-space:pre;pointer-events:none;max-width:60vw";
+    document.body.appendChild(DIAG);
+    DIAG._gpu=gpuName();
+  }
+  DIAG_T+=dt;
+  if(DIAG_T<0.5)return;
+  DIAG_T=0;
+  const r=renderer.info.render, c=renderer.domElement;
+  DIAG.textContent=
+    "fps "+(FT.last?FT.last.toFixed(0):"--")+"   tier "+GFX.tier+" (res x"+GFX.res+")\n"+
+    "draws "+r.calls+"   tris "+r.triangles+"\n"+
+    "canvas "+c.width+"x"+c.height+"  dpr "+(window.devicePixelRatio||1).toFixed(2)+
+      "  ratio "+renderer.getPixelRatio().toFixed(2)+"\n"+
+    "build "+(typeof BUILD!=="undefined"?BUILD:"?")+"\n"+
+    "gpu "+DIAG._gpu;
+}
 /* rolling frame time, and a tier that follows it */
-const FT={n:0,sum:0,cool:2.5,good:0};
+const FT={n:0,sum:0,cool:2.5,good:0,last:0};
 function watchFrames(dt){
+  updateDiag(dt);
   /* a hitch from a world build or a stall is not a frame rate; ignore the spike */
   if(dt>0.25)return;
+  if(dt>0.0005)FT.last=FT.last?(FT.last*0.9+(1/dt)*0.1):(1/dt);   /* a zero dt is not a frame rate */
   FT.cool-=dt;
   FT.sum+=dt;FT.n++;
   if(FT.n<90)return;                        /* ~1.5s of evidence before acting */
@@ -7794,7 +7860,13 @@ function placeLabels(q,best){
   const put=[];
   for(let i=0;i<q.length;i++){
     const e=q[i], el=e.it.el;
-    const tb=el.querySelector("b"), ti=el.querySelector("i");
+    /* ---- 76 DOM QUERIES A FRAME, FOR TWO NODES THAT NEVER MOVE ----
+       This ran querySelector twice per label per pass - about seventy-six lookups every
+       other frame with thirty-eight labels up - to find two children that were created with
+       the element and cannot change. They are held on the element now. Nothing about this
+       showed in a JS profile, because what it costs is the browser's, not ours. */
+    let tb=el._b, ti=el._i;
+    if(tb===undefined){tb=el._b=el.querySelector("b");ti=el._i=el.querySelector("i");}
     const tw=(tb&&tb.textContent||"").length, sw=(ti&&ti.textContent||"").length;
     const w=Math.max(tw*6.2,sw*5.8)+8, h=sw?30:16;
     let lift=0, seated=false;
@@ -7808,15 +7880,18 @@ function placeLabels(q,best){
       }
       if(!clash){
         put.push({l:l,r:r,t:t,b:b});
-        el.style.display="block";
-        el.style.left=e.cx+"px";
-        el.style.top=top+"px";
-        el.classList.toggle("dim",e.d>e.it.r);
+        /* and written only when they actually change: a style write is not free even when
+           the value is identical, because it invalidates whether or not it differs */
+        if(el._shown!==1){el.style.display="block";el._shown=1;}
+        const tf="translate(-50%,-100%) translate("+Math.round(e.cx)+"px,"+Math.round(top)+"px)";
+        if(el._tf!==tf){el.style.transform=tf;el._tf=tf;}
+        const dim=(e.d>e.it.r);
+        if(el._dim!==dim){el.classList.toggle("dim",dim);el._dim=dim;}
         seated=true;break;
       }
       lift+=LBL_STEP;
     }
-    if(!seated)el.style.display="none";
+    if(!seated&&el._shown!==0){el.style.display="none";el._shown=0;}
   }
 }
 function chapterLabel(){
@@ -22009,6 +22084,10 @@ const PATCH_NOTES=[
      "Point Comfort had the fleet lying off it and the other two places had empty water, which quietly taught that the survey was made in a small boat from a fixed base. It was not. The ships made the passages and the shallop put men ashore. Archer’s Hope now has them standing well off, because the berth there is shoal and that IS the finding — everything landed would have to be carried out to them. Jamestown has them close in with cables ashore, because that is the one thing that site had which the better ground did not.",
      "<b>The black screen, and what caused it</b>",
      "For a short while the game would not start at all: no character, no working buttons, a black screen. One line of the patch notes below carried a scrap of the tool used to write them, which threw an error while the notes were being built, and because that happens as the page loads it took everything else down with it. Mended, and the page is now actually opened and played before anything is published, which is how it should have been caught.",
+     "<b>For anyone whose machine is struggling</b>",
+     "A class played this on Chromebooks and reported it as laggy. Two things came out of chasing it. The labels over people and doors were being moved with properties that make the browser redo its page layout, sixty times a second, and were looking up the same two bits of themselves every frame to do it — about seventy-six needless lookups a frame with a deckful of labels. They are moved a cheaper way now and nothing about them looks different.",
+     "The second is a way to find out rather than guess. Open the game with <b>?diag</b> on the end of the address and it shows what the machine is really doing in the corner: frame rate, how much it is drawing, the size of the picture, and what graphics hardware the browser says it is using. THAT LAST LINE IS THE IMPORTANT ONE. If it mentions SwiftShader or software, the Chromebook is drawing without its graphics chip, and that is a setting on the machine rather than anything in the game — no amount of tuning here will touch it.",
+     "Measured on a desktop for comparison: Chapter I draws about 37,000 triangles in 138 calls and takes well under half a millisecond of processor time a frame. That is a small scene, which is why the fault is worth pinning down rather than guessing at.",
      "<b>A note for the classroom</b>",
      "Percy records being fed by people he calls Savages, in the same breath. Both halves of that are kept, deliberately. The game names Kecoughtan, Paspahegh and the weroance accurately; the seventeenth-century sources say what they say. The friction between the two is the thing worth teaching, and smoothing it would teach that the past was gentler than it was."]},
   {when:"4 August 2026",
@@ -23240,7 +23319,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-0227";
+const BUILD="20260814-0239";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
