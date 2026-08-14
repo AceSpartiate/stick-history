@@ -715,6 +715,17 @@
        out of the panel was Escape. Every other modal in this game closes the same way: an
        id'd button with an explicit handler beside the rest of the wiring. So does this one
        now, and it borrows the furniture the others use as well, which it also was not. -->
+  <!-- WHAT YOU CARRY, in detail. The bar says where a thing is; this says what it is and
+       lets you put it down. Its own sheet rather than a panel inside the pause menu,
+       because it is opened mid-play with I and closed again in a second. -->
+  <div class="modal mid" id="mKit">
+    <div class="parchment deckle sheet" style="max-width:340px" data-read>
+      <div class="kick">What you carry</div>
+      <h3>Your Kit</h3>
+      <div id="kitList"></div>
+      <button class="btn wide mt" id="kitClose">Done</button>
+    </div>
+  </div>
   <div class="modal mid" id="mGoals">
     <div class="parchment deckle sheet" style="max-width:420px">
       <div class="kicker">What you are about</div>
@@ -762,6 +773,7 @@
       </div>
       <button id="action"></button>
       <div id="slots">
+        <button class="slotb carry" id="slotCarry" data-slot="carry" title="What you are carrying (0)"><b>0</b><span></span></button>
         <button class="slotb" id="slotBack"  data-slot="back"  title="Slung across your back (1)"><b>1</b><span></span></button>
         <button class="slotb" id="slotBeltL" data-slot="beltL" title="Left of your belt (2)"><b>2</b><span></span></button>
         <button class="slotb" id="slotBeltR" data-slot="beltR" title="Right of your belt (3)"><b>3</b><span></span></button>
@@ -1176,7 +1188,7 @@ function saveBlob(){
        resume: the man un-finished himself and the quiz gate closed behind the player. */
     spoke:S.spoke,
     equip:S.equip, voicePref:S.voicePref,
-    items:S.items, slot:S.slot, itemAt:S.itemAt, incidents:S.incidents, chartSeen:S.chartSeen,
+    items:S.items, slot:S.slot, carry:S.carry, itemAt:S.itemAt, incidents:S.incidents, chartSeen:S.chartSeen,
     survey:S.survey,
     shotAMan:!!S.shotAMan, killedAMan:!!S.killedAMan,
     boxOpened:!!S.boxOpened, smithRecognised:!!S.smithRecognised,
@@ -1215,7 +1227,7 @@ function applyBlob(d){
     if(d.equip)S.equip=d.equip;
     if(!S.equip.dye)S.equip.dye={torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"};
     if(d.voicePref)S.voicePref=d.voicePref;
-    S.items=d.items||{};S.slot=d.slot||{};S.itemAt=d.itemAt||{};S.incidents=d.incidents||[];
+    S.items=d.items||{};S.slot=d.slot||{};S.carry=d.carry||null;S.itemAt=d.itemAt||{};S.incidents=d.incidents||[];
     S.chartSeen=d.chartSeen||{};
     S.survey=d.survey||{days:surveyBudget(),found:{},visited:{}};
     S.shotAMan=!!d.shotAMan;S.killedAMan=!!d.killedAMan;
@@ -1272,7 +1284,7 @@ function clearSave(){try{if(window.localStorage)window.localStorage.removeItem(S
 function newRun(){
   S.insight={};
   S.met={};S.flawless={};S.talkErr={};
-  S.items={};S.slot={};S.itemAt={};S.incidents=[];
+  S.items={};S.slot={};S.carry=null;S.itemAt={};S.incidents=[];
   S.shotAMan=false;S.killedAMan=false;
   S.boxOpened=false;S.smithRecognised=false;
   S.survey={days:surveyBudget(),found:{},visited:{}};
@@ -5556,21 +5568,103 @@ function stowHands(){
    loses depending on which is parsed last. Mine lost. Nothing threw, no check fired, the
    bar simply never drew, and the only way to see it was to call it and watch the DOM not
    change. The same trap as const SLOTS one screen up, without the parser to catch it. */
+/* ---- SOMETHING IN YOUR HANDS THAT IS NOT KIT ----
+   Asked for: a slot 0 for a thing that is simply BEING CARRIED - a chest to be shifted up
+   a beach - which occupies your hands without being a tool you own. It has no consumer yet
+   and it is deliberately thin: a label and a note, no ITEMS entry, because a crate is not
+   something you keep. The chip is invisible until your hands are full of one. */
+function carrying(){return (S.carry&&S.carry.name)?S.carry:null;}
+function takeCarried(name,note){
+  stowHands();                       /* both hands: whatever you held goes away first */
+  S.carry={name:name,note:note||""};
+  renderCarry();saveGame();
+}
+function dropCarried(){
+  if(!carrying())return;
+  const n=S.carry.name;S.carry=null;
+  renderCarry();saveGame();
+  toast("You set the "+n.toLowerCase()+" down.");
+}
+/* ---- and the detailed sheet ---- */
+function renderKit(){
+  const host=$("kitList");if(!host)return;
+  host.innerHTML="";
+  let n=0;
+  const c=carrying();
+  if(c){
+    const d=document.createElement("div");
+    d.className="atRow";
+    d.innerHTML="<b>"+c.name+"</b><small>in both hands"+(c.note?" \u2014 "+c.note:"")+"</small>";
+    host.appendChild(d);
+    const b=document.createElement("button");
+    b.className="btn ghost wide mt";b.textContent="Set the "+c.name.toLowerCase()+" down";
+    b.onclick=function(){dropCarried();renderKit();};
+    host.appendChild(b);n++;
+  }
+  for(const id in ITEMS){
+    if(!itemHeld(id))continue;
+    n++;
+    const it=ITEMS[id], inh=(itemState(id)==="carried");
+    const d=document.createElement("div");
+    d.className="atRow"+(inh?" sel":"");
+    d.innerHTML="<b>"+it.name+"</b><small>"+
+      (inh?"in your hands":CARRY_NAME[slotOf(id)])+
+      (it.weight?" \u2014 "+it.weight:"")+"</small>";
+    host.appendChild(d);
+    if(it.desc){
+      const p=document.createElement("div");
+      p.className="vNote";p.textContent=it.desc;host.appendChild(p);
+    }
+    const row=document.createElement("div");
+    row.style.cssText="display:flex;gap:6px;margin:6px 0 10px";
+    const a=document.createElement("button");
+    a.className="btn ghost";a.style.flex="1";
+    a.textContent=inh?"Put it away":"Take it up";
+    a.onclick=function(){drawFromSlot(slotOf(id));renderKit();};
+    row.appendChild(a);
+    if(typeof dropItem==="function"){
+      const g=document.createElement("button");
+      g.className="btn ghost";g.style.flex="1";g.textContent="Set it down";
+      g.onclick=function(){dropItem(id);renderCarry();renderKit();};
+      row.appendChild(g);
+    }
+    host.appendChild(row);
+  }
+  if(!n){
+    const e=document.createElement("div");
+    e.className="vNote";e.textContent="You are carrying nothing at all.";
+    host.appendChild(e);
+  }
+}
+function openKit(){renderKit();openModal("mKit");}
 function renderCarry(){
   const host=$("slots");if(!host)return;
   const held=itemInHands();
   /* the bar is for a player who has something to carry */
-  let any=false;
+  let any=!!carrying();
   for(const id in ITEMS)if(itemHeld(id))any=true;
   host.style.display=any?"flex":"none";
+  /* slot 0 is not shown unless there is something in it */
+  const cb=$("slotCarry"), c=carrying();
+  if(cb){
+    cb.style.display=c?"block":"none";
+    cb.className="slotb carry"+(c?" full inhand":" empty");
+    cb.querySelector("span").textContent=c?c.name:"\u2014";
+    cb.title=c?(c.name+" \u2014 in both hands"):"";
+  }
   CARRY_SLOTS.forEach(function(sl){
     const b=host.querySelector('[data-slot="'+sl+'"]');
     if(!b)return;
     const id=itemInSlot(sl);
     const isHand=(held&&slotOf(held)===sl);
-    b.className="slotb"+(id?" full":" empty")+(isHand?" inhand":"");
+    /* HIGHLIGHTED IS THE POINT: the chip whose thing is in your hands is the one lit, and
+       when everything is put away nothing is lit at all. It used to go dim-and-outlined
+       because the item had left the slot, which read as empty rather than as in use - so it
+       keeps the NAME and takes the light. */
+    b.className="slotb"+((id||isHand)?" full":" empty")+(isHand?" inhand":"");
     const lab=b.querySelector("span");
-    lab.textContent=id?ITEMS[id].name.split(" ")[0]:(isHand?"in hand":"\u2014");
+    lab.textContent=id?ITEMS[id].name.split(" ")[0]
+                      :(isHand?ITEMS[held].name.split(" ")[0]:"\u2014");
     b.title=(id?ITEMS[id].name:(isHand?"In your hands":"Empty"))+" \u2014 "+CARRY_NAME[sl];
   });
 }
@@ -8233,7 +8327,7 @@ function refreshPlayer(){
 /* ========== CONTROLS ==========
    Left half of the screen is a floating stick; right half turns the view.
    Keyboard: WASD to move, Q/E or drag to turn, Space/E to act, Esc to back out. */
-const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes","mAtlas","mGoals"];
+const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes","mAtlas","mGoals","mKit"];
 function anyModalOpen(){for(let i=0;i<MODALS.length;i++)if($(MODALS[i]).classList.contains("on"))return true;return false;}
 function closeAllModals(){
   for(let i=0;i<MODALS.length;i++)$(MODALS[i]).classList.remove("on");
@@ -13431,7 +13525,19 @@ function buildGunModel(){
   B.oct(0,0,-bd/2,bd/2,bd,bd,bd,bd,0.5,RGB(0xb4b4bd),RGB(0xdcdce4));
   gunBall=B.mesh(true,false);gunBall.visible=false;gunPiece.add(gunBall);
 }
+/* ---- A DRILL BEGINS WITH YOUR HANDS EMPTY ----
+   Asked for: anything in your hands when a taught sequence starts goes back where it lives.
+   The piece itself is exempt for the obvious reason - the matchlock drill is about holding
+   it - so this stows everything EXCEPT what the drill is for. It matters more later than it
+   does now: an axe, a hammer, a saw and a surveyor's tools are all coming, and a man cannot
+   be taught to load a caliver with a felling axe in his fist. */
+function stowForDrill(keep){
+  if(carrying())dropCarried();
+  const held=itemInHands();
+  if(held&&held!==keep)stowHands();
+}
 function openDrill(onHit){
+  stowForDrill("matchlock");
   /* You cannot load what you are not holding. Kendall's lesson hands you
      the piece as part of the scene, so this only bites afterwards. */
   if(itemState("matchlock")==="stowed"){
@@ -17137,11 +17243,15 @@ window.addEventListener("keydown",function(e){
   if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.isContentEditable))return;
   /* not while a sheet is up: the numbers belong to the deck, not to a modal */
   if(document.querySelector(".modal.on"))return;
+  if(e.key==="i"||e.key==="I"){e.preventDefault();openKit();return;}
+  if(e.key==="0"){e.preventDefault();if(carrying())dropCarried();return;}
   const i=["1","2","3"].indexOf(e.key);
   if(i<0)return;
   e.preventDefault();
   drawFromSlot(CARRY_SLOTS[i]);
 });
+if($("kitClose"))$("kitClose").onclick=function(){$("mKit").classList.remove("on");};
+if($("slotCarry"))$("slotCarry").onclick=function(){openKit();};
 if($("cineSkip"))$("cineSkip").onclick=function(){
   if(LESSON.on)endLesson();
   else if(CS.active)endCutscene();
@@ -23710,7 +23820,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-1121";
+const BUILD="20260814-1400";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
