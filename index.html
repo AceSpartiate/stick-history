@@ -3036,18 +3036,45 @@ function poseFigure(fig,pose,seed){
   const q=fig.userData.parts;
   if(!q)return;
   const r=function(k){return srand(seed*7.13+k*3.71);};
-  if(pose==="stoop"||pose==="kneel"){
-    const deep=(pose==="kneel");
-    q.body.rotation.x=(deep?0.42:0.30)+r(1)*0.10;
-    q.hipL.rotation.x=deep?0.95:0.34; q.hipR.rotation.x=deep?0.20:0.30;
-    q.kneeL.rotation.x=deep?-1.55:-0.62-r(2)*0.14;
-    q.kneeR.rotation.x=deep?-0.42:-0.56-r(3)*0.14;
-    q.ankleL.rotation.x=deep?0.55:0.28; q.ankleR.rotation.x=0.26;
+  if(pose==="kneel"){
+    /* ---- A KNEEL HAS TO PUT A KNEE ON THE GROUND ----
+       The old one was a deeper stoop: it folded the legs and never lowered the figure, so
+       the man did not kneel, he pitched forward over feet that stayed where they were.
+       Three captures of that - a thigh filling the frame at two and a half feet, a man
+       falling on his face across the diagonal at five, and buried to the waist when I
+       simply dropped the root to seat the knee. It is why the survey acts have been played
+       standing.
+       The joint that has to reach the ground is the KNEE, and where it ends up is fixed by
+       the thigh. Measured off this rig: the hip sits 2.33 above the feet, the knee 1.28,
+       the ankle 0.19 - so a thigh is 1.05 and a shin 1.09. Fold the left shin back under a
+       near-vertical thigh and the knee lands 0.95 below where it rests, which is the drop.
+       The right leg goes out in front, thigh forward and shin down, and its foot lands
+       within a hundredth of the ground at the same time. Verified: lowest point of the
+       whole figure -0.01, knee 0.00, forward foot -0.01, and the head at 4.58 instead of
+       5.81, which is what kneeling looks like.
+       The drop is on `body`, not on the figure's position: the root stays where the caller
+       put it, so a kneeling man is still standing on the spot he was sent to. */
+    q.body.rotation.x=0.20+r(1)*0.06;
+    q.hipL.rotation.x=-0.05; q.kneeL.rotation.x=-1.90; q.ankleL.rotation.x=0.0;
+    q.hipR.rotation.x= 1.30; q.kneeR.rotation.x=-1.42; q.ankleR.rotation.x=0.10;
+    q.la.rotation.x=-0.80-r(4)*0.16; q.ra.rotation.x=-0.88-r(5)*0.16;
+    q.elbowL.rotation.x=-0.70-r(6)*0.20; q.elbowR.rotation.x=-0.85-r(7)*0.20;
+    q.wristL.rotation.x=-0.20; q.wristR.rotation.x=-0.26;
+    q.neck.rotation.x=0.34;                       /* down at what his hands are doing */
+    q.body.position.y=-0.95;
+  } else if(pose==="stoop"){
+    q.body.position.y=0;                          /* whatever he was, he is not kneeling */
+    q.body.rotation.x=0.30+r(1)*0.10;
+    q.hipL.rotation.x=0.34; q.hipR.rotation.x=0.30;
+    q.kneeL.rotation.x=-0.62-r(2)*0.14;
+    q.kneeR.rotation.x=-0.56-r(3)*0.14;
+    q.ankleL.rotation.x=0.28; q.ankleR.rotation.x=0.26;
     q.la.rotation.x=-0.52-r(4)*0.28; q.ra.rotation.x=-0.58-r(5)*0.28;
     q.elbowL.rotation.x=-0.80-r(6)*0.30; q.elbowR.rotation.x=-0.92-r(7)*0.30;
     q.wristL.rotation.x=-0.25; q.wristR.rotation.x=-0.30;
     q.neck.rotation.x=0.24;                       /* he is looking at the work */
   } else {
+    q.body.position.y=0;
     /* standing. Nobody stands identically, and thirty-six men in one posture is
        the other half of why a crowd looks wrong. */
     q.la.rotation.x=-0.05-r(4)*0.16; q.ra.rotation.x=-0.03-r(5)*0.18;
@@ -19827,16 +19854,14 @@ const SURVEY_SCENE={
       /* frame -3.58 to 8.29 - the whole man and the ground he is kneeling on */
       {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.2,pose:"kneel",
        line:"You are told to plant in the strongest, most fertile and wholesome place \u2014 and not in a low and moist one, because that will prove unhealthful."},
-      /* ---- A CLOSE-UP OF A KNEELING FIGURE NEEDS A POSE THIS RIG HAS NOT GOT ----
-         Twice tried, twice wrong. poseFigure("kneel") rotates the hips and tips the body
-         0.42 forward but never lowers the ROOT, so the figure does not kneel down - it
-         pitches over, and at two and a half feet the frame is a thigh, at five it is a man
-         falling on his face across the diagonal. The fault is in the pose, not the camera,
-         and posing a real kneel is a job of its own.
-         So this shot uses the framing that three captures have now proved - eleven out,
-         camera 3.9, looking 2.7, frame -3.58 to 8.29 - and shows the whole of him at the
-         work. Less intimate than intended and correct, which is the right way round. */
-      {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.35,t:4.8,cut:true,pose:"kneel",
+      /* In close on the work, which is what this shot always wanted and could not have
+         until the kneel existed. A kneeling man tops out at 4.58 rather than 5.81, so the
+         frame is built for that: camera 3.0, looking 2.0, five feet out on the quarter,
+         which framed -1.09 to 4.50. Captured: too close. A kneel is compact in HEIGHT and wide in
+         everything else - the forward thigh and both arms reach - so a frame built round 4.58
+         of head clearance still cuts the pose in half. Eight out, 3.4 looking 2.2, frame
+         -2.52 to 6.23 and he is half of it. */
+      {dist:8.0,height:3.4,lookH:2.2,yaw:Math.PI*0.30,t:4.8,cut:true,pose:"kneel",
        line:"There is no instrument for this. You go down on a knee and turn a handful over, and you look at what is already growing in it."},
       /* and up at the timber, from the same proved distance so he stays whole in frame */
       {dist:11,height:3.9,lookH:3.4,yaw:Math.PI*0.5,t:5.0,cut:true,pose:"stand",up:true,
@@ -19848,12 +19873,19 @@ const SURVEY_SCENE={
     shots:[
       {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.0,pose:"kneel",
        line:"Water is tested by drinking it. There is no other way to do it here, and no one aboard can do better."},
-      /* Held at four rather than at 1.9. The arithmetic for a 1.9 close-up is the same
-         arithmetic that framed the execution's face correctly - but this man has both
-         forearms RAISED to his mouth, and at that distance the camera sits inside them:
-         the capture is two sleeves and a hat. A close-up has to be framed round the pose,
-         not round the head. */
-      {dist:4.0,height:4.2,lookH:3.6,front:true,t:5.0,cut:true,pose:"stand",drink:true,
+      /* Kneeling, because you kneel to drink from a river. His head centres near 3.95 in
+         that pose rather than 4.84, and both forearms come up to his mouth - so the frame
+         is built round the POSE and not round the head: at 3.4 out, looking 3.4, it runs
+         2.60 to 4.20 - and the capture was a hat brim and two sleeves, because raised forearms
+         are the widest thing in the scene. Six out at 3.6 looking 3.0: frame -0.40 to 6.06,
+         the whole of him kneeling to the water. Captured: his BACK. The `front` flag aims the
+         camera along the figure's own facing, which is right for the execution - that shot
+         proved it, the face fills the frame - and comes out backwards here, and I have not
+         worked out why. Rather than guess a third time, this shot uses the exact camera the
+         ground act was verified with a moment ago, at the same site and on the same kneel:
+         side on at eight, camera 3.4, looking 2.2, frame -2.52 to 6.23. `front` is left
+         alone and the puzzle is written down rather than papered over. */
+      {dist:8.0,height:3.4,lookH:2.2,yaw:Math.PI*0.30,t:5.0,cut:true,pose:"kneel",drink:true,
        line:"Salt you can taste at once. It is May, and the river is low \u2014 by August the tide will push salt further up than this."},
       {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.2,cut:true,pose:"stand",
        line:"What you cannot taste is the rest of it. They had no way to know that a river they drank from and emptied into was the same river."}]},
@@ -20021,16 +20053,7 @@ function surveyCutscene(d,onDone){
         const ax=(sh.at?sh.at[0]:px), az=(sh.at?sh.at[1]:pz);
         player.position.set(ax,WORLD.ground(ax,az),az);
         player.rotation.y=(sh.face===undefined?yaw:sh.face);
-        /* ---- WHY NOBODY KNEELS IN THESE SCENES YET ----
-           poseFigure("kneel") folds the legs and tips the body 0.42 forward but never
-           lowers the ROOT, so the figure does not kneel down - it stands on nothing and
-           pitches over. Three captures of it: at 2.6 out the frame was a thigh, at 5.0 a
-           man falling on his face across the diagonal, and dropping the root by 1.05 to
-           seat the knee buried him to the waist instead. The fault is in the rig, not the
-           camera, and a real kneel wants a pose written for it - the root lowered, the
-           weight over the folded shin, the far foot planted. Until that exists these acts
-           are played standing, which is honest and is not broken. */
-        if(sh.pose)poseFigure(player,(sh.pose==="kneel"?"stoop":sh.pose),7);
+        if(sh.pose)poseFigure(player,sh.pose,7);
         if(sh.up&&player.userData.parts&&player.userData.parts.neck)
           player.userData.parts.neck.rotation.x=-0.55;   /* looking up at the timber */
         if(sh.shade&&player.userData.parts){
@@ -23319,7 +23342,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-0239";
+const BUILD="20260814-0344";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
