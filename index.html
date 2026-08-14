@@ -5711,6 +5711,51 @@ const CREW_TOOLS={
             desc:"A slow match held at arm's length in a forked staff, so the man giving fire is not standing over the touch hole when she goes."}
 };
 for(const k in CREW_TOOLS)ITEMS[k]=CREW_TOOLS[k];
+/* ========== THE EIGHT MOTIONS OF A GREAT GUN ==========
+   The spine of the cannon drill, written as data before anything animates it - the same
+   shape RELOAD_STAGES has carried for the matchlock, with two things added that a shoulder
+   piece does not need.
+   `tool` is what must be IN YOUR HANDS for the motion to be possible, and it is the whole
+   argument of the sequence. Three of the tools are two-handed, so a man alone puts one down
+   to pick the next up, over and over, and the action bar makes that cost visible instead of
+   describing it. A crew of six passed these along a line; the player has no crew, for the
+   reason he already knows - nobody volunteers for a station that gets a man flogged.
+   `f` is the fraction of the whole drill each motion takes, summing to one, and the shape
+   of that list IS the lesson. Running her out is a third of it. A demi-culverin weighs
+   about three thousand pounds on a wooden carriage; she recoils inboard on firing and has
+   to be hauled back out on her tackle until the muzzle clears the side, and that is the
+   real reason a broadside is slow - not the loading, which people expect, but the hauling,
+   which nobody thinks of. Alone it is the longest thing you do.
+   The order is not arbitrary and each step is somebody's death if it is skipped. Worm and
+   sponge come FIRST, always: what the last shot left can still be alight, and a live ember
+   meeting the next cartridge takes the arms off the man ramming. Prick before prime, or the
+   priming burns in the touch hole and never reaches the charge. Run out before fire, or she
+   goes off inboard.
+   NOTHING WIRES THIS YET. It is data, it is checkable on its own - the fractions sum, every
+   tool it names exists - and it is deliberately the first thing built so the rest has a
+   spine to hang from. */
+const GREAT_GUN_STAGES=[
+  {k:"worm",      tool:"worm",     f:0.09, doing:"worming her out",
+   note:"Drag out what the last cartridge left. What you miss can still be alight."},
+  {k:"sponge",    tool:"sponge",   f:0.10, doing:"sponging the bore",
+   note:"Wet fleece the length of the bore, and no hurrying it."},
+  {k:"cartridge", tool:null,       f:0.07, doing:"the cartridge home",
+   note:"A serge bag of powder, down the muzzle by hand."},
+  {k:"wad",       tool:null,       f:0.06, doing:"the wad after it",
+   note:"Junk or oakum, to hold the ball against the roll of the ship."},
+  {k:"ram",       tool:"rammer",   f:0.16, doing:"ramming home",
+   note:"Hard against the breech. Loose powder burns instead of throwing."},
+  {k:"prick",     tool:"prickr",   f:0.05, doing:"pricking the cartridge",
+   note:"Down the touch hole, to tear the bag open so the priming can reach it."},
+  {k:"prime",     tool:null,       f:0.06, doing:"priming the touch hole",
+   note:"Fine powder, filled and no more."},
+  /* the beat nobody expects, and a third of the work */
+  {k:"runout",    tool:null,       f:0.31, doing:"running her out",
+   note:"Three thousand pound of gun and carriage, hauled out on her tackle until the muzzle is clear of the side. There is nobody on the other fall but you."},
+  {k:"fire",      tool:"linstock", f:0.10, doing:"ready to give fire",
+   note:"Match at arm's length in the fork, and stand out of her recoil."}
+];
+
 function itemState(id){return (S.items&&S.items[id])||"absent";}
 function setItemState(id,st){if(!S.items)S.items={};S.items[id]=st;}
 function itemHeld(id){const st=itemState(id);return st==="stowed"||st==="carried";}
@@ -23873,7 +23918,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-2151";
+const BUILD="20260814-2159";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
