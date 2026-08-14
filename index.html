@@ -17856,6 +17856,24 @@ function siteGround(key,x,z){
   y+=Math.sin(x*0.024)*0.35+Math.cos(z*0.019)*0.30;
   return y;
 }
+/* ---- WHAT COLOUR THE GROUND IS UNDER A TREE ----
+   conifer() bakes its own contact shade into its mesh rather than spending a transparent
+   draw call on it, and to do that it has to be TOLD the colour of the ground it stands on:
+   the rim of the disc is that exact colour and the middle is a darkened version, so it
+   reads as shade rather than as a painted plate.
+   The cape has always passed capeVert(), which looks the colour up. The three survey sites
+   passed a hardcoded green - a guess at the ground made when the ground was a different
+   colour. Darkening Archer's Hope to loam broke the guess badly: the discs stayed at
+   0.20,0.27,0.13 over ground that is now 0.045,0.078,0.019, four times brighter than what
+   they sit on, so every tree wore a pale plate. Walked into the stand at eye height they
+   read as sheets of something floating at head height, which is what was reported.
+   Asked rather than guessed now, off the same band table the terrain itself is coloured
+   from, so the two cannot drift apart again. */
+function siteVert(key,z){
+  const T=SITE_TERRAIN[key];
+  if(!T)return RGB(0x7c8b5a);
+  return RGB((z>T.sea-6)?T.wet:(z>T.shore)?T.near:(z>T.flat)?T.far:T.back);
+}
 function buildThinSite(root,key){
   const site=SITES[key], T=SITE_TERRAIN[key];
   const G=function(x,z){return siteGround(key,x,z);};
@@ -17886,7 +17904,7 @@ function buildThinSite(root,key){
   const TR=new Geo();
   for(let i=0;i<T.trees;i++){
     const tx=(srand(i*3.7+T.seed)*2-1)*400, tz=T.treeZ-srand(i*5.3+T.seed)*280;
-    conifer(TR,tx,G(tx,tz),tz,T.treeH*(0.8+srand(i*2.7+T.seed)*0.5),i+T.seed,[0.30,0.34,0.20]);
+    conifer(TR,tx,G(tx,tz),tz,T.treeH*(0.8+srand(i*2.7+T.seed)*0.5),i+T.seed,siteVert(key,tz));
   }
   if(T.trees)root.add(TR.mesh(false,false));
   /* one interactable per survey, each a day */
@@ -18167,7 +18185,7 @@ SITE_TERRAIN.archers.dress=function(root,G){
     const x=side*(26+srand(i*7.3+90)*96), z=30-srand(i*4.1+90)*104;
     const h=60+srand(i*2.9+90)*22;
     if(i%3===0)treeMid(D,x,G(x,z),z,h*0.86,i+90);
-    else conifer(D,x,G(x,z),z,h,i+90,[0.20,0.27,0.13]);
+    else conifer(D,x,G(x,z),z,h,i+90,siteVert("archers",z));
   }
   /* and the black ground showing through it: fallen needle litter and low brush, which is
      what "the ground under it black" actually looks like from standing height */
@@ -23397,7 +23415,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-0402";
+const BUILD="20260814-0414";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
