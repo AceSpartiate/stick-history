@@ -17809,11 +17809,17 @@ const SITES={
   comfort:{name:"Point Comfort",world:"comfort",cost:1,chapter:"ch2",
     gloss:"A low point inside the capes, where the deep channel runs close in.",
     arrive:"The fleet is riding at anchor off the point, close enough to hail. Good holding ground, they say, and after four months of open water that is a comfort.",
-    land:[10,58], spots:[[0,52],[-46,4],[62,18]],
+    /* The town spot stands OFF the town, not in it. At [-6,2] it was eighteen inches from
+       the wall of the nearest house and the establishing shot was a brown slab: the wide
+       needs the town in front of the player at a distance a town can be seen at. */
+    land:[10,58], spots:[[0,52],[-46,4],[62,18],[-6,26]],
     surveys:[
       {k:"depth", verb:"Sound the depth", d:"Six fathom within a stone's throw of the shore. A ship of any burden could ride here."},
       {k:"ground",verb:"Walk the ground", d:"Sand and low scrub, and no fresh water that you can find."},
-      {k:"sea",   verb:"Look to the sea", d:"You can see clean out of the bay — which means anything coming in can see you."}]},
+      {k:"sea",   verb:"Look to the sea", d:"You can see clean out of the bay — which means anything coming in can see you."},
+      /* The finding the Council actually asked for, and the one the English wrote
+         down and then did not use. See buildKecoughtan for why it was missing. */
+      {k:"hosts", verb:"Go up to the town", d:"Kecoughtan. They feed you, give you tobacco after, and dance. Your own instructions say to judge ground by the people living on it — and these people are fed. You are standing on the answer."}]},
 
   /* Many of the company preferred this place. Wingfield overruled them for one
      reason, and it is a reason a player can go and find: the water is too shoal
@@ -17856,6 +17862,32 @@ SITE_TERRAIN.james={sea:78,shore:34,flat:-8,deep:-3.6,fall:0.05,rise:1.5,inland:
    site gets one landmark you can see from the landing point and nowhere else, and
    in every case it is the thing the site is ABOUT - so the view and the finding
    argue the same point. One merged mesh each. */
+/* ---- A YEHAKIN ----
+   A Powhatan house is not a tepee and it is not a wigwam of the northern sort: it is a
+   barrel-vaulted frame of bent saplings lashed at the crown and sheathed in bark or in
+   woven reed mats, twenty to thirty feet long, twelve or so wide, and high enough inside
+   to stand up in. There is a smoke hole in the roof and a mat over the door, and Strachey
+   describes them as warm and close. Built here as a stepped vault - five courses of
+   decreasing width - which in flat-shaded low poly reads as the curve it is approximating
+   without pretending to a smoothness the rest of this game does not have.
+   `turn` swaps length for width, because Geo.box carries a z rotation and no y one, and a
+   town where every house points the same way looks issued rather than lived in. */
+function yehakin(G,x,gy,z,len,wid,hgt,turn){
+  const MAT=RGB(0x8a7550), MAT2=RGB(0x6f5c3e), DARK=RGB(0x2a2118);
+  const L=turn?wid:len, W=turn?len:wid;
+  const COURSES=5;
+  for(let i=0;i<COURSES;i++){
+    const t=(i+0.5)/COURSES;
+    /* a half-ellipse: full width at the ground, drawn in at the crown */
+    const k=Math.sqrt(Math.max(0.04,1-t*t*0.92));
+    const y0=gy+(i/COURSES)*hgt, y1=gy+((i+1)/COURSES)*hgt;
+    /* the vault draws in ACROSS its width and holds its length, whichever way it faces */
+    G.box(x,(y0+y1)/2,z,turn?L*k:L,y1-y0,turn?W:W*k,(i%2)?MAT:MAT2);
+  }
+  /* the smoke hole, and the mat hung over the door */
+  G.box(x,gy+hgt-0.05,z,L*0.16,0.16,W*0.16,DARK);
+  G.box(x+(turn?L*0.5:0),gy+2.0,z+(turn?0:W*0.5),turn?0.14:2.0,4.0,turn?2.0:0.14,DARK);
+}
 SITE_TERRAIN.comfort.dress=function(root,G){
   /* THE FLEET, riding at anchor off the point. They really did anchor here on the
      last day of April, and it is the argument for the place standing in the water:
@@ -17883,7 +17915,76 @@ SITE_TERRAIN.comfort.dress=function(root,G){
     }
   });
   root.add(D.mesh(false,false));
+  buildKecoughtan(root,G);
 };
+/* ========== KECOUGHTAN ==========
+   The largest inaccuracy in this chapter, and it was an absence rather than a mistake.
+   Point Comfort was not an empty shore with a fleet lying off it. There was a town at that
+   point, and the English went up to it and were fed.
+   Percy, the thirtieth of April: they came with the ships to Cape Comfort, saw five men on
+   the shore, had the shallop manned and rowed in, and were directed to their town, "which
+   is called Kecoughtan" - where they were entertained with food, with tobacco, and with
+   dancing. They came back on the fourth of May. All of this is four days after the same
+   people, or people very like them, had shot at them in the dark at Cape Henry.
+   BOTH OF THOSE ARE THE RECORD. This game had the ambush and not the welcome, which is not
+   a half-truth - it is a different story. It leaves a player with a country containing only
+   hostility, where the sources describe a country containing a foreign policy. The corn
+   matters as much as the arrows and it is harder to draw, which is presumably how it went
+   missing.
+   WHAT IS NOT ASSERTED HERE: a house count, a population, or a plan of the town. The record
+   is thin on all three and the game does not get to invent them. Four houses reads as a
+   town and is not a claim. */
+function buildKecoughtan(root,G){
+  const K=new Geo();
+  /* Inland of the landing and in the line the player already faces: they put in at [10,58]
+     looking up the beach, so a town at z 0 to -34 is in front of them on arrival rather
+     than something found by wandering. */
+  const HOUSE=[[-18,-6,26,13,11,0],[16,-14,22,12,10,1],
+               [-34,-26,20,12,10,1],[6,-34,28,14,11,0]];
+  for(let i=0;i<HOUSE.length;i++){
+    const h=HOUSE[i];
+    yehakin(K,h[0],G(h[0],h[1]),h[1],h[2],h[3],h[4],h[5]);
+  }
+  /* THE CORN, which is the argument of the place. Powhatan towns sat in cleared ground with
+     the fields worked around them, and the Council's instruction about judging soil by the
+     people living on it only means something if a player can see what those people grow.
+     Late April: it is in, and it is young. */
+  const CORN=RGB(0x6f8a3e), CORN2=RGB(0x577030);
+  for(let r=0;r<9;r++)for(let c=0;c<14;c++){
+    const cx=40+c*4.2, cz=-4-r*4.6;
+    const gy=G(cx,cz);
+    K.box(cx,gy+0.9,cz,0.24,1.8,0.24,(r+c)%2?CORN:CORN2);
+    K.box(cx,gy+1.5,cz,1.5,0.14,0.30,CORN2);
+  }
+  /* a fire, and the drying rack over it */
+  const ASH=RGB(0x4a453c), EMBER=RGB(0x8c3a1c), POLE=RGB(0x6d5a3c);
+  const fy=G(-2,-18);
+  K.oct(-2,-18,fy,fy+0.5,3.0,3.0,2.4,2.4,0.1,ASH,ASH);
+  K.box(-2,fy+0.6,-18,1.8,0.5,1.8,EMBER);
+  for(let p=-1;p<=1;p+=2)
+    K.beam8([-2+p*2.4,fy,-18],[-2+p*1.2,fy+5.2,-18],0.16,0.12,POLE,POLE,1,1);
+  K.box(-2,fy+5.0,-18,5.6,0.16,0.16,POLE);
+  root.add(K.mesh(false,false));
+  /* ---- AND THE PEOPLE, WHO ARE THE POINT ----
+     Standing about their own town at their own work, not arranged to face the player and
+     not waiting to be spoken to. They are the same figure the ambush uses, deliberately:
+     it is the same people, and this game must not have one model for the men who shoot at
+     you and a different one for the men who feed you. */
+  /* Three of them stand OUT IN FRONT of the houses, and that is not staging - it is the
+     first line of the account. Percy, the thirtieth: they came to Cape Comfort and saw
+     five men on the shore, who pointed them inland to the town. A player arriving at this
+     site should meet people before they meet architecture, because that is the order it
+     happened in. The rest are at work behind, where the fire and the corn are. */
+  const AT=[[-4,8,0.2],[14,4,0.9],[-22,10,5.9],
+            [-8,-12,0.7],[10,-20,2.4],[-26,-18,1.1],[2,-30,3.6],[26,-10,4.2],[-14,-34,5.4]];
+  for(let i=0;i<AT.length;i++){
+    const f=tidewaterFigure();
+    f.position.set(AT[i][0],G(AT[i][0],AT[i][1]),AT[i][1]);
+    f.rotation.y=AT[i][2];
+    poseFigure(f,(i%3===0)?"stoop":"stand",i*3+1);
+    root.add(f);
+  }
+}
 SITE_TERRAIN.archers.dress=function(root,G){
   /* THE TIMBER. Sixty feet and straight - the thing the men who wanted this place
      wanted it FOR, standing where you land rather than described in a toast. */
@@ -19599,6 +19700,29 @@ const SURVEY_SCENE={
        line:"Salt you can taste at once. It is May, and the river is low \u2014 by August the tide will push salt further up than this."},
       {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.2,cut:true,pose:"stand",
        line:"What you cannot taste is the rest of it. They had no way to know that a river they drank from and emptied into was the same river."}]},
+  /* ---- GOING UP TO THE TOWN ----
+     The Council's instruction is the strangest thing in the whole document and the most
+     useful: "if the naturals be Strong and Clean made it is a true sign of a wholesome
+     Soil". They were told to read the healthiness of the ground OFF THE PEOPLE ALREADY
+     LIVING ON IT. That makes Kecoughtan a survey instrument in the English scheme, which
+     is its own comment on the English scheme, and it means this act cannot be done at all
+     unless the people are there. See buildKecoughtan.
+     The narration keeps Percy's own framing rather than smoothing it. He records courtesy
+     and calls the people who showed it to him Savages, in the same breath, and both halves
+     of that are the lesson. The game says Kecoughtan; Percy says what Percy says. */
+  hosts:{
+    at:"spot",
+    shots:[
+      /* over his shoulder, so the town is the subject and he is the near edge of frame */
+      {dist:11,height:3.9,lookH:2.7,yaw:0,t:5.6,pose:"stand",face:Math.PI,
+       line:"Five men on the shore point you inland. The town is called Kecoughtan, and it has been here a long time — nobody had to build it this month."},
+      /* in among the houses, the fire and the corn */
+      {dist:14,height:4.6,lookH:3.4,yaw:Math.PI*0.35,t:5.6,cut:true,pose:"stand",
+       at:[-4,-16],face:Math.PI*0.15,
+       line:"They feed you. Bread of their corn, a drink made from it, tobacco after — and then they dance. Percy sets all of it down with great care and no warmth."},
+      /* and back out, with the sentence the whole chapter turns on */
+      {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:6.0,cut:true,pose:"stand",
+       line:"Your instructions said to judge the ground by the people standing on it. If the naturals be strong and clean made, it is a true sign of a wholesome soil. Here is your answer."}]},
   /* THE SEA. The clause about not planting near the entrance, which is the one clause
      Jamestown Island actually satisfies - and it is the reason a bad site won. */
   sea:{
@@ -19705,12 +19829,16 @@ function surveyCutscene(d,onDone){
          drinking close-up played at Archer's Hope - a dry act, facing inland - and filled
          the frame with the back of his head. */
       shot:{of:["player"],dist:sh.dist,height:sh.height,lookH:sh.lookH,
-            yaw:(sh.front?yaw:(sh.yaw===undefined?Math.PI/2:sh.yaw)),cut:!!sh.cut},
+            yaw:(sh.front?(sh.face===undefined?yaw:sh.face)
+                         :(sh.yaw===undefined?Math.PI/2:sh.yaw)),cut:!!sh.cut},
       t:sh.t, sfx:sh.sfx, gain:0.3, narrate:sh.line,
       do:(function(sh){return function(){
         if(!player)return;
-        player.position.set(px,py,pz);
-        player.rotation.y=yaw;
+        /* a shot may walk him somewhere - the town scene needs him among the houses for
+           its middle beat and back on the edge of it for the last one */
+        const ax=(sh.at?sh.at[0]:px), az=(sh.at?sh.at[1]:pz);
+        player.position.set(ax,WORLD.ground(ax,az),az);
+        player.rotation.y=(sh.face===undefined?yaw:sh.face);
         /* ---- WHY NOBODY KNEELS IN THESE SCENES YET ----
            poseFigure("kneel") folds the legs and tips the body 0.42 forward but never
            lowers the ROOT, so the figure does not kneel down - it stands on nothing and
@@ -20286,23 +20414,25 @@ function buildNocks(n){
   }
   return out;
 }
-function buildBowman(seed){
-  /* the rig comes from the house figure builder, so the crawl and the draw can use the
-     same joints everything else in this game uses. Bare above the waist, a breechclout,
-     and the hair Percy describes at Kecoughtan four days later: "they shave the right side
-     of their heads with a shell, the left side they weare of an ell long tied up with an
-     artificiall knot". */
+/* ---- A TIDEWATER FIGURE, WHICH IS NOT THE SAME THING AS AN ARCHER ----
+   This was inside buildBowman, which is the only place the game had ever needed one -
+   and that is exactly the fault worth naming. Powhatan people existed in this game
+   solely as the men who attack you on the beach on the twenty-sixth of April. That
+   attack is in the record and it stays. So is what happened four days later at
+   Kecoughtan, where the same English were fed, and a game that shows the first and not
+   the second is not telling the truth by halves, it is telling a different story.
+   So the figure comes out of the ambush and belongs to nobody. Bare above the waist and
+   a breechclout - Percy: skins about the middle and little else in warm weather - and
+   the hair he describes at Kecoughtan: "they shave the right side of their heads with a
+   shell, the left side they weare of an ell long tied up with an artificiall knot". It
+   is ASYMMETRIC, shaved right and knotted left, and that one detail does more to make
+   these men look like themselves than anything else available to a low-poly figure.
+   Not a wardrobe piece, because it is not a thing the player can put on. */
+function tidewaterFigure(){
   const eq={skin:"tidewater",palette:"ink",cloak:"none_cloak",torso:"torso_bare",
             accessory:"none_acc",head:"none_head",build:"build_normal",face:"plain"};
   const f=buildFigure(eq);
   const p=f.userData.parts;
-  /* ---- THE HAIR, WHICH IS THE MOST DISTINCTIVE THING AND THE EASIEST TO GET WRONG ----
-     Percy, at Kecoughtan four days after this beach: "they shave the right side of their
-     heads with a shell, the left side they weare of an ell long tied up with an
-     artificiall knot". So it is ASYMMETRIC - shaved on the right, long on the left and
-     knotted - and that one detail does more to make these men look like themselves than
-     anything else available. It is not a wardrobe piece because it is not a thing the
-     player can put on. */
   if(p&&p.neck){
     const hg=new Geo(), HR=RGB(0x241a12), HR2=RGB(0x120d08);
     hg.box(-0.02,0.30,-0.02,0.30,0.09,0.34,HR);            /* the crown, close */
@@ -20311,6 +20441,13 @@ function buildBowman(seed){
     const hair=hg.mesh(false,true);
     p.neck.add(hair);
   }
+  return f;
+}
+function buildBowman(seed){
+  /* the rig comes from the house figure builder, so the crawl and the draw can use the
+     same joints everything else in this game uses. */
+  const f=tidewaterFigure();
+  const p=f.userData.parts;
   /* ---- A CHILD OF A FIGURE IS INSIDE THE FIGURE'S SCALE ----
      buildFigure wraps the body in a group scaled by FIG_SCALE - 2.916 - so anything
      parented to a joint is multiplied by it. The bow is modelled in FEET, because that is
@@ -22964,7 +23101,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-0148";
+const BUILD="20260814-0200";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
