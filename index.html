@@ -196,13 +196,23 @@
   /* The action bar. The HANDS slot is the piece button that was already there - it
      carries the icon, the label and the reload fill, and a two-handed thing fills it
      wide, which is the condensing asked for. These three are what is stowed. */
-  #slots{display:flex;gap:6px;align-items:flex-end;margin-right:8px}
+  /* ABSOLUTE, like every other thing in this HUD. #viewport is position:relative and its
+     children are placed on it - gunBtn sits at bottom 14 - so a static div laid itself out
+     at the top-left corner of the page, 451 wide and 44 tall, behind the world. It was
+     drawing perfectly the whole time, in a place nobody would look. Measured, not guessed:
+     the rect came back at 0,0.
+     Sat directly over the piece button rather than beside it: the viewport is 459 across on
+     a phone and three 44px chips plus a 142px button will not share a row there. */
+  #slots{position:absolute;left:50%;bottom:62px;transform:translateX(-50%);
+    display:flex;gap:6px;align-items:flex-end;z-index:6}
   .slotb{position:relative;width:44px;height:44px;border-radius:8px;
     background:rgba(13,11,7,.52);border:1px solid rgba(240,230,205,.28);
     color:#f0e6cd;font-family:'IM Fell English SC',serif;padding:0;overflow:hidden}
   .slotb b{position:absolute;top:1px;left:4px;font-size:10px;font-weight:400;opacity:.55}
-  .slotb span{display:block;padding:12px 3px 3px;font-size:9px;line-height:1.05;
-    white-space:normal;opacity:.92}
+  /* 9px cut "Matchlock" off inside a 44px chip. Eight, and allowed to break, so a long
+     name wraps into the height the chip already has rather than running out of its side. */
+  .slotb span{display:block;padding:11px 2px 2px;font-size:8px;line-height:1.08;
+    white-space:normal;word-break:break-word;opacity:.92}
   .slotb.full{border-color:var(--gold-bright);background:rgba(40,32,16,.66)}
   .slotb.empty span{opacity:.32}
   .slotb.inhand{outline:2px solid var(--gold-bright);outline-offset:-2px}
@@ -23700,7 +23710,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260814-1055";
+const BUILD="20260814-1121";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
