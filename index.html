@@ -5911,10 +5911,10 @@ const CREW_TOOLS={
   rammer:  {rack:true, name:"Rammer",       short:"Rammer", hands:2, slot:"back",
             weight:"a stave and a wooden head",
             desc:"Seats the cartridge and the wad hard against the breech. Loose powder burns instead of throwing, and a ball that is not seated can roll out again."},
-  prickr:  {name:"Priming Wire", short:"Wire",   hands:1, slot:"beltL",
+  prickr:  {rack:true, name:"Priming Wire", short:"Wire",   hands:1, slot:"beltL",
             weight:"a foot of stiff wire",
             desc:"Pushed down the touch hole to tear the cartridge open, so the priming can reach the powder inside it."},
-  linstock:{name:"Linstock",     short:"Match",  hands:1, slot:"beltR",
+  linstock:{rack:true, name:"Linstock",     short:"Match",  hands:1, slot:"beltR",
             weight:"a forked staff and a length of match",
             desc:"A slow match held at arm's length in a forked staff, so the man giving fire is not standing over the touch hole when she goes."}
 };
@@ -5932,6 +5932,20 @@ for(const k in CREW_TOOLS)ITEMS[k]=CREW_TOOLS[k];
    linstock stay on the man, because those are small and personal and he was expected to
    have them. The action bar shows what is ON YOU; the rack is somewhere you are. */
 function rackTool(id){return !!(ITEMS[id]&&ITEMS[id].rack);}
+/* ---- THE GUN KEEPS ALL FIVE, AND THAT IS A BUG REPORT, NOT A PREFERENCE ----
+   Reported: could not fire the Chapter I cannon, because the tools could not be picked up.
+   True, and unfinishable. The worm, sponge and rammer were racked; the priming wire and the
+   linstock were left as personal kit on the belt - and NOTHING IN THE GAME EVER ISSUES
+   THEM. They sat at "absent" for every player, so the sixth motion refused for ever with
+   "you have no priming wire" and the drill could not be completed by anybody.
+   My own tests never saw it because every one of them began by handing the player the small
+   tools to set up the state I wanted. The setup was the bug: a test that grants what it is
+   about to check is not checking anything, and this is the second time this week a green
+   result came from measuring my own arrangement rather than the game.
+   They belong at the gun anyway. A linstock stands in its tub by the piece with the slow
+   match already burning, and the priming wire hangs at the breech - neither is something a
+   man walks about the ship carrying. So all five are racked, the stand supplies the whole
+   station, and the belt stays free for the axe and the saws that are coming. */
 function stockTheRack(){
   for(const k in CREW_TOOLS)
     if(rackTool(k)&&itemState(k)!=="carried")setItemState(k,"rack");
@@ -24441,7 +24455,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-0624";
+const BUILD="20260815-1224";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
