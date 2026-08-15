@@ -10762,14 +10762,23 @@ function makePools(){
 POOL.impacts=new Pool(24,function(){
     const m=new THREE.Mesh(XGEOM,new THREE.MeshBasicMaterial({
       vertexColors:true,transparent:true,opacity:1,side:THREE.DoubleSide,
-      depthWrite:false,depthTest:false}));
+      /* ---- SEEN THROUGH THE SMOKE, NOT PAINTED OVER IT ----
+       depthTest was turned off and the order forced last, so the cross was drawn on top of
+       everything - which made it visible and made it look like a sticker on the lens rather
+       than a mark on a target. The correction is smaller than the original mistake: it is a
+       thing IN THE WORLD, so it depth-tests like one, and it takes renderOrder 0 so it
+       joins the ordinary back-to-front sort of transparent things. The mark is forty yards
+       off and the smoke is four feet from your eye, so the sort draws the mark first and
+       the smoke over it - and you see it dimmed and tinted through the cloud, which is what
+       you would see. */
+      depthWrite:false,depthTest:true}));
     /* Drawn last and depth-tested against nothing. That note used to say "depth testing
        still applies, so a dune between you and the mark still hides it" - which was true,
        and was the bug: the thing hiding it was never a dune, it was the shooter's own
        smoke, and depth testing does not distinguish. The mark is placed where the ball
        STOPPED, so there is by construction nothing solid between it and the eye that fired
        the shot; what it now punches through is weather. */
-    m.renderOrder=12;
+    m.renderOrder=0;
     fxRoot.add(m);return m;
   });
 }
@@ -14859,7 +14868,10 @@ function markImpact(x,y,z,d,dist,o){
      too weak. 0.30 + dist*0.035 holds it near two degrees at any range: 1.0 at twenty feet,
      2.4 at twenty yards, 4.5 at forty, and still under four percent of frame height, which
      is a clear mark and not a billboard. */
-  const size=0.30+dist*0.035;
+  /* Halved again after looking: 0.035 a foot put a cross four and a half units across at
+     forty yards, which reads as a signpost rather than a strike. 0.016 holds it near one
+     degree - plainly there when you look for it, and not the loudest thing in the frame. */
+  const size=0.22+dist*0.016;
   mk.position.set(x-d.x*0.30,y-d.y*0.30,z-d.z*0.30);
   mk.scale.set(size,size,1);              /* z is the bar's own thickness; leave it */
   /* Facing back down the line of fire, which is the one orientation that is always
@@ -15390,7 +15402,17 @@ function gunSmoke(scale){
          it. Ours formed on the same tick as the report and closed the line first.
          A tenth of a second of delay, spread across the twelve puffs, and the order is
          the true one: the report, the strike, and then the smoke over it. */
-      {size:1.4*scale, col:0x7d7a70, op:0.82, life:9.0, grow:0.95, ease:2.0,
+      /* ---- A CLOUD YOU CAN SEE THROUGH ----
+       Twelve puffs at 0.82 each, overlapping four feet from the eye, is not a cloud - it is
+       a wall, and nothing behind it exists. That is why the impact mark had to be forced on
+       top to be seen at all, and forcing it on top is what made it look like a sticker on
+       the lens instead of a mark on a target.
+       Fixed at the cause. At 0.42 the puffs still stack into something that plainly obscures
+       - twelve of them multiply - but they obscure like smoke, dimming and greying what is
+       behind rather than deleting it. The mark can then be an ordinary depth-tested thing in
+       the world and you SEE IT THROUGH the plume, which is what was asked for and also what
+       a man would see. */
+      {size:1.4*scale, col:0x7d7a70, op:0.42, life:9.0, grow:0.95, ease:2.0,
        delay:0.10+i*0.012,
        cap:{x:o.x,y:o.y,z:o.z,r:SMOKE_CAP_FT}});
   }
@@ -24359,7 +24381,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-0501";
+const BUILD="20260815-0538";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
