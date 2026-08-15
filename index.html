@@ -5434,14 +5434,52 @@ function buildTweenLevel(root){
       const cx=sd*(hbw-2.6*K);
       const cWood=RGB(0x5a3d26),cCheek=RGB(0x4a3220),cTruck=RGB(0x3a2c1a),
             cIron=RGB(0x23232a),cRing=RGB(0x2e2e36),cRope=RGB(0x6b5a3a);
+      /* ---- A DEMI-CULVERIN, INSTEAD OF SEVEN BOXES ----
+         The barrel was cg.box(4.6K long, 0.8K square) - a square-section bar, which is the
+         same fault the matchlock had when it was reported as unreadable: "ten axis-aligned
+         boxes in near-black, and at most angles it read as a stack of dark blocks". The
+         answer there was the RIGHT PRIMITIVE for each part, and it is the answer here.
+         A gun barrel is a tapered round solid, thickest at the breech where the charge goes
+         off and slenderest at the muzzle, with raised rings where the founder reinforced it.
+         beam8 builds exactly that, and it is what the ship's masts and the shallop's timbers
+         are already made of. Still ONE merged mesh per gun, which is the thing that matters
+         on a Chromebook: the cost in Chapter I is draw calls, not triangles - measured, 138
+         calls and 40,572 triangles at 0.39 ms - so a better gun is affordable and a gun made
+         of eight separate meshes is not.
+         TRUNNIONS are the detail that does the most work for the fewest faces. They are the
+         two stubs the barrel pivots on, they sit at the balance point, and without them a
+         barrel appears to be lying on a cart rather than mounted in one. Nobody could name
+         them and everybody can see when they are missing. */
+      /* the bed and the cheeks, which step down toward the muzzle as a real carriage does */
       cg.box(0,1.0*K,0,2.6*K,0.5*K,3.4*K,cWood);
-      for(let c=-1;c<=1;c+=2)cg.box(c*0.9*K,1.7*K,0,0.4*K,1.2*K,3.0*K,cCheek);
-      for(let a=-1;a<=1;a+=2)for(let b=-1;b<=1;b+=2)
-        cg.box(a*0.95*K,0.5*K,b*1.25*K,1.0*K,1.0*K,0.35*K,cTruck);
-      cg.box(1.5*K,2.1*K,0,4.6*K,0.8*K,0.8*K,cIron);
-      cg.box(-1.0*K,2.1*K,0,0.8*K,0.8*K,0.8*K,cIron);
-      cg.box(2.6*K,2.1*K,0,0.3*K,1.05*K,1.05*K,cRing);
-      cg.box(0,2.0*K,-1.7*K,3.4*K,0.16*K,0.16*K,cRope);
+      for(let c=-1;c<=1;c+=2){
+        cg.quad4([c*0.9*K,1.25*K,-1.5*K],[c*0.9*K,1.25*K,1.5*K],
+                 [c*0.9*K,2.55*K,1.5*K],[c*0.9*K,1.95*K,-1.5*K],
+                 cCheek,cCheek,cCheek,cCheek);
+        cg.box(c*0.9*K,1.9*K,0.2*K,0.36*K,1.1*K,2.6*K,cCheek);
+      }
+      /* four trucks, the fore pair smaller, as they were */
+      for(let aa=-1;aa<=1;aa+=2)for(let bb=-1;bb<=1;bb+=2){
+        const rr=(bb>0?0.88:1.0)*K;
+        cg.oct(aa*0.95*K,bb*1.25*K,0.5*K-rr*0.5,0.5*K+rr*0.5,rr,0.34*K,rr,0.34*K,0.10*K,
+               cTruck,shadeRGB(cTruck,0.72));
+      }
+      /* THE PIECE. Breech to muzzle, tapering, with the swell at the mouth. */
+      const bz=2.15*K;                       /* the axis it lies on */
+      cg.beam8([-1.35*K,bz,0],[3.05*K,bz,0], 0.62*K,0.40*K, shadeRGB(cIron,0.82),cIron,1,1);
+      /* the reinforcing rings: breech, mid, and the muzzle swell */
+      [[-0.95,0.70],[0.55,0.56],[2.85,0.52]].forEach(function(r){
+        cg.oct(r[0]*K,0,bz-r[1]*K*0.5,bz+r[1]*K*0.5,r[1]*K,r[1]*K,r[1]*K,r[1]*K,0.06*K,
+               cRing,shadeRGB(cRing,0.8));
+      });
+      /* the cascabel - the knob at the breech the breeching rope is passed round */
+      cg.beam8([-1.35*K,bz,0],[-1.95*K,bz,0], 0.30*K,0.34*K, cIron,cRing,1,1);
+      /* and the trunnions, which is what she pivots on */
+      for(let t=-1;t<=1;t+=2)
+        cg.beam8([0.35*K,bz,t*0.30*K],[0.35*K,bz,t*0.95*K],0.26*K,0.24*K,cIron,cRing,1,1);
+      /* the breeching, round the cascabel and out to the ship's side */
+      cg.beam8([-1.95*K,bz,0],[-1.6*K,2.0*K,-1.7*K],0.11*K,0.11*K,cRope,cRope,1,1);
+      cg.beam8([-1.95*K,bz,0],[-1.6*K,2.0*K, 1.7*K],0.11*K,0.11*K,cRope,cRope,1,1);
       const grp=cg.mesh(false,false);
       grp.position.set(cx,y,z);grp.rotation.y=(sd>0?0:Math.PI);
       root.add(grp);
@@ -24219,7 +24257,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-0001";
+const BUILD="20260815-0029";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
