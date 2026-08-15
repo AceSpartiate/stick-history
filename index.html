@@ -5451,18 +5451,35 @@ function buildTweenLevel(root){
          barrel appears to be lying on a cart rather than mounted in one. Nobody could name
          them and everybody can see when they are missing. */
       /* the bed and the cheeks, which step down toward the muzzle as a real carriage does */
-      cg.box(0,1.0*K,0,2.6*K,0.5*K,3.4*K,cWood);
+      cg.box(0,0.86*K,0,2.6*K,0.44*K,3.4*K,cWood);
       for(let c=-1;c<=1;c+=2){
         cg.quad4([c*0.9*K,1.25*K,-1.5*K],[c*0.9*K,1.25*K,1.5*K],
                  [c*0.9*K,2.55*K,1.5*K],[c*0.9*K,1.95*K,-1.5*K],
                  cCheek,cCheek,cCheek,cCheek);
         cg.box(c*0.9*K,1.9*K,0.2*K,0.36*K,1.1*K,2.6*K,cCheek);
       }
-      /* four trucks, the fore pair smaller, as they were */
-      for(let aa=-1;aa<=1;aa+=2)for(let bb=-1;bb<=1;bb+=2){
-        const rr=(bb>0?0.88:1.0)*K;
-        cg.oct(aa*0.95*K,bb*1.25*K,0.5*K-rr*0.5,0.5*K+rr*0.5,rr,0.34*K,rr,0.34*K,0.10*K,
-               cTruck,shadeRGB(cTruck,0.72));
+      /* ---- WHEELS, NOT POSTS ----
+         Reported: the carriages look like boxes and the recoil would break them, since
+         there are no wheels. Both halves true, and the second is a primitive error of the
+         same family as the square barrel. Geo.oct builds a VERTICAL solid between two
+         heights, so what I made was four octagonal posts standing on end under the bed -
+         bollards, not trucks. A wheel is a short thick disc on a HORIZONTAL axle, which is
+         beam8 laid across the carriage, exactly as the barrel is beam8 laid along it.
+         The axles run fore-and-aft here because a truck carriage rolls INBOARD on firing:
+         she recoils along the barrel's own line until the breeching brings her up, and
+         that is the motion the drill's run-out then has to undo. Wheels that could not
+         take it would have made a liar of the whole sequence.
+         Each truck's axle sits at its own radius so it stands on the deck rather than in
+         it, and the fore pair are smaller, as they were - a gun carriage is lower at the
+         muzzle so the piece can be laid. */
+      for(let aa=-1;aa<=1;aa+=2){
+        const rr=(aa>0?0.50:0.60)*K;           /* fore pair smaller: +x is the muzzle */
+        for(let bb=-1;bb<=1;bb+=2)
+          cg.beam8([aa*0.95*K,rr,bb*1.25*K-0.16*K],[aa*0.95*K,rr,bb*1.25*K+0.16*K],
+                   rr,rr,cTruck,shadeRGB(cTruck,0.70),1,1);
+        /* and the axle between them, which is what says they are a PAIR */
+        cg.beam8([aa*0.95*K,rr,-1.30*K],[aa*0.95*K,rr,1.30*K],
+                 0.13*K,0.13*K,shadeRGB(cTruck,0.62),shadeRGB(cTruck,0.62),1,1);
       }
       /* THE PIECE. Breech to muzzle, tapering, with the swell at the mouth. */
       const bz=2.15*K;                       /* the axis it lies on */
@@ -24257,7 +24274,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-0029";
+const BUILD="20260815-0323";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
