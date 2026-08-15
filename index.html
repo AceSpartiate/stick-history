@@ -736,6 +736,17 @@
   <!-- THE GREAT GUN. A sheet rather than a HUD strip: the drill takes two and a half
        minutes and wants the deck behind it quiet. One control, because a man at a gun has
        two hands and both are full - everything is done with the same press. -->
+  <!-- Asked before a man spends two and a half minutes loading, not after: the choice is
+       whether to begin, and being asked at the end would be a toll rather than a question. -->
+  <div class="modal mid" id="mFire">
+    <div class="parchment deckle sheet" style="max-width:330px" data-read>
+      <div class="kick">The gun deck</div>
+      <h3>There have been no orders to fire</h3>
+      <div class="vNote" id="fireWhy"></div>
+      <button class="btn wide mt" id="fireYes">Lay hold of her anyway</button>
+      <button class="btn ghost wide mt" id="fireNo">Stand away from the gun</button>
+    </div>
+  </div>
   <div class="modal mid" id="mGun">
     <div class="parchment deckle sheet" style="max-width:340px" data-read>
       <div class="kick" id="ggCount"></div>
@@ -8844,7 +8855,7 @@ function refreshPlayer(){
 /* ========== CONTROLS ==========
    Left half of the screen is a floating stick; right half turns the view.
    Keyboard: WASD to move, Q/E or drag to turn, Space/E to act, Esc to back out. */
-const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes","mAtlas","mGoals","mKit","mGun"];
+const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes","mAtlas","mGoals","mKit","mGun","mFire"];
 function anyModalOpen(){for(let i=0;i<MODALS.length;i++)if($(MODALS[i]).classList.contains("on"))return true;return false;}
 function closeAllModals(){
   for(let i=0;i<MODALS.length;i++)$(MODALS[i]).classList.remove("on");
@@ -11180,9 +11191,27 @@ function cannonFallSteps(d,sol){
    S.firedGun and the count against your name moved into the discharge with it. They were at
    the top of this function, so a player who opened the drill and thought better of it would
    have been marked down for a shot that never happened. */
+/* ---- THE ASKING, WHICH IS WHAT MAKES THE SEIZURE JUST ----
+   The game takes a man to the mast for firing a gun, and until now it did that to players
+   who had pressed a button without knowing what it was. A punishment nobody saw coming
+   teaches that the game is unfair; a punishment named in advance and taken anyway teaches
+   what discipline on a gun deck was for. So it says the offence out loud first.
+   Not scored, and no penalty for standing away - approaching a gun is not a crime, and the
+   counter against your name is only touched by the discharge. Asked BEFORE the drill rather
+   than after it, because the choice is whether to begin: two and a half minutes of work and
+   then a question would be a toll, not a decision. */
+function askToFire(onYes){
+  const w=$("fireWhy");
+  if(w)w.textContent="She is not run out, no drum has beat to quarters, and the Captain is "+
+    "on deck. If you load her and give fire, it will be your doing and there will be an "+
+    "account of it.";
+  $("fireYes").onclick=function(){$("mFire").classList.remove("on");onYes();};
+  $("fireNo").onclick=function(){$("mFire").classList.remove("on");setPaused(false);};
+  openModal("mFire");
+}
 function fireCannon(d){
   if(S.firedGun){toast("The guns are secured. You have done enough.");return;}
-  openGunDrill(function(){dischargeCannon(d);});
+  askToFire(function(){openGunDrill(function(){dischargeCannon(d);});});
 }
 function dischargeCannon(d){
   if(S.firedGun)return;
@@ -11712,7 +11741,22 @@ function updateBell(dt){
 /* the set piece: smoke, the captain on the ladder, and the walk to the mast */
 function cannonCutscene(d,sol){
   const mainY=LVL_Y[LVL.MAIN];
+  /* ---- FROM OUTSIDE THE SHIP, WHICH IS THE ONLY PLACE THE SHOT IS VISIBLE ----
+     A man at the breech sees a flash and a wall of smoke and nothing else - which is honest,
+     and is why the drill is worth doing, and is also why it is a poor picture of what he has
+     just done. So the first beat of this leaves the hull: out on the water off her side,
+     the plume standing away from the gunport, the report arriving across it.
+     Cheap, deliberately. It is ONE wide shot of three seconds, chosen rather than wandered
+     into, and the whole gun deck behind it is culled by being behind a hull. The expensive
+     thing on this ship is looking ALONG the deck - measured at 294 draw calls against 40 at
+     a single gun - and this shot faces the other way entirely. */
+  const mz=d.muzzle;
   return {skippable:true,steps:[
+    {cam:{to:[mz.x+d.side*54*K, mz.y+13*K, mz.z-30*K],
+          look:[mz.x+d.side*2*K, mz.y+2*K, mz.z]},
+     t:3.0, sfx:"boom", gain:0.55, shake:0.05,
+     narrate:"From the water it is a white plume standing off her side, and the noise of it "+
+             "reaches you a moment after the smoke."},
     {wait:0.25,shake:2.8},
     /* tight on the gun that just went off */
     {shot:{of:["player"],dist:9,height:2.6,lookH:3.2,tight:true},t:1.7,sfx:"creak",gain:0.45},
@@ -17808,6 +17852,9 @@ window.addEventListener("keydown",function(e){
 });
 if($("kitClose"))$("kitClose").onclick=function(){$("mKit").classList.remove("on");};
 if($("ggDo"))$("ggDo").onclick=function(){ggPress();};
+/* wired here as well as in askToFire, so check 15 can see them */
+if($("fireYes"))$("fireYes").onclick=function(){$("mFire").classList.remove("on");};
+if($("fireNo"))$("fireNo").onclick=function(){$("mFire").classList.remove("on");setPaused(false);};
 if($("ggQuit"))$("ggQuit").onclick=function(){closeGunDrill();};
 window.addEventListener("keydown",function(e){
   if(!GG.on||e.repeat)return;
@@ -24382,7 +24429,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-0547";
+const BUILD="20260815-0620";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
