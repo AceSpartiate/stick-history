@@ -210,7 +210,13 @@ def _steps(src, key):
         out.append((authored, mm.group(1), src.count("\n", 0, i) + 1))
     return out
 
-rows = _steps(s, "narrate") + _steps(s, "say")
+# AND THE SURVEY SCENES, WHICH IT HAS NEVER SEEN. SURVEY_SCENE holds its spoken text in
+# `line:` rather than `narrate:`, so every word said at Point Comfort, Archer's Hope and
+# Jamestown Island has gone unmeasured since those scenes were written. The tell was in the
+# check's own output and I nearly missed it: it reported "46 narrating steps" before and
+# after four more were added, and a count that does not move when you add to it is a count
+# that is not looking where you think.
+rows = _steps(s, "narrate") + _steps(s, "say") + _steps(s, "line")
 long  = [(round(_secs(x[1]), 1), x[1][:52]) for x in rows if _secs(x[1]) > 20]
 short = [(round(_secs(a[1]) - max(a[0], 2.6), 1), a[2], a[1][:46])
          for a in rows if _secs(a[1]) - max(a[0], 2.6) > 1.0]
