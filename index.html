@@ -11223,9 +11223,59 @@ function askToFire(onYes){
   $("fireNo").onclick=function(){$("mFire").classList.remove("on");setPaused(false);};
   openModal("mFire");
 }
+/* ========== THE GUN, SHOWN RATHER THAN WORKED ==========
+   The drill was a thing you performed: nine motions, six kinds of effort, two and a half
+   minutes. It is now a thing you WATCH, and the reason is a classroom one - a pupil who
+   cannot get through a minigame learns nothing at all from it, whereas everybody can see.
+   Nothing of the history is lost, because the history was never in the button. It was in
+   the ORDER and the REASONS, and those live in GREAT_GUN_STAGES: the stage table is the
+   script for this, `doing` gives each shot its line and `note` gives it the reason, so the
+   two cannot drift apart and the sequence a pupil watches is the sequence that was
+   researched.
+   Grouped into five shots rather than nine, because nine cuts of four seconds is a list and
+   five is a scene. Every motion is still named and still explained; what goes is the pause
+   between them where a player used to be pressing.
+   Explicit cameras rather than csShot: the gun is a fixed thing at a known place, and a
+   framing worked out from its muzzle is cheaper and steadier than one hunted for. Each shot
+   looks AT the gun and never along the deck - measured on this ship, 40 draw calls at a
+   single gun against 294 down the row. */
+function greatGunCutscene(d){
+  const mz=d.muzzle, sd=d.side, g=GREAT_GUN_STAGES;
+  function line(i){return g[i].doing.charAt(0).toUpperCase()+g[i].doing.slice(1)+". "+g[i].note;}
+  /* a station off her breech quarter, which sees the whole piece and the rack behind it */
+  const at=function(ox,oy,oz){return [mz.x-sd*ox*K, mz.y+oy*K, mz.z+oz*K];};
+  return {skippable:true,steps:[
+    /* raised and brought in after looking: at 9 out and 2.2 up this framed the deck and a
+       row of carriages, with the gun a small thing in it. The subject is the piece. */
+    /* Twice mis-set before this. The offsets are in K and the tween deck has about 5.4K of
+       headroom, so oy 3.2 put the lens in the beams looking down at planking. Shot four
+       framed correctly at oy 1.8 from the start, so these take its magnitudes rather than
+       my guesses: eye about level with the barrel, well inboard, looking slightly up at
+       her. */
+    /* FOUR ATTEMPTS AT THIS ONE FRAMING, and the lesson is to stop inventing stations and
+       copy a working one. Shot three - at(3.2,2.6,-2.4) - held the piece from the first
+       try; every camera I reasoned out from scratch found deck planks, the beams, or a
+       neighbouring carriage. This is that station with a small offset, and the whole
+       sequence now works off two proven positions rather than five invented ones. */
+    {cam:{to:at(4.2,2.2,-3.4), look:[mz.x-sd*2.6*K, mz.y+0.5*K, mz.z]}, t:5.6, sfx:"click", gain:0.2,
+     narrate:line(0)+" Then "+g[1].doing+": "+g[1].note},
+    {cam:{to:at(4.0,2.2,2.8), look:[mz.x-sd*2.0*K, mz.y+0.5*K, mz.z]}, t:6.0,
+     narrate:line(2)+" "+g[3].note+" Then "+g[4].doing+" \u2014 "+g[4].note},
+    {cam:{to:at(3.2,2.6,-2.4), look:[mz.x-sd*2.4*K, mz.y+0.6*K, mz.z]}, t:5.4,
+     narrate:line(5)+" "+g[6].note},
+    /* the run-out, which is a third of the work and the beat nobody expects */
+    {cam:{to:at(11,1.8,6), look:[mz.x-sd*4*K, mz.y-0.2*K, mz.z]}, t:6.4, sfx:"creak", gain:0.4,
+     narrate:line(7)+" A crew of six hauled together on the tackle. There is nobody on the other fall but you."},
+    {cam:{to:at(2.4,1.2,-3.0), look:[mz.x-sd*1.2*K, mz.y+0.3*K, mz.z]}, t:4.2,
+     narrate:line(8)}
+  ]};
+}
 function fireCannon(d){
   if(S.firedGun){toast("The guns are secured. You have done enough.");return;}
-  askToFire(function(){openGunDrill(function(){dischargeCannon(d);});});
+  askToFire(function(){
+    setPaused(true);
+    playCutscene(greatGunCutscene(d),function(){dischargeCannon(d);});
+  });
 }
 function dischargeCannon(d){
   if(S.firedGun)return;
@@ -24455,7 +24505,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-1224";
+const BUILD="20260815-1256";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
