@@ -10592,7 +10592,20 @@ function csNext(){
       CS.camFrom=(s.shot.hold?cam.position.clone():new THREE.Vector3(fr.from[0],fr.from[1],fr.from[2]));
       CS.lookFrom=CS.lastLook.clone();
     }
-  } else if(s.cam){CS.camFrom=cam.position.clone();CS.lookFrom=CS.lastLook.clone();}
+  } else if(s.cam){
+    /* ---- AND A FIXED CAMERA CAN CUT AS WELL AS A FRAMED ONE ----
+       `cut` was added for `shot:` steps and never for `cam:` ones, which is why the first
+       shot of the gun sequence swept in from wherever the player happened to be standing -
+       an establishing move nobody chose, and different every time. Five attempts at
+       reframing it were really five photographs of that pan. Same rule as the other branch:
+       start where you mean to end. */
+    if(s.cam.cut){
+      CS.camFrom=new THREE.Vector3(s.cam.to[0],s.cam.to[1],s.cam.to[2]);
+      CS.lookFrom=new THREE.Vector3(s.cam.look[0],s.cam.look[1],s.cam.look[2]);
+    } else {
+      CS.camFrom=cam.position.clone();CS.lookFrom=CS.lastLook.clone();
+    }
+  }
   if(s.fade){
     $("cineFade").style.transition="opacity "+(s.t||1)+"s linear";
     $("cineFade").style.opacity=(s.fade==="out")?"1":"0";
@@ -11252,12 +11265,22 @@ function greatGunCutscene(d){
        framed correctly at oy 1.8 from the start, so these take its magnitudes rather than
        my guesses: eye about level with the barrel, well inboard, looking slightly up at
        her. */
-    /* FOUR ATTEMPTS AT THIS ONE FRAMING, and the lesson is to stop inventing stations and
-       copy a working one. Shot three - at(3.2,2.6,-2.4) - held the piece from the first
-       try; every camera I reasoned out from scratch found deck planks, the beams, or a
-       neighbouring carriage. This is that station with a small offset, and the whole
-       sequence now works off two proven positions rather than five invented ones. */
-    {cam:{to:at(4.2,2.2,-3.4), look:[mz.x-sd*2.6*K, mz.y+0.5*K, mz.z]}, t:5.6, sfx:"click", gain:0.2,
+    /* ---- ONE STATION THAT ALWAYS WORKS, AND IT CUTS TO IT ----
+       Asked for a consistent angle. This is it, and it is not a new invention: the third
+       shot below framed the piece correctly on the first try while every camera I reasoned
+       out from scratch found deck planks, deck beams or a neighbouring carriage.
+       Modest offsets, because the headroom is about 5.4K and everything I set higher ended
+       in the beams: inboard 3.4, up 2.6, a little forward, looking just inboard of the
+       muzzle. WHAT IT ACTUALLY GIVES, looked at rather than hoped for, is a close
+       three-quarter view down onto the breech - the cascabel, the trunnion and its
+       capsquare large in frame, with the daylight of the port at the edge. Not the
+       along-the-barrel shot I first wrote here and then had to correct: writing the frame
+       I wanted into the comment and shipping the frame I got is how the rack came to be
+       described for two commits before it existed.
+       And it CUTS. Without that it sweeps in from wherever the player was standing and the
+       shot is different every time, which is the opposite of consistent. */
+    {cam:{cut:true, to:at(3.4,2.6,2.6), look:[mz.x-sd*2.4*K, mz.y+0.5*K, mz.z]},
+     t:5.6, sfx:"click", gain:0.2,
      narrate:line(0)+" Then "+g[1].doing+": "+g[1].note},
     {cam:{to:at(4.0,2.2,2.8), look:[mz.x-sd*2.0*K, mz.y+0.5*K, mz.z]}, t:6.0,
      narrate:line(2)+" "+g[3].note+" Then "+g[4].doing+" \u2014 "+g[4].note},
@@ -24505,7 +24528,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-1256";
+const BUILD="20260815-1315";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
