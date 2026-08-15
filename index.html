@@ -10782,14 +10782,14 @@ POOL.impacts=new Pool(24,function(){
        off and the smoke is four feet from your eye, so the sort draws the mark first and
        the smoke over it - and you see it dimmed and tinted through the cloud, which is what
        you would see. */
-      depthWrite:false,depthTest:true}));
+      depthWrite:false,depthTest:false}));
     /* Drawn last and depth-tested against nothing. That note used to say "depth testing
        still applies, so a dune between you and the mark still hides it" - which was true,
        and was the bug: the thing hiding it was never a dune, it was the shooter's own
        smoke, and depth testing does not distinguish. The mark is placed where the ball
        STOPPED, so there is by construction nothing solid between it and the eye that fired
        the shot; what it now punches through is weather. */
-    m.renderOrder=0;
+    m.renderOrder=12;
     fxRoot.add(m);return m;
   });
 }
@@ -14951,10 +14951,22 @@ function markImpact(x,y,z,d,dist,o){
   const halfUp=size*0.606*Math.sqrt(Math.max(0,1-d.y*d.y));
   const clear=floor+size*0.5;
   if(mk.position.y-halfUp<clear)mk.position.y=clear+halfUp;
-  mk.material.opacity=1;
+  /* ---- DRAWN OVER THE SMOKE, BUT FAINTLY, WHICH IS WHAT SEEING IT THROUGH LOOKS LIKE ----
+     I read "not overlaid on top of the smoke" as "it must be depth-tested", and that was the
+     wrong model of the complaint. Depth-testing it is strictly WORSE: twelve puffs a foot
+     and a half across, four feet from the eye, still stack to about 78 per cent even at 0.12
+     each - and a cross two pixels wide with thin bars does not survive 78 per cent
+     attenuation. It disappears completely and returns when the last puff dies, which is
+     precisely what was reported the second time.
+     The complaint was that it looked LOUD, not that it was ordered wrongly. So it goes back
+     on top, where nothing can delete it, and it is quiet instead. At 0.45 it reads as a soft
+     mark showing through the cloud rather than a sticker on the lens, and on clear ground it
+     is something you find rather than something that announces itself - which is both of the
+     things asked for, out of the one number that was actually in question. */
+  mk.material.opacity=0.45;
   mk.visible=true;               /* take() does this; do not wait on the next tick */
   smoke.push({m:mk,pool:POOL.impacts,t:0,vx:0,vy:0,vz:0,bx:size,by:size,bz:1,
-    life:o.life||34,op:1,grow:0,delay:0,ease:0.22});
+    life:o.life||34,op:0.45,grow:0,delay:0,ease:0.22});
 }
 /* sand, water or splinters, according to what it hit */
 function shotImpact(p,d){
@@ -24429,7 +24441,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-0620";
+const BUILD="20260815-0624";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
