@@ -14868,10 +14868,11 @@ function markImpact(x,y,z,d,dist,o){
      too weak. 0.30 + dist*0.035 holds it near two degrees at any range: 1.0 at twenty feet,
      2.4 at twenty yards, 4.5 at forty, and still under four percent of frame height, which
      is a clear mark and not a billboard. */
-  /* Halved again after looking: 0.035 a foot put a cross four and a half units across at
-     forty yards, which reads as a signpost rather than a strike. 0.016 holds it near one
-     degree - plainly there when you look for it, and not the loudest thing in the frame. */
-  const size=0.22+dist*0.016;
+  /* Smaller again, on the report of somebody looking at a real screen rather than my 459
+     pixel capture window. 0.035 was a signpost, 0.016 still too loud; 0.010 puts it at 1.4
+     units at forty yards - about two thirds of a degree, which is a mark you find rather
+     than one that announces itself. */
+  const size=0.18+dist*0.010;
   mk.position.set(x-d.x*0.30,y-d.y*0.30,z-d.z*0.30);
   mk.scale.set(size,size,1);              /* z is the bar's own thickness; leave it */
   /* Facing back down the line of fire, which is the one orientation that is always
@@ -15412,7 +15413,7 @@ function gunSmoke(scale){
        behind rather than deleting it. The mark can then be an ordinary depth-tested thing in
        the world and you SEE IT THROUGH the plume, which is what was asked for and also what
        a man would see. */
-      {size:1.4*scale, col:0x7d7a70, op:0.42, life:9.0, grow:0.95, ease:2.0,
+      {size:1.4*scale, col:0x7d7a70, op:0.12, life:9.0, grow:0.95, ease:2.0,
        delay:0.10+i*0.012,
        cap:{x:o.x,y:o.y,z:o.z,r:SMOKE_CAP_FT}});
   }
@@ -24381,7 +24382,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-0538";
+const BUILD="20260815-0547";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
