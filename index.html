@@ -5451,13 +5451,34 @@ function buildTweenLevel(root){
          barrel appears to be lying on a cart rather than mounted in one. Nobody could name
          them and everybody can see when they are missing. */
       /* the bed and the cheeks, which step down toward the muzzle as a real carriage does */
-      cg.box(0,0.86*K,0,2.6*K,0.44*K,3.4*K,cWood);
+      /* ---- A CARRIAGE THAT LIES ALONG ITS OWN GUN ----
+         The bed was 2.6 across in x by 3.4 in z, and the barrel runs along X - so the
+         carriage was proportioned ACROSS the piece instead of along it, wider than it was
+         long. That is most of why it read as a box: nothing about its shape agreed with the
+         thing sitting on it. It is 3.7 by 2.0 now, the long way being the way she recoils.
+         THE CHEEKS ARE THE SHAPE OF A GUN CARRIAGE. They are the two heavy side brackets,
+         and they STEP DOWN from the breech toward the muzzle in stages - tall at the back
+         where the trunnions and the quoin want support, low at the front over the fore
+         trucks. Three boxes each, decreasing, which is cheap and is the actual silhouette.
+         They stand either side of the barrel now, in z, which is where the sides of a
+         carriage go; before they were separated in x and therefore across the bore.
+         THE QUOIN is the wedge under the breech that sets the elevation - knock it forward
+         and she points lower. It is small and it is the piece that explains why a gun deck
+         has a man with a mallet, so it is worth its six faces. */
+      cg.box(0.3*K,0.86*K,0,3.7*K,0.44*K,2.0*K,cWood);
       for(let c=-1;c<=1;c+=2){
-        cg.quad4([c*0.9*K,1.25*K,-1.5*K],[c*0.9*K,1.25*K,1.5*K],
-                 [c*0.9*K,2.55*K,1.5*K],[c*0.9*K,1.95*K,-1.5*K],
-                 cCheek,cCheek,cCheek,cCheek);
-        cg.box(c*0.9*K,1.9*K,0.2*K,0.36*K,1.1*K,2.6*K,cCheek);
+        const zc=c*0.82*K, th=0.34*K;
+        cg.box(-0.85*K,1.85*K,zc,1.7*K,1.55*K,th,cCheek);   /* tall, at the breech */
+        cg.box( 0.75*K,1.55*K,zc,1.5*K,0.95*K,th,cCheek);   /* the middle step */
+        cg.box( 2.05*K,1.32*K,zc,1.2*K,0.50*K,th,shadeRGB(cCheek,0.92));
       }
+      /* the transom across the back, which ties the cheeks together */
+      cg.box(-1.55*K,1.75*K,0,0.34*K,1.30*K,1.9*K,shadeRGB(cCheek,0.86));
+      /* and the quoin, wedged under the breech */
+      cg.quad4([-1.15*K,1.62*K,-0.55*K],[-1.15*K,1.62*K,0.55*K],
+               [ 0.05*K,1.98*K,0.55*K],[ 0.05*K,1.98*K,-0.55*K],
+               cWood,cWood,cWood,cWood);
+      cg.box(-0.55*K,1.60*K,0,1.25*K,0.30*K,1.10*K,shadeRGB(cWood,0.88));
       /* ---- WHEELS, NOT POSTS ----
          Reported: the carriages look like boxes and the recoil would break them, since
          there are no wheels. Both halves true, and the second is a primitive error of the
@@ -5473,12 +5494,13 @@ function buildTweenLevel(root){
          it, and the fore pair are smaller, as they were - a gun carriage is lower at the
          muzzle so the piece can be laid. */
       for(let aa=-1;aa<=1;aa+=2){
-        const rr=(aa>0?0.50:0.60)*K;           /* fore pair smaller: +x is the muzzle */
+        const ax=(aa>0?1.75:-1.05)*K;          /* under the cheeks, along her length */
+        const rr=(aa>0?0.46:0.58)*K;           /* fore pair smaller: +x is the muzzle */
         for(let bb=-1;bb<=1;bb+=2)
-          cg.beam8([aa*0.95*K,rr,bb*1.25*K-0.16*K],[aa*0.95*K,rr,bb*1.25*K+0.16*K],
+          cg.beam8([ax,rr,bb*0.82*K-0.17*K],[ax,rr,bb*0.82*K+0.17*K],
                    rr,rr,cTruck,shadeRGB(cTruck,0.70),1,1);
         /* and the axle between them, which is what says they are a PAIR */
-        cg.beam8([aa*0.95*K,rr,-1.30*K],[aa*0.95*K,rr,1.30*K],
+        cg.beam8([ax,rr,-0.88*K],[ax,rr,0.88*K],
                  0.13*K,0.13*K,shadeRGB(cTruck,0.62),shadeRGB(cTruck,0.62),1,1);
       }
       /* THE PIECE. Breech to muzzle, tapering, with the swell at the mouth. */
@@ -24274,7 +24296,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-0323";
+const BUILD="20260815-0351";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
