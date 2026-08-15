@@ -5468,12 +5468,21 @@ function buildTweenLevel(root){
       cg.box(0.3*K,0.86*K,0,3.7*K,0.44*K,2.0*K,cWood);
       for(let c=-1;c<=1;c+=2){
         const zc=c*0.82*K, th=0.34*K;
-        cg.box(-0.85*K,1.85*K,zc,1.7*K,1.55*K,th,cCheek);   /* tall, at the breech */
-        cg.box( 0.75*K,1.55*K,zc,1.5*K,0.95*K,th,cCheek);   /* the middle step */
-        cg.box( 2.05*K,1.32*K,zc,1.2*K,0.50*K,th,shadeRGB(cCheek,0.92));
+        /* ---- EACH STEP ITS OWN SHADE, OR THERE ARE NO STEPS ----
+           Two of the three carried the same colour and the third was within a whisker of
+           it, so the bracket came out as one flat plate: the profile was only readable
+           along its TOP edge, and against a dark deck that edge is where you can least
+           afford to put it. Flat-shaded low poly has no ambient occlusion to separate
+           coplanar faces, so shape that is not in the colour is shape nobody sees - the
+           same reason the conifer skirts are dark underneath and light on top.
+           Darkest at the breech and lightest at the muzzle, which also reads as the light
+           from the gunport falling along her. */
+        cg.box(-0.85*K,1.85*K,zc,1.7*K,1.55*K,th,shadeRGB(cCheek,0.74));
+        cg.box( 0.75*K,1.55*K,zc,1.5*K,0.95*K,th,shadeRGB(cCheek,0.92));
+        cg.box( 2.05*K,1.32*K,zc,1.2*K,0.50*K,th,shadeRGB(cCheek,1.12));
       }
       /* the transom across the back, which ties the cheeks together */
-      cg.box(-1.55*K,1.75*K,0,0.34*K,1.30*K,1.9*K,shadeRGB(cCheek,0.86));
+      cg.box(-1.55*K,1.75*K,0,0.34*K,1.30*K,1.9*K,shadeRGB(cCheek,0.62));
       /* and the quoin, wedged under the breech */
       cg.quad4([-1.15*K,1.62*K,-0.55*K],[-1.15*K,1.62*K,0.55*K],
                [ 0.05*K,1.98*K,0.55*K],[ 0.05*K,1.98*K,-0.55*K],
@@ -24296,7 +24305,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-0351";
+const BUILD="20260815-0402";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
