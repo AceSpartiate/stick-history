@@ -5525,6 +5525,27 @@ function buildTweenLevel(root){
       /* and the trunnions, which is what she pivots on */
       for(let t=-1;t<=1;t+=2)
         cg.beam8([0.35*K,bz,t*0.30*K],[0.35*K,bz,t*0.95*K],0.26*K,0.24*K,cIron,cRing,1,1);
+      /* ---- THE TRUNNION SEAT, WHICH IS WHERE THE TOP EDGE WANTS BREAKING ----
+         The stepped bracket reads by its shading now, but its top line is still one long
+         straight run, and a straight line is the thing the eye trusts least about a shape
+         it is being asked to believe is timber and iron.
+         A real carriage breaks that line exactly here. The trunnion drops into a notch cut
+         down from the cheek's top, and a CAPSQUARE - a hinged iron strap - is bolted over
+         it to hold her in, because a gun that jumps her trunnions on firing is a gun loose
+         on a crowded deck. It is the piece that turns a barrel resting on a cart into a
+         barrel MOUNTED in one, and there is no way to cut a notch in a merged mesh, so it
+         is built the other way about: two bolsters raised either side of the trunnion,
+         which leaves the seat between them, and the iron over the top.
+         The capsquare is drawn in the barrel's own iron rather than the carriage's timber,
+         so the contrast does the work at the distance a player stands to load her. */
+      for(let c=-1;c<=1;c+=2){
+        const zc=c*0.82*K;
+        cg.box(-0.14*K,2.28*K,zc,0.40*K,0.62*K,0.36*K,shadeRGB(cCheek,0.66));
+        cg.box( 0.86*K,2.20*K,zc,0.38*K,0.46*K,0.36*K,shadeRGB(cCheek,0.66));
+        /* the capsquare, over the trunnion and down its outer face */
+        cg.box(0.35*K,2.56*K,zc,0.52*K,0.15*K,0.40*K,cIron);
+        cg.box(0.35*K,2.30*K,zc+c*0.19*K,0.48*K,0.44*K,0.10*K,cRing);
+      }
       /* the breeching, round the cascabel and out to the ship's side */
       cg.beam8([-1.95*K,bz,0],[-1.6*K,2.0*K,-1.7*K],0.11*K,0.11*K,cRope,cRope,1,1);
       cg.beam8([-1.95*K,bz,0],[-1.6*K,2.0*K, 1.7*K],0.11*K,0.11*K,cRope,cRope,1,1);
@@ -24305,7 +24326,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-0402";
+const BUILD="20260815-0455";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
