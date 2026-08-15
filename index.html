@@ -5549,6 +5549,39 @@ function buildTweenLevel(root){
       /* the breeching, round the cascabel and out to the ship's side */
       cg.beam8([-1.95*K,bz,0],[-1.6*K,2.0*K,-1.7*K],0.11*K,0.11*K,cRope,cRope,1,1);
       cg.beam8([-1.95*K,bz,0],[-1.6*K,2.0*K, 1.7*K],0.11*K,0.11*K,cRope,cRope,1,1);
+      /* ---- AND THE RACK, WHICH THE GAME HAS BEEN ASSERTING FOR A WHILE ----
+         Asked: should I not have to pick the rammer up from somewhere? Yes - and the reason
+         the question lands is that the code has been SAYING so without drawing it. The
+         refusal reads "the worm is in the rack at the gun", the commit that moved the
+         staves off the player's back is called "The staves stand at the gun", and there has
+         never been a rack. That is the same fault as the rope that hung from open sky at
+         the gallows, and it is worse here because the drill talks about it every time.
+         So it stands inboard of the carriage, where it has to be: not against the ship's
+         side, which is where the gun recoils TO, and not behind the breech, which is where
+         a man hauling on the tackle puts his feet. Two uprights, a crossbar, and the three
+         staves leaning in it at slightly different angles because nobody ever racked three
+         tools identically. Built into the gun's own merged mesh, so a rack costs no draw
+         call at all - the same reason the whole piece is one mesh.
+         The staves drawn here are SCENERY. What a player takes up is the item, and whether
+         he should have to walk to this spot to do it is a question about the drill's shape
+         rather than about the rack, which has to exist either way. */
+      const rkx=-3.05*K, cStave=RGB(0x6f5a3c), cStaveD=RGB(0x53442c);
+      for(let u=-1;u<=1;u+=2)
+        cg.beam8([rkx,0,u*1.35*K],[rkx,3.15*K,u*1.35*K],0.16*K,0.14*K,cCheek,cCheek,1,1);
+      cg.box(rkx,2.55*K,0,0.22*K,0.20*K,2.9*K,cCheek);
+      cg.box(rkx,0.30*K,0,0.34*K,0.28*K,2.9*K,shadeRGB(cCheek,0.80));
+      [[-0.95,0.14],[0.05,-0.06],[1.05,0.10]].forEach(function(st,si){
+        const zz=st[0]*K, tilt=st[1]*K;
+        cg.beam8([rkx-0.10*K,0.34*K,zz],[rkx+tilt,3.55*K,zz+tilt*0.4],
+                 0.11*K,0.10*K,cStaveD,cStave,1,1);
+        /* the head of each: the worm's screw, the sponge's fleece, the rammer's block */
+        if(si===0)cg.beam8([rkx+tilt,3.55*K,zz+tilt*0.4],[rkx+tilt*1.2,3.95*K,zz+tilt*0.5],
+                           0.09*K,0.07*K,cIron,cRing,1,1);
+        if(si===1)cg.oct(rkx+tilt,zz+tilt*0.4,3.55*K,4.05*K,0.30*K,0.30*K,0.26*K,0.26*K,
+                         0.06*K,RGB(0x9a8f74),RGB(0x7d7259));
+        if(si===2)cg.oct(rkx+tilt,zz+tilt*0.4,3.55*K,3.95*K,0.26*K,0.26*K,0.26*K,0.26*K,
+                         0.05*K,cStave,cStaveD);
+      });
       const grp=cg.mesh(false,false);
       grp.position.set(cx,y,z);grp.rotation.y=(sd>0?0:Math.PI);
       root.add(grp);
@@ -24326,7 +24359,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-0455";
+const BUILD="20260815-0501";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
