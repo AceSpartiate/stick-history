@@ -5,6 +5,18 @@
       "source": "made for this game: every narrated sentence recorded by tools/voice_build.py with Kokoro-82M v1.0 (Apache-2.0, hexgrad) through sherpa-onnx (Apache-2.0)",
       "licence": "own",
       "notes": "one Ogg Opus file per sentence, named by the FNV-1a hash of the sentence; index.json lists them"
+    },
+    {
+      "path": "assets/fort/",
+      "source": "made for this game: Chapter III's models, generated in Blender 5.2 by tools/blender/asset_job.py from tools/blender/fort_specs.md (each model's source script is kept in tools/blender/fort/; the scripts were written by a local model, qwen3.8:27b, Apache-2.0)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, no textures; loaded by loadGLB() in index.html"
+    },
+    {
+      "path": "assets/tex/",
+      "source": "made for this game: greyscale ground detail maps painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI) through tools/textures/make_textures.py, made seamless and chosen by a local model (qwen3.8:27b)",
+      "licence": "own",
+      "notes": "512 px JPEG luminance, mean 0.82; multiplied over vertex colours by groundMat()"
     }
   ]
 }

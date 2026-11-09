@@ -677,6 +677,11 @@
   #openTitle .ot3{font-family:'IM Fell English SC',serif;color:rgba(231,218,187,.72);
     font-size:clamp(.72rem,2.6vw,1rem);letter-spacing:.16em;margin-top:1.1em}
   #err{position:absolute;inset:0;display:none;place-items:center;padding:30px;text-align:center;color:var(--parch);z-index:99;background:var(--ink)}
+  .fortRow{display:flex;gap:.6em;align-items:center;margin:.3em 0}
+  .fortParty{flex:0 0 44%;font-size:.86rem}
+  .fortSel{flex:1;font:inherit;font-size:.82rem;padding:.25em;background:#f3ead4;border:1px solid #8a7656;border-radius:4px}
+  .fortTask{margin:.25em 0}
+  .fortWho{color:#3f5c4f}
 </style>
 </head>
 <body>
@@ -738,6 +743,16 @@
        two hands and both are full - everything is done with the same press. -->
   <!-- Asked before a man spends two and a half minutes loading, not after: the choice is
        whether to begin, and being asked at the end would be a toll rather than a question. -->
+  <div class="modal mid" id="mFort">
+    <div class="parchment deckle sheet" style="max-width:560px" data-read>
+      <div class="kick">Under the old sail · the council’s orders</div>
+      <h3 id="fortWhen"></h3>
+      <div class="vNote">Each party goes where you send it. <b>The rule of 1607 is rank:</b> the gentlemen were not bred to labour, and a party set to work it does not know does little. <b>† The President’s order:</b> he “would admit no exercise at armes, or fortification but the boughs of trees cast together in the forme of a halfe moone” (<i>Proceedings</i>, 1612). You may go against it. It will be remembered.</div>
+      <div id="fortRows"></div>
+      <div class="vNote" id="fortWork"></div>
+      <button class="btn wide mt" id="fortGo">Set them to work</button>
+    </div>
+  </div>
   <div class="modal mid" id="mFire">
     <div class="parchment deckle sheet" style="max-width:330px" data-read>
       <div class="kick">The gun deck</div>
@@ -1194,7 +1209,13 @@ const S={ink:0,unlocked:new Set(["none_cloak","none_torso","none_acc","none_head
      them for good, so finishing one can never strand them and a class can be sent
      back to a particular afternoon without replaying the voyage. */
   reached:{ch1:true},
-  corrections:0,reckTries:0,lashCount:0,firedGun:false,faces:new Set(),admin:false,talkErr:{}};
+  corrections:0,reckTries:0,lashCount:0,firedGun:false,faces:new Set(),admin:false,talkErr:{},
+  /* OUTCOMES, ONE BAG PER CHAPTER (ALLOCATION.md section 3). From Chapter III on, what a
+     chapter remembers goes in S.works[world] - its calendar, its allocations, what was
+     built, how the fight went - and the bag is saved as one key, so a new outcome never
+     needs a new line in saveBlob and applyBlob. The twelve booleans above are the last
+     of their kind. */
+  works:{}};
 
 /* ========== SAVE AND RESUME ==========
    Everything the game has promised to remember. The consequence system tells the
@@ -1249,6 +1270,7 @@ function saveBlob(){
     /* every chapter the player has ever set foot in, so none of them can be
        stranded behind a chapter they already finished */
     reached:S.reached,
+    works:S.works||{},
     admin:!!S.admin
   };
 }
@@ -1286,6 +1308,7 @@ function applyBlob(d){
     if(d.chapterDone)S.reached["ch2"]=true;
     S.reached["ch1"]=true;
     S.admin=!!d.admin;
+    S.works=d.works||{};
     if(typeof AMBUSH!=="undefined")AMBUSH.done=!!d.ambushDone;
     SAVED_WORLD=d.world||"ch1";
     return true;
@@ -1333,6 +1356,7 @@ function newRun(){
   S.shipNote=false;S.chapterDone=false;S.firedGun=false;
   S.reached={ch1:true};
   S.corrections=0;S.reckTries=0;S.lashCount=0;S.chartSeen={};
+  S.works={};
   if(typeof AMBUSH!=="undefined")AMBUSH.done=false;
 }
 /* named so the player knows what a checkpoint is: a boundary, not an autosave */
@@ -8385,6 +8409,7 @@ function animate(){
   if(player&&!CS.active&&!LESSON.on)
     player.position.y=WORLD.ground(player.position.x,player.position.z)+JUMP.y;
   if(AMBUSH.on||DUSK.on){updateAmbush(dt);updateArrows(dt);}
+  else if(FORT.on){updateFort(dt);updateArrows(dt);}
   if(LESSON.on){
     updateFx(dt);updateLesson(dt);updateShadows();
     renderer.render(scene,cam);return;
@@ -8549,6 +8574,7 @@ function animate(){
         :best.action==="survey"?(found(best.data.site+"."+best.data.sv.k)?"Already noted":best.data.sv.verb)
         :best.action==="steal"?(S.shipNote?"Nothing left":"Take rations")
         :best.action==="reck"?"Read the papers"
+        :best.action==="fort"?((best.data&&best.data.verb)||"Go to it")
         /* Named explicitly rather than inherited. A new action with no verb used
            to fall through to "Read the papers", which hid the mistake; now it
            reads "Use" and is obviously unfinished. */
@@ -8888,7 +8914,7 @@ function refreshPlayer(){
 /* ========== CONTROLS ==========
    Left half of the screen is a floating stick; right half turns the view.
    Keyboard: WASD to move, Q/E or drag to turn, Space/E to act, Esc to back out. */
-const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes","mAtlas","mGoals","mKit","mGun","mFire"];
+const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes","mAtlas","mGoals","mKit","mGun","mFire","mFort"];
 function anyModalOpen(){for(let i=0;i<MODALS.length;i++)if($(MODALS[i]).classList.contains("on"))return true;return false;}
 function closeAllModals(){
   for(let i=0;i<MODALS.length;i++)$(MODALS[i]).classList.remove("on");
@@ -9107,6 +9133,7 @@ function doInteract(){
   else if(a==="pickup"){takeItem(activeSpot.data);}
   else if(a==="chart"){openChart();}
   else if(a==="survey"){doSurvey(activeSpot.data);}
+  else if(a==="fort"){fortAct(activeSpot.data);}
   else if(a==="reck"){
     if(chapterReady())openReckoning();
     else toast("The scrivener will not sit with you yet. Still to ask: "+reckMissing().join("; ")+".");}
@@ -11805,6 +11832,7 @@ function restartChapter(world){
   S.shotAMan=false;S.killedAMan=false;S.firedGun=false;
   S.lashCount=0;                       /* a new man carries no count */
   S.corrections=0;
+  if(S.works&&S.works[w])delete S.works[w];   /* the chapter's own bag starts again with it */
   if(typeof surveyBudget==="function")S.survey={days:surveyBudget(),found:{},visited:{}};
   if(typeof AMBUSH!=="undefined"){AMBUSH.done=false;AMBUSH.on=false;}
   saveGame();
@@ -13414,7 +13442,7 @@ function openIntro(worldId){
   $("introDate").textContent=c.d;
   $("introBody").textContent=c.intro?c.intro():"";
   $("introObj").textContent=c.obj?c.obj():"";
-  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":"Into the Boats";
+  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":"Into the Boats";
   show("intro");
 }
 function beginWorld(worldId){
@@ -13575,7 +13603,7 @@ const CONDITIONS={weather:0,fouling:0,supply:0};
 /* How much the sky is against you, per world. Read once by enterWorld. Inferred,
    not evidenced: the ship's hold is still air, and every outdoor scene here is an
    open shore in April with wind coming off the water. */
-const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10};
+const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10};
 function armState(arm){
   return {
     /* a match above 0.7 takes no penalty at all - good play is rewarded in
@@ -18954,6 +18982,69 @@ function siteVert(key,z){
   if(!T)return RGB(0x7c8b5a);
   return RGB((z>T.sea-6)?T.wet:(z>T.shore)?T.near:(z>T.flat)?T.far:T.back);
 }
+/* ---- GRAIN ON THE GROUND ----
+   The ground was flat colour: a beach one tan from the waterline to the dunes. The colours
+   stay exactly as they are - vertex colour still owns every hue in this game - and a small
+   tiling DETAIL map adds only grain on top: sand ripples, trodden earth, grass. Two maps
+   per world, blended by the colour already painted on the ground (greener vertex, more
+   grass), so a beach and a meadow meet without a seam.
+   The maps are greyscale with a mean of 0.82 (tools/textures/make_textures.py: painted by
+   Z-Image Turbo, made seamless, chosen by a local model), so the shader divides by 0.82
+   and the AVERAGE colour of the ground does not move - only its texture. Until a map has
+   loaded, or if it never does, uDetail stays 0 and the ground is drawn exactly as before.
+   ceiling: two maps per world; a third ground type needs a third sampler. */
+const DETAIL_TILE=14;                  /* feet per repeat */
+const DETAIL_TEX={};
+function detailTex(name){
+  if(DETAIL_TEX[name])return DETAIL_TEX[name];
+  const t=new THREE.TextureLoader().load("assets/tex/"+name+".jpg",function(){
+    t.dOK=true;
+    for(const m of DETAIL_MATS)if(m.userData.a===t||m.userData.b===t)detailReady(m);
+  },undefined,function(){t.dBad=true;});
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.anisotropy=4;
+  SHARED.add(t);
+  return DETAIL_TEX[name]=t;
+}
+const DETAIL_MATS=[];
+function detailReady(m){
+  const a=m.userData.a,b=m.userData.b;
+  if(a.dOK&&b.dOK&&m.userData.sh)m.userData.sh.uniforms.uDetail.value=1;
+}
+function groundMat(aName,bName){
+  for(const m of DETAIL_MATS)if(m.userData.an===aName&&m.userData.bn===bName)return m;
+  const m=new THREE.MeshLambertMaterial({vertexColors:true});
+  m.userData={an:aName,bn:bName,a:detailTex(aName),b:detailTex(bName),sh:null};
+  m.onBeforeCompile=function(sh){
+    sh.uniforms.uDetail={value:0};
+    sh.uniforms.uDetA={value:m.userData.a};
+    sh.uniforms.uDetB={value:m.userData.b};
+    sh.vertexShader=sh.vertexShader
+      .replace("#include <common>","#include <common>\nattribute vec2 dUv;\nvarying vec2 vDUv;")
+      .replace("#include <begin_vertex>","#include <begin_vertex>\nvDUv=dUv;");
+    sh.fragmentShader=sh.fragmentShader
+      .replace("#include <common>","#include <common>\nuniform float uDetail;\nuniform sampler2D uDetA;\nuniform sampler2D uDetB;\nvarying vec2 vDUv;")
+      .replace("#include <color_fragment>",
+        "#include <color_fragment>\n"+
+        "float gk=clamp((vColor.g-vColor.r)*9.0+0.35,0.0,1.0);\n"+
+        "float dt=mix(texture2D(uDetA,vDUv).r,texture2D(uDetB,vDUv*1.37).r,gk);\n"+
+        "diffuseColor.rgb*=mix(1.0,dt/0.82,uDetail);");
+    m.userData.sh=sh;
+    detailReady(m);
+  };
+  SHARED.add(m);DETAIL_MATS.push(m);
+  return m;
+}
+/* Give a ground mesh its grain: world-space UVs (positions are world, in feet), and the
+   world's shared ground material. `a` is the bare ground (sand on a beach, earth inland). */
+function detailGround(mesh,a){
+  const pa=mesh.geometry.attributes.position, uv=new Float32Array(pa.count*2);
+  for(let i=0;i<pa.count;i++){uv[i*2]=pa.getX(i)/DETAIL_TILE;uv[i*2+1]=pa.getZ(i)/DETAIL_TILE;}
+  mesh.geometry.setAttribute("dUv",new THREE.BufferAttribute(uv,2));
+  if(mesh.material&&!SHARED.has(mesh.material))mesh.material.dispose();
+  mesh.material=groundMat(a||"earth","grass");
+  return mesh;
+}
 function buildThinSite(root,key){
   const site=SITES[key], T=SITE_TERRAIN[key];
   const G=function(x,z){return siteGround(key,x,z);};
@@ -18984,7 +19075,7 @@ function buildThinSite(root,key){
       const col=(mid>T.sea-6)?wet:(mid>T.shore)?near:(mid>T.flat)?far:back;
       g.quad([ax,G(ax,az),az],[ax,G(ax,bz),bz],[bx,G(bx,bz),bz],[bx,G(bx,az),az],col);
     }
-    root.add(g.mesh(false,false));
+    root.add(detailGround(g.mesh(false,false),CURRENT_WORLD==="ch2"?"sand":"earth"));
   }
   buildSkyDome(root);
   if(T.dress)T.dress(root,G);
@@ -19169,20 +19260,70 @@ SITE_TERRAIN.comfort.dress=function(root,G){
    them. Percy again: "our shippes doe lie so neere the shoare that they are moored to the
    Trees in six fathom water." No other candidate site could do that, and it is why the
    worst ground on the river won. */
-function buildFleet(D,list,moor){
-  const hull=RGB(0x4a3a26), hullD=RGB(0x33281a), sail=RGB(0xcfc3a4),
-        mast=RGB(0x5a4728), rope=RGB(0xbfb094);
-  for(let i=0;i<list.length;i++){
-    const x=list[i][0], z=list[i][1], k=list[i][2];
-    D.beam8([x-16*k,1.2,z],[x+16*k,2.4,z], 4.6*k,3.2*k, hullD,hull, 1.5,1.2);
-    D.box(x,5.0*k,z,26*k,2.0*k,7*k,hull);
-    for(let m=-1;m<=1;m++){
-      D.beam8([x+m*9*k,3,z],[x+m*9*k,34*k,z], 0.7*k,0.5*k, mast,mast);
-      D.box(x+m*9*k,24*k,z,1.2*k,9*k,5.5*k,sail);
+/* ---- ONE SHIP, ONE OWNER ----
+   The fleet off the survey sites used to be its own ship: a 32-foot box hull with three
+   sticks and three boards for sails, about a quarter of the Susan Constant's length, while
+   Chapter I walks you around the real one. Two definitions of the same ship, and the second
+   one made the fleet look like toys moored a cable's length from the bank.
+   Now every ship in the game is buildConsort's - the hull, decks, beakhead and rig that
+   Chapter I is played on - at true size, then flattened into ONE vertex-coloured mesh, the
+   same way bakeFigure flattens a crowd man, so a fleet of three costs three draw calls
+   instead of two hundred. The flattened ship is cached per variant, so a world rebuilt on
+   every stretch of Chapter III does not rebuild three hulls each time.
+   Scale: Chapter I builds at K (1.35) units to the foot; everywhere else is one to one. */
+const FLEET_SHIPS=[{v:"susan",s:1},{v:"godspeed",s:0.76},{v:"discovery",s:0.43}];
+const SHIP_FLAT={};
+function flatShip(variant,s){
+  const key=variant+"@"+s;
+  if(SHIP_FLAT[key])return SHIP_FLAT[key];
+  const g=buildConsort(s/K,0,0,0,0,variant);
+  CONSORTS.splice(CONSORTS.indexOf(g),1);
+  g.parent.remove(g);
+  g.updateMatrixWorld(true);
+  const P=[],C=[],v=new THREE.Vector3();
+  g.traverse(function(o){
+    if(!o.isMesh||!o.geometry||!o.geometry.attributes.position||!o.visible)return;
+    const ge=o.geometry.index?o.geometry.toNonIndexed():o.geometry;
+    const pa=ge.attributes.position, ca=ge.attributes.color;
+    const mm=Array.isArray(o.material)?o.material[0]:o.material;
+    if(!mm||mm.transparent)return;
+    const mc=(!mm.vertexColors&&mm.color)?mm.color:null;
+    for(let i=0;i<pa.count;i++){
+      v.fromBufferAttribute(pa,i).applyMatrix4(o.matrixWorld);
+      P.push(v.x,v.y,v.z);
+      if(mc)C.push(mc.r,mc.g,mc.b); else if(ca)C.push(ca.getX(i),ca.getY(i),ca.getZ(i)); else C.push(1,1,1);
     }
-    /* and the cable ashore, from her bow to something growing on the bank */
-    if(moor!==undefined)
-      D.beam8([x-14*k,3.0*k,z],[x-14*k-6,2.0,moor],0.22,0.22,rope,rope,1,1);
+    if(ge!==o.geometry)ge.dispose();
+  });
+  g.traverse(function(o){if(o.isMesh&&o.geometry&&!SHARED.has(o.geometry))o.geometry.dispose();});
+  const out=new THREE.BufferGeometry();
+  out.setAttribute("position",new THREE.Float32BufferAttribute(P,3));
+  out.setAttribute("color",new THREE.Float32BufferAttribute(C,3));
+  out.computeVertexNormals();
+  SHARED.add(out);
+  return SHIP_FLAT[key]=out;
+}
+const FLAT_SHIP_MAT=new THREE.MeshLambertMaterial({vertexColors:true});
+SHARED.add(FLAT_SHIP_MAT);
+/* the bow is at -z in buildConsort's frame (the bowsprit reaches 85 units forward at K) */
+function placeShip(root,variant,s,x,z,yaw){
+  const m=new THREE.Mesh(flatShip(variant,s),FLAT_SHIP_MAT);
+  m.position.set(x,0,z);m.rotation.y=yaw||0;root.add(m);
+  return m;
+}
+/* The fleet riding off a site: Susan Constant, Godspeed, Discovery in that order, lying
+   along the shore (bow to the west). `list` keeps its [x,z,k] rows so the sites read as
+   before; k is no longer a size, because the ships are their true sizes now. With `moor`,
+   a cable runs from each bow to the bank. */
+function buildFleet(D,list,moor){
+  const rope=RGB(0xbfb094), root=worldRoot||scene;
+  for(let i=0;i<list.length&&i<FLEET_SHIPS.length;i++){
+    const f=FLEET_SHIPS[i], x=list[i][0]*1.7, z=list[i][1]+10;
+    placeShip(root,f.v,f.s,x,z,Math.PI/2);
+    if(moor!==undefined){
+      const bx=x-60*f.s, by=12*f.s;
+      D.beam8([bx,by,z],[bx-10,2.0,moor],0.22,0.22,rope,rope,1,1);
+    }
   }
 }
 /* ========== KECOUGHTAN ==========
@@ -22194,7 +22335,7 @@ registerWorld("ch2",function(root){
       g.quad4([ax,yA,az],[ax,yD,bz],[bx,yC,bz],[bx,yB,az],
         capeVert(ax,az,yA),capeVert(ax,bz,yD),capeVert(bx,bz,yC),capeVert(bx,az,yB));
     }
-    root.add(g.mesh(false,false));
+    root.add(detailGround(g.mesh(false,false),CURRENT_WORLD==="ch2"?"sand":"earth"));
   }
 
   /* ---- AND THE LAND DOES NOT STOP AT THE EDGE OF THE DETAILED PATCH ----
@@ -22223,12 +22364,19 @@ registerWorld("ch2",function(root){
       g.quad4([x,yA,z],[x,yD,bz],[bx,yC,bz],[bx,yB,z],
         capeVert(x,z,yA),capeVert(x,bz,yD),capeVert(bx,bz,yC),capeVert(bx,z,yB));
     }
-    root.add(g.mesh(false,false));
+    root.add(detailGround(g.mesh(false,false),CURRENT_WORLD==="ch2"?"sand":"earth"));
   })();
 
   /* ---- the sea, and the surf breaking on the strand ---- */
   const sea=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),mat(0x3f6472));
   sea.rotation.x=-Math.PI/2;sea.position.set(0,0,0);root.add(sea);
+  /* ---- AND THE SHIPS THAT BROUGHT YOU ----
+     The intro says it - "the ships are anchored inside the capes and the boats are down" -
+     and the beach had empty water. They ride at anchor well out, head to the bay, the
+     same three hulls Chapter I is played on (placeShip; one ship, one owner). */
+  placeShip(root,"susan",1,-120,330,Math.PI/2+0.35);
+  placeShip(root,"godspeed",0.76,60,390,Math.PI/2+0.28);
+  placeShip(root,"discovery",0.43,210,300,Math.PI/2+0.42);
   const W=new Geo(),foam=RGB(0xd7e2df),swellA=RGB(0x486e7a),swellB=RGB(0x3a5c68);
   for(let x=-SPAN/2;x<SPAN/2;x+=26){
     const w=22+Math.random()*12;
@@ -23086,6 +23234,638 @@ function paintShell(){
 }
 
 /* ========== ADMIN ========== *//* ========== ADMIN ========== */
+/* ---- BLENDER MODELS: a small GLB reader ----
+   Models made in Blender (tools/blender/, exported to assets/<chapter>/) arrive as
+   binary glTF. three r128 has no loader in its core, and the examples' GLTFLoader
+   is 4,000 lines for features these files never use, so this reads only what they
+   carry: positions, normals, vertex colours and indices, one geometry per top-level
+   node. Colours in glTF are linear already, which is what RGB() hands the renderer,
+   so they go in untouched. ceiling: no textures, skins, morphs or compression; a
+   file that needs them is refused, loudly, rather than drawn wrong. */
+const GLB_CACHE={};
+function loadGLB(url){
+  if(GLB_CACHE[url])return GLB_CACHE[url];
+  return GLB_CACHE[url]=fetch(url).then(function(r){
+    if(!r.ok)throw new Error(url+": "+r.status);return r.arrayBuffer();
+  }).then(function(buf){return parseGLB(buf,url);});
+}
+function parseGLB(buf,url){
+  const dv=new DataView(buf);
+  if(dv.getUint32(0,true)!==0x46546C67)throw new Error(url+": not a GLB");
+  let off=12,json=null,bin=null;
+  while(off<buf.byteLength){
+    const len=dv.getUint32(off,true),type=dv.getUint32(off+4,true);
+    if(type===0x4E4F534A)json=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,off+8,len)));
+    else if(type===0x004E4942)bin=buf.slice(off+8,off+8+len);
+    off+=8+len;
+  }
+  if(json.extensionsRequired&&json.extensionsRequired.length)
+    throw new Error(url+": needs "+json.extensionsRequired.join(","));
+  const N={5120:1,5121:1,5122:2,5123:2,5125:4,5126:4},
+        T={5120:Int8Array,5121:Uint8Array,5122:Int16Array,5123:Uint16Array,5125:Uint32Array,5126:Float32Array},
+        C={SCALAR:1,VEC2:2,VEC3:3,VEC4:4};
+  function acc(i){
+    const a=json.accessors[i],v=json.bufferViews[a.bufferView],n=C[a.type],
+          stride=v.byteStride||N[a.componentType]*n,src=new T[a.componentType](bin),
+          out=new Float32Array(a.count*n),scale=a.normalized?
+            (a.componentType===5121?1/255:a.componentType===5123?1/65535:1):1;
+    const base=((v.byteOffset||0)+(a.byteOffset||0))/N[a.componentType],step=stride/N[a.componentType];
+    for(let k=0;k<a.count;k++)for(let c=0;c<n;c++)out[k*n+c]=src[base+k*step+c]*scale;
+    return {d:out,n:n};
+  }
+  function local(nd){
+    const m=new THREE.Matrix4();
+    if(nd.matrix)m.fromArray(nd.matrix);
+    else m.compose(new THREE.Vector3().fromArray(nd.translation||[0,0,0]),
+                   new THREE.Quaternion().fromArray(nd.rotation||[0,0,0,1]),
+                   new THREE.Vector3().fromArray(nd.scale||[1,1,1]));
+    return m;
+  }
+  const out={};
+  function take(ni,mat,key){
+    const nd=json.nodes[ni],m=mat.clone().multiply(local(nd));
+    if(nd.mesh!=null)for(const p of json.meshes[nd.mesh].primitives){
+      if(p.mode!=null&&p.mode!==4)continue;
+      const pos=acc(p.attributes.POSITION),nor=p.attributes.NORMAL!=null?acc(p.attributes.NORMAL):null,
+            col=p.attributes.COLOR_0!=null?acc(p.attributes.COLOR_0):null,
+            idx=p.indices!=null?acc(p.indices).d:null;
+      (out[key]=out[key]||[]).push({pos:pos.d,nor:nor&&nor.d,col:col,idx:idx,m:m});
+    }
+    for(const c of (nd.children||[]))take(c,m,key);
+  }
+  const roots=json.scenes[json.scene||0].nodes;
+  for(const r of roots)take(r,new THREE.Matrix4(),json.nodes[r].name||("n"+r));
+  /* one BufferGeometry per top-level node: positions in feet, world-ready */
+  const geos={};
+  for(const key in out){
+    let nv=0,ni=0;for(const p of out[key]){nv+=p.pos.length/3;ni+=p.idx?p.idx.length:p.pos.length/3;}
+    const P=new Float32Array(nv*3),Nn=new Float32Array(nv*3),Cc=new Float32Array(nv*3),
+          I=nv>65535?new Uint32Array(ni):new Uint16Array(ni),v=new THREE.Vector3(),
+          nm=new THREE.Matrix3();
+    let vo=0,io=0;
+    for(const p of out[key]){
+      nm.getNormalMatrix(p.m);const cnt=p.pos.length/3;
+      for(let k=0;k<cnt;k++){
+        v.fromArray(p.pos,k*3).applyMatrix4(p.m);v.toArray(P,(vo+k)*3);
+        if(p.nor){v.fromArray(p.nor,k*3).applyMatrix3(nm).normalize();v.toArray(Nn,(vo+k)*3);}
+        const c=p.col;
+        if(c){Cc[(vo+k)*3]=c.d[k*c.n];Cc[(vo+k)*3+1]=c.d[k*c.n+1];Cc[(vo+k)*3+2]=c.d[k*c.n+2];}
+        else{Cc[(vo+k)*3]=Cc[(vo+k)*3+1]=Cc[(vo+k)*3+2]=1;}
+      }
+      if(p.idx)for(let k=0;k<p.idx.length;k++)I[io++]=p.idx[k]+vo;
+      else for(let k=0;k<cnt;k++)I[io++]=k+vo;
+      vo+=cnt;
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute("position",new THREE.BufferAttribute(P,3));
+    g.setAttribute("normal",new THREE.BufferAttribute(Nn,3));
+    g.setAttribute("color",new THREE.BufferAttribute(Cc,3));
+    g.setIndex(new THREE.BufferAttribute(I,1));
+    if(!out[key][0].nor)g.computeVertexNormals();
+    g.computeBoundingSphere();
+    geos[key]=g;
+  }
+  return geos;
+}
+
+/* ==================== CHAPTER III: THE FORT ====================
+   Jamestown Island, 14 to 26 May 1607, and the finished fort of 15 June.
+   Design: notes docs/CH3-FORT.md. Every fact the chapter states is in docs/CH3-RECORD.md,
+   checked against the original-spelling texts on 9 November 2026.
+
+   The chapter is the allocation engine's home (ALLOCATION.md). Four stretches of work,
+   each opened by the council's orders under the old sail; the island shows what the
+   parties did; then 26 May is played, and the triangle fort of 15 June is walked.
+
+   Its models are made in Blender (tools/blender/, generated by a local model from
+   tools/blender/fort_specs.md) and arrive as GLB files in assets/fort/. */
+
+/* ---- TIME HAS ONE OWNER ----
+   `S.works.ch3.day` is days since the landing, 14 May. The stretches and the attack are
+   DATES from the record, not tuning knobs: if the work feels too quick or too slow, the
+   fix is a work rate, never the calendar (ALLOCATION.md section 2). */
+const FORT_STRETCHES=[
+  {d0:0, d1:3, label:"14 to 17 May"},
+  {d0:4, d1:6, label:"18 to 20 May", ev:"paspahegh"},
+  {d0:7, d1:9, label:"21 to 23 May", ev:"newport"},
+  {d0:10,d1:11,label:"24 and 25 May"}];
+const FORT_ATTACK_DAY=12;       /* 26 May */
+const FORT_MONTHS=["January","February","March","April","May","June","July","August",
+  "September","October","November","December"];
+function fortDate(day){
+  const d=new Date(Date.UTC(1607,4,14+day));
+  return d.getUTCDate()+" "+FORT_MONTHS[d.getUTCMonth()]+" 1607";
+}
+function fortW(){
+  S.works=S.works||{};
+  if(!S.works.ch3)S.works.ch3={stretch:0,day:0,alloc:[],prog:{},defied:[],attack:null,epi:false};
+  return S.works.ch3;
+}
+
+/* ---- PARTIES OF A KIND, AND THE RULE THAT BINDS THEM ----
+   Counts from Smith's list of the first planters (Proceedings 1612): about 29 gentlemen,
+   12 labourers, 4 carpenters and some eight tradesmen, 4 boys. The ships' companies were
+   lent to the work until Newport took "5. gentlemen. 4. Maryners and. 14. Saylours"
+   upriver on 21 May (Archer), so two parties shrink on that date - which is why the
+   fort is short of hands in its last week, and the player feels it. */
+const FORT_PARTIES=[
+  {id:"gent",  name:"The gentlemen",            men:29, from7:24},
+  {id:"labour",name:"The twelve labourers",     men:12},
+  {id:"trade", name:"Carpenters and tradesmen", men:12},
+  {id:"sea",   name:"Mariners from the ships",  men:22, from7:4},
+  {id:"boy",   name:"The four boys",            men:4}];
+function fortMen(p,day){return (p.from7!=null&&day>=7)?p.from7:p.men;}
+/* What each kind of man gets done at each task, per man per day. Not shown to the player:
+   "the game does not tell you which" applies to the input too (ALLOCATION.md section 1). */
+const FORT_TASKS=[
+  {id:"fell", name:"Fell trees and rive clapboard", why:"to make room for tents, and a lading for the ships to carry home",
+   need:300,bias:{gent:.15,labour:1,trade:.8,sea:.6,boy:.3}},
+  {id:"fence",name:"Cast boughs into Kendall’s half moon", why:"the only fortification the President allows",
+   need:150,bias:{gent:.3,labour:.8,trade:.6,sea:.7,boy:.4}},
+  {id:"store",name:"Raise the storehouse and shelters", why:"the stores lie under sailcloth",
+   need:170,bias:{gent:.1,labour:.6,trade:1,sea:.5,boy:.2}},
+  {id:"corn", name:"Set corn and make gardens", why:"nobody aboard knows this ground",
+   need:70,bias:{gent:.1,labour:.45,trade:.3,sea:.25,boy:.35}},
+  {id:"arms", name:"Unpack the arms and keep a watch", why:"the arms are in casks",
+   need:90,defy:true,bias:{gent:.9,labour:.5,trade:.4,sea:.6,boy:.2}},
+  {id:"guns", name:"Land a gun from the ships and mount it", why:"the ordnance is all aboard",
+   need:130,defy:true,bias:{gent:.1,labour:.5,trade:.5,sea:1,boy:.1}},
+  {id:"well", name:"Dig a well", why:"the river is all there is to drink",
+   need:110,bias:{gent:.05,labour:1,trade:.5,sea:.4,boy:.2}}];
+function fortTask(id){for(const t of FORT_TASKS)if(t.id===id)return t;return null;}
+function fortProg(id){const w=fortW();return Math.min(1,(w.prog&&w.prog[id])||0);}
+/* The record's own fortnight, offered as the starting orders: gentlemen and labourers at
+   the trees, the trades at shelter and store, the seamen at the boughs, the boys in the
+   gardens - "the rest cut downe trees to make place to pitch their Tents; some provide
+   clapbord to relade the ships; some make gardens" (Proceedings). */
+const FORT_DEFAULT={gent:"fell",labour:"fell",trade:"store",sea:"fence",boy:"corn"};
+
+/* ---- THE ORDERS: one sheet, opened under the old sail ---- */
+let FORT_PICK=null;
+function openFortOrders(){
+  const w=fortW();
+  if(w.stretch>=FORT_STRETCHES.length){toast("There are no more orders before the twenty-sixth.");return;}
+  const st=FORT_STRETCHES[w.stretch];
+  const last=w.alloc.length?w.alloc[w.alloc.length-1]:FORT_DEFAULT;
+  FORT_PICK=Object.assign({},last);
+  $("fortWhen").textContent=st.label+" · "+(st.d1-st.d0+1)+" days of work";
+  const rows=$("fortRows");rows.innerHTML="";
+  for(const p of FORT_PARTIES){
+    const r=document.createElement("div");r.className="fortRow";
+    const n=document.createElement("div");n.className="fortParty";
+    n.textContent=p.name+" ("+fortMen(p,st.d0)+")";
+    const sel=document.createElement("select");sel.className="fortSel";
+    sel.setAttribute("aria-label","Orders for "+p.name);
+    for(const t of FORT_TASKS){
+      const o=document.createElement("option");o.value=t.id;
+      o.textContent=t.name+(t.defy?" †":"");
+      if(FORT_PICK[p.id]===t.id)o.selected=true;
+      sel.appendChild(o);
+    }
+    sel.onchange=function(){FORT_PICK[p.id]=sel.value;fortPaintWork();};
+    r.appendChild(n);r.appendChild(sel);rows.appendChild(r);
+  }
+  fortPaintWork();
+  setPaused(true);
+  openModal("mFort");
+}
+function fortWord(f){
+  return f>=1?"done":f>=.75?"nearly done":f>=.5?"half done":f>=.25?"begun":f>0?"scarcely begun":"not begun";
+}
+function fortPaintWork(){
+  const h=[];
+  for(const t of FORT_TASKS){
+    const who=FORT_PARTIES.filter(function(p){return FORT_PICK&&FORT_PICK[p.id]===t.id;})
+      .map(function(p){return p.name.replace(/^The /,"the ");});
+    h.push("<div class='fortTask'><b>"+t.name+(t.defy?" †":"")+"</b> — "+fortWord(fortProg(t.id))+
+      (who.length?"<br><span class='fortWho'>This stretch: "+who.join(", ")+"</span>":"")+"</div>");
+  }
+  $("fortWork").innerHTML=h.join("");
+}
+function fortCommit(){
+  const w=fortW(), st=FORT_STRETCHES[w.stretch];
+  const days=st.d1-st.d0+1;
+  const pick=Object.assign({},FORT_PICK);
+  for(const p of FORT_PARTIES){
+    const t=fortTask(pick[p.id]);if(!t)continue;
+    let done=0;
+    for(let d=st.d0;d<=st.d1;d++)done+=fortMen(p,d)*(t.bias[p.id]||0);
+    w.prog[t.id]=Math.min(1,((w.prog[t.id]||0)+done/t.need));
+    /* going against the President is recorded, as conduct is everywhere else */
+    if(t.defy&&w.defied.indexOf(t.id)<0)w.defied.push(t.id);
+  }
+  w.alloc.push(pick);
+  w.stretch++;
+  w.day=st.d1+1;
+  $("mFort").classList.remove("on");
+  setPaused(false);
+  checkpoint("fort");
+  fortAfterStretch(st);
+}
+/* What the days brought, from the record, then the island as the work left it. */
+function fortAfterStretch(st){
+  const w=fortW();
+  const next=FORT_STRETCHES[w.stretch];
+  const evs={
+    paspahegh:["18 and 20 May · Percy",
+      "<p>The werowance of Paspahegh came himself, “with one hundred Savages armed”, and “made great signes to us to lay our Armes away. But we would not trust him so far.”</p>"+
+      "<p>One of his men took a hatchet; a colonist “tooke it from him by force, and also strooke him over the arme”, and the werowance “went suddenly away with all his company in great anger.”</p>"+
+      "<p>Two days later forty of his men brought a deer, and asked to lie in the fort that night. “Wee would not suffer them.”</p>"],
+    newport:["21 May · Archer",
+      "<p>At noon Captain Newport went up the river to find its head, and took “5. gentlemen. 4. Maryners and. 14. Saylours” — Smith, Percy and Archer among them.</p>"+
+      "<p>The best hands are gone for a week. The parties you can send are smaller from today.</p>"]
+  };
+  const after=function(){
+    if(renderer)enterWorld("ch3");
+    if(w.stretch>=FORT_STRETCHES.length)fortEve();
+  };
+  const ev=next&&next.ev&&evs[next.ev];
+  const head="The work of "+st.label;
+  const body="<p>"+fortReport()+"</p>"+(ev?"<div class='kick'>"+ev[0]+"</div>"+ev[1]:"");
+  fortResult(head,body,[fortDate(w.day)],after);
+}
+function fortReport(){
+  const bits=[];
+  for(const t of FORT_TASKS){const f=fortProg(t.id);if(f>0)bits.push(t.name.toLowerCase()+": "+fortWord(f));}
+  return bits.length?bits.join("; ")+".":"Nothing got done.";
+}
+function fortEve(){
+  fortResult("The twenty-sixth of May",
+    "<p>Twelve days on the island. The men are at work and setting corn. Most of the arms are where they have been since England, in the casks.</p>"+
+    "<p class='note'>Nobody whose account survives saw what happens next. Archer, Smith and Percy were up the river with Newport; they wrote down what they were told when they came back the next day.</p>",
+    ["26 May 1607"],function(){fortW().attack={t:0};checkpoint("fort-eve");if(renderer)enterWorld("ch3");});
+}
+
+/* ---- THE ISLAND ----
+   The same ground the survey visited (SITE_TERRAIN.james: the river to the south, +z),
+   flattened inland so a 420-foot palisade sits on it without a foot of daylight under
+   any post. One unit is one foot. The fort's river side is z=30; its origin is (0,30). */
+const FORT_O=[0,30];
+function fortGround(x,z){
+  const T=SITE_TERRAIN.james;
+  if(z>T.sea)return T.deep-(z-T.sea)*T.fall;
+  if(z>T.shore)return (T.sea-z)/(T.sea-T.shore)*T.rise-0.5+0.12*Math.sin(x*0.024);
+  return 1.0+0.22*Math.sin(x*0.011+1.3)*Math.cos(z*0.009);
+}
+const FORT_MAT=new THREE.MeshLambertMaterial({vertexColors:true});
+SHARED.add(FORT_MAT);
+/* Put the named parts of a Blender file into the world. Async: the world is built at
+   once and the models fade in when they arrive, which on a slow school network is the
+   difference between a black screen and a playable island. Colliders are laid down
+   now, from the numbers the specs gave, never from the loaded mesh. */
+function fortPlace(root,file,parts,x,z,ry){
+  const grp=new THREE.Group();
+  grp.position.set(x,1.0,z);grp.rotation.y=ry||0;root.add(grp);
+  const myRoot=root;
+  loadGLB("assets/fort/"+file+".glb").then(function(g){
+    if(worldRoot!==myRoot)return;          /* the world moved on while it loaded */
+    for(const k of parts){
+      if(!g[k]){console.warn("fort: no part "+k+" in "+file);continue;}
+      SHARED.add(g[k]);
+      const me=new THREE.Mesh(g[k],FORT_MAT);grp.add(me);FORT.parts[k]=me;
+    }
+  }).catch(function(e){console.warn("fort model",file,e);});
+  return grp;
+}
+function fortQuarters(f){return Math.max(0,Math.min(4,Math.floor(f*4+0.001)));}
+
+registerWorld("ch3",function(root){
+  const w=fortW();
+  const G=fortGround;
+  const T=SITE_TERRAIN.james;
+  scene.background=new THREE.Color(T.sky);
+  scene.fog=new THREE.Fog(T.fog,240,860);
+  WORLD.ground=G; WORLD.hull=false; WORLD.sea=0;
+  WORLD.blocked=function(x,z){return Math.hypot(x,z)>430||G(x,z)<-0.6||inCollider(x,z,1.0);};
+  FORT.on=false;FORT.t=0;FORT.bowmen=[];FORT.wounded=[];FORT.root=root;FORT.parts={};
+  /* ground, chunked as at the survey sites; trodden earth inside the work */
+  const SPAN=900,N=4,CH_=SPAN/N,DIV=14;
+  const near=RGB(T.near),far=RGB(T.far),back=RGB(T.back),wet=RGB(T.wet),trod=RGB(0x8a7a58);
+  for(let cx=0;cx<N;cx++)for(let cz=0;cz<N;cz++){
+    const g=new Geo();
+    const x0=-SPAN/2+cx*CH_,z0=-SPAN/2+cz*CH_,st=CH_/DIV;
+    for(let i=0;i<DIV;i++)for(let j=0;j<DIV;j++){
+      const ax=x0+i*st,az=z0+j*st,bx=ax+st,bz=az+st,mx=(ax+bx)/2,mid=(az+bz)/2;
+      const inWork=Math.hypot(mx-FORT_O[0],mid-FORT_O[1])<115&&mid<FORT_O[1]+4;
+      const col=(mid>T.sea-6)?wet:(mid>T.shore)?near:inWork?trod:(mid>T.flat)?far:back;
+      g.quad([ax,G(ax,az),az],[ax,G(ax,bz),bz],[bx,G(bx,bz),bz],[bx,G(bx,az),az],col);
+    }
+    root.add(detailGround(g.mesh(false,false),CURRENT_WORLD==="ch2"?"sand":"earth"));
+  }
+  buildSkyDome(root);
+  const sea=new THREE.Mesh(new THREE.PlaneGeometry(1600,900),new THREE.MeshLambertMaterial({color:lin(T.water)}));
+  sea.rotation.x=-Math.PI/2;sea.position.set(0,-0.35,T.sea+450);root.add(sea);
+
+  /* ---- THE WOODS, and what the felling has taken out of them ----
+     The clearing's stumps stand where trees stood, so the trees there go when the
+     felling has reached them - the island you walk is the one your orders made. */
+  const fell=w.epi?1:fortProg("fell");
+  const cleared=function(x,z){
+    if(Math.hypot(x-FORT_O[0],z-FORT_O[1])<125)return true;          /* the work itself */
+    if(x>-110&&x<110&&z<-70&&z>-235)return fell>((z+70)/-165)*0.9;   /* felled northward */
+    return false;
+  };
+  const TR=new Geo();
+  for(let i=0;i<150;i++){
+    const tx=(srand(i*3.7+11)*2-1)*410, tz=20-srand(i*5.3+11)*400;
+    if(cleared(tx,tz)||tz>T.shore-6)continue;
+    conifer(TR,tx,G(tx,tz),tz,34*(0.8+srand(i*2.7+11)*0.5),i+11,far);
+  }
+  root.add(TR.mesh(false,false));
+
+  /* ---- THE SHIPS, moored to the trees in six fathom ---- */
+  placeShip(root,"susan",1,-150,100,Math.PI/2+0.03);
+  placeShip(root,"godspeed",0.76,-30,96,Math.PI/2-0.04);
+  placeShip(root,"discovery",0.43,70,92,Math.PI/2+0.02);
+
+  /* ---- WHAT THE ORDERS BUILT ---- */
+  const ox=FORT_O[0],oz=FORT_O[1];
+  if(w.epi){
+    fortPlace(root,"fort_palisade",["palisade_river","palisade_east","palisade_west",
+      "bulwark_sw","bulwark_se","bulwark_n","gate"],ox,oz,0);
+    /* walls: the river side (with its gate) and the two landward sides as line colliders */
+    fortWall(ox-210,oz,ox-6,oz);fortWall(ox+6,oz,ox+210,oz);
+    fortWall(ox-210,oz,ox,oz-222);fortWall(ox+210,oz,ox,oz-222);
+  } else {
+    const q=fortQuarters(fortProg("fence"));
+    const parts=[];for(let i=1;i<=q;i++)parts.push("brush_fence_"+i);
+    if(parts.length)fortPlace(root,"brush_fence",parts,ox,oz,0);
+  }
+  fortPlace(root,"awning",["awning"],-35,-10,0);
+  solid(-35-18,-10-13,1.2,1.2,LVL.MAIN,0);solid(-35+18,-10-13,1.2,1.2,LVL.MAIN,0);
+  solid(-35-18,-10+13,1.2,1.2,LVL.MAIN,0);solid(-35+18,-10+13,1.2,1.2,LVL.MAIN,0);
+  const casksOpen=fortProg("arms")>=1||(w.attack&&w.attack.casks)||w.epi;
+  fortPlace(root,"camp",["camp_shelters","camp_fire",casksOpen?"camp_casks_open":"camp_casks"],40,-15,0);
+  const sp=fortProg("store"), stParts=[];
+  if(sp>=.25||w.epi)stParts.push("storehouse_frame");
+  if(sp>=.6||w.epi)stParts.push("storehouse_walls");
+  if(sp>=1||w.epi)stParts.push("storehouse_roof");
+  if(stParts.length){fortPlace(root,"storehouse",stParts,-75,0,0);solid(-75,0,20,10,LVL.MAIN,0);}
+  const cp=w.epi?1:fortProg("corn");
+  if(cp>0)fortPlace(root,"cornfield",cp>=.5?["cornfield_1","cornfield_2"]:["cornfield_1"],-175,-55,0);
+  const fq=Math.min(3,Math.ceil(fell*3-0.001));
+  if(fq>0){const cl=[];for(let i=1;i<=fq;i++)cl.push("clearing_"+i);fortPlace(root,"clearing",cl,0,-150,0);}
+  if(fortProg("guns")>=1&&!w.epi)fortGun(root,G,ox,oz-95);
+  if(fortProg("well")>=1)fortWell(root,G,-20,-30);
+
+  /* ---- THE PEOPLE ---- */
+  fortPeople(root,G);
+
+  /* ---- THE ORDERS, under the old sail ---- */
+  if(!w.epi&&w.stretch<FORT_STRETCHES.length&&!w.attack)
+    interactables.push({id:"orders",label:"The Council’s Orders",x:-35,z:2,y:G(-35,2),
+      lvl:LVL.MAIN,r:9,action:"fort",data:{kind:"orders",verb:"Hear the orders for "+FORT_STRETCHES[w.stretch].label}});
+  if(w.epi)
+    interactables.push({id:"record",label:"Close the Record",x:0,z:oz-8,y:G(0,oz-8),
+      lvl:LVL.MAIN,r:9,action:"fort",data:{kind:"record",verb:"Close the chapter’s record"}});
+  if(w.attack&&!w.attack.over)fortAttackSpots(root,G);
+
+  player=buildFigure(S.equip);
+  const at=w.epi?[0,20]:w.attack?[30,-20]:[6,56];
+  player.position.set(at[0],G(at[0],at[1]),at[1]);
+  player.rotation.y=Math.PI;
+  root.add(player);playerParts=player.userData.parts;dressCarried(player);
+  camYaw=0;camPitch=0.30;
+  /* a reload in the middle of the fight starts it again where it stands */
+  if(w.attack&&!w.attack.over)fortStartAttack();
+});
+/* a straight run of palisade as a chain of small colliders */
+function fortWall(x0,z0,x1,z1){
+  const n=Math.ceil(Math.hypot(x1-x0,z1-z0)/4);
+  for(let i=0;i<=n;i++){const k=i/n;solid(x0+(x1-x0)*k,z0+(z1-z0)*k,2.2,2.2,LVL.MAIN,0);}
+}
+/* the counterfactual gun ashore: a saker on a field carriage at the boughs */
+function fortGun(root,G,x,z){
+  const g=new Geo(),y=G(x,z),wood=RGB(0x6b5236),iron=RGB(0x3a3a3a);
+  g.box(x,y+1.4,z,2.6,1.2,5.5,wood);
+  for(const s of [-1,1])for(const f of [-1.8,1.8])g.beam8([x+s*1.6,y+1.1,z+f],[x+s*1.95,y+1.1,z+f],2.2,2.2,wood,wood);
+  g.beam8([x,y+2.4,z+2.6],[x,y+2.7,z-5.5],1.25,0.95,iron,iron);
+  root.add(g.mesh(false,false));solid(x,z,2,4,LVL.MAIN,1);
+}
+function fortWell(root,G,x,z){
+  const g=new Geo(),y=G(x,z),wood=RGB(0x7d6a52),dark=RGB(0x2a2118);
+  for(let i=0;i<8;i++){const a=i*Math.PI/4,b=a+Math.PI/4;
+    g.quad([x+Math.cos(a)*3,y,z+Math.sin(a)*3],[x+Math.cos(b)*3,y,z+Math.sin(b)*3],
+           [x+Math.cos(b)*3,y+2.4,z+Math.sin(b)*3],[x+Math.cos(a)*3,y+2.4,z+Math.sin(a)*3],wood);}
+  g.box(x,y+2.38,z,4.4,0.05,4.4,dark);
+  root.add(g.mesh(false,true));solid(x,z,3,3,LVL.MAIN,1);
+}
+
+/* ---- THE PEOPLE: the council and the men, talking about what the orders made ----
+   Line-speakers: everything they have, in order, behind a Go on. Their lines are keyed by
+   stretch, so Kendall on the 15th talks about boughs and Kendall on 15 June about the
+   palisade. Smith is here only until he goes upriver on the 21st. */
+function fortSpeakerLines(id){
+  const w=fortW(), k=w.epi?4:Math.min(3,w.stretch);
+  const set=FORT_SAYS[id];
+  return (set&&set[k]&&set[k].length)?set[k]:null;
+}
+function fortPeople(root,G){
+  const w=fortW();
+  const spots={wingfield:[-28,6,2.6],kendall:[30,-60,0.4],gosnold:[-6,58,3.0],laydon:[10,-90,0.2],
+    laxon:[-62,14,2.2],hunt:[-44,-4,1.6],smith:[52,4,3.6]};
+  for(const m of FORT_PEOPLE){
+    const lines=fortSpeakerLines(m.id);
+    if(!lines)continue;
+    if(w.attack&&!w.attack.over&&m.id!=="wingfield")continue;   /* the fight has its own people */
+    const at=spots[m.id], x=at[0], z=at[1], gy=G(x,z);
+    const f=buildFigure(m.eq);f.position.set(x,gy,z);f.rotation.y=at[2];root.add(f);
+    const d=Object.assign({},m,{lines:lines});
+    npcMeshes.push({npc:d,mesh:f});solid(x,z,1,1,LVL.MAIN,0);
+    interactables.push({id:m.id,label:m.name,x:x,z:z+3,y:gy,lvl:LVL.MAIN,r:7,action:"talk",data:d});
+  }
+  /* the working men, posed at what the orders set them to and baked to one mesh each */
+  if(w.attack||w.epi)return;
+  const pick=w.alloc.length?w.alloc[w.alloc.length-1]:FORT_DEFAULT;
+  const WHERE={fell:[0,-110],fence:[0,-70],store:[-75,14],corn:[-175,-40],arms:[60,0],guns:[0,-60],well:[-20,-20]};
+  let n=0;
+  for(const p of FORT_PARTIES){
+    const at=WHERE[pick[p.id]]||[0,0];
+    const shown=Math.min(5,Math.ceil(fortMen(p,w.day)/5));
+    for(let i=0;i<shown;i++,n++){
+      const x=at[0]+(srand(n*4.1+3)-0.5)*44, z=at[1]+(srand(n*6.7+5)-0.5)*26;
+      if(Math.hypot(x+35,z+10)<22)continue;
+      const kind=p.id==="gent"?"gent":p.id==="boy"?"boy":p.id==="sea"?"soldier":"hand";
+      const f=buildFigure(crowdEq(kind,n));
+      f.position.set(x,G(x,z),z);f.rotation.y=srand(n*9.1)*6.28;
+      poseFigure(f,(p.id==="gent"&&pick[p.id]!=="arms")||p.id==="boy"?"stand":"stoop",n);
+      root.add(bakeFigure(f));
+    }
+  }
+}
+
+/* ==================== 26 MAY ====================
+   You never aim at a person. The fight is played as the record has it being survived:
+   the arms got out of the casks, the hurt carried in, and the ships' guns - which is
+   what ended it ("a crosse barre shot from the ships strooke down a bough from a tree
+   amongst them, that caused them to retire"). If nobody hails the ships they fire anyway,
+   as they did: losing never gates the chapter. A gun mounted ashore is the counterfactual,
+   and is labelled as one when the day is accounted for. */
+const FORT={on:false,t:0,arrowT:0,bowmen:[],wounded:[],root:null,fired:false,endT:0,parts:{}};
+function fortStartAttack(){
+  const w=fortW();
+  if(!w.attack||w.attack.over)return;
+  FORT.on=true;FORT.t=0;FORT.arrowT=0;FORT.fired=false;FORT.endT=0;
+  toast("Arrows from the woods! The arms are in the casks.");
+}
+function fortAttackSpots(root,G){
+  const w=fortW(), a=w.attack;
+  if(fortProg("arms")<1&&!a.casks)
+    interactables.push({id:"casks",label:"The Casks",x:80,z:10,y:G(80,10),lvl:LVL.MAIN,r:9,
+      action:"fort",data:{kind:"casks",verb:"Break the arms out of the casks"}});
+  const hurt=[[-22,-55,0.7],[48,-48,2.4]];
+  a.carried=a.carried||[];
+  hurt.forEach(function(h,i){
+    if(a.carried.indexOf(i)>=0)return;
+    const f=buildFigure(crowdEq(i?"hand":"gent",40+i));
+    f.position.set(h[0],G(h[0],h[1])+0.35,h[1]);f.rotation.set(-Math.PI/2,h[2],0,"YXZ");
+    const m=bakeFigure(f);root.add(m);FORT.wounded[i]=m;
+    interactables.push({id:"hurt"+i,label:"A Man Down",x:h[0],z:h[1],y:G(h[0],h[1]),lvl:LVL.MAIN,r:7,
+      action:"fort",data:{kind:"hurt",i:i,verb:"Carry him in behind the boughs"}});
+  });
+  if(fortProg("guns")>=1)
+    interactables.push({id:"gun",label:"The Gun Ashore",x:0,z:-60,y:G(0,-60),lvl:LVL.MAIN,r:8,
+      action:"fort",data:{kind:"gun",verb:"Bring powder to the gun"}});
+  interactables.push({id:"hail",label:"The Landing",x:-20,z:62,y:G(-20,62),lvl:LVL.MAIN,r:10,
+    action:"fort",data:{kind:"hail",verb:"Hail the ships"}});
+  /* the attackers, at the edge of the trees: people, not targets - no collider, no hit box */
+  for(let i=0;i<9;i++){
+    const x=-140+i*35+(srand(i*3.3)-0.5)*20, z=-150-srand(i*7.7)*40;
+    const f=tidewaterFigure();f.position.set(x,G(x,z),z);f.rotation.y=Math.PI;root.add(f);FORT.bowmen.push(f);
+  }
+}
+function fortAct(d){
+  const w=fortW(), a=w.attack;
+  if(d.kind==="orders"){openFortOrders();return;}
+  if(d.kind==="record"){w.done=true;checkpoint("fort-done");showEnding("ch3");return;}
+  if(!a||a.over)return;
+  if(d.kind==="casks"){a.casks=true;fortDrop("casks");
+    toast("The heads stove in. Calivers and pikes into every hand that will take one.");
+    if(FORT.parts.camp_casks)FORT.parts.camp_casks.visible=false;
+    if(FORT.root)fortPlace(FORT.root,"camp",["camp_casks_open"],40,-15,0);return;}
+  if(d.kind==="hurt"){a.carried.push(d.i);fortDrop("hurt"+d.i);
+    if(FORT.wounded[d.i])FORT.wounded[d.i].visible=false;
+    toast(a.carried.length>1?"Both men behind the boughs.":"You drag him in behind the boughs.");return;}
+  if(d.kind==="gun"){a.gun=true;fortDrop("gun");fortFire(0,-62,"Your gun speaks from the boughs.");return;}
+  if(d.kind==="hail"){a.hailed=true;fortDrop("hail");fortFire(-150,100,"The Admiral answers. Then the others.");return;}
+}
+function fortDrop(id){
+  for(let i=interactables.length-1;i>=0;i--)if(interactables[i].id===id){
+    const it=interactables[i];if(it.el)it.el.style.display="none";interactables.splice(i,1);}
+}
+function fortFire(x,z,msg){
+  if(FORT.fired)return;
+  FORT.fired=true;FORT.endT=FORT.t+5;
+  try{boom();}catch(e){}
+  for(let i=0;i<10;i++)spawnPuff(POOL.smoke,x+(Math.random()-0.5)*6,WORLD.ground(x,z)+9,z-4,
+    (Math.random()-0.5)*3,1.2,-2-Math.random()*3,{size:4,col:0xd9d4c8,op:0.8,life:5,grow:2.2});
+  toast(msg);
+}
+function fortArrow(){
+  if(!POOL.arrows||!player)return;
+  const m=POOL.arrows.take();if(!m)return;
+  const px=player.position.x,pz=player.position.z;
+  const ox=px+(Math.random()-0.5)*90, oz=Math.min(pz-50,-80)-Math.random()*40;
+  const tx=px+(Math.random()-0.5)*24, tz=pz+(Math.random()-0.5)*24;
+  ARROWS.push({m:m,t:0,life:0.9+Math.random()*0.4,flat:false,
+    x0:ox,y0:WORLD.ground(ox,oz)+4,z0:oz,x1:tx,y1:WORLD.ground(tx,tz)+0.4,z1:tz,
+    near:Math.hypot(tx-px,tz-pz)});
+  m.visible=true;
+}
+function updateFort(dt){
+  const w=fortW();
+  FORT.t+=dt;
+  if(!FORT.fired){
+    FORT.arrowT-=dt;
+    if(FORT.arrowT<=0){fortArrow();FORT.arrowT=0.35+Math.random()*0.5;}
+    /* "indured hott about an hower" - and then the ships. Nobody needs to have hailed them. */
+    if(FORT.t>95)fortFire(-150,100,"The ships open fire on their own.");
+  } else {
+    for(const b of FORT.bowmen)b.position.z-=dt*9;      /* they draw off into the trees */
+    if(FORT.t>FORT.endT){FORT.on=false;fortAttackOver();}
+  }
+}
+function fortAttackOver(){
+  const w=fortW(), a=w.attack;
+  a.over=true;
+  for(const b of FORT.bowmen)b.visible=false;
+  for(const m of ARROWS)if(m.m)m.m.visible=false;
+  ARROWS.length=0;
+  checkpoint("fort-attack");
+  /* What the record says first, always; then what YOUR fortnight changed, labelled. */
+  const yours=[];
+  const fence=fortProg("fence");
+  yours.push(fence>=1?"Kendall’s half moon of boughs was closed, and the men had something to stand behind."
+    :fence>=.5?"The half moon of boughs was half made; the men stood in the gaps."
+    :fence>=.25?"Only a stretch of the half moon was cast; most of the camp lay open."
+    :"There was scarcely a fence at all.");
+  yours.push(fortProg("arms")>=1?"The arms were already out, against the President’s order, and the watch saw them coming."
+    :a.casks?"You broke the arms out of the casks while the arrows came in."
+    :"Nobody broke the casks open. The few gentlemen with their own weapons ready did the fighting.");
+  if(fortProg("guns")>=1)yours.push(a.gun?"A gun was mounted ashore and you served it. <b>This is not what happened</b>: the record has every great gun still aboard the ships."
+    :"A gun stood mounted ashore, and nobody brought it powder. (Not what happened: the guns were all aboard.)");
+  yours.push(a.hailed?"You hailed the ships, and they fired.":"Nobody hailed the ships; they fired when they saw it.");
+  const c=(a.carried||[]).length;
+  yours.push(c===2?"You carried both of the fallen in.":c===1?"You carried one man in.":"The fallen lay where they fell until it was over.");
+  fortResult("The Twenty-Sixth of May",
+    "<p><b>What the accounts say.</b> About two hundred came “with their kyng” (Archer; Smith says four hundred), and it “indured hott about an hower”. A boy was killed in the pinnace. Archer counts eleven men hurt, “wherof one Dyed after”; Smith’s <i>True Relation</i> says thirteen or fourteen, and the <i>Proceedings</i> of 1612 seventeen. The President “had one shott cleane through his bearde”, and four of the council were hurt. It ended when “a crosse barre shot from the ships strooke down a bough from a tree amongst them”.</p>"+
+    "<p><b>What your fortnight changed.</b> "+yours.join(" ")+"</p>"+
+    "<p class='note'>After it, the council agreed the fort “should be pallisadoed, the ordinance mounted, his men armed and exercised”. Newport came back the next day and set his seamen to help.</p>",
+    ["26 May 1607"],function(){
+      fortEpilogue();
+    });
+}
+function fortEpilogue(){
+  const w=fortW();
+  fortResult("Fifteen Days Later",
+    "<p>“The fifteenth day of June, we had built and finished our Fort which was triangle wise, having three Bulwarkes, at every corner, like a halfe Moone, and foure or five pieces of Artillerie mounted in them.” — George Percy</p>"+
+    "<p>They built it under arrows. On the thirty-first of May Eustace Clovill, “vnarmed stragling without the ffort”, was shot with six of them and came in “crying Arme Arme”. He died on the eighth of June.</p>"+
+    "<p class='note'>The fort you will walk is a reconstruction: its sides follow William Strachey’s measurements of 1610, which the archaeologists of Jamestown Rediscovery have matched to the post lines of 1607.</p>",
+    ["15 June 1607"],function(){w.epi=true;w.day=32;checkpoint("fort-epi");if(renderer)enterWorld("ch3");});
+}
+
+/* ---- WHO IS ON THE ISLAND ---- */
+const FORT_PEOPLE=[
+  {id:"wingfield",name:"President Wingfield",voice:"male",role:"President of the council",
+   eq:{skin:"english",palette:"company",cloak:"cloak_weathered",torso:"torso_merchant",accessory:"none_acc",
+       head:"head_feather",build:"build_normal",face:"stern",
+       dye:{torso:"company",breech:"slate",stock:"ink",cloak:"lostcolony",head:"ink"}}},
+  {id:"kendall",name:"Captain Kendall",voice:"male",role:"of the council, a soldier",eq:SERJEANT.eq},
+  {id:"gosnold",name:"Captain Gosnold",voice:"male",role:"of the council, a seaman",
+   eq:{skin:"english",palette:"slate",cloak:"cloak_weathered",torso:"torso_merchant",accessory:"none_acc",
+       head:"head_capotain",build:"build_normal",face:"shrewd",
+       dye:{torso:"slate",breech:"slate",stock:"ink",cloak:"ink",head:"ink"}}},
+  {id:"laydon",name:"John Laydon",voice:"male",role:"a labourer",eq:crowdEq("hand",7)},
+  {id:"laxon",name:"William Laxon",voice:"male",role:"a carpenter",eq:crowdEq("hand",12)},
+  {id:"hunt",name:"Reverend Hunt",voice:"male",role:"the preacher",eq:CAPE_PEOPLE.filter(function(m){return m.id==="hunt";})[0].eq},
+  {id:"smith",name:"John Smith",voice:"male",role:"a soldier, kept off the council",eq:crowdEq("soldier",5)}];
+
+/* result() writes its body as text; the chapter's accounts carry quotation and emphasis */
+function fortResult(title,body,pills,after){
+  result(true,title,"",pills,after);
+  $("resBody").innerHTML=body;
+}
+
+/* Filled from the record (docs/CH3-RECORD.md); one array per stretch, then 15 June. */
+/* Drafted by a local model (qwen3.8:27b) from docs/CH3-RECORD.md, then checked and corrected
+   against it by hand: Newport went up the river in a boat, the ships stayed. */
+const FORT_SAYS={"wingfield": [["“The Council hath set us to work. Trees for the tents, clapboard for the ships, gardens for the spring. We are to build this place with our own hands.”","“I will not have the men running about with muskets in their fists. We are to hold them to watching, warding, and working. That is the order.”","“The Company’s charge is plain: we are not to offend the naturals. So we work, we keep the peace, and we build what we can with the hands we have.”"],["“The werowance of Paspahegh came to our quarter with a hundred of his men, armed. He made signs for us to lay our arms away. We would not trust him so far.”","“One of them stole a hatchet. A man took it back by force and struck him over the arm. The werowance went away in great anger. I will not say who was in the wrong.”","“On the twentieth, forty of his men came with a deer. They would have lain in our fort all night. We would not suffer them. That is the order I give.”"],["“Newport is gone upriver with the best hands. Five gentlemen, four mariners, fourteen sailors. That is the pick of this camp, and they are out of sight.”","“What is left here must keep working. The clapboard, the tents, the half-moon. I will not have the work slacken because the ships are gone upriver.”","“The arms remain in their casks. I hold that order. The men who are here are to watching, warding, and working. That does not change.”"],["“The men are setting corn today. That is the work. The half-moon stands. The casks are sealed. I hold the order: watching, warding, working.”","“Captain Newport is still up the river with the best hands. Until he is back, I will not have the men armed and running about. That is my charge.”","“The half-moon of boughs is what we have. I would have more, but I will not have the men pulling their axes from the corn to swing at the air.”"],["“On the twenty-sixth, they came, and I was here. One arrow went clean through my beard, and I escaped hurt. Nobody counted them the same way afterward.”","“Two hundred, some say four hundred. A boy killed in the pinnace. Eleven men hurt, or seventeen, or fourteen. I do not know which is true. I know I was there.”","“Today the fort is done. A triangle, three bulwarks, guns mounted. It was a cross-bar shot from the ships that brought a bough down among them, and they retired.”"]],"kendall": [["“You see that half-moon of boughs by the water? That is all the fort we have. I have been at it since before the sun was up, and my hands are split.”","“I would have the men drilled, the muskets out of those casks and into their hands. A soldier without his arms is a man waiting to be killed.”","“Now, I know the President holds a different view. He holds us to work and watching. I respect the Council’s order, but I would not sleep well with those casks still sealed.”"],["“A hundred armed men, walking into our camp. And the arms are still in the casks. I watched them and I thought: if this had been a day later, where would we stand?”","“On the twentieth, one of their arrows went a foot through our target. Against steel it burst to pieces. I note that. I note that we have no wall to shoot from.”","“I said to the President, plainly, that I would have the men exercised. He will not have it. So the casks stay shut, and I pray it is not needed.”"],["“The best hands are upriver. I am here with the rest. The half-moon of boughs is the same, but the men to man it are fewer. I note that.”","“I have been at the boughs since before the sun. My hands are raw. But I will not stop. If this is all the fort we have, I will make it as strong as boughs can be.”","“I would have the men I have here exercised. The President says no. So I keep them at work, and I keep my eye on the treeline.”"],["“They are setting corn. Good. We will need it. But I am at the boughs, adding what I can. A half-moon is a thin thing.”","“The casks are still sealed. I have said my piece to the President. He will not move. So I keep the men at work and I keep my eye on the treeline.”","“Newport is not back. I count the days. When he comes I will say again what I have said: the men need their arms.”"],["“I stood at the front with the Council. The half-moon of boughs was all between us and them. Four of us that stood in front were hurt, and the President was not.”","“The arms were in the casks. I said so for a fortnight. On the twenty-sixth, a few gentlemen had their weapons ready. The rest of us had boughs and our hands.”","“Today the triangle is done. Three bulwarks, guns in them. I helped raise it. My hands are the same hands that raised the boughs. But I will not raise boughs again.”"]],"gosnold": [["“We lade the clapboard and the timber aboard, and the ships go home to England. That is the first thing. The Company must see we have landed safe.”","“The guns are aboard the ships, and that is where they do the most good. A ship’s broadside is a thing no camp can match.”","“But when those ships sail, we are here. On this island. With boughs and a prayer. I think on that more than I care to.”"],["“The ships are still here, and the guns are aboard them. That is a comfort. A hundred men came to our quarter and the ships were in the river.”","“They sent a deer. Forty men with it. A gift, or a test, I cannot say. We let them go. The ships are the thing that keeps this place from being a very small target.”","“When the ships sail for England, those guns go with them. And we are left with boughs. I keep thinking on that.”"],["“Newport has taken the best hands up the river in the boat. The ships lie here at the trees with their guns, and fewer men to work them.”","“We are a small company here. The best hands are gone. The work goes on, but it goes on slower, and it goes on with fewer eyes on the water.”","“If something comes while Newport is away, we have boughs, and the ships’ guns at our backs. I have thought on that since the first day we landed.”"],["“Newport is due back from up the river. I watch the water every morning. The ships are moored where they were, and their guns are loaded.”","“We are setting corn. The half-moon stands. The casks are sealed. It is a camp, not a fort. I have said that before. I will say it again.”","“The guns are on those ships, not on this ground. If they come at us from the woods, it is the ships that must answer. I do not like the arithmetic of it.”"],["“I was at the fort. The ships were in the river, and their small shot was heard. I have heard the cross-bar shot brought a bough down among them, and they retired.”","“Today the guns are mounted ashore. Three bulwarks. A triangle. We needed a wall from the first day, and it took arrows to get one.”","“A boy is dead. I do not know his name. He was in the pinnace. Men are hurt, and the accounts disagree on how many. I do not need them to agree to know the cost.”"]],"laydon": [["“I have been at the axe since dark. Trees for the tents, trees for the clapboard, trees for God knows what. My shoulders are on fire.”","“The gentlemen sit and council and choose who is President. I am the one with the axe in my hands and the sap in my eyes.”","“They say the arms are in the casks. Fine. I did not cross the ocean to sit by a cask. I crossed it to work, and I am working.”"],["“A hundred of them, armed, walking up to our quarter. I was in the trees, felling. I heard them and I put the axe down. I did not know what to do.”","“They brought a deer on the twentieth. Forty men. They wanted to stay the night. We said no. I do not blame them for wanting to, and I do not blame us for saying no.”","“I saw the arrow go through the target. A foot clean into the wood. And I am the one out in the trees with an axe while they could have shot me standing still.”"],["“The good hands are gone upriver. I am here. I have been here since dark and I will be here till dark again. The trees do not care who is President.”","“I fell, I dig, I carry. The gentlemen who went up the river went in the boat. I am here in the mud with my axe. That is the lot of a labourer.”","“That half-moon of boughs is our wall. I helped put it up. It is not much. But it is all there is, and I will not let it fall.”"],["“I have been setting corn since the sun was up. My back is a knot. The corn will grow or it will not. I have done my part.”","“That half-moon is our wall. I helped build it. It is boughs and mud. I would not call it a fort. But it is what we have.”","“Newport is not back. I do not know where he is. I know I am here, and I know the corn is in the ground, and I know my hands are bleeding.”"],["“I was in the field setting corn. I heard the arrows and I ran. I ran to the boughs and I stood there. I did not have a musket. I had my hands.”","“Clovill went out of the fort unarmed, straggling. Six arrows in him. He cried ’Arme, Arme.’ He is dead. I did not know him well. I knew his name. That is not enough.”","“Today the palisade is up. A triangle. I helped carry the timbers. My back is the same back that set the corn. But I will not set corn in the open again.”"]],"laxon": [["“Four of us carpenters, and the whole island to build. I have measured the timber for the storehouse and there is not enough to spare.”","“The Company wants clapboard laded on the ships. That is a day’s work for each board, cut and dressed. We have the ships waiting.”","“You want a wall? A roof? A proper shelter? You want hands. We have axes and we have wood, but hands are the thing we lack.”"],["“The work does not stop because a hundred men walked past. I was dressing clapboard and I am dressing clapboard. The ships need lading.”","“On the twentieth one of their arrows went a foot into a wooden target. Against steel it broke to pieces. I can make boards. I cannot make steel.”","“Four carpenters. That is all. I cannot build a storehouse and a palisade and a roof with four hands. I need the labourers, and the labourers need rest.”"],["“Newport is up the river. The clapboard is not all laded. I am here with three other carpenters and a pile of green timber. We keep working.”","“The storehouse is not built. The tents are not all pitched. I have measured and I have cut, and there is still more to cut. Fewer hands, same work.”","“I would have a proper wall. Timber, dressed and set. But I have boughs and I have four hands. I make the best of it.”"],["“The corn is set. The tents are up. The clapboard is half laded. I have done what four carpenters can do, and it is not enough.”","“I have added to the half-moon where I can. Boughs, lashed and set. It is not a wall. It is a suggestion of a wall. But it is what I have.”","“The storehouse is still not built. I have the timber measured and cut. It waits. I will not let it rot.”"],["“I was at the boughs. I held my place. The arrows came thick. I do not know how many men were out there. Two hundred, four hundred. I was looking at the arrows, not counting the men.”","“Today the triangle is finished. Three bulwarks, half-moon shaped at each corner. Guns mounted. I dressed the timber, set the palisade, nailed the boards. My hands know every inch of it.”","“A boy is dead, killed in the pinnace. I do not know his name. The fort is done. God keep us inside it.”"]],"hunt": [["“We have hung an old sail to three trees for shade, and a bar of wood nailed between two more for the pulpit. God hears us plain enough.”","“There is friction among us. Men quarrel over who does what, who is above whom. I would have them remember they are one company.”","“The Company’s word is that we are not to offend them. I take that as a command from God as much as from London. We keep the peace.”"],["“There was a great anger when the werowance left. I saw the men’s faces. I would have them remember that a deer is a gift, and a gift is not a threat.”","“The hatchet was stolen, and a man struck in anger. I do not excuse it, but I do not excuse the theft either. Two wrongs do not make a peace.”","“Forty men came with a deer and would have lain with us. We said no. I understand why. But I would have them see that a door shut is not the same as a door broken.”"],["“The best hands are gone upriver. We are a smaller company here. I hold my services under the sail, and I see fewer faces than last week.”","“I would have the men who are here keep the peace among themselves. There is less room for quarrel when there are fewer men. I would have them remember that.”","“The werowance has been in anger since the hatchet. I do not know what he will do. I pray for Newport’s safe return, and for patience in this camp.”"],["“The men are setting corn. I see them in the field, and I am glad. A man with work in his hands is a man less likely to quarrel with his neighbour.”","“Newport is not yet back. I have prayed for his safe return. I have prayed for the peace of this camp. I do not know which prayer is harder to answer.”","“We have our half-moon. We have our sail for the pulpit. We have our corn in the ground. It is a small life. I would have them see it as God’s provision, not as a lack.”"],["“I was in the fort. I held my prayers and I held my place. I saw men fall. A boy was killed in the pinnace. I do not have words for it.”","“Clovill went out unarmed. He cried for arms. Six arrows took him, and he lived eight days. I would have him known. He was a man, not a number in a ledger.”","“The triangle is done. The guns are mounted. I will hold my services within those walls now. I will pray for the men who are hurt, and for the boy who is not.”"]],"smith": [["“They made an oration and I was not admitted of the Council. I was named for it in London, and here I am told to stand aside. Well.”","“I see the work. Trees felled, tents pitched, a half-moon of boughs called a fort. It is a start. I would call it a beginning of a start.”","“The arms sit in their casks while we swing axes. I have no quarrel with the President, but a man with a musket is not the same as a man with an axe.”"],["“A hundred armed men, and the President will not let us have our muskets. I would not trust them so far, as they say. But I would trust a loaded musket more.”","“A hatchet stolen, a man struck. The werowance went in great anger. I have no love for the man who stole, but I have no love for the man who swung either.”","“Forty men, a deer, and they wanted to stay the night. We said no. I would have said yes, and put a man on watch. But I am not in the Council.”"],[],[],[]]};
+
+/* ---- CHAPTER III'S CONTENT ----
+   It has no muster yet (CH3-FORT.md: the bank is still to be written off this chapter's
+   findings), so the scrivener's machinery is given an empty one rather than inheriting
+   Chapter I's - CH falling back to CH1 is how Chapter II once asked a man on a beach about
+   rations in a ship's hold. */
+CONTENT.ch3={
+  people:FORT_PEOPLE, npcs:[],
+  charter:{insight:{b:"The Half Moon"}},
+  reck:[],
+  ready:function(){return {ok:false,missing:["a muster for this chapter, which is not written yet"]};},
+  targets:[], unlocks:[]
+};
+
+$("fortGo").onclick=function(){fortCommit();};
+
 const CHAPTERS=[
   /* Percy: "The six and twentieth day of Aprill, about foure a clocke in the
      morning, wee descried the Land of Virginia." The ships stand into the bay at
@@ -23258,11 +24038,57 @@ const CHAPTERS=[
      return null;
    },
    end:{head:"Landfall \u2014 Complete", yr:"Chapter II \u00b7 to be continued",
-     nextWorld:null,
+     nextWorld:"ch3", nextLabel:"Up the River — Chapter III",
      body:"<p>Two men wounded, a cross standing in sand that will not hold it through a winter, and seven names read out of a box that crossed an ocean shut.</p>"+
        "<p>One of the seven has been in irons since the Canaries. Another heard his own name read an hour after complaining that nobody had shown a warrant, and within the year the other six will have him shot. Neither of those is a story anybody on this beach can see yet.</p>"+
        "<p class='note'>Chapter II complete. Upstream is the marshy peninsula they will choose, the fort, and the Powhatan whose homeland this already is. Those are chapters still to come.</p>"}},
-  {n:"III",yr:"1607",t:"First Contact",d:"The Powhatan homeland, 1607",ready:false},
+  /* ---- III: THE FORT ----
+     Was a placeholder, "First Contact - the Powhatan homeland". The fort chapter is the
+     allocation engine's home (ALLOCATION.md section 4), and contact with the Paspahegh runs
+     through it, from the werowance's visit of 18 May to the twenty-sixth. Its outcomes live
+     in S.works.ch3, not in the global chapterDone, which Chapter I sets and nothing clears. */
+  {n:"III",yr:"1607",t:"The Fort",d:"Jamestown Island — 14 May to 15 June 1607",
+   ready:true,world:"ch3",pace:2.5,near:9,
+   intro:function(){
+     return "Thirteen days up the river from the cape, the council has chosen its ground: a low island in Paspahegh country, where the channel runs so deep against the bank that the ships are moored to the trees. Wingfield is President. Smith is kept off the council. Everything you will need for a year is still in the holds.";
+   },
+   obj:function(){
+     return "The council gives its orders under an old sail slung between trees. Four times before the twenty-sixth of May you say where the parties go — to the trees, the boughs, the storehouse, the corn, or against the President’s order. Walk the island between, and see what the orders made.";
+   },
+   goals:function(){
+     const w=fortW();
+     const met=FORT_PEOPLE.filter(function(m){return S.met[m.id];}).length;
+     return [
+       {t:"Give the council’s orders ("+Math.min(w.stretch,4)+" of 4 stretches)",done:w.stretch>=4},
+       {t:"Speak with the people on the island",done:met>=3,opt:true},
+       {t:"Live through the twenty-sixth of May",done:!!(w.attack&&w.attack.over),goal:true,locked:w.stretch<4},
+       {t:"Walk the finished fort, 15 June",done:!!w.done,goal:true,locked:!w.epi}
+     ];
+   },
+   status:function(){
+     const w=fortW();
+     if(w.done)return "Chapter complete";
+     if(w.epi)return "15 June 1607 · the fort is finished";
+     if(FORT.on)return "26 May · arrows from the woods";
+     if(w.stretch<4)return fortDate(w.day)+" · orders under the old sail";
+     return fortDate(w.day);
+   },
+   next:function(){
+     const w=fortW();
+     if(FORT.on){
+       const c=findSpot(function(it){return it.action==="fort"&&it.data.kind!=="hail";});
+       if(c)return {it:c,why:"needs doing now"};
+       const h=findSpot(function(it){return it.id==="hail";});
+       if(h)return {it:h,why:"the ships have guns"};
+       return null;
+     }
+     const o=findSpot(function(it){return it.id==="orders"||it.id==="record";});
+     if(o)return {it:o,why:w.epi?"the chapter ends here":"the council is waiting"};
+     return null;
+   },
+   end:{head:"The Fort — Complete",yr:"Chapter III · 15 June 1607",nextWorld:null,
+     body:"<p>A triangle of split timber on a marsh island, three bulwarks and four or five guns, built under arrows in the three weeks after the attack. Newport sails for England on the twenty-second of June with a lading of clapboard, and leaves about a hundred men behind him.</p>"+
+       "<p>Before the summer is out, about half of them will be dead — of the water and the heat more than of arrows. That chapter is still to come.</p>"}},
   {n:"IV",yr:"1607–09",t:"Smith & the Record",d:"The fort and the woods, 1607-09",ready:false},
   {n:"V",yr:"1609–10",t:"The Starving Time",d:"The besieged fort, winter 1609-10",ready:false},
   {n:"VI",yr:"1610–16",t:"The Golden Leaf",d:"The tobacco fields, 1610-16",ready:false}
@@ -23357,6 +24183,17 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"9 November 2026 · latest",
+   head:"Chapter III: The Fort",
+   lines:[
+     "<b>A new chapter: Jamestown Island, May and June 1607</b>",
+     "When Landfall ends, the boats go up the river. The council has chosen a low island in Paspahegh country, and you have twelve days before the twenty-sixth of May. Four times you hear the council’s orders under an old sail slung between trees, and you decide where the parties of men go: felling trees, casting boughs into Captain Kendall’s half moon, raising the storehouse, setting corn, digging a well — or, against the President’s orders, unpacking the arms or bringing a gun ashore.",
+     "<b>The island changes with your orders</b>",
+     "Walk it between orders and you see what the work made: stumps where trees stood, stacks of clapboard for the ships, the fence of boughs growing a quarter at a time, the storehouse frame going up. Then the twenty-sixth of May is played, and what your fortnight built is set beside what the colonists’ own accounts say happened. Last, you walk the triangle fort that was finished on the fifteenth of June.",
+     "The buildings and ships in this chapter are new 3D models, made in Blender for this game.",
+     "<b>The accounts disagree, and the game says so</b>",
+     "Nobody whose writing survives saw the attack of 26 May: the men who wrote it down were up the river with Captain Newport. So where Archer, Smith and the 1612 account give different numbers, you are shown all of them."
+   ]},
+  {when:"9 November 2026",
    head:"Every line read aloud, on every device",
    lines:[
      "<b>The narration is recorded now</b>",
@@ -24647,7 +25484,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261109-0621";
+const BUILD="20261109-1212";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

@@ -133,7 +133,7 @@ for mm in re.finditer(r'for\s*\(\s*(?:const|let)\s+([A-Za-z_$][\w$]*)\s+of', t):
 called = {mm.group(1) for mm in re.finditer(r'(?<![.\w$])([A-Za-z_$][\w$]*)\s*\(', t)}
 KW   = {'if','for','while','switch','catch','return','function','typeof','new','else',
         'do','try','delete','void','in','of','case','throw'}
-HOST = {'Audio','TextEncoder','getComputedStyle','Math','JSON','Object','Array','String','Number','Boolean','Date','Promise','Map',
+HOST = {'Audio','TextEncoder','TextDecoder','DataView','Int8Array','Int16Array','Uint16Array','Uint32Array','getComputedStyle','Math','JSON','Object','Array','String','Number','Boolean','Date','Promise','Map',
         'Set','WeakSet','WeakMap','parseInt','parseFloat','isNaN','isFinite','setTimeout',
         'setInterval','clearTimeout','clearInterval','requestAnimationFrame','confirm',
         'cancelAnimationFrame','console','document','window','THREE','performance','alert',
