@@ -237,14 +237,59 @@ if short:
 else:
     ok("every shot lasts as long as the line spoken over it")
 
-print("\n8. No texture or image assets")
-# The project is deliberately procedural. An <img>, a TextureLoader, or a url()
-# in CSS means the single-file, no-assets property has been broken.
-tex = []
-if re.search(r'TextureLoader|\.load\(\s*["\']', s): tex.append("TextureLoader")
-if re.search(r'<img\b', s): tex.append("<img>")
-if re.search(r'url\(\s*["\']?(?!data:)', s): tex.append("css url()")
-ok("still texture-free") if not tex else bad("assets introduced: %s" % tex)
+print("\n8. Every shipped asset is local, registered and licensed to share")
+# This was "no texture or image assets" until 8 November 2026, when the owner replaced
+# the procedural-only rule with budgets (notes repo, CLAUDE.md "Assets"). What still
+# matters is that a school can share the game freely, so every file under assets/ is
+# listed in assets/register.json with where it came from and a licence on the list
+# below, and the game never hotlinks media from another site, which could vanish or
+# change its terms.
+# ceiling: finds asset paths written as whole string literals or css url()s; a path
+# built by concatenation ("assets/"+name) is invisible here, so build paths from the
+# register instead of by hand.
+ASSET_DIR = os.path.join(ROOT, "assets")
+REG = os.path.join(ASSET_DIR, "register.json")
+LICENCES = {"own", "public-domain", "CC0-1.0", "CC-BY-4.0", "MIT", "Apache-2.0", "OFL-1.1"}
+MEDIA = r'png|jpe?g|webp|gif|svg|glb|gltf|bin|ogg|opus|mp3|wav|m4a|woff2?'
+refs = set(re.findall(r'["\'(]((?:https?:)?//[^"\'()\s]+\.(?:%s))["\')]' % MEDIA, s, re.I))
+for r in sorted(refs):
+    bad("media hotlinked from another site: %s - copy it into assets/ and register it" % r)
+local = set(re.findall(r'["\'(]\.?/?(assets/[^"\'()\s]+)["\')]', s))
+reg = {}
+if os.path.exists(REG):
+    import json
+    try:
+        reg = {e["path"]: e for e in json.load(open(REG, encoding="utf-8"))["assets"]}
+    except Exception as e:
+        bad("assets/register.json does not parse: %s" % e)
+on_disk = set()
+if os.path.isdir(ASSET_DIR):
+    for d, _, fs in os.walk(ASSET_DIR):
+        for f in fs:
+            p = os.path.relpath(os.path.join(d, f), ROOT).replace("\\", "/")
+            if p != "assets/register.json":
+                on_disk.add(p)
+probs = []
+for p in sorted(on_disk - set(reg)):
+    probs.append("%s is in assets/ but not in the register" % p)
+for p in sorted(set(reg) - on_disk):
+    probs.append("register lists %s, which is not in assets/" % p)
+for p in sorted(local - on_disk):
+    probs.append("index.html asks for %s, which is not in assets/" % p)
+for p, e in sorted(reg.items()):
+    if not e.get("source"):
+        probs.append("%s has no source (where it came from, or 'made for this game')" % p)
+    if e.get("licence") not in LICENCES:
+        probs.append("%s licence %r is not on the shareable list %s"
+                     % (p, e.get("licence"), sorted(LICENCES)))
+    if e.get("licence") == "CC-BY-4.0" and not e.get("credit"):
+        probs.append("%s is CC-BY and needs a credit line for the Historian's Notes" % p)
+for m in probs:
+    bad(m)
+if not probs and not refs:
+    kb = sum(os.path.getsize(os.path.join(ROOT, p)) for p in on_disk) / 1024
+    ok("%d asset(s), all registered and shareable, %.0f KB on disk" % (len(on_disk), kb)
+       if on_disk else "no assets yet - nothing to register")
 
 print("\n9. No `typeof X` guard on a const/let declared later")
 # `typeof` only swallows GENUINELY UNDECLARED names. On a let/const that has not

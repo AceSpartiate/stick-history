@@ -1,7 +1,9 @@
 # Stick History — Jamestown
 
-A browser history game for 6th–8th grade Social Studies. One HTML file, Three.js
-from CDN, no textures and no image assets.
+A browser history game for 6th–8th grade Social Studies. One HTML file of code,
+Three.js, and an `assets/` folder for pictures, sound and models. Every asset is
+listed in `assets/register.json` with its source and a licence that lets schools
+share the game freely.
 
 ## Run it
 
@@ -41,7 +43,7 @@ rather than fails when its tool is missing, so the rest still run.
 
 Ten numbered checks — eleven, counting 6b — each corresponding to a bug that reached
 the player at least once: unwired actions, unregistered modals, unguarded element
-reads, undefined calls, over-long cutscenes, accidental image assets, and a build
+reads, undefined calls, over-long cutscenes, unregistered or unshareable assets, and a build
 stamp split across the two files that have to agree.
 
 You do not have to remember to run it. `.githooks/pre-commit` runs it for you and
