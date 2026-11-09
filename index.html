@@ -6062,6 +6062,23 @@ function stageCheck(i){
           why:hands+"For "+st.doing+" you want the "+nm+" \u2014 "+where.toLowerCase()+
               ", key "+key+"."};
 }
+/* ========== KEPT ON PURPOSE ==========
+   NOTHING IN THE GAME REACHES THIS ANY MORE. The great gun is a cutscene now, and the first
+   instinct on finding several hundred unreachable lines is to delete them - so this says
+   plainly, at the top, that it is retained deliberately: the drill is wanted again in a
+   later chapter, and rebuilding it from the commit history would cost far more than keeping
+   it costs.
+   THE RISK OF KEEPING IT is not disk space, it is ROT. Code nothing runs is code nothing
+   proves, and the checks in tools/check.py cannot exercise behaviour - they read the file.
+   Over three or four chapters of edits around it, this would quietly stop working and
+   nobody would know until the chapter that wanted it.
+   So it stays REACHABLE. Open the game with ?drill on the address and the gun drill opens
+   at once, tools and all, exactly as it did when it was live. That is not a player feature
+   and it is not advertised; it is the difference between dormant and dead. If it is ever
+   genuinely finished with, delete the flag and the block together.
+   What it still owns that the cutscene borrows: GREAT_GUN_STAGES, stageCheck and the rack.
+   Those are live and shared - only the interactive shell below is asleep. */
+
 /* ========== THE DRILL, AS A THING YOU DO ==========
    ONE INPUT. A man at a gun has two hands and both are full, so every motion is worked with
    the same press - the button, Space, or a tap - and what the press MEANS is what changes.
@@ -7830,6 +7847,8 @@ function setTier(t){
    problem is not the game and no amount of optimising will touch it. */
 let DIAG=null, DIAG_T=0;
 function diagOn(){return /[?&]diag\b/.test(location.search);}
+/* the dormant drill's one way in - see KEPT ON PURPOSE, above */
+function drillFlag(){return /[?&]drill\b/.test(location.search);}
 function gpuName(){
   try{
     const gl=renderer&&renderer.getContext&&renderer.getContext();
@@ -17959,6 +17978,14 @@ window.addEventListener("keydown",function(e){
   if(!GG.on||e.repeat)return;
   if(e.key===" "||e.key==="Enter"){e.preventDefault();ggPress();}
 });
+/* KEPT REACHABLE. ?drill opens the retired gun drill so it can still be exercised - see the
+   note at the head of it. Waits for a world, because it wants a player to stow the hands of. */
+if(drillFlag())setTimeout(function(){
+  if(typeof player!=="undefined"&&player&&typeof openGunDrill==="function"){
+    toast("Gun drill \u2014 kept for a later chapter, opened by ?drill.");
+    openGunDrill(function(){toast("She is loaded. Nothing fires: this is the drill alone.");});
+  }
+},1200);
 if($("slotCarry"))$("slotCarry").onclick=function(){openKit();};
 if($("cineSkip"))$("cineSkip").onclick=function(){
   if(LESSON.on)endLesson();
@@ -23259,7 +23286,21 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    list nobody finishes is a list nobody reads.
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
-  {when:"14 August 2026 · latest",
+  {when:"9 November 2026 · latest",
+   head:"The great gun, shown rather than worked",
+   lines:[
+     "<b>You watch the gun loaded and fired now</b>",
+     "Firing the great gun in Chapter I used to mean working nine motions yourself, one button at a time. It is a short scene now, about half a minute, so a whole class can watch it instead of some pupils getting stuck partway. Nothing of the history went: every motion is still shown, in order, with the reason for it, because the order and the reasons were always the lesson rather than the button.",
+     "<b>It was impossible to finish before, and nobody could have</b>",
+     "Two of the five tools, the priming wire and the linstock, were meant to be carried on your belt, and nothing in the game ever gave them to you. So nobody could get past the sixth motion. All five now stand at the gun, in a rack that is really drawn there, which is where they belonged anyway: a linstock stood in its tub beside the piece with the match already burning.",
+     "<b>You are asked before you fire it</b>",
+     "Firing a gun without orders gets you taken to the mast, and the game used to do that to players who had pressed a button without knowing what it was. Now it tells you first: she is not run out, no drum has beat to quarters, and the Captain is on deck. Walking away costs nothing. And the shot ends from outside the hull, because a man at the breech sees a flash and a wall of smoke and nothing else.",
+     "<b>The shot mark shows through your smoke</b>",
+     "The red cross where your shot lands disappeared until the smoke cleared, then looked too loud when it came back. It sits softly over the cloud now, so you can see where you hit while the smoke is still hanging.",
+     "<b>And for the teacher</b>",
+     "This update also carries the first of the groundwork for pictures, sound and better models in later chapters. Nothing changes in play yet. Anything that comes in will be free for schools to share: our own work or public domain."
+   ]},
+  {when:"14 August 2026",
    head:"Kecoughtan, the shot mark, and the executions you could not see",
    lines:[
      "<b>First, the reason none of this reached you</b>",
@@ -24528,7 +24569,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20260815-1315";
+const BUILD="20261109-0436";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
