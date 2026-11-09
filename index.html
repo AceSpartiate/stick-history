@@ -1891,7 +1891,7 @@ let CH={
      insight:{g:"known",b:"The Colony's Fatal Composition",s:"The combination of an unfounded expectation of gold and a workforce unwilling to farm meant the colony was poorly equipped to feed itself - a direct cause of the starvation that followed."}},
     {t:"Somebody aboard will have to do the digging. I only wonder who you think it will be.",
      fair:true,ink:4,
-     reply:"\u201cThe labouring sort, I should think. That is what they are FOR.\u201d He says it quite pleasantly. \u201cThere are a dozen of them at least.\u201d He does not count the gentlemen, and does not notice that he has not.\u201d"},
+     reply:"\u201cThe labouring sort, I should think. That is what they are FOR.\u201d He says it quite pleasantly. \u201cThere are a dozen of them at least.\u201d He does not count the gentlemen, and does not notice that he has not."},
     {t:"Fortune favours the bold. You will do very well.",wise:false,
      reply:"He grips your hand, thoroughly delighted. \u201cA man of sense at last!\u201d And you have told him what he wished to hear rather than what the muster roll plainly shows. Look again at who is aboard this ship."},
     {t:"The Company will send food from England if it comes to that.",wise:false,
@@ -9987,7 +9987,31 @@ function speakerTint(who){
 
    So this is a capability, not an error, and the interface should say so once
    rather than offering controls that cannot work. */
-const SPEECH_OK=!!(window.speechSynthesis&&window.SpeechSynthesisUtterance);
+/* ---- RECORDED NARRATION (9 November 2026) ----
+   Every sentence the game can speak is recorded ahead of time (tools/voice_build.py:
+   Kokoro, a British voice per speaker) and played when a recording exists, so read-aloud
+   works where the browser has no speech engine at all - Android - and sounds the same on
+   every machine. The key is the sentence exactly as chunkForSpeech cuts it, hashed with
+   FNV-1a to match the build script. A sentence with no recording - built at run time, or
+   written since the last build - falls back to the browser voice, so a stale set
+   degrades and never breaks. Needs http(s) (file:// refuses the fetch) and Ogg Opus,
+   which Safari only gained in 18.4; without either, nothing changes. */
+const SYNTH_OK=!!(window.speechSynthesis&&window.SpeechSynthesisUtterance);
+const VO_CAN=(function(){try{return /^https?:$/.test(location.protocol)&&!!window.Audio&&
+  new Audio().canPlayType('audio/ogg; codecs="opus"')!=="";}catch(e){return false;}})();
+const SPEECH_OK=SYNTH_OK||VO_CAN;
+let VO_IDS=null, VO_EL=null, VO_PRE=null, VO_TOK=0;
+function voiceKey(t){
+  const b=new TextEncoder().encode(t);let h=0x811c9dc5;
+  for(let i=0;i<b.length;i++){h^=b[i];h=Math.imul(h,0x01000193)>>>0;}
+  return ("0000000"+h.toString(16)).slice(-8);
+}
+if(VO_CAN)fetch("assets/voice/index.json",{cache:"no-cache"})
+  .then(function(r){return r.ok?r.json():null;})
+  .then(function(j){if(j&&j.ids)VO_IDS=new Set(j.ids);}).catch(function(){});
+function voPlaying(){return !!(VO_EL&&!VO_EL.paused&&!VO_EL.ended);}
+/* the token retires every callback of a recording that has been stopped or replaced */
+function voStop(){VO_TOK++;if(VO_EL){try{VO_EL.onended=VO_EL.onerror=null;VO_EL.pause();}catch(e){}}}
 const NO_SPEECH_NOTE="Reading aloud needs a browser \u2014 open this page in Chrome or Safari and it will work.";
 let LAST_SAID=null, SAYING=null, SAY_Q=[], SAY_ON=false, VOICE_UNLOCKED=false;
 /* iOS will not speak until the page has spoken once inside a real gesture, and
@@ -9997,6 +10021,11 @@ let LAST_SAID=null, SAYING=null, SAY_Q=[], SAY_ON=false, VOICE_UNLOCKED=false;
 function unlockVoice(){
   if(VOICE_UNLOCKED||!SPEECH_OK)return;
   VOICE_UNLOCKED=true;
+  /* iOS will not play an Audio element either until one has played inside a gesture:
+     a tenth of a second of silence, from a data URI so it costs no request */
+  if(VO_CAN&&!VO_EL){try{VO_EL=new Audio();
+    VO_EL.src="data:audio/wav;base64,UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";
+    const p=VO_EL.play();if(p&&p.catch)p.catch(function(){});}catch(e){}}
   try{
     if(!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;
     const u=new window.SpeechSynthesisUtterance(" ");
@@ -10011,7 +10040,7 @@ window.addEventListener("touchstart",unlockVoice,{capture:true});
    is the difference between a broken feature and a device limitation. */
 function voiceWatchdog(){
   try{
-    if(!window.speechSynthesis)return;
+    if(!window.speechSynthesis||voPlaying())return;
     if(window.speechSynthesis.speaking||window.speechSynthesis.pending)return;
     if(!SAY_Q.length&&!SAYING)return;
     SAY_Q.length=0;SAY_ON=false;SAYING=null;
@@ -10119,6 +10148,35 @@ function sayPump(){
   SAY_ON=true;
   const item=SAY_Q.shift();
   try{markSaying(item.text);}catch(e){}
+  /* the recording, when there is one - unless the reader has chosen a system voice for
+     this kind of speaker, which is a choice and is kept */
+  if(VO_IDS&&!item.noRec&&!(S&&S.voicePref&&S.voicePref[item.kind])){
+    const id=voiceKey(item.text);
+    if(VO_IDS.has(id)){
+      const tok=++VO_TOK;
+      /* a recording that will not play is said by the browser instead, once */
+      const fail=function(){if(tok!==VO_TOK||!SAY_ON)return;VO_TOK++;item.noRec=true;
+        SAY_Q.unshift(item);sayPump();};
+      try{
+        if(!VO_EL)VO_EL=new Audio();
+        VO_EL.onended=function(){if(tok===VO_TOK)sayPump();};
+        VO_EL.onerror=fail;
+        VO_EL.src="assets/voice/"+id+".ogg";
+        VO_EL.playbackRate=Math.max(0.5,Math.min(1.6,sayRate()));
+        const p=VO_EL.play();
+        if(p&&p.catch)p.catch(fail);
+        /* fetch the next sentence while this one plays, so a slow school connection
+           does not leave a gap between them */
+        const nx=SAY_Q[0];
+        if(nx&&!nx.noRec){const id2=voiceKey(nx.text);
+          if(VO_IDS.has(id2)){try{VO_PRE=new Audio();VO_PRE.preload="auto";
+            VO_PRE.src="assets/voice/"+id2+".ogg";}catch(e){}}}
+        return;
+      }catch(e){item.noRec=true;}
+    }
+  }
+  /* no recording and no speech engine: this piece is skipped rather than stalling */
+  if(!SYNTH_OK){sayPump();return;}
   try{
     const u=new window.SpeechSynthesisUtterance(item.text);
     u.pitch=item.pitch;u.rate=item.rate;
@@ -10156,18 +10214,18 @@ function speak(text,kind,who,force){
   /* remembered even when muted, so the repeat button still has something */
   LAST_SAID={text:clean,kind:kind,who:who};
   if(!VOICE_ON)return true;
-  if(!window.speechSynthesis||!window.SpeechSynthesisUtterance)return false;
   try{
-    if(!VOICE_SET.narrator)pickVoices();
+    if(SYNTH_OK&&!VOICE_SET.narrator)pickVoices();
     /* re-rendering a panel used to re-call speak with the same words, which
        cancelled the line half-said and started it again */
     if(!force&&SAYING===clean&&SAY_ON)return true;
     SAYING=clean;
     SAY_Q.length=0;
+    voStop();
     /* Only cancel when something is actually running. An unconditional cancel
        costs nothing on Chrome but on iOS it puts the engine in a state where the
        next speak() is ignored. */
-    if(window.speechSynthesis.speaking||window.speechSynthesis.pending){
+    if(SYNTH_OK&&(window.speechSynthesis.speaking||window.speechSynthesis.pending)){
       try{window.speechSynthesis.cancel();}catch(e){}
     }
     const k=(kind==="female")?"female":(kind==="male")?"male":"narrator";
@@ -10262,8 +10320,20 @@ function readableText(el){
   (function walk(node,opts){
     for(let i=0;i<node.childNodes.length;i++){
       const c=node.childNodes[i];
-      if(c.nodeType===3){const t=c.nodeValue.replace(/\s+/g," ").trim();
-        if(t){parts.push(t);own(node,t);}continue;}
+      if(c.nodeType===3){let t=c.nodeValue.replace(/\s+/g," ").trim();
+        if(t){own(node,t);
+          /* A HEADING IS A SENTENCE. Text that is the whole of its own block - a title,
+             a date line, a bold lead-in on a line by itself - had no full stop, so it ran
+             into the next sentence: "Patch Notes 9 November 2026 latest Every line...", one
+             breath. A stop gives the voice its pause, and gives every sentence the same
+             edges it has in the data, which is what lets the recorded narration find it. */
+          if(!/[.!?:;,”’)\]]$/.test(t)){
+            let b=node;
+            try{while(b&&b!==el&&getComputedStyle(b).display==="inline")b=b.parentNode;}catch(e){}
+            if(b&&(b.textContent||"").replace(/\s+/g," ").trim()===t)t+=".";
+          }
+          parts.push(t);}
+        continue;}
       if(c.nodeType!==1)continue;
       const tag=c.tagName;
       if(c.classList&&(c.classList.contains("sayBtn")||c.classList.contains("noRead")))continue;
@@ -10426,7 +10496,7 @@ function setVoiceOn(on){
   toast(VOICE_ON?"Narration on.":"Narration muted.");
 }
 function hushVoice(){
-  SAY_Q.length=0;SAY_ON=false;SAYING=null;try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}}
+  SAY_Q.length=0;SAY_ON=false;SAYING=null;voStop();try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}}
 /* ---- STOPPING A READING IS NOT THE SAME AS TURNING NARRATION OFF ----
    The only way to silence a reading in progress was setVoiceOn(false), which mutes the
    whole feature, toasts "Narration muted." and leaves it muted - so a pupil who pressed
@@ -10436,11 +10506,11 @@ function hushVoice(){
    started it stops it, and narration stays ON for the next thing. That is the pattern
    every media control in the world uses, which is the whole argument for it. */
 function saying(){
-  if(SAY_ON||SAY_Q.length)return true;
+  if(SAY_ON||SAY_Q.length||voPlaying())return true;
   try{return !!(window.speechSynthesis&&window.speechSynthesis.speaking);}catch(e){return false;}
 }
 function stopSaying(){
-  SAY_Q.length=0;SAY_ON=false;SAYING=null;
+  SAY_Q.length=0;SAY_ON=false;SAYING=null;voStop();
   try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
   syncSayBtns();
 }
@@ -10689,7 +10759,7 @@ function updateCutscene(dt){
 function csSpeaking(){
   if(!CS.said||!SPEECH_OK||!VOICE_ON)return false;
   if(CS.t>CS.dur+14)return false;
-  if(SAY_Q.length)return true;
+  if(SAY_Q.length||voPlaying())return true;
   try{
     const ss=window.speechSynthesis;
     return !!(ss&&(ss.speaking||ss.pending));
@@ -16884,7 +16954,7 @@ function openSpeaking(){
   const sh=OPEN_SHOTS[OPEN.shot];
   if(!sh||!sh.say||!SPEECH_OK||!VOICE_ON)return false;
   if(OPEN.t>OPEN.dur+10)return false;
-  if(SAY_Q.length)return true;
+  if(SAY_Q.length||voPlaying())return true;
   try{
     const ss=window.speechSynthesis;
     return !!(ss&&(ss.speaking||ss.pending));
@@ -23287,6 +23357,14 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"9 November 2026 · latest",
+   head:"Every line read aloud, on every device",
+   lines:[
+     "<b>The narration is recorded now</b>",
+     "Read-aloud used to depend on whatever voice your browser happened to have. In Chrome that was usually fine, but opened inside some Android apps there was no voice at all, and the read-aloud buttons could do nothing. Every sentence in the game has now been recorded ahead of time, so it sounds the same on every machine, and each person you meet aboard has a voice of their own.",
+     "If a sentence has no recording yet, because it is new or is put together as you play, the game uses your browser's voice for it, exactly as before. The reading speed setting works on the recordings too. And if you have chosen a particular voice in the settings, that choice is kept.",
+     "The recordings are made on our own computer with a free, openly licensed voice model, so they are free for any school to share along with the rest of the game."
+   ]},
+  {when:"9 November 2026",
    head:"The great gun, shown rather than worked",
    lines:[
      "<b>You watch the gun loaded and fired now</b>",
@@ -24569,7 +24647,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261109-0436";
+const BUILD="20261109-0621";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

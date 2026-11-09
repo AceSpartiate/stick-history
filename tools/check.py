@@ -133,7 +133,7 @@ for mm in re.finditer(r'for\s*\(\s*(?:const|let)\s+([A-Za-z_$][\w$]*)\s+of', t):
 called = {mm.group(1) for mm in re.finditer(r'(?<![.\w$])([A-Za-z_$][\w$]*)\s*\(', t)}
 KW   = {'if','for','while','switch','catch','return','function','typeof','new','else',
         'do','try','delete','void','in','of','case','throw'}
-HOST = {'Math','JSON','Object','Array','String','Number','Boolean','Date','Promise','Map',
+HOST = {'Audio','TextEncoder','getComputedStyle','Math','JSON','Object','Array','String','Number','Boolean','Date','Promise','Map',
         'Set','WeakSet','WeakMap','parseInt','parseFloat','isNaN','isFinite','setTimeout',
         'setInterval','clearTimeout','clearInterval','requestAnimationFrame','confirm',
         'cancelAnimationFrame','console','document','window','THREE','performance','alert',
@@ -270,11 +270,20 @@ if os.path.isdir(ASSET_DIR):
             if p != "assets/register.json":
                 on_disk.add(p)
 probs = []
-for p in sorted(on_disk - set(reg)):
+# An entry whose path ends in "/" covers every file under that folder - the recorded
+# narration is thousands of files with one source and one licence.
+dirs = [k for k in reg if k.endswith("/")]
+covered = {p for p in on_disk if any(p.startswith(d) for d in dirs)}
+for p in sorted(on_disk - set(reg) - covered):
     probs.append("%s is in assets/ but not in the register" % p)
-for p in sorted(set(reg) - on_disk):
+for p in sorted(set(reg) - on_disk - set(dirs)):
     probs.append("register lists %s, which is not in assets/" % p)
-for p in sorted(local - on_disk):
+for p in sorted(d for d in dirs if not any(q.startswith(d) for q in on_disk)):
+    probs.append("register lists folder %s, which is empty or missing" % p)
+# a folder named in the code ("assets/voice/"+id) must be a registered folder
+for p in sorted(q for q in local if q.endswith("/") and q not in dirs):
+    probs.append("index.html builds paths under %s, which the register does not cover" % p)
+for p in sorted(q for q in local - on_disk if not q.endswith("/")):
     probs.append("index.html asks for %s, which is not in assets/" % p)
 for p, e in sorted(reg.items()):
     if not e.get("source"):

@@ -1,0 +1,10 @@
+{
+  "assets": [
+    {
+      "path": "assets/voice/",
+      "source": "made for this game: every narrated sentence recorded by tools/voice_build.py with Kokoro-82M v1.0 (Apache-2.0, hexgrad) through sherpa-onnx (Apache-2.0)",
+      "licence": "own",
+      "notes": "one Ogg Opus file per sentence, named by the FNV-1a hash of the sentence; index.json lists them"
+    }
+  ]
+}
