@@ -21,3 +21,4 @@ tools/shots/
 # Blender build previews
 tools/blender/_views/
 tools/blender/_previews/
+tools/voice_cast/*.wav

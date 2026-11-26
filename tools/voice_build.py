@@ -32,6 +32,8 @@ VOICES = {
     "clerk": (24, 1.00), "wingfield": (24, 0.93), "hunt": (24, 0.90), "cooper": (24, 1.04), "archer": (24, 1.06),
     "gent": (25, 1.04), "newport": (25, 0.95), "percy": (25, 1.00), "boy": (25, 1.12), "irons": (25, 0.98),
     "snore": (25, 0.90),
+    # Chapter III (stand-ins until the character voices are recorded)
+    "gosnold": (24, 0.97), "laydon": (27, 1.00), "laxon": (25, 0.93), "smith": (26, 1.06),
 }
 FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 

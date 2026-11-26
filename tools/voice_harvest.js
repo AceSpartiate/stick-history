@@ -36,7 +36,8 @@
     if(typeof v.id==='string'&&typeof v.voice==='string'){who=v.id;npcs[v.id]={name:v.name||'',voice:v.voice,role:v.role||''};}
     if(Array.isArray(v)){for(const x of v)walk(x,d+1,who);return;}
     if(v instanceof Map){for(const [,x] of v)walk(x,d+1,who);return;}
-    for(const k of Object.keys(v)){if(k==='voice'||k==='id')continue;try{walk(v[k],d+1,who);}catch(e){}}
+    /* a table keyed by speaker (FORT_SAYS: {wingfield:[...], ...}) gives each key's lines to that speaker */
+    for(const k of Object.keys(v)){if(k==='voice'||k==='id')continue;try{walk(v[k],d+1,npcs[k]?k:who);}catch(e){}}
   }
   for(const n of names){try{const v=eval(n);if(v&&(typeof v==='object'||typeof v==='string'))walk(v,0,'narrator');}catch(e){}}
   const panels=[];
