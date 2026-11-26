@@ -240,13 +240,15 @@ def _body(src, head):
     return src[i:src.find("\n}", i)] if i >= 0 else ""
 _cs = _body(s, "function updateCutscene(dt){")
 _op = _body(s, "function playOpening(")          # its tick is frame(), nested inside
-_miss = [n for n, b in (("updateCutscene", _cs), ("the opening's tick", _op)) if "lineTick(" not in b]
+_ls = _body(s, "function updateLesson(dt){")      # Kendall's drill at the mark
+_miss = [n for n, b in (("updateCutscene", _cs), ("the opening's tick", _op),
+                        ("the drill lesson", _ls)) if "lineTick(" not in b]
 if "function lineTick(" not in s or _miss:
     bad("a cutscene runner times its camera off the guess, not the voice (no lineTick in: %s)"
         % ", ".join(_miss or ["lineTick is gone"]))
 else:
     ok("every shot moves for as long as its line is spoken: %d of %d narrated shots take their "
-       "length from the voice rather than their authored t (lineTick, in both runners)"
+       "length from the voice rather than their authored t (lineTick, in all three runners)"
        % (len(short), len(rows)))
 
 print("\n8. Every shipped asset is local, registered and licensed to share")

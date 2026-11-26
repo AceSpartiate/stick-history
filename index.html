@@ -2466,10 +2466,12 @@ function fairToAsk(q){
 function reckSources(){
   let n=0;
   for(let i=0;i<CH.npcs.length;i++)if(npcDone(CH.npcs[i].id))n++;
-  if(S.insight[CH.charter.insight.b])n++;
+  if(CH.charter.counted!==false&&S.insight[CH.charter.insight.b])n++;
   return n;
 }
-function reckNeed(){return CH.npcs.length+1;}
+/* a chapter with no document to read says so (charter.counted:false): Chapter IV's dialogue
+   meter read "Asked out: 3 of 4" with nothing left anywhere to find */
+function reckNeed(){return CH.npcs.length+(CH.charter.counted===false?0:1);}
 /* what is still owed, by name, so the lock can say so instead of showing a fraction */
 function reckMissing(){
   const m=[];
@@ -18075,20 +18077,36 @@ function lessonCam(mode,k){
 function lessonDur(st){
   return Math.max(st.dur||0,(SPEECH_OK&&VOICE_ON)?speechSeconds(st.sub):0);
 }
+/* ---- AND HIS SHOTS WAIT FOR HIM, as the cutscene runner's and the opening's do ----
+   This timed each step off lessonDur alone - the 2.3-words-a-second guess - so a voice
+   faster than the guess left the camera gliding in silence, and a slower one had the next
+   line cancel the last. The guess only opens the step now: lineTick owns its length while
+   Kendall is speaking, and a step ends when his line has. Capped as csSpeaking is, so a
+   wedged engine cannot hold the drill. */
+function lessonSpeaking(){
+  if(!SPEECH_OK||!VOICE_ON)return false;
+  if(LESSON.t>(LESSON.plan||LESSON.dur||0)+14)return false;
+  if(SAY_Q.length||voPlaying())return true;
+  try{
+    const ss=window.speechSynthesis;
+    return !!(ss&&(ss.speaking||ss.pending));
+  }catch(e){return false;}
+}
 function updateLesson(dt){
   if(!LESSON.on)return;
   LESSON.t+=dt;
-  if(LESSON.phase<0||LESSON.t>=lessonDur(LESSON_STEPS[LESSON.phase])){
-    if(LESSON.phase>=0)LESSON.t=0;
+  if(LESSON.phase<0||(LESSON.t>=LESSON.dur&&!lessonSpeaking())){
+    LESSON.t=0;
     LESSON.phase++;
     if(LESSON.phase>=LESSON_STEPS.length){endLesson();return;}
+    const nx=LESSON_STEPS[LESSON.phase];
     const e=$("cineSub");
-    if(e){e.textContent=LESSON_STEPS[LESSON.phase].sub;e.classList.add("on");}
-    speak(LESSON_STEPS[LESSON.phase].sub,"male","kendall");
+    if(e){e.textContent=nx.sub;e.classList.add("on");}
+    speak(nx.sub,"male","kendall");
+    LESSON.dur=lessonDur(nx);LESSON.plan=LESSON.dur;LESSON.min=nx.dur||0;LESSON.k=0;
   }
   const st=LESSON_STEPS[LESSON.phase];
-  const dur=lessonDur(st);
-  const c=lessonCam(st.cam,Math.min(1,LESSON.t/dur));
+  const c=lessonCam(st.cam,lineTick(LESSON,dt,lessonSpeaking()));
   cam.position.lerp(c.pos,Math.min(1,dt*3.2));
   cam.lookAt(c.look);
 }
@@ -23771,11 +23789,15 @@ function buildFortWorld(root,w,opt){
   if(w.attack&&!w.attack.over)fortAttackSpots(root,G);
 
   player=buildFigure(S.equip);
-  const at=w.epi?[0,20]:w.attack?[30,-20]:[6,56];
+  /* 15 June: the camera trails at +z when camYaw is 0, and the river wall is at z=30, so a
+     player stood at (0,20) put the camera outside the palisade looking back over it. Stood
+     further in and faced to the river instead, the camera is inside the walls and the
+     record, the gate and the ships are all ahead. */
+  const at=w.epi?[4,12]:w.attack?[30,-20]:[6,56];   /* (0,-10) is under a camp shelter */
   player.position.set(at[0],G(at[0],at[1]),at[1]);
-  player.rotation.y=Math.PI;
+  player.rotation.y=w.epi?0:Math.PI;
   root.add(player);playerParts=player.userData.parts;dressCarried(player);
-  camYaw=0;camPitch=0.30;
+  camYaw=w.epi?Math.PI:0;camPitch=0.30;
   /* a reload in the middle of the fight starts it again where it stands */
   if(w.attack&&!w.attack.over)fortStartAttack();
 }
@@ -23892,7 +23914,7 @@ function fortAttackSpots(root,G){
     f.position.set(h[0],G(h[0],h[1])+0.35,h[1]);f.rotation.set(-Math.PI/2,h[2],0,"YXZ");
     const m=bakeFigure(f);root.add(m);FORT.wounded[i]=m;
     interactables.push({id:"hurt"+i,label:"A Man Down",x:h[0],z:h[1],y:G(h[0],h[1]),lvl:LVL.MAIN,r:7,
-      action:"fort",data:{kind:"hurt",i:i,verb:"Carry him in behind the boughs"}});
+      action:"fort",data:{kind:"hurt",i:i,verb:"Carry him in under the shelters"}});
   });
   if(fortProg("guns")>=1)
     interactables.push({id:"gun",label:"The Gun Ashore",x:0,z:-60,y:G(0,-60),lvl:LVL.MAIN,r:8,
@@ -23917,7 +23939,9 @@ function fortAct(d){
     if(FORT.root)fortPlace(FORT.root,"camp",["camp_casks_open"],40,-15,0);return;}
   if(d.kind==="hurt"){a.carried.push(d.i);fortDrop("hurt"+d.i);
     if(FORT.wounded[d.i])FORT.wounded[d.i].visible=false;
-    toast(a.carried.length>1?"Both men behind the boughs.":"You drag him in behind the boughs.");return;}
+    /* both lie inside the half moon already, so "in behind the boughs" was nowhere to go;
+       the camp's shelters, at (40,-15), are where the hurt would be got out of the arrows */
+    toast(a.carried.length>1?"Both men are under the shelters.":"You drag him in under the shelters.");return;}
   if(d.kind==="gun"){a.gun=true;fortDrop("gun");fortFire(0,-68,"Your gun speaks from the boughs.",3.6);return;}
   if(d.kind==="hail"){a.hailed=true;fortDrop("hail");fortFire(-150,100,"The Admiral answers. Then the others.");return;}
 }
@@ -23931,6 +23955,10 @@ function fortDrop(id){
 function fortFire(x,z,msg,h){
   if(FORT.fired)return;
   FORT.fired=true;FORT.endT=FORT.t+5;
+  /* the first gun to speak ends it, so the other one is no longer there to be served or
+     hailed: hailing the ships after the shore gun had fired was recorded as "You hailed the
+     ships, and they fired" when nothing fired at all */
+  fortDrop("hail");fortDrop("gun");
   try{boom();}catch(e){}
   for(let i=0;i<10;i++)spawnPuff(POOL.smoke,x+(Math.random()-0.5)*6,WORLD.ground(x,z)+(h||9),z-4,
     (Math.random()-0.5)*3,1.2,-2-Math.random()*3,{size:4,col:0xd9d4c8,op:0.8,life:5,grow:2.2});
@@ -24256,7 +24284,7 @@ const SICK_DAYS=[
   {date:"A night in early August 1607",d:42,dead:0,able:0,sick:8,night:true,duty:"watch",dutyName:"Stand the watch at the three bulwarks"},
   {date:"18 August 1607",d:57, dead:12, able:6, sick:12, duty:"kettle",dutyName:"Serve the common kettle"},
   {date:"22 August 1607",d:61, dead:13, able:9, sick:10, duty:"burial",dutyName:"Stand at Captain Gosnold’s grave"},
-  {date:"11 September 1607",d:81,dead:21,able:7,sick:9,  duty:"court", dutyName:"Hear the court’s sentence"},
+  {date:"11 September 1607",d:81,dead:21,able:7,sick:9,  duty:"court", dutyName:"Stand at the court"},
   {date:"19 September 1607",d:89,dead:24,able:12,sick:6, duty:"corn",  dutyName:"Take in the corn at the gate"}];
 /* The store: "but for xiij weekes and a half, under the Cap Merchaunts hand" (Wingfield),
    "13. or 14 weeks" (True Relation) - two enemies agreeing, counted from 22 June. */
@@ -24269,6 +24297,8 @@ function sickW(){
   return S.works.ch4;
 }
 function sickDay(){return SICK_DAYS[Math.min(sickW().day,SICK_DAYS.length-1)];}
+/* the first letter only: the whole line lowercased read "reckon the store with studley" */
+function sickLower(t){return t.charAt(0).toLowerCase()+t.slice(1);}
 function sickStoreLeft(yours){
   const w=sickW(), sd=sickDay();
   let left=SICK_STORE_DAYS-sd.d;
@@ -24363,7 +24393,7 @@ const SICK_SAYS={
   "kendall":[
     ["“A triangle of timber and four or five guns. Had we had it in May there would be men alive who are not.”"],
     ["“The watch is every third night now. The men come off it fit for nothing.”"],
-    ["“Five on their feet at a bulwark, if we are lucky. Count them yourself, if you doubt me.”"],
+    ["“Five on their feet for all three bulwarks, if we are lucky. Count them yourself, if you doubt me.”"],
     [],[],
     ["“Let out of the pinnace this morning. I may walk where I like, they say, but I may not carry arms.”"],
     []],
@@ -24427,14 +24457,14 @@ const SICK_NPCS=[
        reply:"“The common store was all spent, saving two gallons of each. The sack reserved for the Communion table, the rest for such extremities as might fall upon us. Captain Gosnold knew of it, and no one else. That is not hoarding. That is keeping something back for worse.”",
        insight:{g:"known",b:"Two Gallons for the Communion Table",s:"Smith wrote that the President kept the sack and aqua vitae “onely in the Presidents hands, for his owne diet.” Wingfield wrote that only two gallons of each were left, kept for Communion and for emergencies. Both men were writing to win an argument."}},
       {t:"Did you drink it?",fair:true,ink:3,
-       reply:"“Not a drop of it. You will hear otherwise from Captain Smith. Ask yourself which of us has the more to gain by the telling.”"},
+       reply:"“The casks are bunged up, and it is all still there. You will hear otherwise from Captain Smith. Ask yourself which of us has the more to gain by the telling.”"},
       {t:"Everyone knows you hoarded it.",wise:false,
        reply:"“Everyone? Name me one man who saw it. You are repeating what is noised about the fort.”"}]},
     {npc:"“And the allowance. They think a President who will not feed his council more is a tyrant. What do you think?”",
      choices:[
       {t:"If you gave the council more, how long would the store last?",wise:true,ink:8,
        reply:"“Not till the supply. Thirteen weeks and a half of store under the cape merchant’s hand, and the ships promised in twenty. Enlarge one man’s share and you take it from another man’s September. I would not do it without their warrant.”",
-       insight:{g:"known",b:"The Equal Allowance",s:"Wingfield refused the council a larger ration. He wrote that the store held only 13½ weeks of food when supply was promised in 20, so more for some meant starving the rest sooner. His enemies called it meanness; he called it arithmetic."}},
+       insight:{g:"known",b:"The Equal Allowance",s:"Wingfield refused the council a larger ration. The store held only 13½ weeks of food, he wrote, and Percy says supply was promised within 20, so more for some meant starving the rest sooner. His enemies called it meanness; he called it arithmetic."}},
       {t:"A sick man needs more than a well one.",fair:true,ink:3,
        reply:"“He does. And the well man of today is the sick man of next week. Where does it end, with a store that will not reach?”"},
       {t:"The council outranks you. You should obey them.",wise:false,
@@ -24445,31 +24475,44 @@ const SICK_NPCS=[
     {npc:"“Captain Ratcliffe’s charge: that the President denied him a penny whittle, a chicken, a spoonful of beer, and served him with foul corn. He has pulled grain from a bag to show us. How shall I set it down?”",
      choices:[
       {t:"Ask whether that corn differs from what the whole company eats.",wise:true,ink:8,
-       reply:"Archer asks. Wingfield answers that the corn was “of the same which wee all liued vpon”, that no whittle was asked of him but a knife he could not spare, and that he ate one chicken of the thirty-seven he bred, in his sickness, while Captain Ratcliffe ate four or five. Archer writes both down. Nobody else in the tent saw any of it.",
+       reply:"The court does not ask him: he wants time to answer in writing, and it is refused. His answer is in the defence he wrote afterwards. The corn was “of the same which wee all liued vpon”, no whittle was asked of him but a knife he could not spare, and of the more than thirty-seven chickens he bred he ate one, in his sickness, while Captain Ratcliffe ate four or five. No other account of any of it survives.",
        insight:{g:"known",b:"Charge and Answer",s:"At the hearing on 11 September 1607 the charges were small and specific: a knife, a chicken, a spoonful of beer, bad corn. Wingfield answered each one in his own Discourse. For most of them no account by a third person survives, so it is one man’s word against another’s."}},
       {t:"Write that the grain in his hand proves it.",wise:false,
-       reply:"“It proves the corn is foul,” says Archer. “We all knew that. It does not prove the President served him worse than he served himself.”"},
+       reply:"Archer is glad to write it. But grain in a man’s hand proves only that the corn is foul, which every man here knows. It does not prove the President served Ratcliffe worse than he served himself."},
       {t:"Ask Ratcliffe how many chickens he ate.",fair:true,ink:3,
        reply:"Ratcliffe does not answer. Archer writes nothing down, which is its own kind of record."}]},
     {npc:"“Then what is noised about the fort: that he hid the common store in the ground. Men swear they heard it.”",
      choices:[
       {t:"Ask what was actually dug up.",wise:true,ink:8,
-       reply:"Two glasses of salad oil, Wingfield says, which he brought from England for his own private store and buried against the heat. Nobody produces anything else. Archer looks at the men who swore they heard it, and writes: “It is noysed.”",
-       insight:{g:"known",b:"Heard Is Not Seen",s:"Many charges against Wingfield began “It is noysed”: that he buried the common store, feasted, was an atheist, plotted with Spain. When the charge was tested, what had been buried was two glasses of his own salad oil. Rumour repeated by many people is still rumour."}},
+       reply:"Two glasses of salad oil, Wingfield wrote afterwards, which he brought from England for his own private store and had buried against the heat. Nobody here produces anything else. In his defence he set this charge down among the ones that begin “It is noysed”.",
+       insight:{g:"known",b:"Heard Is Not Seen",s:"Wingfield set down the rumours against him under the words “It is noysed”: that he buried the common store, was an atheist, plotted with Spain. His answer was that what had been buried was two glasses of his own salad oil. Nobody who saw anything is named, and rumour repeated by many people is still rumour."}},
       {t:"So many men heard it. It must be true.",wise:false,
-       reply:"“They heard it from each other,” says Archer. “That is one rumour told twenty times, not twenty witnesses.”"},
+       reply:"They may all have heard it from each other. One rumour told twenty times is not twenty witnesses."},
       {t:"Ask him why he would bury anything at all.",fair:true,ink:3,
        reply:"“Against the heat,” says Wingfield. “Oil turns in this sun. Ask any cook.”"}]},
-    {npc:"“Last, the President’s own objection. He says three councillors cannot depose him. The law of it, before I write the sentence?”",
+    {npc:"“Last, the President’s own objection. He says three councillors cannot depose him. The law of it, before I set it down?”",
      choices:[
       {t:"Ask what authority the three are acting on.",wise:true,ink:8,
-       reply:"Wingfield says removing a president needs “the greater number of xiij voyces”, and “that they were but three”. Ratcliffe answers that if they did him wrong, they must answer for it. Archer writes both down, and then the sentence: deposed. The President appeals to the King, and is sent to the pinnace a prisoner.",
+       reply:"He said it yesterday at his tent: removing a president needs “the greater number of xiij voyces”, and “that they were but three”. The three told him that if they did him wrong, they must answer it. The deposition stands. Asked whether he will appeal to the King, he does, and is sent back to the pinnace a prisoner.",
        insight:{g:"known",b:"Three Voices",s:"Wingfield was deposed on 10 September 1607 by a warrant signed by three councillors, Ratcliffe, Smith and Martin. He argued it needed a majority of the council's voices. There was nobody in Virginia above the council to decide who was right."}},
       {t:"Three is a majority of what is left. It is lawful.",fair:true,ink:3,
        reply:"“Of what is left,” says Archer. “Gosnold dead, Kendall put off. A majority of a council that has been thinned. Write that if you like. I shall.”"},
       {t:"He is a tyrant; the law does not matter.",wise:false,
        reply:"“The law is all there is between this tent and the woods,” says Archer. “It matters.”"}]}]}];
 
+/* WHO HOLDS WHAT, BY DATE. Chapter III's titles came across with its people, so Smith was
+   still "kept off the council" (he was sworn of it on 10 June), and on the eleventh of
+   September Wingfield was still "President" and Kendall still "of the council". */
+const SICK_TITLES={
+  smith:[[0,{role:"of the council"}],[6,{role:"of the council, and cape merchant"}]],
+  kendall:[[5,{role:"put off the council"}]],
+  wingfield:[[5,{name:"Master Wingfield",role:"deposed on the tenth of September"}]],
+  ratcliffe:[[5,{name:"President Ratcliffe",role:"President since the tenth of September"}]]};
+function sickTitle(id,day){
+  let t={};
+  (SICK_TITLES[id]||[]).forEach(function(r){if(day>=r[0])t=r[1];});
+  return t;
+}
 function sickSpeaker(id){
   const day=sickW().day;
   for(const n of SICK_NPCS)if(n.id===id&&n.at===day)return n;
@@ -24477,18 +24520,18 @@ function sickSpeaker(id){
   const lines=set&&set[day];
   if(!lines||!lines.length)return null;
   const m=SICK_PEOPLE.filter(function(p){return p.id===id;})[0];
-  return Object.assign({},m,{lines:lines});
+  return Object.assign({},m,sickTitle(id,day),{lines:lines});
 }
 
 /* ---- THE RECORD THAT OPENS EACH SCENE, in the sources' words ---- */
 const SICK_OPEN=[
   {t:"Newport sails",b:"<p>“Munday the two and twentieth of June, in the morning, Captaine Newport in the Admirall departed from James Port for England.” <i>— Percy</i></p><p>He takes the Susan Constant and the Godspeed, the clapboard and the council’s letters. He leaves the Discovery, about a hundred men (Percy says one hundred and four), and the promise of a supply “within twentie weekes”.</p><p>The day before, Smith wrote, the fort was “palisadoed round, and all our men in good health and comfort”.</p>"},
-  {t:"The heat",b:"<p>On the twenty-fifth of June, Powhatan sent word that “he desired greatly our freindshipp … that wee should sowe and reape in peace”. Deer came from the Pamunkey werowance and from Powhatan himself; the men who carried them asked after the ships. <i>“They feare much our shipps.”</i></p><p>Today Tapahanah sends word that his old store is spent and his new corn “was not at full groath by a foote”, and that as soon as any is ripe he will bring it.</p><p>“About this tyme, diuers of our men fell sick.” <i>— Wingfield</i></p>"},
+  {t:"The heat",b:"<p>On the twenty-fifth of June, Powhatan sent word that “he desired greatly our freindshipp … that wee should sowe and reape in peace”. Deer came from the Pamunkey werowance and from Powhatan himself; the men who carried them asked after the ships. <i>“They feare much our shipps.”</i> <i>— Wingfield</i></p><p>Today Tapahanah sends word that his old store is spent and his new corn “was not at full groath by a foote”, and that as soon as any is ripe he will bring it.</p><p>“About this tyme, diuers of our men fell sick.” <i>— Wingfield</i></p>"},
   {t:"The watch",b:"<p>“Wee watched every three nights, lying on the bare cold ground, what weather soever came, [and] warded all the next day, which brought our men to bee most feeble wretches.” <i>— Percy</i></p><p>“Continuall watching, foure or fiue each night at three Bulwarkes.” <i>— Smith</i></p><p>Nobody dated this night. It stands for the nights at the start of August, before anyone’s list of the dead begins. Tonight the watch is yours.</p>"},
-  {t:"The kettle",b:"<p>John Asbie died “of the bloudie Flixe” on the sixth of August; George Flowre “of the swelling” on the ninth. There has hardly been a day since without a burial: twelve names in Percy’s account by today.</p><p>“Our food was but a small Can of Barlie sod in water, to five men a day.” <i>— Percy</i></p><p>The council has asked the President for a larger allowance, for themselves and “for some sick their fauorites”. He has refused. Today you serve the kettle.</p>"},
+  {t:"The kettle",b:"<p>John Asbie died “of the bloudie Flixe” on the sixth of August; George Flowre “of the swelling” on the ninth. There has hardly been a day since without a burial: twelve names in Percy’s account by today.</p><p>“Our food was but a small Can of Barlie sod in water, to five men a day.” <i>— Percy</i></p><p>The council has asked the President for a larger allowance, for themselves and “for some sick their fauorites”. He has refused. Wingfield does not say on what day they asked. Today you serve the kettle.</p>"},
   {t:"Captain Gosnold",b:"<p>“The two and twentieth day of August, there died Captaine Bartholomew Gosnold, one of our Councell.” <i>— Percy</i></p><p>He “fell sicke, and within three weekes died” (Smith). He is to be buried this morning outside the west wall.</p>"},
   {t:"The President deposed",b:"<p>Yesterday Ratcliffe, Smith and Martin “came to the Presidentes Tennt with a warrant, subscribed vnder their handes, to depose the President”.</p><p>Today he answers them on their court day. “They had now made Master Archer, Recorder of Virginia.” Kendall, put off the council and kept in the pinnace, is let out, but “might not carry armes”.</p><p>Percy dates the deposition the eleventh; the President himself, the tenth.</p>"},
-  {t:"The corn",b:"<p>“It pleased God (in our extremity) to moue the Indians to bring vs Corne, ere it was halfe ripe, to refresh vs, when we rather expected when they would destroy vs.” <i>— Smith</i></p><p>Tapahanah has kept his word: the President “truly performed”, wrote Wingfield, of the promise. Ellis Kinistone died yesterday, Richard Simmons in the night, Thomas Mouton this morning. That is twenty-four names in Percy’s account since the sixth of August.</p>"}];
+  {t:"The corn",b:"<p>“It pleased God (in our extremity) to moue the Indians to bring vs Corne, ere it was halfe ripe, to refresh vs, when we rather expected when they would destroy vs.” <i>— Smith</i></p><p>Tapahanah has kept his word: “which promise he truly performed,” wrote Wingfield. Ellis Kinistone died yesterday, Richard Simmons in the night, Thomas Mouton this morning. That is twenty-four names in Percy’s account since the sixth of August.</p>"}];
 
 /* ---- THE DUTY SHEET: one modal for every choice the summer asks ---- */
 function sickSheet(kick,title,body,opts){
@@ -24535,7 +24578,7 @@ function sickAct(d){
     const well=fortW().prog&&fortW().prog.well>=1;
     const opts=[
       {t:"Draw it at the flood",fn:function(){sickDone("water");
-        fortResult("Salt","<p>The tide is in. The water comes up clear and tastes of the sea.</p><p>“Our drinke cold water taken out of the River, which was at a floud verie salt, at a low tide full of slime and filth, which was the destruction of many of our men.” <i>— Percy</i></p><p>The fort stands where the river turns from salt to fresh. In a dry summer the salt comes up this far and stays, and so does whatever the fort puts into the river.</p>",["+6 Ink"]);}},
+        fortResult("Salt","<p>The tide is in. The water comes up clear and tastes of the sea.</p><p>“Our drinke cold water taken out of the River, which was at a floud verie salt, at a low tide full of slime and filth, which was the destruction of many of our men.” <i>— Percy</i></p><p>Historians since have argued that the fort stood where the river turns from salt to fresh: in a dry summer the salt came up this far and stayed, and so did whatever the fort put into the river.</p>",["+6 Ink"]);}},
       {t:"Wait for the ebb and draw it then",fn:function(){sickDone("water");
         fortResult("Slime and filth","<p>The tide is out. The water is fresher, and brown, and smells of the mud at the fort’s own landing.</p><p>“… at a low tide full of slime and filth, which was the destruction of many of our men.” <i>— Percy</i></p><p>Tree rings from old cypress trees show 1606 to 1612 were the driest seven years in this country for about 770 years. There was no clean choice to make at the river.</p>",["+6 Ink"]);}}];
     if(well)opts.push({t:"Draw it from the well your fortnight dug",fn:function(){sickDone("water");
@@ -24569,8 +24612,8 @@ function sickAct(d){
   if(d.kind==="court"){
     sickDone("court");
     const k=w.kettle;
-    fortResult("The sentence","<p>Deposed. Wingfield answers that “I did appeale to His Maiesties mercy”, and the new President and council commit him to the master of the pinnace “with theis words, ‘Looke to him well: he is now the kinges prisoner.’”</p>"+
-      "<p>The President is Captain Ratcliffe now, with Smith and Martin: a council of three. Six days from now they will sue Wingfield for slander, and a jury will give them damages of a hundred pounds and two hundred.</p>"+
+    fortResult("The court day","<p>The deposition of yesterday stands. Archer reads out articles against him, until the President stops him to ask: “Will you appeale to the King, or no?” Wingfield answers that “I did appeale to His Maiesties mercy”, and the new President and council commit him to the master of the pinnace “with theis words, ‘Looke to him well: he is now the kinges prisoner.’”</p>"+
+      "<p>The President is Captain Ratcliffe now, with Smith and Martin: a council of three. Six days from now Jehu Robinson will sue him for slander, and at another time Smith; a jury will give them damages of a hundred pounds and two hundred.</p>"+
       (k==="equal"?"<p><b>Your summer:</b> you held the kettle to the President’s measure. Ratcliffe’s charge of the spoonful of beer would have stood as well against you.</p>":
        k?"<p><b>Your summer:</b> you gave some men more at the kettle, which is what the council wanted of the President. The store you served is shorter than the record’s by "+SICK_KETTLE[k]+" days.</p>":"")+
       "<p>Everything you have heard of this day comes from one man: Wingfield, who wrote it in his own defence.</p>",["+6 Ink"]);
@@ -24598,7 +24641,7 @@ function sickList(){
 
 function sickLedger(){
   const w=sickW(), sd=sickDay();
-  if(!w.did[sd.duty]){toast("Not yet: "+sd.dutyName.toLowerCase()+".");return;}
+  if(!w.did[sd.duty]){toast("Not yet: "+sickLower(sd.dutyName)+".");return;}
   if(w.day>=SICK_DAYS.length-1)return;
   w.day++;
   checkpoint("ch4-day"+w.day);
@@ -24623,34 +24666,52 @@ function sickBurial(){
     {cam:{to:[g[0]-22,y+6,g[1]+14],look:[g[0],y+2,g[1]]},t:1.4,sfx:"crack",gain:0.5,
      narrate:"And the small shot, volley after volley."},
     {t:1.2,sfx:"crack",gain:0.5},{t:1.2,sfx:"crack",gain:0.5},
-    {t:4.5,narrate:"“He was honourably buried,” Percy wrote. It was the most powder the fort had spent since May, and every man in the woods heard it."}]},
-    function(){sickDone("burial");
+    {t:4.5,narrate:"“He was honourably buried,” Percy wrote. Anyone in the woods would have heard it."}]},
+    function(){sickDone("burial");fortDrop("grave");   /* or using it again buries him twice */
       fortResult("Honourably buried","<p>In 2003 archaeologists found a burial just outside the line of the fort’s west wall: a man in a coffin, with a captain’s leading staff laid on the lid. It has been put forward as Gosnold’s. Nobody has proved it.</p><p>After Gosnold’s death, Percy wrote, “the Councell could hardly agree”.</p>",["+6 Ink"]);});
 }
 
 /* ---- THE WORLD: Chapter III's finished fort, forced to its 15 June state, with the
    summer laid over it: the graves, the sick, fewer on their feet, the ships gone. ---- */
-const SICK_GRAVE=[-150,-62];          /* Gosnold's: outside the west wall */
+/* Gosnold's: outside the west wall. The grave rows keep a clear ring round it, so the
+   mourners and the council stand on open ground and not on the graves of the men before
+   him. It was (-150,-62), on top of an older grave, while the open grave was drawn at
+   the next row slot forty feet away - the burial happened beside a hole nobody was at. */
+const SICK_GRAVE=[-154,-62];
+const SICK_GRAVE_CLEAR=24;
 const SICK_SHIPS={leaving:[]};
+/* the row slots, in burial order: along the outside of the west wall, between the wall
+   and the corn ground, skipping the ring round Gosnold's grave */
+function sickGraveSlots(n){
+  const out=[];
+  for(let s=0;out.length<n;s++){
+    const row=Math.floor(s/8), k=s%8;
+    const z=-44-k*11-row*3, x=-210+(FORT_O[1]-z)*0.946-16-row*10;
+    if(Math.hypot(x-SICK_GRAVE[0],z-SICK_GRAVE[1])<SICK_GRAVE_CLEAR)continue;
+    out.push([x,z]);
+  }
+  return out;
+}
 function sickGraves(root,G,n,open){
-  /* rows along the outside of the west wall, between the wall and the corn ground */
   const g=new Geo(), earth=RGB(0x6e5a40), fresh=RGB(0x5a4630);
-  for(let i=0;i<n+(open?1:0);i++){
-    const row=Math.floor(i/8), k=i%8;
-    const z=-44-k*11-row*3, wallX=-210+(FORT_O[1]-z)*0.946;
-    const x=wallX-16-row*10;
+  /* Percy's fourteenth name is Gosnold's, and his grave is the one the burial stands at */
+  const gos=SICK_DEAD.findIndex(function(r){return /Gosnold/.test(r.who);});
+  const slots=sickGraveSlots(n);
+  let si=0;
+  for(let i=0;i<n;i++){
+    const at=(i===gos)?SICK_GRAVE:slots[si++], x=at[0], z=at[1];
     const y=G(x,z), isNew=(i>=n-3);
-    if(open&&i===n){g.box(x,y-0.2,z,3.2,0.5,7.5,RGB(0x3a2c1c));continue;}   /* the open grave */
     g.box(x,y+0.35,z,3.6,0.8,7.8,isNew?fresh:earth);
     g.box(x,y+0.9,z,2.8,0.4,6.8,isNew?fresh:earth);
   }
+  if(open){const x=SICK_GRAVE[0],z=SICK_GRAVE[1];g.box(x,G(x,z)-0.2,z,3.2,0.5,7.5,RGB(0x3a2c1c));}   /* the open grave */
   if(n||open)root.add(g.mesh(false,false));
 }
 function sickFigures(root,G,sd){
   /* the able, standing about the fort; the sick, lying along the shelters and the
      storehouse wall. Posed once and baked: nobody here has to walk. */
   const STAND=[[-20,-30],[18,-48],[-48,-70],[52,-40],[6,-96],[-8,-12],[34,-82],[-60,-30],
-               [70,-10],[-90,-40],[22,0],[-30,-110],[44,-120],[-14,-140],[60,-70],[-70,6]];
+               [70,-10],[-90,-40],[22,0],[-30,-110],[44,-120],[-14,-140],[60,-70],[-112,4]];   /* was (-70,6), inside the storehouse */
   for(let i=0;i<sd.able&&i<STAND.length&&sd.duty!=="burial";i++){
     const at=STAND[i], f=buildFigure(crowdEq(i%3?"hand":"gent",i+40));
     f.position.set(at[0],G(at[0],at[1]),at[1]);f.rotation.y=srand(i*3.3)*6.28;
@@ -24669,13 +24730,17 @@ function sickFigures(root,G,sd){
   if(sd.duty==="burial"){
     const g=SICK_GRAVE;
     for(let i=0;i<sd.able;i++){
-      const a=i/sd.able*Math.PI*1.3-2.0, r=13+(i%2)*4, x=g[0]+Math.cos(a)*r, z=g[1]+Math.sin(a)*r;
+      const a=i/sd.able*Math.PI*1.3-2.0, r=15+(i%2)*4, x=g[0]+Math.cos(a)*r, z=g[1]+Math.sin(a)*r;   /* outside the council, inside SICK_GRAVE_CLEAR */
       const f=buildFigure(crowdEq(i%3?"hand":"gent",i+40));
       f.position.set(x,G(x,z),z);f.rotation.y=Math.atan2(g[0]-x,g[1]-z);
       poseFigure(f,"stand",i+40);root.add(bakeFigure(f));
     }
   }
-  const LIE=[[30,-6],[36,-4],[42,-6],[48,-4],[54,-6],[-66,10],[-72,10],[-78,10],[-84,10],[24,-26],[30,-28],[36,-26]];
+  /* The storehouse four lay at z=10, which is the storehouse's own door wall, and a man lies
+     head to -z from z+2.2: their bodies were inside the timber with only their feet out,
+     and the two in the middle across the door where Studley stands. Six feet out from the
+     wall now, and clear of the door and of Studley at (-70,14). */
+  const LIE=[[30,-6],[36,-4],[42,-6],[48,-4],[54,-6],[-58,16],[-88,16],[-94,16],[-100,16],[24,-26],[30,-28],[36,-26]];
   for(let i=0;i<sd.sick&&i<LIE.length;i++){
     const at=LIE[i], f=buildFigure(crowdEq("hand",i+70));
     f.rotation.x=-Math.PI/2;f.rotation.z=srand(i*5.1)*0.4-0.2;
@@ -24721,11 +24786,17 @@ registerWorld("ch4",function(root){
 
   /* ---- THE PEOPLE OF THIS DATE ---- */
   const spots={wingfield:[-28,6,2.6],studley:[-70,14,3.0],smith:[52,4,3.6],gosnold:[-6,58,3.0],
-    kendall:[30,-60,0.4],hunt:[SICK_GRAVE[0]+10,SICK_GRAVE[1]+4,1.6],percy:[-120,-50,1.2],
-    ratcliffe:[46,-20,3.8],martin:[34,-18,2.8],archer:[-40,-4,2.2]};
+    kendall:[30,-60,0.4],hunt:[SICK_GRAVE[0]+8,SICK_GRAVE[1],-Math.PI/2],percy:[-120,-50,1.2],
+    ratcliffe:[46,-20,3.8],martin:[34,-18,2.8],archer:[-28,-19,-0.12]};   /* (-40,-4) is the end of a bench log */
   /* the hearing is under the old sail, where the orders were given in May */
-  if(sd.duty==="court"){spots.wingfield=[-35,-22,0];spots.ratcliffe=[-46,-6,2.2];spots.smith=[-24,-6,4.0];spots.martin=[-52,-14,1.8];}
-  if(sd.duty==="burial"){spots.wingfield=[SICK_GRAVE[0]+14,SICK_GRAVE[1]-6,2.0];spots.smith=[SICK_GRAVE[0]+16,SICK_GRAVE[1]+8,2.8];spots.ratcliffe=[SICK_GRAVE[0]+20,SICK_GRAVE[1],2.4];}
+  /* The seats are five logs at x -47..-31 running along z, facing the pulpit at x -22.5
+     (tools/blender/fort/awning.py); Ratcliffe at (-46,-6) and Archer at (-40,-4) stood in
+     two of them. The council at the bar now, facing the seats, Wingfield before them, and
+     the Recorder at the side. */
+  if(sd.duty==="court"){spots.ratcliffe=[-25,-10,-Math.PI/2];spots.smith=[-25,-16,-Math.PI/2];spots.martin=[-25,-4,-Math.PI/2];
+    spots.wingfield=[-29,-10,Math.PI/2];}
+  /* at the grave, inside the mourners' ring and facing it (they had their backs to it) */
+  if(sd.duty==="burial"){spots.wingfield=[SICK_GRAVE[0]+7,SICK_GRAVE[1]-8,-0.72];spots.smith=[SICK_GRAVE[0]+7,SICK_GRAVE[1]+8,-2.42];spots.ratcliffe=[SICK_GRAVE[0],SICK_GRAVE[1]+11,Math.PI];}
   if(sd.duty==="corn"){spots.smith=[ox+10,oz-10,0];spots.percy=[ox-20,oz-12,0.4];}
   for(const id in spots){
     const d=sickSpeaker(id);
@@ -24748,7 +24819,7 @@ registerWorld("ch4",function(root){
   }
   if(sd.duty==="kettle")duty("kettle","The Common Kettle",40,-12,{kind:"kettle",verb:"Serve the kettle"});
   if(sd.duty==="burial"&&!w.did.burial)duty("grave","Captain Gosnold’s Grave",SICK_GRAVE[0]+6,SICK_GRAVE[1],{kind:"burial",verb:"Stand at the grave"});
-  if(sd.duty==="court")duty("court","The Court",-35,-14,{kind:"court",verb:"Hear the sentence"});
+  if(sd.duty==="court")duty("court","The Court",-35,-14,{kind:"court",verb:"Stand at the court"});
   if(sd.duty==="corn")duty("corn","The Bearers at the Gate",ox,oz+8,{kind:"corn",verb:"Take in the corn"});
   if(sd.dead)duty("list","Percy’s List",-108,-42,{kind:"list",verb:"Read the names"});
   if(w.day<SICK_DAYS.length-1)
@@ -24758,9 +24829,14 @@ registerWorld("ch4",function(root){
 
   /* the player: on the 22nd of June at the river gate to watch the ships go; at night on
      the walk to the bulwarks; otherwise inside the fort */
-  const at=w.day===0?[ox+8,oz-6]:sd.night?[ox-40,oz-30]:[0,20];
+  /* Facing the river with the camera behind (camYaw PI), as buildFortWorld sets for 15
+     June: (0,20) facing inland put the camera outside the river wall, and on the 22nd it
+     looked away from the ships the scene is about. On the 22nd the player stands out on
+     the strand below the gate, so the camera looks over the palisade at the ships. */
+  const at=w.day===0?[ox+4,oz+16]:sd.night?[ox-40,oz-30]:[4,12];
   player.position.set(at[0],G(at[0],at[1]),at[1]);
-  player.rotation.y=w.day===0?0:Math.PI;
+  player.rotation.y=sd.night?Math.PI:0;
+  camYaw=sd.night?0:Math.PI;
 });
 /* the two ships stand out of the river on the 22nd of June, and the watch is kept at
    dusk; nothing else in this chapter moves */
@@ -24785,7 +24861,7 @@ function updateSick(dt){
 CONTENT.ch4={
   people:SICK_PEOPLE,
   npcs:SICK_NPCS,
-  charter:{insight:{b:"The Sickly Season"}},
+  charter:{insight:{b:"The Sickly Season"},counted:false},
   reck:{seal:"records",kick:"Master Percy’s Account",title:"Set Down the Summer",
     frame:"“I am to send my account home with the next ship,” says Master Percy, “and the men in London will read it who were never here. Before I seal it, tell me what you saw. Six questions about this summer; I’ll bear two wrong — no more.”",
     lockLine:"Not yet. The account is closed on the nineteenth of September, when the corn has come.",
@@ -24808,7 +24884,7 @@ CONTENT.ch4={
       {stim:"Percy: “our drinke cold water taken out of the River, which was at a floud verie salt, at a low tide full of slime and filth, which was the destruction of many of our men.”",
        q:"What did Percy himself blame for many of the deaths?",
        o:["The drinking water from the river", "Poison put in the food by enemies", "The cold of the coming winter", "Wounds left from the May attack"],a:0},
-      {stim:"Historians since have argued the fort stood where the river turns from salt to fresh, so in a dry summer salt and the fort’s own filth stayed by the island. Tree rings show 1606–1612 was the worst drought in about 770 years.",
+      {stim:"Historians since have argued, from Percy’s “verie salt … slime and filth”, that the fort stood where the river turns from salt to fresh, so in a dry summer salt and the fort’s own filth stayed by the island. Tree rings show 1606–1612 was the worst drought in about 770 years.",
        q:"What is this explanation built on?",
        o:["Percy’s words and modern evidence like tree rings", "A letter from Powhatan describing the drought", "Smith’s statement that God was angry with them", "The ship’s log kept aboard the Susan Constant"],a:0},
       {stim:"Three explanations of the deaths: God was “angrie with vs” (True Relation); the water (Percy); “the fault of our going was our owne … we weare at sea 5. monthes” and missed the season to plant (Proceedings).",
@@ -24820,9 +24896,9 @@ CONTENT.ch4={
       {stim:"Smith: the sack and aqua vitae were kept “onely in the Presidents hands, for his owne diet.” Wingfield: two gallons of each were left, “the sack reserued for the Comunion table, the rest for such extreamityes as might fall upon us.”",
        q:"What is the most careful conclusion?",
        o:["They tell it differently; neither is neutral", "Wingfield certainly drank all of it himself", "There never was any sack left in the store", "Smith saw Wingfield drinking it every night"],a:0},
-      {stim:"Many charges began “It is noysed”: that Wingfield hid the common store in the ground, plotted with Spain, was an atheist. What had been buried, he said, was “2 glasses with sallet oyle … for my private stoare.”",
+      {stim:"Wingfield set down the rumours against him under the words “It is noysed”: that he hid the common store in the ground, plotted with Spain, was an atheist. What had been buried, he said, was “2 glasses with sallet oyle … for my private stoare.”",
        q:"What is wrong with “It is noysed” as evidence?",
-       o:["It is rumour: said, not seen by anyone named", "It was written down in the wrong language", "Only a single person is recorded saying it", "Nothing; so many saying it proves it true"],a:0},
+       o:["It is rumour: said, not seen by anyone named", "It was written down in the wrong language", "It was said only by Wingfield’s friends", "Nothing; so many saying it proves it true"],a:0},
       {stim:"The Proceedings chapter about this summer, including the deposition on 10 September, is signed “Thomas Studley”. Percy: “The eight and twentieth day died Thomas Stoodie, Cape Merchant.”",
        q:"What problem does this raise?",
        o:["He was dead, so someone else wrote that part", "It proves that Percy’s list of names is wrong", "It proves that the deposition never happened", "Nothing; dead men often signed such accounts"],a:0},
@@ -24850,7 +24926,7 @@ CONTENT.ch4={
       {stim:"Percy: Ellis Kinistone “was starved to death with cold” on 18 September. In 1607 to “starve” could mean simply to die, whether of cold or hunger.",
        q:"What does this teach about reading old sources?",
        o:["Words change meaning; check what they meant then", "Percy made a mistake about the September weather", "September in Virginia is usually freezing cold", "Old sources cannot be trusted about anything"],a:0},
-      {stim:"Wingfield: “in three weekes, the President had reared vpp xx men able to worke,” fed on Powhatan corn. The Proceedings credits Smith: the colony was “by his care, preserved and relieued.”",
+      {stim:"Wingfield: “in three weekes, the President had reared vpp xx men able to worke,” fed on Powhatan corn. The Proceedings credits Smith: Martin and Ratcliffe, sick, were “by his care, preserved and relieued.”",
        q:"Who does each account give the credit to, and why might that be?",
        o:["Each credits his own side, as rivals would", "Both give all the credit to the Powhatan", "Both give the credit to Captain Newport", "Both agree that it was Captain Gosnold"],a:0}]},
   ready:function(){
@@ -25098,7 +25174,7 @@ const CHAPTERS=[
    status:function(){ const w=sickW(), sd=sickDay();
      if(w.done)return "Chapter complete";
      if(w.day>=SICK_DAYS.length-1&&w.did[sd.duty])return sd.date+" · Master Percy’s account is waiting";
-     return sd.date+(w.did[sd.duty]?" · the ledger is waiting":" · "+sd.dutyName.toLowerCase()); },
+     return sd.date+(w.did[sd.duty]?" · the ledger is waiting":" · "+sickLower(sd.dutyName)); },
    next:function(){ const w=sickW(), sd=sickDay();
      if(!w.did[sd.duty]){
        const c=findSpot(function(it){return it.action==="sick"&&it.data.kind!=="ledger"&&it.data.kind!=="list"&&it.data.kind!=="record"&&
@@ -25109,7 +25185,7 @@ const CHAPTERS=[
      if(o)return {it:o,why:w.day>=SICK_DAYS.length-1?"the chapter ends here":"the next date"};
      return null; },
    end:{head:"The Sickly Season — Complete",yr:"Chapter IV · 19 September 1607",nextWorld:null,
-     body:"<p>About half of the hundred and four men Newport left are dead: twenty-four by name in Percy’s account, “about 46” by Smith’s count, “50” in the Proceedings. The President is a prisoner in the pinnace. The store is all but spent, and the fort is eating Powhatan corn.</p>"+
+     body:"<p>About half of the hundred and four men Newport left are dead: twenty-four by name in Percy’s account, “about 46” by Smith’s count, “50” in the Proceedings. Wingfield, the President they deposed, is a prisoner in the pinnace. The store is all but spent, and the fort is eating Powhatan corn.</p>"+
        "<p>Smith, cape merchant now, takes a boat down the river to Kecoughtan to trade for more. That is the next chapter, and it is still to come.</p>"}},
   {n:"V",yr:"1607–09",t:"Smith & the Record",d:"The fort and the woods, 1607-09",ready:false},
   {n:"VI",yr:"1609–10",t:"The Starving Time",d:"The besieged fort, winter 1609-10",ready:false},
@@ -26528,7 +26604,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261126-2153";
+const BUILD="20261126-2220";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
