@@ -682,8 +682,13 @@
   .fortSel{flex:1;font:inherit;font-size:.82rem;padding:.25em;background:#f3ead4;border:1px solid #8a7656;border-radius:4px}
   .fortTask{margin:.25em 0}
   .sickList{margin:.4em 0 .6em 1.1em;padding:0;font-size:.92em;line-height:1.45}
-  .captRow{display:flex;flex-wrap:wrap;align-items:center;gap:.35em;margin:.3em 0;font-size:.92em}
+  .captRow{display:flex;flex-wrap:wrap;align-items:center;gap:.35em;margin:.3em 0;font-size:.92em;
+    padding-bottom:.3em;border-bottom:1px solid rgba(90,58,26,.18)}
   .captRow span{flex:1 1 14em}
+  /* review, 26 Nov: at 375px the two buttons wrapped apart - "1608" beside the claim and
+     "New in 1624" alone on the next line, sitting directly above the NEXT claim, so it read
+     as belonging to it. The pair and its mark now wrap as one group, under their own claim. */
+  .captBtns{display:flex;align-items:center;gap:.35em;flex:0 0 auto}
   .captMark{min-width:3em;color:#5a3a1a}
   .sickDate{font-variant:small-caps;letter-spacing:.06em;opacity:.8;margin-top:0}
   .fortWho{color:#3f5c4f}
@@ -25051,6 +25056,7 @@ function updateBlaze(dt){
       m.scale.y=f.h*u.s*k;m.position.y=m.scale.y*0.5;
     }
     if(f.light)f.light.intensity=1.8+0.6*Math.sin(BLAZE.t*13+f.x)+0.3*Math.sin(BLAZE.t*31);
+    if(f.smoke===false)continue;
     f.puff-=dt;
     if(f.puff<=0){f.puff=0.35;
       spawnPuff(POOL.smoke,f.x+(Math.random()-0.5)*f.w,f.y+f.h*1.1,f.z+(Math.random()-0.5)*f.w*0.5,
@@ -25095,7 +25101,10 @@ const CAPT={telling:null,ship:null,t:0,lit:false};
    Declared above CAPT_SAYS for the voice harvester. Ids are shared with the chapters
    before, so a man keeps his voice. */
 const CAPT_PEOPLE=[
-  FORT_PEOPLE.filter(function(m){return m.id==="smith";})[0],
+  /* review, 26 Nov: this was Chapter III's Smith object as it stood, so every dialogue in
+     this chapter titled him "a soldier, kept off the council". He was sworn of it on 10
+     June 1607, and is cape merchant here. Same man, same voice and clothes, his role now. */
+  Object.assign({},FORT_PEOPLE.filter(function(m){return m.id==="smith";})[0],{role:"cape merchant, of the council"}),
   {id:"ratcliffe",name:"President Ratcliffe",voice:"male",role:"President of the council",eq:crowdEq("gent",6)},
   {id:"martin",name:"Captain Martin",voice:"male",role:"of the council",eq:crowdEq("gent",9)},
   {id:"archer",name:"Master Archer",voice:"male",role:"Recorder of Virginia",eq:CAPE_PEOPLE.filter(function(m){return m.id==="archer";})[0].eq},
@@ -25113,7 +25122,9 @@ const CAPT_SAYS={
     [],
     ["“I go on up the river by canoe, with two of their men to guide me and two of ours. Not any man of you goes ashore till I return. Not one.”"],
     [],[],
-    ["“The thatch went up like straw, because it is straw. We must build again, and in this frost.”"]],
+    /* review, 26 Nov: was "like straw, because it is straw" - the 1612 account says the
+       houses were "thatched with reeds", and Hunt says reed thatch two scenes on */
+    ["“The reed thatch went up like tinder. We must build again, and in this frost.”"]],
   "ratcliffe":[[],
     ["“Read struck at me with his tools. He hangs for it, and there is an end.”"],
     [],
@@ -25129,7 +25140,10 @@ const CAPT_SAYS={
     ["“Newport’s men fired the quarters. A mischance. Write it so: a mischance.”"]],
   "percy":[
     [],
-    ["“Kendall was a gentleman, so he is to be shot, not hanged. I shall set down that he died. What he did, I cannot honestly say.”"],
+    /* review, 26 Nov: Percy gave the reason Kendall was shot ("a gentleman"). No source
+       says why he was shot while Read was to hang (CH5-RECORD, Kendall), and the muster
+       leaves it open, so Percy does not know it either */
+    ["“Kendall is to be shot. Read, who named him, is not to hang at all. I shall set down that Kendall died. What he did, I cannot honestly say.”"],
     [],
     ["“Two men went up that river with him and did not come back. He came back. That will be all anyone asks him about.”"],
     [],
@@ -25152,19 +25166,29 @@ const CAPT_NPCS=[
     {npc:"“You want to know how I came home alive with Robinson and Emry dead. Ask, then. Everyone else is asking.”",
      choices:[
       {t:"What did Powhatan want with you?",wise:true,ink:8,
-       reply:"“To know why we came. I told him we were driven here by weather, fleeing the Spaniards, and waited for Captain Newport, my father, to fetch us away.” He shrugs. “It was not true. Then he asked me to leave Paspahegh and live with him on his river, at a place called Capa Howasicke. He would give us corn and venison; we should make him hatchets and copper.”",
-       insight:{g:"known",b:"Capa Howasicke",s:"In his 1608 account Smith says Powhatan offered the English land at Capa Howasicke, near Werowocomoco, with corn and venison, if they would make him hatchets and copper. Smith also admits he lied to Powhatan about why the English had come."}},
+       /* review, 26 Nov: Smith said "It was not true" here, and the insight had him admit he
+          lied. The True Relation reports the tale without a word of comment (Tyler p. 48):
+          it is his own record of what he said, and we know it was false, but he never
+          says so. Narrated now, not put in his mouth. */
+       reply:"“To know why we came. I told him we were driven here by weather, fleeing the Spaniards, and waited for Captain Newport, my father, to fetch us away.” None of that was so, and he wrote it down himself. “Then he asked me to leave Paspahegh and live with him on his river, at a place called Capa Howasicke. He would give us corn and venison; we should make him hatchets and copper.”",
+       insight:{g:"known",b:"Capa Howasicke",s:"In his 1608 account Smith says Powhatan offered the English land at Capa Howasicke, near Werowocomoco, with corn and venison, if they would make him hatchets and copper. Smith also wrote down the false story he told Powhatan about why the English had come."}},
+      /* review, 26 Nov: "and he kept it" - no source gives the day he reached Werowocomoco
+         or the day he left it, so nobody can say the four days were kept */
       {t:"Were you ever afraid they would kill you?",fair:true,ink:3,
-       reply:"“They fed me so fat I thought they meant to sacrifice me. But Powhatan promised me my liberty within four days, and he kept it.”"},
+       reply:"“They fed me so fat I thought they meant to sacrifice me. But Powhatan promised me my liberty within four days, and in the end he sent me home.”"},
       {t:"Did you kill any of them?",wise:false,
        reply:"His face closes. “I fought. Ask the men who went ashore from the barge what they did.”"}]},
     {npc:"“And the guide. You will hear Master Wingfield say it was the guide who saved me.”",
      choices:[
       {t:"Who was the guide, and what did he do?",wise:true,ink:8,
-       reply:"“One of theirs, I had bound to my arm with a garter, and used for a shield.” He does not name him. Nobody ever does. Wingfield, in the pinnace, will write that “by the meanes of his guide, his lief was saued”, and that is all anyone set down about it.",
+       reply:"“One of theirs, I had bound to my arm with a garter, and used for a shield.” He does not name him. Nobody ever does. Wingfield, in the pinnace, will write that “by the meanes of his guide, his lief was saved”, and that is all anyone set down about it.",
+       /* review, 26 Nov: "saued" was the record file's spelling; Arber prints Wingfield's
+          "his lief was saved" (p. lxxxvi). Here, in the insight and in the muster. */
        insight:{g:"known",b:"The Unnamed Guide",s:"Wingfield, Smith's enemy, wrote that Smith's life was saved “by the meanes of his guide.” Smith's own 1608 account says nothing about anyone saving him. Nobody recorded the guide's name."}},
+      /* review, 26 Nov: "In 1608 he does not mention her at all" - the True Relation does,
+         in the spring (Tyler p. 69). It is the captivity she is missing from. */
       {t:"Was it the King’s daughter?",wise:false,
-       reply:"“His daughter?” He looks at you as if you had asked about the moon. In 1608 he does not mention her at all. She comes to the fort in the spring, a child of ten, and he will write about that."},
+       reply:"“His daughter?” He looks at you as if you had asked about the moon. In his 1608 account of the captivity she does not appear at all. She comes to the fort in the spring, a child of ten, and he will write about that."},
       {t:"Does it matter who saved you?",fair:true,ink:3,
        reply:"“It matters to Master Archer, who would sooner I had not been saved.”"}]}]},
   {id:"archer",name:"Master Archer",voice:"male",role:"Recorder, and of the council now",at:3,
@@ -25174,7 +25198,10 @@ const CAPT_NPCS=[
     {npc:"“Two men went up the Chickahominy under Captain Smith and did not come back. I mean to try him for it. You disagree?”",
      choices:[
       {t:"Under what law?",wise:true,ink:8,
-       reply:"“A chapter in Leviticus. Who kills a man shall surely be put to death.” He says he has found the place. Wingfield will write that Archer “indited him vpon a Chapter in Leuiticus for the death of his twoe men”, and expected a hanging the same day or the next, “so speedie is our lawe thear”.",
+       /* review, 26 Nov: Archer quoted Leviticus 24:17, in the King James wording of 1611.
+          Neither Wingfield nor Smith names the chapter; 24:17 is our inference
+          (CH5-RECORD). Archer now says only what Wingfield says he said. */
+       reply:"“A chapter in Leviticus.” Which chapter, nobody wrote down; the likeliest is the law that whoever kills a man shall be put to death. Wingfield will write that Archer “indited him vpon a Chapter in Leuiticus for the death of his twoe men”, and expected a hanging the same day or the next, “so speedie is our lawe thear”.",
        insight:{g:"disp",b:"A Chapter in Leviticus",s:"Wingfield wrote that Archer charged Smith “vpon a Chapter in Leuiticus” for the deaths of Robinson and Emry, and that Smith would have hanged if Newport had not arrived that evening. Smith's own 1608 account says only that they “purposed to depose me.” The strongest witness to the death sentence is Smith's enemy."}},
       {t:"Smith did not kill them. The Indians did.",fair:true,ink:3,
        reply:"“He led them where they could be killed, against all sense. That is the charge.”"},
@@ -25187,7 +25214,10 @@ const CAPT_NPCS=[
     {npc:"“My books are gone. All of them. Do not look at me like that; there are men without a blanket tonight.”",
      choices:[
       {t:"How did the fire start?",wise:true,ink:8,
-       reply:"“Nobody knows, or nobody says. The new men had fires in their quarters against the frost, and the roofs are reed thatch.” Smith will write “by a mischaunce”; the 1612 account, that the newcomers “accidently fired the quarters”. Nobody names a man.",
+       /* review, 26 Nov: "fires in their quarters against the frost" was a cause nobody
+          recorded. The 1612 account says only that the new supply "accidently fired the
+          quarters" (Proceedings p. 103). */
+       reply:"“Nobody knows, or nobody says. It began in the new men’s quarters, and the roofs are reed thatch.” Smith will write “by a mischaunce”; the 1612 account, that the newcomers “accidently fired the quarters”. Nobody names a man.",
        insight:{g:"known",b:"A Mischance",s:"The fire of 7 January 1608 burned most of the fort, its store and the men's clothes and bedding, in “extreame frost.” Every account calls it an accident, and none names who started it. The houses were thatched with reeds."}},
       {t:"Will the Company send more books?",fair:true,ink:3,
        reply:"“In a year, perhaps. I have the Book by heart, which is the one that matters.”"},
@@ -25203,12 +25233,19 @@ function captSpeaker(id){
   return Object.assign({},m,{lines:lines});
 }
 
-/* ---- THE RECORD THAT OPENS EACH SCENE ---- */
+/* ---- THE RECORD THAT OPENS EACH SCENE ----
+   Review, 26 November: Kecoughtan feasted the company on 30 April (Percy), not in May.
+   Robinson is "Iohn Robbinson" in the True Relation and "Iohn Robinson" in the 1612 list
+   of first planters; it was printed "Jehu", which neither text has. Smith set out "ere Sunne
+   rise" and "arriued within an houre" (Tyler p. 52), so he came in at sunrise, not before
+   it; and "vsually" is Arber's spelling, as every other quotation here is. The capture
+   voyage was not "the third" journey up the Chickahominy: the third laded the barge and
+   came home, and then "I set forward to finish this discouery" (Tyler p. 41). */
 const CAPT_OPEN=[
-  {t:"Cape merchant",b:"<p>“The president['s], and Captaine Martins sicknes, constrayned me to be Cape Marchant.” <i>— Smith, 1608</i></p><p>“Our victualles being now within eighteene dayes spent”, Smith takes the barge down the river to Kecoughtan, where in May the company was feasted. Nobody wrote down the day.</p>"},
+  {t:"Cape merchant",b:"<p>“The president['s], and Captaine Martins sicknes, constrayned me to be Cape Marchant.” <i>— Smith, 1608</i></p><p>“Our victualles being now within eighteene dayes spent”, Smith takes the barge down the river to Kecoughtan, where in April the company was feasted. Nobody wrote down the day.</p>"},
   {t:"The ladder",b:"<p>James Read, the blacksmith, quarrelled with President Ratcliffe and was condemned to hang. On the ladder he named Captain Kendall in a conspiracy, and Read lived. Kendall was shot.</p><p>The day is a blank in every account. So is what Kendall planned. Three men wrote three different stories of it.</p>"},
-  {t:"The Chickahominy",b:"<p>“The 9 of Nouember I set forward for the discouery of the country of Chik[a]hamania.” <i>— Smith</i>. Three journeys up that river for corn; on the third, from 10 December, the barge can go no further.</p><p>Smith leaves it at Apocant “with expresse charge not any to go ashore til my returne”, and goes on by canoe with two Indian guides and two Englishmen, Jehu Robinson and Thomas Emry.</p>"},
-  {t:"Smith comes home",b:"<p>Twenty-three days. Smith walks in at the gate before sunrise with four of Powhatan’s men: “one that usually carried my Gowne and Knapsacke after me, two other loded with bread, and one to accompanie me.”</p><p>Robinson and Emry are dead. Master Archer, sworn of the council while Smith was away, has been reading Leviticus.</p>"},
+  {t:"The Chickahominy",b:"<p>“The 9 of Nouember I set forward for the discouery of the country of Chik[a]hamania.” <i>— Smith</i>. Three journeys up that river for corn. Then, from 10 December, a fourth “to finish this discouery”, until the barge can go no further.</p><p>Smith leaves it at Apocant “with expresse charge not any to go ashore til my returne”, and goes on by canoe with two Indian guides and two Englishmen, John Robinson and Thomas Emry.</p>"},
+  {t:"Smith comes home",b:"<p>Twenty-three days. Smith walks in at the gate at sunrise with four of Powhatan’s men: “one that vsually carried my Gowne and Knapsacke after me, two other loded with bread, and one to accompanie me.”</p><p>Robinson and Emry are dead. Master Archer, sworn of the council while Smith was away, has been reading Leviticus.</p>"},
   {t:"Sixteen years later",b:"<p>In 1624, in London, Smith printed his <i>Generall Historie of Virginia</i>. Pocahontas had been to England as a famous woman and died there in 1617. In 1622 Opechancanough’s warriors had killed about a third of the English in Virginia in one morning.</p><p>Smith told the story of his captivity again. It had changed.</p>"},
   {t:"The fire",b:"<p>“Within fiue or sixe dayes after the arriuall of the Ship, by a mischaunce our Fort was burned, and the most of our apparell, lodging and priuate prouision.” <i>— Smith, 1608</i></p><p>“This hapned in the winter, in that extreame frost.” <i>— the Proceedings, 1612</i></p>"}];
 
@@ -25252,13 +25289,17 @@ function captAct(d){
     fortResult("Three stories","<p><b>Smith, 1608:</b> Read “offred to strike” the President with his tools, was condemned, and on the ladder “became penitent, and declared a dangerous conspiracy : for which, Captaine Kendall, as principal, was by a Iury condemned, and shot to death.”</p>"+
       "<p><b>Wingfield, 1608:</b> the President beat Read first and Read “stroake him againe”; on the ladder Read asked to speak with the President in private, “accused Master Kendall of a mutiny, and so escaped himself.” Kendall objected that the President’s name “was Sicklemore, not Ratcliff”. Martin pronounced the sentence instead.</p>"+
       "<p><b>Smith’s friends, 1612:</b> Kendall and others plotted to seize the pinnace and sail for England, “Which action cost the life of captaine Kendall.”</p>"+
-      "<p>A confession, a bargain, or a plot. No account names a witness or says what Kendall meant to do. He was a gentleman, so he was shot; Read was a blacksmith, so he was to hang.</p>",["+6 Ink"]);
+      /* review, 26 Nov: this said "He was a gentleman, so he was shot", as fact. No source
+         gives the reason (CH5-RECORD, Kendall; Teaching hook 11 asks it as a question) */
+      "<p>A confession, a bargain, or a plot. No account names a witness or says what Kendall meant to do. None says why Kendall was shot when Read was to hang; that Kendall was a gentleman is a guess, not the record.</p>",["+6 Ink"]);
     return;
   }
   if(d.kind==="barge"){
+    /* review, 26 Nov: "Emry was never seen again" said more than the record; Smith's words
+       are "Emry I saw not" (Tyler p. 44), and the later accounts say he was killed */
     const pick=function(k,title,body){return function(){w.barge=k;captDone("barge");
-      fortResult(title,body+"<p>The canoe does not come back that night, or the next. On the record, “within a quarter of an houre” of leaving the canoe Smith “heard a loud cry, and a hollowing of Indians, but no warning peece.” Robinson was found “with 20 or 30. arrowes in him”. Emry was never seen again. The barge goes home down the river without its captain.</p>",["+6 Ink"],function(){
-        playCutscene({skippable:true,steps:CAPT_CANOE},function(){});});};};
+      fortResult(title,body+"<p>The canoe does not come back that night, or the next. On the record, “within a quarter of an houre” of leaving the canoe Smith “heard a loud cry, and a hollowing of Indians, but no warning peece.” Robinson was found “with 20 or 30. arrowes in him”. Of the other, Smith wrote only “Emry I saw not.” The barge goes home down the river without its captain.</p>",["+6 Ink"],function(){
+        playCutscene({skippable:true,steps:CAPT_CANOE},function(){enterWorld("ch5");});});};};
     captSheet("Apocant · the barge, made fast","The order",
       "<p>Smith’s order: “not any to go ashore til my returne.” The canoe is out of sight. There is a town on the bank, and smoke from its fires, and the men in the barge have been cold since morning.</p>",
       [{t:"Keep the barge, as he ordered",fn:pick("stay","You keep the barge","<p>You stay with the barge. Most of the others do not. They go ashore; one of them, George Casson, does not come back. The 1612 account says he was taken when the men “went ashore”.</p>")},
@@ -25283,20 +25324,33 @@ function captAct(d){
       hunt:"Master Hunt’s quarters. He is standing in the frost watching his books go. “Good Maister Hunt our preacher, lost all his library”, and nobody “ever see him repine at his losse.”",
       wall:"The palisade is burning, though it stands ten or twelve yards from the nearest house. The 1612 account says the fire was “so fierce as it burnt their pallizadoes.”"};
     if(w.fire.length>=3){captDone("fire");
-      fortResult("Burned","<p>"+NOTE[d.b]+"</p><p>By midday the fort is ash, the palisade in pieces, and a hundred and more men — the thirty-eight who were left and the newcomers of the First Supply — stand in the frost with what they are wearing. “Many of our old men diseased, and of our new for want of lodging perished.” <i>— Smith, 1608</i></p><p>Captain Newport’s mariners set to building again: “a faire stoare house”, and a church.</p>",["+6 Ink"]);}
+      fortResult("Burned","<p>"+NOTE[d.b]+"</p><p>By midday the fort is ash, the palisade in pieces, and a hundred and more men — the thirty-eight who were left and the newcomers of the First Supply — stand in the frost with what they are wearing. “Many of our old men diseased, and of our new for want of lodging perished.” <i>— Smith, 1608</i></p><p>Captain Newport’s men set to building again: “a faire stoare house”, and his mariners a church.</p>",["+6 Ink"],
+        /* review, 26 Nov: nothing rebuilt the world after the third duty, so the fires burned
+           on and "Close the Record" - laid down only when the world is BUILT with the fire
+           done - never appeared: the guide arrow had nowhere to point and the chapter could
+           not be closed without a reload. Build the morning after. */
+        function(){enterWorld("ch5");});}
+      /* review, 26 Nov: the mariners built the church; "some of them" (his men) built the
+         store house (Wingfield p. lxxxvi) */
     else toast(NOTE[d.b]);
     updateGuide();return;
   }
 }
 function captKecoughtanTellings(){
-  return "<p><b>The same day, told three times.</b> 1608: scorn, then trade. 1612: “at first they scorned him, as a starved man: yet he so dealt with them, that the next day they loaded his boat with corne.” 1624: he “Let fly his muskets, ran his boat on shore”, and seized their idol until they paid for it in corn. Each telling is harder than the last. Remember that when you hear the next story he tells.</p>";
+  /* review, 26 Nov: "The same day" - it is two days in every telling ("the next day") */
+  return "<p><b>The same visit, told three times.</b> 1608: scorn, then trade. 1612: “at first they scorned him, as a starved man: yet he so dealt with them, that the next day they loaded his boat with corne.” 1624: he “Let fly his muskets, ran his boat on shore”, and seized their idol until they paid for it in corn. Each telling is harder than the last. Remember that when you hear the next story he tells.</p>";
 }
 
 /* ---- THE CANOE GOES ON WITHOUT YOU ---- */
 const CAPT_CANOE=[
   {cam:{to:[30,14,96],look:[-40,2,60],cut:true},t:4,
+   do:function(){
+     if(CAPT.canoe)CAPT.canoe.visible=false;
+     for(const n of npcMeshes)if(n.npc&&n.npc.id==="smith"&&n.mesh)n.mesh.visible=false;},
    narrate:"The barge goes back down the river. Nobody knows yet whether there is anyone to wait for."},
-  {t:3.5,narrate:"At the fort they will count him dead, and Master Archer will be sworn of the council in his place."}];
+  /* review, 26 Nov: was "they will count him dead, and Archer will be sworn ... in his place".
+     Nobody records the fort counting him dead, and Smith's words are "in my absence" */
+  {t:3.5,narrate:"At the fort, while he is gone, Master Archer will be sworn of the council."}];
 
 function captNext(){
   const w=captW(), sd=captDay();
@@ -25328,8 +25382,10 @@ function captTelling(which){
       } else {
         w.did.told1624=true;checkpoint("ch5-told1624");
         enterWorld("ch5");
+        /* review, 26 Nov: the 1616 letter is known only from the 1624 book (CH5-RECORD, the
+           rescue question), so the panel says so; the first PRINTED claim is 1622 */
         fortResult("As he told it in 1624","<p>The story you have just watched is the one in Smith’s <i>Generall Historie</i> (1624): “two great stones were brought before Powhatan … being ready with their clubs, to beate out his braines, Pocahontas the Kings dearest daughter, when no intreaty could prevaile, got his head in her armes, and laid her owne vpon his to saue him from death”.</p>"+
-          "<p>None of it is in what he wrote in 1608, or in what his friends printed in 1612, which says he lived “By these fictions”. He first claimed it in a letter to the Queen in 1616, when Pocahontas was in London and famous. She was about ten or eleven years old that winter.</p>"+
+          "<p>None of it is in what he wrote in 1608, or in what his friends printed in 1612, which says he lived “By these fictions”. He first claimed it in a letter to the Queen in 1616, when Pocahontas was in London and famous; that letter survives only as he printed it himself, in 1624. She was about ten or eleven years old that winter.</p>"+
           "<p>Some historians think it happened. Some think it was a ceremony Smith did not understand; others say nothing like it is known among the Powhatan. Some think he made it up. Mattaponi oral history, written down in 2007, says there was no rescue. Walk the town, and set the two tellings side by side.</p>",[]);
       }
     });
@@ -25339,47 +25395,68 @@ function captNewport(){
   const steps=[
     {cam:{to:[60,22,150],look:[-80,6,96],cut:true},t:3,do:function(){if(CAPT.ship)CAPT.ship.go=true;},
      narrate:"That evening a ship stood up the river under sail."},
-    {t:4.5,narrate:"Captain Newport, with the First Supply: about a hundred new men, and the stores of a year."},
+    /* review, 26 Nov: "about a hundred new men, and the stores of a year". The near hundred
+       sailed in TWO ships, and Nelson's Phoenix was driven off "so farre to sea as the West
+       Indies was the next land" (Proceedings p. 99); nobody wrote "a year's" stores */
+    {t:4.5,narrate:"Captain Newport, with the First Supply. The other ship, the Phoenix, was driven out to sea in sight of Cape Henry, and has not come in."},
     {cam:{to:[10,10,46],look:[0,5,20]},t:5,
      narrate:"Wingfield wrote that Newport’s arrival “saued Master Smyths leif and mine”. Smith, who never wrote that he was condemned, wrote only that it put off the plots against him."}];
   playCutscene({skippable:true,steps:steps},function(){
     captW().did.newport=true;checkpoint("ch5-newport");
-    fortResult("The First Supply","<p>Of the hundred and four Newport left in June, he finds “about eight and thirtie miserable poore and sicke creatures” alive.</p><p>Archer’s trial is put off. Smith is sworn of the council again, with Captain Martin and the newcomer Matthew Scrivener.</p>",["+6 Ink"]);
+    /* review, 26 Nov: the thirty-eight are Smith's count, in his letter to the Queen (GH
+       p. 121; Arber p. cxvi): "where I found about eight and thirtie". It read as Newport's */
+    fortResult("The First Supply","<p>Of the hundred and four Newport left in June, Smith counted “about eight and thirtie miserable poore and sicke creatures” alive when he came home. <i>— Smith, to the Queen, 1616</i></p><p>Archer’s trial is put off. Smith is sworn of the council again, with Captain Martin and the newcomer Matthew Scrivener.</p>",["+6 Ink"]);
   });
 }
 
-/* the 1608 relation: the court as Smith first described it, and no danger in it */
+/* the 1608 relation: the court as Smith first described it, and no danger in it.
+   Review, 26 November, against Tyler pp. 48-50: "It was not true" sat inside the lines
+   framed as Smith's own words, and he wrote no such thing; it is the narrator's now, after
+   his words end. The offer was rearranged ("Corn and venison he would give us"); it is his
+   sentence now, modernised. "sitting" was dropped from the ranks and is back. And he tells
+   it the DAY he comes home: Newport's ship comes up "the same night", after it.
+   Cameras, same review: H.x+26 is inside the hall's rounded east end, so the first shot of
+   BOTH tellings, and the 1624 one's last, rendered solid black (shot ch5rev_hall_door); it
+   is H.x+21 now, and Smith spawns at +17, ahead of it. The court shot at (H.x+2, H.z-5) sat
+   a foot and a half from the last man of the south rank and filled half the frame with him
+   (ch5rev_t1608_5); it is behind Smith in the aisle now, eight feet back. The court shot
+   at H.z+7 had the north rank's heads in its lens (H.z+6.5) and the offer's shot sat among
+   the kneeling women at H.z+9; both are in the aisle now, at H.z+3.5 and H.z+3. */
 function CAPT_TELL_1608(){
   const H=CAPT_HALL;
   return [
-    {fade:"in",cam:{to:[H.x+26,6,H.z+2],look:[H.x-12,3,H.z],cut:true},t:3.5,
-     narrate:"Smith tells it the night he comes home. These are his own words, as he wrote them that spring, the spelling made modern."},
-    {spawn:{id:"smithT",eq:CAPT_PEOPLE[0].eq,at:[H.x+22,H.y,H.z],face:-Math.PI/2}},
+    {fade:"in",cam:{to:[H.x+21,6,H.z+2],look:[H.x-12,3,H.z],cut:true},t:3.5,
+     narrate:"Smith tells it the day he comes home. These are his own words, as he wrote them that spring, the spelling made modern."},
+    {spawn:{id:"smithT",eq:CAPT_PEOPLE[0].eq,at:[H.x+17,H.y,H.z],face:-Math.PI/2}},
     {move:{id:"smithT",to:[H.x+4,H.y,H.z],face:-Math.PI/2},t:4,
      cam:{to:[H.x+14,7,H.z+6],look:[H.x-14,3.5,H.z]},
      narrate:"Arriving at Werowocomoco, their Emperor proudly lying upon a bedstead a foot high, upon ten or twelve mats, richly hung with many chains of great pearls about his neck."},
-    {cam:{to:[H.x-6,6.5,H.z+7],look:[H.x-20,3.5,H.z]},t:5,
-     narrate:"At his head sat a woman, at his feet another; on each side, upon a mat upon the ground, were ranged his chief men on each side the fire, ten in a rank."},
+    {cam:{to:[H.x-6,6.5,H.z+3.5],look:[H.x-20,3.5,H.z]},t:5,
+     narrate:"At his head sat a woman, at his feet another; on each side, sitting upon a mat upon the ground, were ranged his chief men on each side the fire, ten in a rank."},
     {t:4,narrate:"And behind them as many young women, each a great chain of white beads over their shoulders, their heads painted in red."},
-    {cam:{to:[H.x+2,5,H.z-5],look:[H.x-20,4,H.z+1]},t:4.5,
+    {cam:{to:[H.x+12,6.5,H.z-1.5],look:[H.x-20,4,H.z+1]},t:4.5,
      narrate:"With such a grave and majestical countenance, as drove me into admiration to see such state in a naked savage,"},
     {t:5,narrate:"he kindly welcomed me with good words, and great platters of sundry victuals, assuring me his friendship, and my liberty within four days."},
-    {t:5,narrate:"He asked me the cause of our coming. I told him, being in fight with the Spaniards our enemy, and by extreme weather put to this shore. It was not true."},
-    {cam:{to:[H.x-4,8,H.z+9],look:[H.x-16,3,H.z]},t:6,
-     narrate:"He desired me to forsake Paspahegh, and to live with him upon his river, a country called Capa Howasicke. Corn and venison he would give us; hatchets and copper we should make him."},
-    {t:4,narrate:"And he sent me home with four men. There is no one at the stones in this telling. There are no stones."},
+    {t:5,narrate:"He asked me the cause of our coming. I told him, being in fight with the Spaniards our enemy, and by extreme weather put to this shore."},
+    {cam:{to:[H.x-4,8,H.z+3],look:[H.x-16,3,H.z]},t:6,
+     narrate:"He desired me to forsake Paspahegh, and to live with him upon his river, a country called Capa Howasicke."},
+    {t:6,narrate:"He promised to give me corn, venison, or what I wanted to feed us: hatchets and copper we should make him, and none should disturb us."},
+    {t:3,narrate:"And he sent me home, with four men."},
+    {t:5,narrate:"That is the 1608 telling. The tale of the Spaniards was not true, and he set it down himself. There are no stones in it."},
     {fade:"out",t:1}];
 }
 /* the 1624 telling: the same hall, told again */
 function CAPT_TELL_1624(){
   const H=CAPT_HALL;
   return [
-    {fade:"in",cam:{to:[H.x+26,6,H.z+2],look:[H.x-12,3,H.z],cut:true},t:4,
+    {fade:"in",cam:{to:[H.x+21,6,H.z+2],look:[H.x-12,3,H.z],cut:true},t:4,
      narrate:"London, 1624. Captain Smith tells the story again, in print, for anyone who will buy the book. His words again, the spelling made modern."},
     {spawn:{id:"smithT",eq:CAPT_PEOPLE[0].eq,at:[H.x+4,H.y,H.z],face:-Math.PI/2}},
     {cam:{to:[H.x+14,7,H.z+6],look:[H.x-14,3.5,H.z]},t:5,
      narrate:"Before a fire upon a seat like a bedstead, he sat covered with a great robe, made of raccoon skins, and all the tails hanging by."},
-    {cam:{to:[H.x+8,6,H.z-8],look:[H.x-6,1.5,H.z]},t:5.5,
+    /* review, 26 Nov: was H.z-8, between the south rank (H.z-6.5) and the women behind it
+       (H.z-9.2), so kneeling men filled the right of the frame. In the aisle now. */
+    {cam:{to:[H.x+8,6,H.z-3.5],look:[H.x-6,1.5,H.z]},t:5.5,
      narrate:"A long consultation was held, but the conclusion was, two great stones were brought before Powhatan."},
     {move:{id:"smithT",to:[H.x-4,H.y,H.z+7],face:0},t:3,
      narrate:"Then as many as could laid hands on him, dragged him to them, and thereon laid his head,"},
@@ -25393,7 +25470,7 @@ function CAPT_TELL_1624(){
      do:function(){setTimeout(function(){const g=csActor("girl");if(g)poseFigure(g,"kneel",2);},4200);},
      narrate:"Pocahontas the King's dearest daughter, when no entreaty could prevail, got his head in her arms, and laid her own upon his to save him from death."},
     {t:5.5,narrate:"Whereat the Emperor was contented he should live to make him hatchets, and her bells, beads, and copper."},
-    {cam:{to:[H.x+26,6,H.z+2],look:[H.x-12,3,H.z]},t:5,
+    {cam:{to:[H.x+21,6,H.z+2],look:[H.x-12,3,H.z]},t:5,
      narrate:"That is the 1624 telling. Sixteen years before, Smith had written the same hall, the same king and the same offer, and no stones."},
     {fade:"out",t:1}];
 }
@@ -25402,13 +25479,19 @@ function captCompare(){
   const w=captW();
   let h="<p>For each, is it in Smith’s 1608 telling, or is it new in 1624?</p>";
   CAPT_ROWS.forEach(function(r,i){
-    h+="<div class=\"captRow\"><span>"+r.t+"</span> <button class=\"btn small\" data-cr=\""+i+"\" data-v=\"0\">1608</button> <button class=\"btn small\" data-cr=\""+i+"\" data-v=\"1\">New in 1624</button> <b class=\"captMark\" id=\"cm"+i+"\"></b></div>";
+    h+="<div class=\"captRow\"><span>"+r.t+"</span> <div class=\"captBtns\"><button class=\"btn small\" data-cr=\""+i+"\" data-v=\"0\">1608</button> <button class=\"btn small\" data-cr=\""+i+"\" data-v=\"1\">New in 1624</button> <b class=\"captMark\" id=\"cm"+i+"\"></b></div></div>";
   });
   captSheet("The two tellings","1608 and 1624, side by side",h,[{t:"Done",fn:function(){
     const right=w.marks.filter(function(m,i){return m!=null&&(m===1)===CAPT_ROWS[i].new;}).length;
     if(w.marks.filter(function(m){return m!=null;}).length<CAPT_ROWS.length){toast("Mark every row first.");setTimeout(captCompare,50);return;}
     captDone("compare");
-    fortResult("What grew","<p>You placed "+right+" of "+CAPT_ROWS.length+" rightly.</p><p><b>New in 1624:</b> the tree and the compass, the stones and the clubs, Pocahontas, “his sonne Nantaquoud”, twelve guides instead of four, and six or seven weeks instead of twenty-three days.</p><p><b>In both:</b> the bedstead and the robe, Powhatan’s questions, the land offered for hatchets and copper.</p><p>The parts that stayed the same are the parts other people could check. The parts that grew are the parts only Smith saw.</p>",["+6 Ink"]);
+    fortResult("What grew","<p>You placed "+right+" of "+CAPT_ROWS.length+" rightly.</p><p><b>New in 1624:</b> the tree and the compass, the stones and the clubs, Pocahontas, “his sonne Nantaquoud”, twelve guides instead of four, and six or seven weeks instead of twenty-three days.</p><p><b>In both:</b> the bedstead and the robe, and the land offered for hatchets and copper.</p><p><b>Only in 1608:</b> Powhatan asking why the English came.</p><p>The court and the offer stayed the same. What grew is the danger, and the danger is the part no other Englishman saw.</p>",["+6 Ink"]);
+    /* review, 26 Nov: "In both: ... Powhatan's questions" - the 1624 pages have no
+       questions at all (CH5-RECORD, side-by-side table), which is why that row is keyed
+       1608 and not new; the summary said otherwise. */
+    /* review, 26 Nov: this said "the parts that stayed the same are the parts other people
+       could check" - but the four men who brought him home, and his time away, were the
+       most checkable things at the fort, and both grew. What only Smith saw is the danger. */
   }}]);
   w.marks=w.marks.length===CAPT_ROWS.length?w.marks:CAPT_ROWS.map(function(){return null;});
   CAPT_ROWS.forEach(function(r,i){
@@ -25431,12 +25514,18 @@ function tidewaterWoman(girl){
   const f=buildFigure(eq);
   const p=f.userData.parts;
   if(p&&p.neck){
-    const g=new Geo(), hide=RGB(0x9b7a52), hideD=RGB(0x7a5c3c), hair=RGB(0x1c1510), bead=RGB(0xe9e4d6), red=RGB(0x9a3a24);
+    const g=new Geo(), hide=RGB(0x9b7a52), hideD=RGB(0x7a5c3c), hair=RGB(0x33251a), bead=RGB(0xe9e4d6), red=RGB(0x9a3a24);
     /* the mantle hangs from the neck joint (inner units: a figure is about 1.9 tall) */
     g.oct(0,0,-0.2,0.02,0.36,0.24,0.24,0.17,0.04,hideD,hide);     /* shoulders */
     g.oct(0,0,-1.15,-0.2,0.34,0.22,0.36,0.24,0.04,hideD,hide);    /* body to the knee */
-    g.box(0,-0.08,-0.15,0.22,0.5,0.05,hair);                     /* long hair down the back */
-    if(!girl){g.box(0,0.33,0,0.31,0.03,0.30,red);                  /* the crown painted red */
+    /* review, 26 Nov: the hair was a near-black panel from 0.17 down at z -0.15 - INSIDE the
+       head, whose back is at -0.213 (measured, neck space: x +-0.198, y -0.02 to 0.415) - so
+       from behind it showed only below the skull, a black patch pinned to the mantle under
+       a bare head (shot ch5rev_girl_back). It hangs behind the head now, from the crown
+       down, in the house hair colour. The red paint sat at 0.33, inside the head as well,
+       so no woman's head was ever red; it is on top of the head now. */
+    g.box(0,0.06,-0.228,0.32,0.72,0.04,hair);                     /* long hair down the back */
+    if(!girl){g.box(0,0.43,-0.01,0.34,0.03,0.36,red);              /* the crown painted red */
       for(let i=0;i<11;i++){const a=-1.3+i*0.26;g.box(Math.sin(a)*0.21,-0.06-Math.cos(a)*0.05,Math.cos(a)*0.15,0.035,0.035,0.035,bead);}}
     p.neck.add(g.mesh(false,false));
   }
@@ -25510,7 +25599,13 @@ function captCanoe(G,x,z,yaw){
     /* she rides high: a dugout is a log, and the water plane is at -0.35 */
     g.quad(P(a0,-w0,0.9),P(a1,-w1,0.9),P(a1,-w1*0.7,-0.3),P(a0,-w0*0.7,-0.3),wood);
     g.quad(P(a0,w0*0.7,-0.3),P(a1,w1*0.7,-0.3),P(a1,w1,0.9),P(a0,w0,0.9),wood);
-    g.quad(P(a0,-w0*0.7,0.1),P(a1,-w1*0.7,0.1),P(a1,w1*0.7,0.1),P(a0,w0*0.7,0.1),dark);
+    /* review, 26 Nov: the floor was wound facing DOWN, there were no inner walls, and the
+       outer walls flare, so they face away from anyone above them: from the bank the
+       canoe was a thin dark sliver (shot ch5rev_canoe_close). The floor faces up now, and
+       the hollow has its own walls, wound inward. */
+    g.quad(P(a0,w0*0.7,0.1),P(a1,w1*0.7,0.1),P(a1,-w1*0.7,0.1),P(a0,-w0*0.7,0.1),dark);
+    g.quad(P(a0,-w0*0.7,-0.3),P(a1,-w1*0.7,-0.3),P(a1,-w1,0.9),P(a0,-w0,0.9),dark);
+    g.quad(P(a0,w0,0.9),P(a1,w1,0.9),P(a1,w1*0.7,-0.3),P(a0,w0*0.7,-0.3),dark);
   }
   return g;
 }
@@ -25518,7 +25613,7 @@ function captCanoe(G,x,z,yaw){
 registerWorld("ch5",function(root){
   const w=captW(), sd=captDay();
   const where=CAPT.telling?"york":sd.where;
-  CAPT.ship=null;CAPT.lit=false;CAPT.winter=!!sd.winter;BLAZE.fires.length=0;
+  CAPT.ship=null;CAPT.canoe=null;CAPT.lit=false;CAPT.ash=false;CAPT.winter=!!sd.winter;BLAZE.fires.length=0;
   let G, spots={}, at=[0,20], face=Math.PI;
   const duty=function(id,label,x,z,data){
     interactables.push({id:id,label:label,x:x,z:z,y:G(x,z),lvl:LVL.MAIN,r:8,action:"capt",data:data});};
@@ -25528,27 +25623,42 @@ registerWorld("ch5",function(root){
     buildFortWorld(root,view,{ships:["discovery"],people:false,record:false,winter:true});
     G=fortGround;
     const ox=FORT_O[0],oz=FORT_O[1];
-    spots={ratcliffe:[-30,0,2.6],martin:[-44,-4,2.2],percy:[-108,-42,1.2],read:[0,-60,0],
+    spots={ratcliffe:[-30,0,2.6],martin:[-44,-4,2.2],percy:[-108,-42,1.2],read:[-8,-61,0.3],
       smith:[6,10,3.2],archer:[-40,-8,2.0],hunt:[-60,14,3.0]};
+    /* review, 26 Nov: on the seventh Archer's spot is under the burning awning (the blaze at
+       -35,-10 is fourteen feet across), so he stood in the flames. He stands clear of it. */
+    if(sd.fire)spots.archer=[-22,10,2.4];
     if(sd.duty==="ladder"){
       /* the ladder against the gallows, at the north of the fort */
       const g=new Geo(), wood=RGB(0x6a543a);
       g.beam8([-6,G(-6,-70),-70],[-6,G(-6,-70)+16,-70],0.9,0.8,wood,wood);
       g.beam8([6,G(6,-70),-70],[6,G(6,-70)+16,-70],0.9,0.8,wood,wood);
       g.beam8([-7,G(0,-70)+15.5,-70],[7,G(0,-70)+15.5,-70],0.8,0.8,wood,wood);
-      g.beam8([-2,G(-2,-64),-64],[-2,G(-2,-70)+12,-70.5],0.3,0.3,wood,wood);
-      g.beam8([2,G(2,-64),-64],[2,G(2,-70)+12,-70.5],0.3,0.3,wood,wood);
-      for(let k=1;k<6;k++)g.beam8([-2,G(0,-64)+k*2,-64-k],[2,G(0,-64)+k*2,-64-k],0.2,0.2,wood,wood);
+      /* review, 26 Nov: the rails stopped twelve feet up, three and a half feet under the
+         cross-beam, so the ladder leaned on nothing (shot ch5rev_ladder_close); and its
+         rungs stopped at ten. Rails now run to the underside of the beam (15.5 less half its
+         0.8), rungs evenly up them. */
+      const lt=G(0,-70)+15.0, lz=-69.5, lb=G(0,-64);
+      g.beam8([-2,G(-2,-64),-64],[-2,lt,lz],0.3,0.3,wood,wood);
+      g.beam8([2,G(2,-64),-64],[2,lt,lz],0.3,0.3,wood,wood);
+      for(let k=1;k<7;k++){const t=k/7;g.beam8([-2,lb+t*(lt-lb),-64+t*(lz+64)],[2,lb+t*(lt-lb),-64+t*(lz+64)],0.2,0.2,wood,wood);}
       root.add(g.mesh(false,false));solid(0,-70,8,2,LVL.MAIN,0);
-      duty("ladder","The Ladder",0,-58,{kind:"ladder",verb:"Hear what Read says"});
+      /* and Read stood on the duty's own spot, a foot from it, so walking up to the ladder
+         from the fort always offered "Speak: James Read" and the guide arrow's target only
+         turned up once you had walked past him. He stands to one side of the foot now. */
+      duty("ladder","The Ladder",4,-58,{kind:"ladder",verb:"Hear what Read says"});
     }
     if(sd.duty==="relation"){
       if(!w.did.relation){
         /* before he has told it he is only the man at the gate: one figure, one spot */
         delete spots.smith;
-        const f=buildFigure(CAPT_PEOPLE[0].eq);f.position.set(4,G(4,24),24);f.rotation.y=Math.PI;root.add(f);
-        npcMeshes.push({npc:CAPT_PEOPLE[0],mesh:f});solid(4,24,1,1,LVL.MAIN,0);
-        duty("relation","John Smith",4,27,{kind:"relation",verb:"Hear his relation"});}
+        /* review, 26 Nov: he stood at (4,24), INSIDE the palisade and east of the gate's
+           five-foot opening, so from the player's start outside it he was behind the stakes
+           and his label floated over the wall (shot ch5rev_s3_smith). He is outside the gate
+           now, coming in, between the player and the fort. */
+        const f=buildFigure(CAPT_PEOPLE[0].eq);f.position.set(5,G(5,35),35);f.rotation.y=Math.PI;root.add(f);
+        npcMeshes.push({npc:CAPT_PEOPLE[0],mesh:f});solid(5,35,1,1,LVL.MAIN,0);
+        duty("relation","John Smith",5,38,{kind:"relation",verb:"Hear his relation"});}
       /* Newport's ship, below the fort, comes up after the relation */
       const s=placeShip(root,"susan",1,-700,100,Math.PI/2+0.03);
       CAPT.ship={m:s,go:false,to:-150};
@@ -25569,8 +25679,10 @@ registerWorld("ch5",function(root){
         duty("b_hunt","Master Hunt’s Quarters",-56,18,{kind:"burn",b:"hunt",verb:"Go to Master Hunt"});
         duty("b_wall","The West Palisade",-110,-46,{kind:"burn",b:"wall",verb:"Beat at the flames"});
       } else {
-        /* after: the store and the shelters are ash */
-        ["storehouse_roof","storehouse_walls","camp_shelters"].forEach(function(k){if(FORT.parts[k])FORT.parts[k].visible=false;});
+        /* after: the store and the shelters are ash. Review, 26 Nov: this hid them HERE,
+           but the fort's parts arrive from their GLB a promise later (fortPlace), so
+           FORT.parts was still empty and nothing was ever hidden - the store stood whole
+           over "the fort is ash". CAPT.ash is the flag; updateCapt hides them as they come. */
         CAPT.ash=true;
       }
     }
@@ -25587,8 +25699,13 @@ registerWorld("ch5",function(root){
   if(where==="river"){
     G=captLand(root,"chick",{trees:140,winter:true,clear:function(x,z){return Math.hypot(x,z-30)<40;}});
     captBarge(root,G,0,66,0.1);
-    const c=captCanoe(G,-40,57,0.4);root.add(c.mesh(false,false));
-    spots={smith:[-26,40,2.2],bargeman:[14,44,3.6]};
+    /* review, 26 Nov: once the order is given Smith has gone on up the river by canoe, but
+       he and the canoe stayed on the bank through "the barge goes back down the river"
+       (shot ch5rev_canoe_0) and on every reload after. They are here only before he goes;
+       the cutscene that plays as he goes takes them out (CAPT_CANOE). */
+    if(!w.did.barge){
+      const c=captCanoe(G,-40,57,0.4);CAPT.canoe=c.mesh(false,false);root.add(CAPT.canoe);}
+    spots=w.did.barge?{bargeman:[14,44,3.6]}:{smith:[-26,40,2.2],bargeman:[14,44,3.6]};
     duty("barge","The Barge",6,52,{kind:"barge",verb:"Hear the order"});
     /* the town across the bank: smoke, and its houses through the trees */
     yehakin(root,-150,G(-150,-90),-90,20,12,10,0);yehakin(root,-120,G(-120,-120),-120,18,11,9,1);
@@ -25614,7 +25731,10 @@ registerWorld("ch5",function(root){
     /* the court, inside: Powhatan at the far (west) end, the fire, the ranks */
     const pw=powhatanFigure();pw.position.set(H.x-24,H.y,H.z);pw.rotation.y=Math.PI/2;root.add(pw);
     const fireG=new Geo();fireG.oct(H.x-10,H.z,H.y,H.y+0.4,2.4,2.4,2.2,2.2,0.2,RGB(0x3a2e24),RGB(0x2a221a));root.add(fireG.mesh(false,false));
-    blazeAt(root,H.x-10,H.y+0.3,H.z,4,2.4);
+    /* review, 26 Nov: the hearth smoked like the burning fort - a 2.2-foot puff every 0.35s,
+       growing, which filled the hall with grey translucent blocks over Powhatan in every
+       telling shot, and is blended overdraw besides. A hearth fire, no plume. */
+    blazeAt(root,H.x-10,H.y+0.3,H.z,4,2.4).smoke=false;
     for(let s=-1;s<=1;s+=2)for(let i=0;i<10;i++){
       const x=H.x-20+i*2.6, zm=H.z+s*6.5, f=tidewaterFigure();
       f.position.set(x,H.y,zm);f.rotation.y=s>0?Math.PI:0;poseFigure(f,"kneel",i*7+s);root.add(bakeFigure(f));
@@ -25636,8 +25756,20 @@ registerWorld("ch5",function(root){
           const cg=new Geo();cg.beam8([0,-0.1,0],[0,-0.75,0.05],0.07,0.11,RGB(0x5a4128),RGB(0x4a3420));p.wristR.add(cg.mesh(false,false));}
         root.add(f);}
     }
+    /* review, 26 Nov: "The Two Tellings" and "Copper in the Ground" were labels over bare
+       ground (shots ch5rev_spot_compare, ch5rev_spot_copper). The tellings are both about
+       this hall, so they are set side by side at its door; and the copper has the thing a
+       dig leaves - a squared unit, pegged and strung, with green-brown scraps in its floor. */
     if(!CAPT.telling){
-      duty("compare","The Two Tellings",30,30,{kind:"compare",verb:"Set them side by side"});
+      const U=new Geo(), soil=RGB(0x3e3324), peg=RGB(0xb9a882), cu=RGB(0x6f7a4a), cu2=RGB(0x9a6a3a);
+      const ux=60, uz=-60, uy=G(ux,uz);
+      U.box(ux,uy-0.12,uz,10,0.3,10,soil);
+      for(const c of [[-5,-5],[5,-5],[5,5],[-5,5]])U.box(ux+c[0],uy+0.5,uz+c[1],0.25,1.2,0.25,peg);
+      U.box(ux,uy+0.95,uz-5,10,0.04,0.04,peg);U.box(ux,uy+0.95,uz+5,10,0.04,0.04,peg);
+      U.box(ux-5,uy+0.95,uz,0.04,0.04,10,peg);U.box(ux+5,uy+0.95,uz,0.04,0.04,10,peg);
+      for(let i=0;i<7;i++)U.box(ux+(srand(i*4.1)-0.5)*7,uy+0.06,uz+(srand(i*2.3)-0.5)*7,0.5,0.06,0.3,i%2?cu:cu2);
+      root.add(U.mesh(false,false));
+      duty("compare","The Two Tellings",H.x+H.len/2+8,H.z,{kind:"compare",verb:"Set them side by side"});
       duty("ditch","The Ditches",0,-112,{kind:"ditch",verb:"Look at what was dug"});
       duty("copper","Copper in the Ground",60,-60,{kind:"copper",verb:"Look at what was found"});
     }
@@ -25656,13 +25788,26 @@ registerWorld("ch5",function(root){
   if(!CAPT.telling){
     if(sd.next)duty("next",sd.next,where==="fort"?-75:at[0]+10,where==="fort"?22:at[1]+6,
       {kind:"next",verb:w.day<CAPT_DAYS.length-1?"Go on to "+CAPT_DAYS[w.day+1].date:"Go on"});
-    else if(w.did.fire)duty("record","Close the Record",0,FORT_O[1]-8,{kind:"record",verb:"Close the chapter’s record"});
+    /* review, 26 Nov: this stood in the gateway, a hundred and twenty feet from the Master
+       Percy whose account it opens. It is beside him now, on the fort side, so the walk in
+       meets it before it meets him. */
+    else if(w.did.fire)duty("record","Close the Record",-99,-36,{kind:"record",verb:"Close the chapter’s record"});
   }
 
+  /* review, 26 Nov: CAPT_OPEN[0], "Cape merchant", was never shown - captNext opens each
+     scene's record on the way IN, and nothing goes in to scene 0. Shown once, on arrival. */
+  if(!CAPT.telling&&w.day===0&&!w.did.open0){
+    w.did.open0=true;
+    setTimeout(function(){if(CURRENT_WORLD==="ch5")
+      fortResult(CAPT_OPEN[0].t,"<p class=\"sickDate\">"+CAPT_DAYS[0].date+"</p>"+CAPT_OPEN[0].b,[]);},500);
+  }
   if(where!=="fort"){player=buildFigure(S.equip);root.add(player);playerParts=player.userData.parts;dressCarried(player);}
   player.position.set(at[0],G(at[0],at[1]),at[1]);player.rotation.y=face;
   camYaw=0;camPitch=0.30;
 });
+/* what the fire of 7 January leaves standing: not these (the store's frame stays, charred).
+   The awning is one of the four fires laid on the seventh, so it goes too. */
+const CAPT_ASH=["storehouse_roof","storehouse_walls","camp_shelters","awning"];
 function updateCapt(dt){
   if(CURRENT_WORLD!=="ch5")return;
   if(!CAPT.lit&&CAPT.winter){
@@ -25682,6 +25827,7 @@ function updateCapt(dt){
     }
     CAPT.lit=true;
   }
+  if(CAPT.ash)for(const k of CAPT_ASH){const p=FORT.parts[k];if(p&&p.visible)p.visible=false;}
   if(CAPT.ship&&CAPT.ship.go&&CAPT.ship.m.position.x<CAPT.ship.to)
     CAPT.ship.m.position.x=Math.min(CAPT.ship.to,CAPT.ship.m.position.x+dt*60);
   updateBlaze(dt);
@@ -25691,13 +25837,22 @@ function updateCapt(dt){
    Sat at "Close the Record" after the fire of 7 January 1608, so everyone who sits it has
    heard both tellings: every item is ungated, every stimulus carries its words. The sitter
    is Master Percy, who stayed at the fort, and who later wrote his own account of these
-   years - a bitter one, about Smith. Written off docs/CH5-RECORD.md §Teaching hooks. */
+   years - a bitter one, about Smith. Written off docs/CH5-RECORD.md §Teaching hooks.
+   Review, 26 November: Percy's frame no longer sends the relation home "with Newport" -
+   Smith wrote it that spring and nobody records which ship carried it. The Kendall item's
+   1612 stimulus now carries Kendall's death, so the keyed "all three agree" is answerable
+   from the page, and keys what 1612 actually says ("cost the life"), not "condemned". The
+   thirty-eight are Smith's count, so the stimulus says so. Smith reports his tale to
+   Powhatan without calling it false, so it is his "account", not his "admission". And the
+   keyed answer was the longest of four in ten items, and the only hedged one where the
+   others said "proves", "always" or "never": distractors lengthened or reworded so neither
+   length nor wording gives it away. */
 CONTENT.ch5={
   people:CAPT_PEOPLE,
   npcs:CAPT_NPCS,
   charter:{insight:{b:"Smith’s Relation"}},
   reck:{seal:"records",kick:"Master Percy’s Account",title:"Set Down the Winter",
-    frame:"Master Percy sits on a burnt beam with what is left of his papers. “Captain Smith’s relation will go home with Newport, and men will print it. Mine will go too. Before I write a word about his captivity, tell me what you make of it. Six questions; I’ll bear two wrong — no more.”",
+    frame:"Master Percy sits on a burnt beam with what is left of his papers. “Captain Smith’s relation will go home to England, and men will print it. Mine will go too. Before I write a word about his captivity, tell me what you make of it. Six questions; I’ll bear two wrong — no more.”",
     lockLine:"Not yet. The account is closed after the fire of the seventh of January.",
     pass:{title:"The Account Holds",body:"Percy nods slowly. “Then I shall write what we saw, and say plainly that the rest is his word. A man may tell his own story. He may not make the rest of us swear to it.”"},
     fail:{title:"The Account Does Not Hold",body:"“You would have me print his story as if I had stood in that hall,” says Percy. “I did not. Nor did you. Walk it again, and tell me what we know and how.”"},
@@ -25708,13 +25863,13 @@ CONTENT.ch5={
        o:["The 1608 one, written that same spring","The 1624 one, since it has more detail","Both were written in the same year","Neither; both were written by others"],a:0},
       {stim:"Smith first claimed the rescue in a 1616 letter to Queen Anne, when Pocahontas was in London and famous. His 1608 account and his friends' 1612 book do not mention it.",
        q:"Why might the timing of the first claim matter?",
-       o:["Telling it then linked Smith to a famous visitor","It proves the rescue happened in 1616","It shows the Queen had seen the rescue","It means the 1608 account was a forgery"],a:0},
-      {stim:"Wingfield, Smith's enemy, 1608: “by the meanes of his guide, his lief was saued.”",
+       o:["Telling it then linked Smith to a famous visitor","It dates the rescue itself to the year 1616","It shows that the Queen herself had seen it happen","It means that the 1608 account was a later forgery"],a:0},
+      {stim:"Wingfield, Smith's enemy, 1608: “by the meanes of his guide, his lief was saved.”",
        q:"What is this enemy's account useful for?",
-       o:["It shows Smith's life was thought to be in danger","It proves Pocahontas saved Smith that day","It shows Wingfield was there in the hall","It names the guide and tells his story"],a:0},
+       o:["It shows Smith's life was thought to be in danger","It shows that Pocahontas saved Smith's life that day","It shows that Wingfield was there in the hall himself","It gives the guide's name and tells the guide's story"],a:0},
       {stim:"The 1612 Proceedings, written by Smith's friends: he survived “By these fictions”, meaning stories he told his captors.",
        q:"How does this fit with the 1624 rescue story?",
-       o:["His own friends credit his talk, not a rescue","It proves Pocahontas made up the rescue","It says the Powhatan never held him","It is the same story told in other words"],a:0},
+       o:["His own friends credit his talk, not a rescue","It shows Pocahontas made up the rescue story herself","It says the Powhatan never held him prisoner at all","It is the same rescue story, told in other words"],a:0},
       {stim:"In 1608 Smith calls her “a child of tenne yeares old.” In 1616 he says she was “twelue or thirteene” that winter.",
        q:"Which age is likelier, and why?",
        o:["Ten: he wrote it nearer the time","Thirteen: he knew her better by 1616","Neither; she was a grown woman","Both; she was two different people"],a:0},
@@ -25723,40 +25878,40 @@ CONTENT.ch5={
        o:["Each retelling made the captivity longer","He was captured more than once that winter","The calendar was changed between tellings","The later numbers are the more exact ones"],a:0},
       {stim:"Kecoughtan, 1608: scorn, then trade. 1612: scorn, then “they loaded his boat with corne.” 1624: he “Let fly his muskets, ran his boat on shore” and seized their idol.",
        q:"What does the Kecoughtan story suggest about Smith's later books?",
-       o:["His stories grew more dramatic with each telling","His later books corrected mistakes in 1608","The Kecoughtan visited him three times","He forgot Kecoughtan entirely by 1624"],a:0},
+       o:["His stories grew more dramatic with each telling","His later books corrected the mistakes made in 1608","The Kecoughtan came to visit him three separate times","He had forgotten Kecoughtan entirely by 1624"],a:0},
       {stim:"1608: Powhatan offered land at “Capa Howasicke” for “Hatchets and Copper.” 1624: “Capahowosick”, and Smith esteemed “as his sonne Nantaquoud.”",
        q:"Some historians read the 1624 scene as a ceremony making Smith a lesser chief under Powhatan. What does that reading rest on?",
        o:["The land grant and the word “sonne”","A Powhatan account written in 1608","Smith's own statement that it was a ritual","Archaeologists finding the two stones"],a:0},
       {stim:"Mattaponi oral history, written down in 2007, says there was no rescue and that Pocahontas, a child, would not have been there.",
        q:"How should a historian treat this source?",
-       o:["As real evidence, tested like any other source","As proof that Smith lied about everything","As worthless, because it is oral history","As older than Smith's 1608 account"],a:0},
+       o:["As real evidence, tested like any other source","As proof that Smith lied about everything he wrote","As worthless, since oral history cannot be evidence","As older and more direct than Smith's 1608 account"],a:0},
       {stim:"Smith, 1608: he told Powhatan the English were “in fight with the Spaniards”, driven ashore by weather, waiting for “Captaine Newport my father”. None of it was true.",
-       q:"What does Smith's own admission tell a reader?",
+       q:"What does Smith's own account of it tell a reader?",
        o:["He would mislead when it served him","Powhatan believed everything he said","The English really were fleeing Spain","Newport was in fact his father"],a:0},
-      {stim:"Smith, 1608: Read “declared a dangerous conspiracy.” Wingfield: Read accused Kendall in private “and so escaped himself.” 1612: Kendall plotted to seize the pinnace.",
+      {stim:"Smith, 1608: Read “declared a dangerous conspiracy.” Wingfield: Read accused Kendall in private “and so escaped himself.” 1612: Kendall plotted to seize the pinnace, “Which action cost the life of captaine Kendall.”",
        q:"What do all three accounts agree on?",
-       o:["Kendall was condemned and shot","Kendall was a Spanish spy","Read was hanged for striking Ratcliffe","Wingfield pronounced the sentence"],a:0},
+       o:["Kendall lost his life over it","Kendall was a Spanish spy","Read was hanged for striking Ratcliffe","Wingfield pronounced the sentence"],a:0},
       {stim:"Wingfield: Archer “indited him vpon a Chapter in Leuiticus for the death of his twoe men.” Smith, 1608: they only “purposed to depose me.”",
        q:"Why might Smith's own account leave out the death sentence?",
-       o:["It was humiliating, and he wrote to look strong","He had never been in Jamestown that day","Archer was his close friend and ally","Leviticus was not read in England"],a:0},
-      {stim:"Wingfield gives the return as “the viijth of January”. Perkins, who came on the First Supply, says the ship arrived “the second of January”, the same night as Smith. Wingfield dates the fire “The 7 of January”.",
+       o:["It was humiliating, and he wrote to look strong","He was not yet back in Jamestown on that day","Archer was his close friend and ally on the council","Leviticus was not read or known in England then"],a:0},
+      {stim:"Wingfield gives the return as “the viijth of January”. Perkins, who came on the First Supply, says the ship arrived “the second of January”; Smith and Wingfield both say it came the same night he did. Wingfield dates the fire “The 7 of January”.",
        q:"Which date for Smith's return fits the evidence?",
        o:["The 2nd, or the fire comes before the ship","The 8th, because Wingfield was an eyewitness","The 7th, the same day as the fire","No date can be worked out at all"],a:0},
       {stim:"Copper found at Werowocomoco matches the copper brought to Jamestown. The town's ditches date to about 1400–1460.",
        q:"What can this archaeology tell us that Smith's books cannot?",
-       o:["Where the copper went, and how old the town was","What Powhatan said to Smith in the hall","Whether Pocahontas saved Smith's life","How many weeks Smith was held captive"],a:0},
+       o:["Where the copper went, and how old the town was","What Powhatan said to Smith in the hall that day","Whether Pocahontas really saved Smith's life","How many weeks Smith was held captive that winter"],a:0},
       {stim:"Opechancanough took Smith to the Rappahannock, where a ship's captain had once killed their king and taken people, to see whether Smith was that man. They said he was not.",
        q:"What does this show about the Powhatan?",
-       o:["They kept careful account of wrongs done to them","They had never met Europeans before Smith","They mistook Smith for Captain Newport","They meant to trade Smith to the Spanish"],a:0},
+       o:["They kept careful account of wrongs done to them","They had never met any Europeans before Smith came","They thought Smith was Captain Newport himself","They meant to trade Smith away to the Spanish"],a:0},
       {stim:"The fire: “by a mischaunce” (Smith, 1608); the newcomers “accidently fired the quarters … being but thatched with reeds” (1612).",
        q:"What do the sources say caused the fire?",
-       o:["An accident; no one is named as to blame","The Powhatan set it during the night","Archer set it to destroy the records","Smith set it to cover his escape"],a:0},
-      {stim:"Of the 104 Newport left in June, he found in January “about eight and thirtie miserable poore and sicke creatures” alive.",
+       o:["An accident; no one is named as to blame","The Powhatan set it in the night, from the woods","Archer set it to destroy the council's records","Smith set it to hide what the store had lost"],a:0},
+      {stim:"Of the 104 Newport left in June, Smith, writing to the Queen in 1616, says he found in January “about eight and thirtie miserable poore and sicke creatures” alive.",
        q:"About what share of the first colonists was still alive?",
        o:["About a third","About nine in ten","About half","Almost none"],a:0},
       {stim:"The rescue is absent from Smith's 1608 book. A historian who believes the 1624 rescue says the 1608 book was cut by its printer, who admitted “somewhat more was by him written.”",
        q:"Is that a strong argument for the rescue?",
-       o:["Not alone: his friends' 1612 book omits it too","Yes: it proves the rescue was cut out","Yes: printers always cut the best parts","No: the printer never cut anything"],a:0}]},
+       o:["Not alone: his friends' 1612 book omits it too","Yes: it shows the rescue was what was cut out","Yes: printers cut the best parts of such books","No: the printer did not cut anything at all"],a:0}]},
   ready:function(){
     const w=captW();
     return (w.day>=CAPT_DAYS.length-1&&w.did.fire)?{ok:true,missing:[]}:{ok:false,missing:["the fire of the seventh of January"]};
@@ -26041,7 +26196,9 @@ const CHAPTERS=[
      if(o)return {it:o,why:w.did.fire?"the chapter ends here":"the next date"};
      return null; },
    end:{head:"Smith’s Relation — Complete",yr:"Chapter V · 7 January 1608",nextWorld:null,
-     body:"<p>The fort is ash, and the First Supply’s hundred men are sleeping in the frost with the thirty-eight who were left. Smith is on the council again. Powhatan sends deer and bread to the fort once or twice a week, “halfe alwayes for my father”, Captain Newport, whom he wants to meet.</p>"+
+     /* review, 26 Nov: "the First Supply's hundred men" - the near hundred sailed in two
+        ships, and the Phoenix was still at sea (Proceedings p. 99) */
+     body:"<p>The fort is ash, and the First Supply’s newcomers are sleeping in the frost with the thirty-eight who were left. Smith is on the council again. Powhatan sends deer and bread to the fort once or twice a week, “halfe alwayes for my father”, Captain Newport, whom he wants to meet.</p>"+
        "<p>In February Newport and Smith go to Werowocomoco together. That is the next chapter, and it is still to come.</p>"}},
   {n:"VI",yr:"1608–09",t:"Smith & the Record",d:"The fort and the woods, 1608-09",ready:false},
   {n:"VII",yr:"1609–10",t:"The Starving Time",d:"The besieged fort, winter 1609-10",ready:false},
@@ -27470,7 +27627,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261126-2321";
+const BUILD="20261126-2355";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
