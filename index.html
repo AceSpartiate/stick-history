@@ -7632,6 +7632,7 @@ function disposeWorld(){
   fxRoot=null;POOL.smoke=null;POOL.trace=null;POOL.impacts=null;POOL.arrows=null;
   CH1_SHORE=null;               /* a coastline must not outlive the world it is in */
   shootables=[];                /* nor may last chapter's casks stop this chapter's ball */
+  DEER.length=0;                /* the deer belong to the world they were placed in */
   CROWD_HITS.length=0;
   /* CROWD too, and it was leaking: it is filled by buildShoreParty and was only
      emptied there, so standing in Chapter I the registry still held all thirty-six
@@ -8401,7 +8402,7 @@ function animate(){
   }
   IDLE_T+=dt;
   strayCheck();
-  updateBell(dt);updateFalling(dt);updateJump(dt);updateCrowd(dt);updateNpcIdles(dt);
+  updateBell(dt);updateFalling(dt);updateJump(dt);updateCrowd(dt);updateNpcIdles(dt);updateDeer(dt);
   /* The deck under you plus whatever the jump has added - set every frame, not
      only while walking, or a jump from standstill would never leave the ground.
      Not during a cutscene: those place the player deliberately, and overwriting
@@ -19232,6 +19233,65 @@ function placeModel(root,file,node,x,y,z,ry,sx,sy,sz){
   }).catch(function(e){console.warn("model",file,e);});
   return grp;
 }
+/* ========== DEER, FEW AND WARY ==========
+   Smith, A Map of Virginia (1612): "Of beastes the chiefe are Deare, nothing differing from
+   ours. In the deserts towards the heads of the riuers, ther[e] are many, but amongst the
+   riuers few" - and of the ground between the rivers, "little commeth there which they
+   devoure not". The tidewater was hunted country. So: one deer to a scene, at the edge of
+   the trees, and it does not stay to be looked at. Walk toward it and the head comes up;
+   come closer and it is gone into the woods in long bounds.
+   A doe, or a buck without his rack: in April to June a buck's antlers are short and in
+   velvet, so the model (TRELLIS.2 from a Z-Image picture, auto-rigged with SkinTokens and
+   posed, baked by tools/blender/bake_glb.py) had its antlers cut away before baking.
+   The models face -x. */
+const DEER=[];
+const DEER_ALERT=70,DEER_FLEE=42;
+function addDeer(root,G,x,z,ry,pose){
+  const grp=new THREE.Group();
+  grp.position.set(x,G(x,z),z);grp.rotation.y=ry;root.add(grp);
+  const d={g:grp,G:G,parts:{},rest:pose,state:"calm",t:0,run:0,ux:0,uz:0,hop:0};
+  /* whole paths, so tools/check.py can see every file the game asks for */
+  const FILES={standing:"assets/animals/deer_standing.glb",grazing:"assets/animals/deer_grazing.glb",
+               startled:"assets/animals/deer_startled.glb"};
+  Object.keys(FILES).forEach(function(p){
+    d.parts[p]=placeModel(grp,FILES[p],"deer_"+p,0,0,0,0,1,1,1);
+    d.parts[p].visible=(p===pose);
+  });
+  DEER.push(d);
+  return d;
+}
+function deerPose(d,p){for(const k in d.parts)d.parts[k].visible=(k===p);}
+function deerFace(d,ux,uz){d.g.rotation.y=Math.atan2(uz,-ux);}   /* local -x onto (ux,uz) */
+function updateDeer(dt){
+  if(!DEER.length||!player)return;
+  const alarm=FORT.on||AMBUSH.on||DUSK.on;
+  for(let i=0;i<DEER.length;i++){
+    const d=DEER[i];
+    if(d.state==="gone")continue;
+    const dx=d.g.position.x-player.position.x,dz=d.g.position.z-player.position.z;
+    const r=Math.hypot(dx,dz)||1;
+    if(d.state==="calm"){
+      if(r<DEER_ALERT||alarm){d.state="alert";d.t=0;deerPose(d,"startled");deerFace(d,-dx/r,-dz/r);}
+    } else if(d.state==="alert"){
+      d.t+=dt;
+      if(r<DEER_FLEE||alarm||d.t>5){
+        d.state="flee";d.ux=dx/r;d.uz=dz/r;d.run=0;d.hop=0;deerFace(d,d.ux,d.uz);
+      } else if(r>DEER_ALERT*1.4){d.state="calm";deerPose(d,d.rest);}
+    } else {
+      /* bounding away: twenty-odd feet a second, a two-foot arc to each bound */
+      const step=24*dt;
+      let nx=d.g.position.x+d.ux*step,nz=d.g.position.z+d.uz*step;
+      if(d.G(nx,nz)<0.3){                       /* not into the water: turn along the bank */
+        const a=Math.atan2(d.uz,d.ux)+1.2;d.ux=Math.cos(a);d.uz=Math.sin(a);deerFace(d,d.ux,d.uz);
+        nx=d.g.position.x;nz=d.g.position.z;
+      }
+      d.run+=step;d.hop=(d.hop+dt*2.2)%1;
+      d.g.position.set(nx,d.G(nx,nz)+Math.sin(d.hop*Math.PI)*2.2,nz);
+      d.g.rotation.z=(0.5-d.hop)*0.35;          /* nose up on the rise, down on the fall */
+      if(d.run>150){d.state="gone";d.g.visible=false;}
+    }
+  }
+}
 SITE_TERRAIN.comfort.dress=function(root,G){
   /* THE FLEET, riding at anchor off the point. They really did anchor here on the
      last day of April, and it is the argument for the place standing in the water:
@@ -19445,6 +19505,8 @@ SITE_TERRAIN.archers.dress=function(root,G){
      channel is, and everything landed here would have to be lightered to them. */
   buildFleet(D,[[-70,132,0.95],[44,158,0.88]]);
   root.add(D.mesh(false,false));
+  /* a doe among the timber, back from the landing: the woods are her ground, not yours */
+  addDeer(root,G,-64,-58,0.6,"grazing");
 };
 SITE_TERRAIN.james.dress=function(root,G){
   /* DEAD TREES STANDING IN WATER, and reeds. The brackish finding, visible. This is
@@ -19472,6 +19534,9 @@ SITE_TERRAIN.james.dress=function(root,G){
   buildFleet(D,[[-52,92,1.0],[38,104,0.92],[112,120,0.82]],62);
   root.add(D.mesh(false,false));
   buildPaspaheghGround(root,G);
+  /* and one at the edge of the Paspahegh corn across the neck - deer came to planted
+     ground then as they do now */
+  addDeer(root,G,128,-92,2.3,"standing");
 };
 /* ========== WHOSE GROUND THIS IS ==========
    The island really was empty, and the game is right to say so - that finding stands. What
@@ -23583,6 +23648,8 @@ registerWorld("ch3",function(root){
     conifer(TR,tx,G(tx,tz),tz,34*(0.8+srand(i*2.7+11)*0.5),i+11,far);
   }
   root.add(TR.mesh(false,false));
+  /* one deer at the edge of the woods to the north-east, out past the felling */
+  if(!cleared(232,-238))addDeer(root,G,232,-238,-0.8,"grazing");
 
   /* ---- THE SHIPS, moored to the trees in six fathom ---- */
   placeShip(root,"susan",1,-150,100,Math.PI/2+0.03);
@@ -24203,6 +24270,8 @@ const PATCH_NOTES=[
      "The fort, the camp, the storehouse, the clearing and the fields are new 3D models, built in Blender for this game. The barrels and chests began as free models from Poly Haven.",
      "<b>Kecoughtan, rebuilt</b>",
      "The houses at Kecoughtan were drawn as stacked boxes. They are now what John Smith described: frames of bent saplings covered with mats and bark, with a smoke hole over the fire and a mat hung across the door. The casks on the beach at Cape Henry are proper barrels now.",
+     "<b>A deer at the edge of the trees</b>",
+     "At Archer’s Hope, across the neck from Jamestown, and in the woods past the fort there is now a deer. John Smith wrote in 1612 that deer were the chief beasts of the country, many toward the heads of the rivers “but amongst the riuers few”, so there is only one, and it will not let you near. It has no antlers: in May a buck’s are still short and in velvet.",
      "<b>The accounts disagree, and the game says so</b>",
      "Nobody whose writing survives saw the attack of 26 May: the men who wrote it down were up the river with Captain Newport. So where Archer, Smith and the 1612 account give different numbers, you are shown all of them."
    ]},
@@ -25497,7 +25566,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261126-0515";
+const BUILD="20261126-0753";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

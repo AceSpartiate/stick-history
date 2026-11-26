@@ -29,6 +29,12 @@
       "source": "Poly Haven 'wooden_barrels_01' (polyhaven.com/a/wooden_barrels_01), reduced to a few hundred triangles with its colour baked into the vertices by tools/blender/bake_glb.py",
       "licence": "CC0-1.0",
       "notes": "binary glTF, vertex colours only; placed by placeModel() in index.html"
+    },
+    {
+      "path": "assets/animals/",
+      "source": "made for this game: a white-tailed deer. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 11; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI; auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py; antlers cut away, reduced and colour-baked by tools/blender/bake_glb.py (2026-11-26)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,500 triangles per pose (standing, grazing, startled); placed by addDeer() in index.html"
     }
   ]
 }

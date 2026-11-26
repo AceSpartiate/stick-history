@@ -3,6 +3,7 @@ asset in this game's own look: few triangles, colour baked into the vertices, no
 
     blender -b --factory-startup --python tools/blender/bake_glb.py -- <in.glb|gltf> <out.glb> <report.json> \
         --tris N [--height FT | --scale S] [--voxel FT] [--node name] [--keep a,b] [--yaw DEG] [--render <dir>]
+        [--largest] [--pale-top NZ]
 
 Why: TRELLIS.2 writes 58-65 MB GLBs with PBR texture maps, and a Poly Haven model comes with 2k maps. A Chromebook
 loads neither well, and texture-mapped realism would sit wrongly beside this game's vertex-coloured, low-poly world.
@@ -13,7 +14,10 @@ and drop the maps. The result reads like everything
 else in the game and costs a few hundred KB.
 
 --height scales the model so it stands that many feet tall (TRELLIS has no real units); --keep keeps only the named
-source objects (one barrel out of a group); --yaw turns it about the vertical. The output sits on z=0, centred on x,y.
+source objects (one barrel out of a group); --yaw turns it about the vertical; --largest keeps only the biggest loose
+part after the remesh (stray scraps left by cutting a model, such as a deer's antlers); --pale-top NZ repaints grey or white
+corners (brighter than the median) on faces whose normal.z > NZ (0.55: tops only; 0: the sides too) with the median colour of the others (TRELLIS paints a white seam along the top of a
+model it never saw from above: the deer's back). The output sits on z=0, centred on x,y.
 Report: {"ok","problems","tris","bytes","bbox","renders"}. ceiling: base colour only (no AO baked in); one node out.
 """
 import json, math, os, sys
@@ -139,11 +143,48 @@ def colour_at(pt):
     return m[y, x]
 
 
+def keep_largest(weld):
+    """Drop every loose part but the biggest. weld: first merge glTF's seam-split vertices and close small holes
+    (a cut model's openings) so a voxel remesh sees a closed body, not 500 open sheets."""
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    if weld:
+        bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-4)
+    bm.verts.index_update()
+    seen, parts = set(), []
+    for v0 in bm.verts:
+        if v0.index in seen:
+            continue
+        stack, part = [v0], []
+        seen.add(v0.index)
+        while stack:
+            v = stack.pop()
+            part.append(v)
+            for e in v.link_edges:
+                w = e.other_vert(v)
+                if w.index not in seen:
+                    seen.add(w.index)
+                    stack.append(w)
+        parts.append(part)
+    parts.sort(key=len, reverse=True)
+    bmesh.ops.delete(bm, geom=[v for part in parts[1:] for v in part], context='VERTS')
+    if weld:
+        bmesh.ops.holes_fill(bm, edges=bm.edges[:], sides=2000)
+    bm.to_mesh(ob.data)
+    bm.free()
+    ob.data.update()
+    return len(parts) - 1
+
+
+if '--largest' in argv:
+    rep['dropped_parts'] = keep_largest(True)
 # --voxel V: fuse into one closed shell first (staves, scans and TRELLIS skins decimate cleanly only then)
 if opt('--voxel'):
     rm = ob.modifiers.new('rm', 'REMESH')
     rm.mode, rm.voxel_size = 'VOXEL', float(opt('--voxel'))
     bpy.ops.object.modifier_apply(modifier='rm')
+    if '--largest' in argv:
+        rep['dropped_after_remesh'] = keep_largest(False)
 t0 = sum(len(p.vertices) - 2 for p in ob.data.polygons)
 if t0 > TRIS:
     md = ob.modifiers.new('dec', 'DECIMATE')
@@ -158,6 +199,19 @@ for p in me.polygons:
     for li, vi in zip(p.loop_indices, p.vertices):
         cl = colour_at(me.vertices[vi].co * 0.65 + ctr * 0.35)   # pulled in from the corner: no bleed across edges
         col.data[li].color = (float(cl[0]), float(cl[1]), float(cl[2]), 1.0)
+if '--pale-top' in argv:
+    nz = float(opt('--pale-top'))
+    up = [(li, p) for p in me.polygons if p.normal.z > nz for li in p.loop_indices]
+    cs = np.array([col.data[li].color[:3] for li, _ in up]) if up else np.zeros((0, 3))
+    if len(cs):
+        lum, sat = cs.mean(1), cs.max(1) - cs.min(1)
+        pale = (lum > np.median(lum)) & (sat < 0.4 * cs.max(1))     # grey or white, not dark (hooves, nose)
+        base = np.median(cs[~pale], axis=0) if (~pale).any() else None
+        if base is not None:
+            for (li, _), bad in zip(up, pale):
+                if bad:
+                    col.data[li].color = (float(base[0]), float(base[1]), float(base[2]), 1.0)
+        rep['pale_top_fixed'] = int(pale.sum())
 me.color_attributes.active_color = col
 for layer in list(me.uv_layers):
     me.uv_layers.remove(layer)
