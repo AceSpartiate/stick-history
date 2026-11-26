@@ -12487,6 +12487,15 @@ const COUNCIL={
       evid:"comfort.sea",gate:"You have not looked to the sea there.",wise:true,ink:7,
       insight:{g:"known",b:"Seen From the Sea",s:"Point Comfort commanded the mouth of the river, which cut both ways: the English could see a Spanish sail coming, and a Spanish sail could see them. The fort was placed up a river partly to be hidden from the sea."},
       reply:"\u201cThe Spanish. Yes. That is the one argument the Company would read twice.\u201d"},
+     /* ---- AN HONEST ANSWER FOR A STUDENT WHO DID NOT SEE ENOUGH ----
+        Found in a play-test, 26 November 2026: a student whose findings were the depth at
+        Point Comfort, Kecoughtan and the depth at Jamestown reached this beat with every
+        evidence-backed reason locked, and the only reply they could click was the wrong
+        one, under "there is no walking away from this". Saying what you do not know is
+        the other sound answer to "only what you saw yourself", so it is always open. It
+        is fair, not wise: it earns no insight, and the reasons stay to be found. */
+     {t:"I can speak only to what I saw myself, and I did not see enough to judge the rest.",fair:true,ink:3,
+      reply:"\u201cAn honest answer, and rarer in this company than you would think.\u201d He makes a note. \u201cThen I shall weigh what you saw with what the others found.\u201d"},
      {t:"The ground hardly matters. We are told to plant, so let us plant.",wise:false,
       reply:"\u201cIt is the only thing that matters, and in a year you will know it.\u201d"}
     ]}
@@ -27711,7 +27720,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261126-2352";
+const BUILD="20261126-2353";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
