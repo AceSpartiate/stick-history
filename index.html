@@ -24769,6 +24769,12 @@ function sickDone(id,toastText){
   const w=sickW();
   if(!w.did[id]){w.did[id]=true;S.ink+=6;updateInk();checkpoint("ch4-"+id);}
   if(toastText)toast(toastText);
+  /* and its spot goes now, not at the next scene: a done duty reopened its sheet */
+  for(let i=interactables.length-1;i>=0;i--){
+    const it=interactables[i];
+    if(it.action==="sick"&&it.data&&(it.data.kind===id||(id==="watch"&&it.data.kind==="bulwark"))){
+      if(it.el)it.el.style.display="none";interactables.splice(i,1);}
+  }
   updateGuide();
 }
 function sickYourStore(){
@@ -25029,6 +25035,9 @@ registerWorld("ch4",function(root){
 
   /* ---- THE DAY'S DUTY ---- */
   const duty=function(id,label,x,z,data){
+    /* a duty already done leaves the map: it used to stay and open its sheet again */
+    if(data.kind===sd.duty&&w.did[sd.duty])return;
+    if(data.kind==="bulwark"&&w.did.watch)return;
     interactables.push({id:id,label:label,x:x,z:z,y:G(x,z),lvl:LVL.MAIN,r:8,action:"sick",data:data});};
   if(sd.duty==="store")duty("store","The Store",-75,10,{kind:"store",verb:"Reckon the store with Studley"});
   if(sd.duty==="water")duty("water","The Landing",ox+30,oz+14,{kind:"water",verb:"Draw the day’s water"});
@@ -25057,6 +25066,14 @@ registerWorld("ch4",function(root){
   player.position.set(at[0],G(at[0],at[1]),at[1]);
   player.rotation.y=sd.night?Math.PI:0;
   camYaw=sd.night?0:Math.PI;
+  /* SICK_OPEN[0], "Newport sails", was never shown: sickLedger opens each scene's record on
+     the way IN, and nothing goes in to the first one. Shown once, on arrival (found by the
+     Chapter V review, 26 November 2026). */
+  if(w.day===0&&!w.did.open0){
+    w.did.open0=true;
+    setTimeout(function(){if(CURRENT_WORLD==="ch4")
+      fortResult(SICK_OPEN[0].t,"<p class=\"sickDate\">"+SICK_DAYS[0].date+"</p>"+SICK_OPEN[0].b,[]);},500);
+  }
 });
 /* the two ships stand out of the river on the 22nd of June, and the watch is kept at
    dusk; nothing else in this chapter moves */
@@ -27877,7 +27894,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261126-2357";
+const BUILD="20261126-2358";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
