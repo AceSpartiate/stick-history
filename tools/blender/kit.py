@@ -61,6 +61,18 @@ class Part:
         """A triangle, counter-clockwise seen from its front."""
         self._face([a, b, c], col)
 
+    def prop(self, name, at, yaw=0.0, scale=1.0, lean=0.0):
+        """Place a ready-made prop from the library (see PROPS) into this Part: at=(x,y,z) of its base centre,
+        yaw in degrees about the vertical, lean in degrees (tips it over toward +x before the yaw; 90 = lying on its
+        side). The prop keeps its own colours. Vary yaw/scale between copies so no two look identical."""
+        verts, faces, cols = _load_prop(name)
+        m = (Matrix.Translation(_v(at)) @ Matrix.Rotation(math.radians(yaw), 4, 'Z') @
+             Matrix.Rotation(math.radians(lean), 4, 'Y') @ Matrix.Scale(scale, 4))
+        i = len(self.verts)
+        self.verts.extend(m @ v for v in verts)
+        self.faces.extend(tuple(i + k for k in f) for f in faces)
+        self.cols.extend(cols)
+
     def log(self, a, b, r0, r1=None, col='#7d6a52', col1=None, sides=8, caps=True, cap_col=None, twist=0.0):
         """Round timber from point a to point b: an N-sided prism, radius r0 at a tapering to r1 at b.
         For posts, trunks, logs, poles, barrels' staves, gun barrels. cap_col colours the end faces
@@ -191,6 +203,43 @@ def occlude(ground=0.55, height=5.0, under=0.72):
                 g = ground + (1 - ground) * min(1.0, z / height)
                 c = p.cols[fi][k]
                 p.cols[fi][k] = tuple(x * g * down for x in c)
+
+
+import os as _os
+PROP_DIR = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'props')   # tools/blender/props
+_PROPS = {}
+
+
+def _load_prop(name):
+    """Read props/<name>.glb (made by bake_glb.py) as verts, faces and per-corner linear colours. The imported
+    objects are removed again at once, so only Parts reach the export."""
+    if name in _PROPS:
+        return _PROPS[name]
+    path = _os.path.join(PROP_DIR, name + '.glb')
+    if not _os.path.exists(path):
+        raise ValueError(f'no prop named "{name}"; the library has: '
+                         + ', '.join(sorted(f[:-4] for f in _os.listdir(PROP_DIR) if f.endswith('.glb'))))
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    verts, faces, cols = [], [], []
+    for ob in [o for o in bpy.data.objects if o not in before]:
+        if ob.type == 'MESH':
+            me = ob.data
+            mw = ob.matrix_world
+            i = len(verts)
+            verts.extend(mw @ v.co for v in me.vertices)
+            ca = me.color_attributes.active_color or (me.color_attributes[0] if me.color_attributes else None)
+            for p in me.polygons:
+                faces.append(tuple(i + v for v in p.vertices))
+                if ca is not None and ca.domain == 'CORNER':
+                    cols.append([tuple(ca.data[li].color)[:3] for li in p.loop_indices])
+                elif ca is not None:
+                    cols.append([tuple(ca.data[v].color)[:3] for v in p.vertices])
+                else:
+                    cols.append([(0.4, 0.3, 0.2)] * len(p.vertices))
+        bpy.data.objects.remove(ob)
+    _PROPS[name] = (verts, faces, cols)
+    return _PROPS[name]
 
 
 def realize():

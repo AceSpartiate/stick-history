@@ -17,3 +17,7 @@ __pycache__/
 Thumbs.db
 desktop.ini
 tools/shots/
+
+# Blender build previews
+tools/blender/_views/
+tools/blender/_previews/

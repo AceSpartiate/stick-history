@@ -8,7 +8,7 @@
     },
     {
       "path": "assets/fort/",
-      "source": "made for this game: Chapter III's models, generated in Blender 5.2 by tools/blender/asset_job.py from tools/blender/fort_specs.md (each model's source script is kept in tools/blender/fort/; the scripts were written by a local model, qwen3.8:27b, Apache-2.0)",
+      "source": "made for this game: Chapter III's models, built in Blender 5.2 from scripts in tools/blender/fort/ (written by Claude for this game, 2026-11-25) with the kit in tools/blender/kit.py. The barrels, barrel staves and chests are CC0 Poly Haven models (wooden_barrels_01, treasure_chest; polyhaven.com, CC0 1.0) reduced and colour-baked by tools/blender/bake_glb.py into tools/blender/props/",
       "licence": "own",
       "notes": "binary glTF, vertex colours only, no textures; loaded by loadGLB() in index.html"
     },

@@ -23559,9 +23559,16 @@ registerWorld("ch3",function(root){
   /* ---- THE WOODS, and what the felling has taken out of them ----
      The clearing's stumps stand where trees stood, so the trees there go when the
      felling has reached them - the island you walk is the one your orders made. */
+  /* the corn ground lies west of where the fort's west wall will run, so the 15 June
+     palisade never cuts through it */
+  const FORT_CORN=[-255,-50];
   const fell=w.epi?1:fortProg("fell");
   const cleared=function(x,z){
     if(Math.hypot(x-FORT_O[0],z-FORT_O[1])<125)return true;          /* the work itself */
+    /* inside the triangle fort (and 25 ft beyond its walls), and the corn ground */
+    const fx=x-FORT_O[0],fz=FORT_O[1]-z;
+    if(w.epi&&fz>-25&&fz<247&&Math.abs(fx)<235-fz*0.946)return true;
+    if(Math.abs(x-FORT_CORN[0])<70&&Math.abs(z-FORT_CORN[1])<50)return true;
     if(x>-110&&x<110&&z<-70&&z>-235)return fell>((z+70)/-165)*0.9;   /* felled northward */
     return false;
   };
@@ -23602,7 +23609,7 @@ registerWorld("ch3",function(root){
   if(sp>=1||w.epi)stParts.push("storehouse_roof");
   if(stParts.length){fortPlace(root,"storehouse",stParts,-75,0,0);solid(-75,0,20,10,LVL.MAIN,0);}
   const cp=w.epi?1:fortProg("corn");
-  if(cp>0)fortPlace(root,"cornfield",cp>=.5?["cornfield_1","cornfield_2"]:["cornfield_1"],-175,-55,0);
+  if(cp>0)fortPlace(root,"cornfield",cp>=.5?["cornfield_1","cornfield_2"]:["cornfield_1"],FORT_CORN[0],FORT_CORN[1],0);
   const fq=Math.min(3,Math.ceil(fell*3-0.001));
   if(fq>0){const cl=[];for(let i=1;i<=fq;i++)cl.push("clearing_"+i);fortPlace(root,"clearing",cl,0,-150,0);}
   if(fortProg("guns")>=1&&!w.epi)fortGun(root,G,ox,oz-95);
@@ -23677,7 +23684,7 @@ function fortPeople(root,G){
   /* the working men, posed at what the orders set them to and baked to one mesh each */
   if(w.attack||w.epi)return;
   const pick=w.alloc.length?w.alloc[w.alloc.length-1]:FORT_DEFAULT;
-  const WHERE={fell:[0,-110],fence:[0,-70],store:[-75,14],corn:[-175,-40],arms:[60,0],guns:[0,-60],well:[-20,-20]};
+  const WHERE={fell:[0,-110],fence:[0,-70],store:[-75,14],corn:[-245,-35],arms:[60,0],guns:[0,-60],well:[-20,-20]};
   let n=0;
   for(const p of FORT_PARTIES){
     const at=WHERE[pick[p.id]]||[0,0];
@@ -24182,14 +24189,14 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    list nobody finishes is a list nobody reads.
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
-  {when:"9 November 2026 · latest",
+  {when:"26 November 2026 · latest",
    head:"Chapter III: The Fort",
    lines:[
      "<b>A new chapter: Jamestown Island, May and June 1607</b>",
      "When Landfall ends, the boats go up the river. The council has chosen a low island in Paspahegh country, and you have twelve days before the twenty-sixth of May. Four times you hear the council’s orders under an old sail slung between trees, and you decide where the parties of men go: felling trees, casting boughs into Captain Kendall’s half moon, raising the storehouse, setting corn, digging a well — or, against the President’s orders, unpacking the arms or bringing a gun ashore.",
      "<b>The island changes with your orders</b>",
      "Walk it between orders and you see what the work made: stumps where trees stood, stacks of clapboard for the ships, the fence of boughs growing a quarter at a time, the storehouse frame going up. Then the twenty-sixth of May is played, and what your fortnight built is set beside what the colonists’ own accounts say happened. Last, you walk the triangle fort that was finished on the fifteenth of June.",
-     "The buildings and ships in this chapter are new 3D models, made in Blender for this game.",
+     "The fort, the camp, the storehouse, the clearing and the fields are new 3D models, built in Blender for this game. The barrels and chests began as free models from Poly Haven.",
      "<b>The accounts disagree, and the game says so</b>",
      "Nobody whose writing survives saw the attack of 26 May: the men who wrote it down were up the river with Captain Newport. So where Archer, Smith and the 1612 account give different numbers, you are shown all of them."
    ]},
@@ -25484,7 +25491,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261109-1212";
+const BUILD="20261126-0510";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

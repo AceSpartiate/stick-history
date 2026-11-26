@@ -9,7 +9,7 @@ Directions are Blender's: +Z up, and **the river is toward -Y** in every asset. 
 #5a4630, green shoots #6f9a3c, stone #8a8478.
 
 ## brush_fence
-out: fort/brush_fence.glb | nodes: brush_fence_1,brush_fence_2,brush_fence_3,brush_fence_4 | budget: 9000 | grounded: yes
+out: fort/brush_fence.glb | nodes: brush_fence_1,brush_fence_2,brush_fence_3,brush_fence_4 | budget: 14000 | grounded: yes
 On 26 May 1607 the colonists' only defence was "the boughs of trees cast together in the form of a half moon"
 (John Smith). Build a HALF-MOON (a half circle, radius 110 ft, centred on the origin) of piled, tangled cut boughs
 and brush, 4-5 ft high and 5 ft thick. The half circle bulges toward +Y; its two open ends are at x=-110 and x=+110
@@ -53,7 +53,7 @@ lighter) facing +X. At the +X end the pulpit: a bar (Part.board) at 4 ft height 
 two posts. Part awning is everything.
 
 ## camp
-out: fort/camp.glb | nodes: camp_shelters,camp_fire,camp_casks,camp_casks_open | budget: 5200 | grounded: yes
+out: fort/camp.glb | nodes: camp_shelters,camp_fire,camp_casks,camp_casks_open | budget: 9000 | grounded: yes
 The men's shelters in the first weeks, over about 120 x 80 ft, origin at the centre. camp_shelters: 8 rough
 A-shaped shelters, each a sailcloth sheet (Part.surface, slightly sagging) draped over a ridge pole (Part.log)
 between two forked sticks, 7 ft high, 10-14 ft long, ends open, scattered at different angles in a loose cluster

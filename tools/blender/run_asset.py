@@ -29,7 +29,7 @@ def done():
 
 for o in list(bpy.data.objects):
     bpy.data.objects.remove(o)
-ns = {'__name__': 'asset'}
+ns = {'__name__': 'asset', '__file__': os.path.join(HERE, 'kit.py')}   # kit finds props/ beside itself
 try:
     exec(open(os.path.join(HERE, 'kit.py'), encoding='utf-8').read(), ns)
     exec(open(script, encoding='utf-8').read(), ns)
@@ -59,12 +59,12 @@ for ob in objs:
         for v in me.vertices:
             for k in range(3):
                 lo[k], hi[k] = min(lo[k], v.co[k]), max(hi[k], v.co[k])
-        if grounded and min(zs) > 0.5:
-            rep['problems'].append(f'Part "{ob.name}" floats: its lowest point is z={min(zs):.2f} ft; '
-                                   'grounded things must touch z=0')
         if min(zs) < -6 and grounded:
             rep['problems'].append(f'Part "{ob.name}" reaches z={min(zs):.2f} ft, far below the ground')
 rep['bbox'] = [list(lo), list(hi)]
+# the whole asset must touch the ground; a single Part may not (a roof stage sits on its frame)
+if grounded and objs and lo.z > 0.5:
+    rep['problems'].append(f'the asset floats: its lowest point is z={lo.z:.2f} ft; grounded things must touch z=0')
 names = {o.name for o in objs}
 for n in nodes_want:
     if n not in names:
