@@ -1659,8 +1659,11 @@ let CH={
   beats:[
   {npc:"\u201cYou've the green look of a first crossing. Ask me quick - I'll not talk once the boatswain's about.\u201d",
    choices:[
+    /* "CAROLINA" IS NOT A WORD HE HAS. The name dates from Charles I's grant of 1629;
+       in 1607 Roanoke lay in what Englishmen called Virginia, and Hakluyt prints White's
+       1590 voyage as one "to Virginia". He now places it as his own other reply does. */
     {t:"Have Englishmen tried to settle Virginia before us? I'd know what became of them.",wise:true,ink:8,
-     reply:"\u201cAye. Roanoke, twenty year gone. Over a hundred souls - men, women, children among them - put ashore on an island off the Carolina banks in 1587. A proper colony, not a fort of soldiers.\u201d",
+     reply:"\u201cAye. Roanoke, twenty year gone. Over a hundred souls - men, women, children among them - put ashore on an island inside the banks, south of where we are bound, in 1587. A proper colony, not a fort of soldiers.\u201d",
      insight:{g:"known",b:"The Roanoke Colony",s:"In 1587 over 100 English settlers - including women and children - were landed at Roanoke, off the Carolina coast. It was a full colony, not a garrison."}},
     /* ---- HE WAS ANSWERING A QUESTION ABOUT A DIFFERENT MORNING ----
        "How many days yet until we sight land?" - "Two months if the wind's kind." The
@@ -1798,25 +1801,35 @@ let CH={
    ]},
   {npc:"\u201cYou've read further than most. Ask on, while I've the light.\u201d",
    choices:[
+    /* ---- FIVE YEARS, NOT SEVEN, AND IT IS NOT IN THE CHARTER ----
+       This beat said "seven years" throughout. The seven-year term belongs to the 1609
+       venture, whose joint stock ran to a dividend in 1616. For the men of 1607 the term is
+       in the King's "Articles, Instructions and Orders" of 20 November 1606, issued under
+       the charter: the colony is to "trade together all in one stocke", bringing the fruits
+       of its labour "into severall magazines or storehouses", and that "for the space of
+       five years next after their first landing". The charter itself sets no term of
+       service and names no magazine; the only seven years in it is the seven years' freedom
+       from customs on goods shipped out (Avalon Project text). So the number is five, and
+       the insight says where it comes from. */
     {t:"Then what am I under this charter - a settler with land of my own?",wise:true,ink:10,
-     reply:"\u201cYou are a servant of the Company. Seven years. The land is theirs, the stores are theirs, the very shirt on your back was bought on their account. What you dig or grow goes into a common magazine and is doled back out. You will own nothing in Virginia for seven years - if you live seven years.\u201d",
-     insight:{g:"known",b:"Colonists as Company Servants",s:"Under the charter, colonists were the Company's employees for a seven-year term. Land, stores, and produce belonged to the Company and were held in a common store, not owned by settlers."}},
+     reply:"\u201cYou are a servant of the Company. Five years. The land is theirs, the stores are theirs, the very shirt on your back was bought on their account. What you dig or grow goes into a common magazine and is doled back out. You will own nothing in Virginia for five years - if you live five years.\u201d",
+     insight:{g:"known",b:"Colonists as Company Servants",s:"The King's orders of November 1606, issued under the charter, bound the colonists to work in one common stock for their first five years. Land, stores, and produce were held for the venture in common storehouses, not owned by settlers."}},
     {t:"So each man is granted his own plot on arrival?",wise:false,
      reply:"\u201cGranted?\u201d He taps the page hard. \u201cNothing is granted. Everything is the Company's. You are labour, not landowner. Read the clause again and put the question to me properly.\u201d"},
     {t:"At least we'll be free men once ashore.",wise:false,
      reply:"\u201cFree to work where you are told. There is a Council named in a sealed box we mayn't open until landfall - you'll not even choose who commands you.\u201d He shrugs. \u201c'Free' is not the word this document uses.\u201d"},
     {t:"If I break ground and raise a field of corn in Virginia, whose corn is it?",wise:true,ink:10,
-     reply:"\u201cNot yours. The land is the Company's, the seed is the Company's, the spade in your hand was bought on their account - and so is the corn.\u201d He shrugs. \u201cIt goes into a common store and is doled back out by measure: the same measure to the man who grew it and the man who stood and watched him. Seven years of that. You are their servant, not a settler, and you will own nothing in Virginia until the term is out - if you live the term.\u201d",
-     insight:{g:"known",b:"Colonists as Company Servants",s:"Under the charter, colonists were the Company's employees for a seven-year term. Land, stores, and produce belonged to the Company and were held in a common store, not owned by settlers."}},
-    {t:"What am I paid for these seven years, and when do I see it?",wise:true,ink:9,
-     reply:"\u201cNothing counted into your hand.\u201d He says it without softening. \u201cYou are fed and clothed out of the common store while the term runs, and that is your wage. At the end there is talk of a division - land parcelled out, a share of the stock to the planters.\u201d He taps the desk. \u201cTalk. I have not got it in front of me on a page. What I have got on a page is the seven years, and the Company's orders for how you are to spend them.\u201d",
-     insight:{g:"known",b:"Colonists as Company Servants",s:"Under the charter, colonists were the Company's employees for a seven-year term. Land, stores, and produce belonged to the Company and were held in a common store, not owned by settlers."}},
-    {t:"They paid my passage and take the whole risk, so seven years seems a fair bargain.",fair:true,ink:3,
+     reply:"\u201cNot yours. The land is the Company's, the seed is the Company's, the spade in your hand was bought on their account - and so is the corn.\u201d He shrugs. \u201cIt goes into a common store and is doled back out by measure: the same measure to the man who grew it and the man who stood and watched him. Five years of that. You are their servant, not a settler, and you will own nothing in Virginia until the term is out - if you live the term.\u201d",
+     insight:{g:"known",b:"Colonists as Company Servants",s:"The King's orders of November 1606, issued under the charter, bound the colonists to work in one common stock for their first five years. Land, stores, and produce were held for the venture in common storehouses, not owned by settlers."}},
+    {t:"What am I paid for these five years, and when do I see it?",wise:true,ink:9,
+     reply:"\u201cNothing counted into your hand.\u201d He says it without softening. \u201cYou are fed and clothed out of the common store while the term runs, and that is your wage. At the end there is talk of a division - land parcelled out, a share of the stock to the planters.\u201d He taps the desk. \u201cTalk. I have not got it in front of me on a page. What I have got on a page is the five years, and the Company's orders for how you are to spend them.\u201d",
+     insight:{g:"known",b:"Colonists as Company Servants",s:"The King's orders of November 1606, issued under the charter, bound the colonists to work in one common stock for their first five years. Land, stores, and produce were held for the venture in common storehouses, not owned by settlers."}},
+    {t:"They paid my passage and take the whole risk, so five years seems a fair bargain.",fair:true,ink:3,
      reply:"\u201cThey did pay it, and that is why the term is long. You have that much right.\u201d He allows it with a small nod. \u201cBut a bargain is written by whoever holds the pen, and it was not yours. While it runs you own nothing and you go where you are sent.\u201d He straightens the papers. \u201cHalf an answer, honestly got.\u201d"},
     {t:"If the terms are poor, a man can simply quit and work for himself.",wise:false,
-     reply:"\u201cQuit and walk where?\u201d He looks up. \u201cThere is an ocean behind you and seven years in front of you. This is a contract, not a humour to be got over.\u201d He waits. \u201cNow put it to me properly, and ask what you are.\u201d"},
+     reply:"\u201cQuit and walk where?\u201d He looks up. \u201cThere is an ocean behind you and five years in front of you. This is a contract, not a humour to be got over.\u201d He waits. \u201cNow put it to me properly, and ask what you are.\u201d"},
     {t:"Then we are slaves to them, and that is the plain word for it.",wise:false,
-     reply:"\u201cIt is not the word, and I will not have it used loose.\u201d He is patient about it. \u201cA slave has no term to his service. Yours is written down, and it ends - and while it runs they must feed you.\u201d He taps the page. \u201cDo not soften it either. For those seven years you own nothing and you go where you are sent. Ask me what you are, and use the word the Company uses.\u201d"}
+     reply:"\u201cIt is not the word, and I will not have it used loose.\u201d He is patient about it. \u201cA slave has no term to his service. Yours is written down, and it ends - and while it runs they must feed you.\u201d He taps the page. \u201cDo not soften it either. For those five years you own nothing and you go where you are sent. Ask me what you are, and use the word the Company uses.\u201d"}
    ]},
   {npc:"\u201cThere's a question almost nobody thinks to put to me. I'll wait while you find it.\u201d",
    choices:[
@@ -1906,7 +1919,7 @@ let CH={
      wise:true,ink:13,needs:"Colonists as Company Servants",
      gate:"Ask the Company Clerk what the charter makes of you.",
      reply:"The colour goes out of his face. \u201cThat is not \u2014 I paid my OWN passage. I sold plate that was my father's.\u201d He stops. \u201cYou are telling me I bought the right to work for them.\u201d He looks at the water for a while. \u201cI shall want to see that paper.\u201d",
-     insight:{g:"known",b:"What the Gentlemen Bought",s:"Many gentlemen paid their own passage believing they were investors or adventurers in a treasure hunt. Under the 1606 charter the colonists were Company servants, working Company land for Company profit, fed from a common store. Several refused to labour on those terms - and the food ran out anyway."}},
+     insight:{g:"known",b:"What the Gentlemen Bought",s:"Many gentlemen paid their own passage believing they were investors or adventurers in a treasure hunt. Under the King's orders of 1606 the colonists were Company servants for their first five years, working Company land for Company profit, fed from a common store. Several refused to labour on those terms - and the food ran out anyway."}},
     {t:"What will you do if there is no gold, and the work turns out to be farming?",wise:true,ink:10,
      reply:"\u201cFarming?\u201d He recoils as though struck. \u201cI am a gentleman. I did not sell my father's plate to break ground with a hoe like a common husbandman.\u201d He says it with perfect conviction - and you count, quietly, how many aboard are dressed as he is.",
      insight:{g:"known",b:"Too Many Gentlemen",s:"A large share of the first colonists were gentlemen and their servants, who regarded manual farm labour as beneath their station - leaving very few willing or able to grow food."}},
@@ -1975,7 +1988,12 @@ let CH={
   {id:"hunt",name:"Reverend Hunt",voice:"male",role:"chaplain to the voyage",lvl:2,pos:[3,-14],face:-2.2,
    eq:{skin:"english",palette:"lostcolony",cloak:"cloak_weathered",torso:"torso_doublet",accessory:"none_acc",head:"none_head",build:"build_normal",face:"pious"},
    lines:["\u201cPrayers at first light, whatever the weather. Especially in this weather.\u201d",
-     "\u201cI have been sick unto death these three weeks and have not missed a service. Do not mention it to the Captain.\u201d",
+     /* "sick unto death these three weeks" put his illness in April, where nothing records it.
+        The record puts it in the Downs: Hunt "was so weake and sicke, that few expected his
+        recouerie. Yet although he were but 10 or 12 miles from his habitation ... all this
+        could never force from him so much as a seeming desire to leaue the busines"
+        (Proceedings 1612, Arber p. 90). */
+     "\u201cIn the Downs I was so sick that few looked for me to live, and my own house not a dozen miles off. I did not go home to it.\u201d",
      "\u201cThere is quarrelling aboard. Six weeks in sight of England will make men strange to one another.\u201d",
      "\u201cGod willing we shall plant a church before we plant a field.\u201d He pauses. \u201cThough I suspect the field matters more than I ought to say aloud.\u201d",
      "\u201cCaptain Newport keeps the peace between the gentlemen. I keep it between the gentlemen and God. His is the harder office.\u201d"]},
@@ -2003,7 +2021,12 @@ let CH={
       somebody else. Whoever else appears as Smith in a later chapter takes this
       same eq - see SMITH_EQ. */
    eq:SMITH_EQ,
-   lines:["\u201cLook your fill. The gentlemen say I'll hang before we sight Virginia.\u201d",
+   /* "I'll hang before we sight Virginia" - said at dawn on the morning Virginia WAS sighted,
+      "about foure a clocke in the morning" (Percy, Tyler p. 9). The threat is Smith's own
+      story: at Nevis "a paire of gallowes was made, but Captaine Smith, for whom they were
+      intended, could not be perswaded to use them" (Generall Historie, 1624, Arber p. 910,
+      quoted in Arber Pt 1). He was held, by his account, from the Canaries until 10 June. */
+   lines:["\u201cLook your fill. The gentlemen said I'd hang before we sighted Virginia. Well, there she lies.\u201d",
      "\u201cI said what wanted saying about who ought to command here. That is the whole of my crime.\u201d",
      "\u201cAsk them what I actually did. They'll not tell you, because there's nothing to tell.\u201d",
      "\u201cNewport will come round. Or he won't, and there's an end of me.\u201d",
@@ -2038,7 +2061,11 @@ let CH={
   title:"The First Charter of Virginia",
   parts:[
    {q:"JAMES, by the Grace of God, King of England, Scotland, France and Ireland, Defender of the Faith...",
-    g:"Granted by <b>King James I</b> to the Virginia Company on 10 April 1606 \u2014 a year and a month before you will sight land."},
+    /* "a year and a month before you will sight land" - but land was sighted at four this
+       morning, and 10 April 1606 to 26 April 1607 is a year and sixteen days (Percy, Tyler
+       p. 9: "The six and twentieth day of Aprill, about foure a clocke in the morning, wee
+       descried the Land of Virginia"). */
+    g:"Granted by <b>King James I</b> to the Virginia Company on 10 April 1606 \u2014 a year and two weeks before the land you sighted this morning."},
    {q:"...to make Habitation, Plantation, and to deduce a colony of sundry of our People into that part of America commonly called VIRGINIA... either appertaining unto us, or which are not now actually possessed by any Christian Prince or People...",
     g:"<b>Read that last clause twice.</b> The land is described as available if no <i>Christian</i> ruler holds it. The Powhatan, some fifteen thousand strong, are simply not counted by the document that gives it away."},
    {q:"...which may, by the Providence of Almighty God, hereafter tend to the Glory of his Divine Majesty, in propagating of Christian Religion to such People, as yet live in Darkness and miserable Ignorance of the true Knowledge and Worship of God...",
@@ -2046,14 +2073,26 @@ let CH={
    {q:"...to dig, mine, and search for all Manner of Mines of Gold, Silver, and Copper... YIELDING therefore to Us, our Heirs and Successors, the fifth Part only of all the same Gold and Silver, and the fifteenth Part of all the same Copper...",
     g:"<b>The King takes a fifth of any gold.</b> A clause reserving the Crown's share of treasure that nobody has found yet tells you what everyone aboard expects to find."},
    {q:"...each of the said Colonies shall have a Council, which shall govern and order all Matters and Causes... Each of which Councils shall consist of thirteen Persons...",
-    g:"Thirteen men, named in England, sealed in a box, and not to be read out until landfall. Nobody aboard yet knows who commands them."},
+    /* THIRTEEN IS THE CHARTER'S NUMBER, NOT THE BOX'S. The charter allows a council of
+       thirteen; the orders in the box named seven - "Bartholomew Gosnoll, Edward Wingfield,
+       Christopher Newport, Iohn Smith, Iohn Ratliffe, Iohn Martin, and George Kendall"
+       (Proceedings 1612, Arber p. 91) - and the muster itself asks about "seven
+       councillors". The gloss had the box holding thirteen. */
+    g:"Thirteen, says the charter. The orders sealed in a box name seven, chosen in England and not to be read out until landfall. Nobody aboard yet knows who commands them."},
    {q:"...all and every the Persons being our Subjects, which shall dwell and inhabit within every or any of the said several Colonies... shall HAVE and enjoy all Liberties, Franchises, and Immunities... as if they had been abiding and born, within this our Realm of England.",
     g:"The famous clause. English liberties travel with the colonists \u2014 and, by the same document, are extended to nobody already living there."}
   ],
   insight:{g:"known",b:"What the Charter Actually Says",s:"The 1606 charter claims land 'not now actually possessed by any Christian Prince or People' - excluding the Powhatan by definition; states a religious purpose; reserves the King a fifth of all gold and silver; establishes a Council of thirteen; and grants English liberties to the colonists alone."}
  },
 
- steal:{note:{g:"known",b:"The Hidden Tally",s:"The officers kept two counts of the dead: one honest, one for London. Deaths on the crossing were recorded twice - evidence that the venture's records were managed to protect its reputation."},
+ /* ---- THE TALLY IS THE GAME'S OWN, AND NOW SAYS SO ----
+    This sat under "What We Know" as fact: two counts of the dead, one for London. No such
+    document survives, and the crossing's record runs the other way. Percy, who kept the
+    account, says of the march on Mona "by good fortune wee lost none but one Edward Brookes
+    Gentleman" (Tyler p. 8), and no other death on the passage is recorded. A made-up source
+    may teach how to read a record; it may not stand in the notes as one. So it is filed with
+    the analytic items and labelled, and it says what the record does show. */
+ steal:{note:{g:"disp",b:"The Hidden Tally",s:"INVENTED FOR THE GAME: no such tally survives. George Percy records only one death on the whole crossing - Edward Brookes, a gentleman, on Mona in the West Indies. The cask note is a teaching device: a record kept twice, one copy for London, is the kind of evidence that would show a venture managing what its investors were told."},
   noteText:"Tucked inside the cask lid is a tally in the clerk's hand: names, and beside them crosses. You count them twice. At the foot of the page, in a smaller hand: 'for London' - and beneath it a second, shorter column."},
 
  captain:{name:"Captain Newport",voice:"male",role:"master of the Susan Constant",need:2,
@@ -2075,7 +2114,8 @@ let CH={
      {t:"Nothing at all, sir. I saw nothing.",wise:false,
       reply:"\u201cNow I know you are lying, because there is a tally in that cask and ink on your fingers.\u201d He waits. \u201cAgain.\u201d"},
      {t:"I saw that you have been starving us on purpose.",wise:false,
-      reply:"\u201cOn purpose.\u201d His jaw tightens. \u201cI have buried men on this crossing. Accuse me of that again and I'll not be so patient. Say what you actually found.\u201d"}
+      /* "buried men" - Percy: "wee lost none but one Edward Brookes" (Tyler p. 8) */
+      reply:"\u201cOn purpose.\u201d His jaw tightens. \u201cI have buried a man on this crossing. Accuse me of that again and I'll not be so patient. Say what you actually found.\u201d"}
     ]},
    {npc:"\u201cSuppose I let you up out of here. What good are you to this colony?\u201d",
     choices:[
@@ -2093,7 +2133,10 @@ let CH={
   {id:"roanoke",when:function(){return S.insight["The Roanoke Colony"]||S.insight["The Fate of Roanoke"]||S.insight["What Was Found at Roanoke"];},
    q:"In your own words: why did the fate of Roanoke frighten the men aboard this ship?",
    need:[["vanish","vanished","disappear","disappeared","gone","no trace","without a trace","nothing left"],["colon","settl","roanoke","english"]],
-   model:"Because an entire English colony vanished without a trace - Roanoke proved that settlers in Virginia could simply disappear, leaving no bodies and no explanation.",
+   /* "without a trace" contradicts the sailor this is answering for: White found the word
+      CROATOAN cut in a post, and the whole of the sailor's last beat is that a trace is not
+      an answer. */
+   model:"Because an entire English colony vanished - Roanoke proved that settlers in Virginia could simply disappear, leaving no bodies and no explanation but one word cut in a post.",
    wrongWhy:"A strong answer names the specific fact that caused the fear: an English colony disappeared completely, leaving no bodies and no explanation. General danger is not the point - total, unexplained disappearance is."},
   {id:"company",when:null,
    q:"What did the Virginia Company's investors mainly expect in return for funding this voyage?",
@@ -2113,9 +2156,11 @@ let CH={
    wrongWhy:"Two things make it grave. First, there was no enemy - the fleet's own ships and boats were within range. Second, powder is scarce and a shot fired without cause can be taken as an act of war by the people already living here."},
   {id:"servant",when:function(){return S.insight["Colonists as Company Servants"];},
    q:"Under the Company's charter, what are you - and for how long?",
-   need:[["servant","employee","labour","labor","work for","company man","bound","indenture","own nothing","not own"],["seven","7"]],
-   model:"A servant of the Company for seven years. The land, the stores and everything you grow belong to it; you own nothing in Virginia for the whole of that term.",
-   wrongWhy:"The charter makes colonists employees of the Company on a seven-year term. Land, stores and produce are the Company's - settlers own nothing of what they work."},
+   /* five, not seven: the King's orders of 20 November 1606 set "the space of five years"
+      of common stock. See the Clerk's second beat. */
+   need:[["servant","employee","labour","labor","work for","company man","bound","indenture","own nothing","not own"],["five","5"]],
+   model:"A servant of the Company for five years. The land, the stores and everything you grow belong to it; you own nothing in Virginia for the whole of that term.",
+   wrongWhy:"The King's orders under the charter make colonists the Company's servants for their first five years, working in one common stock. Land, stores and produce are the Company's - settlers own nothing of what they work."},
   {id:"discipline",when:null,
    q:"Why does a ship's master punish one man before the whole company assembled?",
    need:[["example","warn","others","rest","crew","company","deter","discipline","order","obedien","fear","watch","witness"]],
@@ -2134,7 +2179,13 @@ let CH={
   pass:{title:"Well judged.",body:"\u201cYou read a document for what it truly says - not for what you wish it said.\u201d The scrivener presses ink upon you, and a traveller's cloak against the cold that is coming."},
   fail:{title:"You have not understood.",body:"\u201cYou have the words but not their meaning. Go back and talk to the crew properly - and listen to what they actually tell you.\u201d"},
   q:[
-   {stim:"The charter promises shareholders returns in gold and silver, saleable commodities, and a passage through to Asia.",
+   /* THE CHARTER SAYS NONE OF THIS. It licenses the search for "Mines of Gold, Silver, and
+      Copper" and reserves the King's fifth; it promises shareholders nothing and never
+      mentions Asia or the South Sea. The passage is in the Company's instructions, which
+      bid them "make Choise of that which bendeth most towards the northwest for that way
+      shall You soonest find the other Sea" (Encyclopedia Virginia text). The stimulus now
+      says which paper says what. */
+   {stim:"The charter licenses the search for gold, silver and copper; the Company's instructions also look for saleable commodities and a river passage through to the other sea, and so to Asia.",
     need:["The Virginia Company","What the Charter Actually Says"],q:"Which best describes what the Company's investors most expected in return?",
     o:["Profit - precious metals, tradeable goods, and a route to Asia","A refuge where English families could worship freely","Farmland granted outright to each colonist","A fortified base from which to invade Spanish territory"],a:0},
    {stim:"Roanoke, 1590: no bodies, no graves, no burned houses. The dwellings dismantled in orderly fashion. 'CROATOAN' cut into a post - the name of a nearby island and people.",
@@ -2143,7 +2194,7 @@ let CH={
    {stim:"White sailed for supplies in 1587. War with Spain pressed every available English ship into the Armada fight. He did not return until 1590.",
     need:["Why Roanoke Was Abandoned"],q:"The three-year gap in supply is best explained by -",
     o:["a national war that commandeered the ships needed for resupply","the Company deliberately abandoning the colonists","the colonists refusing further assistance","White choosing to remain in England for profit"],a:0},
-   {stim:"Under the charter: a seven-year term of service, land and stores held by the Company, produce placed in a common magazine.",
+   {stim:"Under the King's orders of 1606: five years of labour in one common stock, land and stores held by the Company, produce placed in a common magazine.",
     need:["Colonists as Company Servants","What the Charter Actually Says"],q:"This shows that the first colonists were, in law, -",
     o:["employees of a company, owning nothing of what they worked","independent landowners farming their own plots","free tenants paying rent to the Crown","soldiers under royal military command"],a:0},
    {stim:"Supply ships would sail when there was cargo worth carrying home. The Crown had invested nothing.",
@@ -2152,10 +2203,14 @@ let CH={
    {stim:"Many aboard were gentlemen and their manservants, who considered farm labour beneath their station. The expectation of gold rested on promotional books and on analogy with Spanish Peru.",
     need:["Too Many Gentlemen","The Colony's Fatal Composition","Gold in Virginia"],q:"Taken together, these two facts best predict that the colony would -",
     o:["struggle badly to feed itself","quickly discover precious metals","establish farms faster than expected","avoid all conflict with nearby peoples"],a:0},
-   {stim:"The charter's preamble speaks of spreading the Christian religion; its body details the shareholders' returns.",
+   /* The charter divides nothing among shareholders. Its body grants land, mines, trade and
+      customs, and reserves the King "the fifth Part only of all the same Gold and Silver,
+      and the fifteenth Part of all the same Copper" (Avalon Project text). */
+   {stim:"The charter's preamble speaks of spreading the Christian religion; its body deals in land, mines, trade, and the King's share of any gold.",
     need:["Reading a Document's Purpose","What the Charter Actually Says"],q:"A careful historian would conclude that this religious language -",
     o:["may be sincere while also lending legitimacy to the venture","proves religion was the colony's only real purpose","is certainly a deliberate lie by the drafters","has no bearing on how the document should be read"],a:0},
-   {stim:"The officers kept two counts of the dead: an honest tally, and a shorter column marked 'for London.'",
+   /* framed as the game's own document: no such tally survives (see CH.steal) */
+   {stim:"The note in the cask, a document invented for this game, keeps two counts of the dead: an honest tally, and a shorter column marked 'for London.'",
     need:["The Hidden Tally"],q:"Keeping two counts most strongly suggests that the Company -",
     o:["managed its records to protect the venture's reputation","had no reliable way to count the dead","was scrupulously honest about every loss","was required by law to file duplicate records"],a:0},
    {stim:"You wish to establish what the Company itself intended by founding this colony.",
@@ -2237,7 +2292,7 @@ let CH={
        "receive supplies whenever the colonists asked for them",
        "be governed directly by Parliament",
        "be free of any obligation to send goods to England"],a:0},
-   {stim:"Charter of 1606: the colonists were to serve a term of years; land and stores were held by the Company; what they produced went into a common magazine.",
+   {stim:"The King's orders of 1606: the colonists were to work a term of years in one common stock; land and stores were held by the Company; what they produced went into a common magazine.",
     need:["Colonists as Company Servants"],
     q:"A colonist who expected to own a farm of his own would find that the charter -",
     o:["gave him no property in the land he worked",
@@ -2246,7 +2301,7 @@ let CH={
        "made him a tenant of the King rather than of the Company"],a:0},
    {stim:"A gentleman passenger sold his father's silver plate to pay for his own passage to Virginia.",
     need:["What the Gentlemen Bought","Colonists as Company Servants"],
-    q:"Under the 1606 charter, what had he actually purchased?",
+    q:"Under the Company's terms of 1606, what had he actually purchased?",
     o:["The right to work for the Company on the Company's land",
        "A share of the Company's profits proportional to his payment",
        "A grant of land to be surveyed on his arrival",
@@ -2258,7 +2313,9 @@ let CH={
        "A year in which the colony produced more food than it could eat",
        "A year in which new investors bought shares in the Company",
        "A year in which the Crown declared peace with Spain"],a:0},
-   {stim:"The charter's opening speaks of propagating the Christian religion. Its later articles set out the division of gold, silver and other commodities among the shareholders.",
+   /* as above: the charter reserves the King's share of the metals; it sets out no
+      division among shareholders */
+   {stim:"The charter's opening speaks of propagating the Christian religion. Its later articles grant mines of gold, silver and copper, trade and customs, and reserve the King's share of the treasure.",
     need:["Reading a Document's Purpose","What the Charter Actually Says"],
     q:"Which is the MOST careful way to read the two parts together?",
     o:["Both may be genuine: a stated religious purpose could be sincerely held and also make the venture easier to justify",
@@ -2304,7 +2361,8 @@ let CH={
        "The councillors would refuse to serve once named",
        "The ships could not be navigated without the box",
        "The Company would be unable to change its instructions"],a:0},
-   {stim:"The officers kept two counts of the dead: an honest tally, and a shorter column marked 'for London.'",
+   /* framed as the game's own document: no such tally survives (see CH.steal) */
+   {stim:"The note in the cask, a document invented for this game, keeps two counts of the dead: an honest tally, and a shorter column marked 'for London.'",
     need:["The Hidden Tally"],
     q:"A historian using ONLY the London figures would MOST likely -",
     o:["underestimate how deadly the colony was",
@@ -2341,9 +2399,12 @@ let CH={
        "The ship could not tell north from south",
        "The ship could not measure its speed at all",
        "The crew could not find the coast of Europe on the way home"],a:0},
-   {stim:"The fleet spent weeks in the West Indies before turning north for Virginia.",
+   /* The accounts give the stop's reason as water, food and rest ("three weekes we spent in
+      refreshing our selues", Proceedings, Arber p. 90), so the question no longer asks why
+      the fleet stopped. It asks what a landfall was worth to the navigator besides. */
+   {stim:"The fleet spent three weeks in the West Indies before turning north for Virginia, taking on water and fresh food.",
     need:["Dead Reckoning"],
-    q:"Which BEST explains why a navigator would want to do this?",
+    q:"Besides water and food, which BEST explains why a navigator would value those islands?",
     o:["Landmarks of known latitude let him fix where he really was before the last leg",
        "The West Indies were the only source of fresh water in the Atlantic",
        "Spanish charts of Virginia could be purchased there",
@@ -6975,7 +7036,14 @@ const BINNACLE_DOC={
    {q:"A wooden box housing the compass, swung to stay level as the ship moves, with a lamp beside it kept burning through the night.",
     g:"A compass you cannot read is no compass, so the lamp burns from dusk to dawn - one of the very few open flames permitted aboard a wooden ship full of tar and powder."},
    {q:"What it cannot give you is longitude.",
-    g:"Latitude could be measured - a cross-staff and the sun at noon. East and west could only be estimated: a log line, a sandglass, and the day's run reckoned up and written in the log. That is <b>dead reckoning</b>, and its error compounds every day of a crossing. It is why this fleet spent weeks in the West Indies establishing where it actually was before turning north."}
+    g:"Latitude could be measured - a cross-staff and the sun at noon. East and west could only be estimated: a log line, a sandglass, and the day's run reckoned up and written in the log. That is <b>dead reckoning</b>, and its error compounds every day of a crossing. Islands of known position let a navigator check it; and on the last leg to this coast the mariners were three days past their reckoning before they found land."}
+  /* "It is why this fleet spent weeks in the West Indies establishing where it actually was"
+     gave the stop a reason nobody recorded. What the accounts give is water and food:
+     "three weekes we spent in refreshing our selues amongst these west-India Iles" (Proceedings,
+     Arber p. 90); Percy camps six days on Nevis "to avoid diseases which will breed in so long
+     a Voyage" and waters at Mona, "which we stood in great need of" (Tyler pp. 7-8). The error
+     of reckoning IS in the record, on the leg after: "the Marriners had three daies passed
+     their reckoning, and found no land" (Arber p. 91). */
   ],
   insight:{g:"known",b:"Dead Reckoning",
     s:"Latitude could be measured at sea; longitude could not. A ship's east-west position was estimated from speed, heading and elapsed time - dead reckoning - and the error accumulated every day of a voyage."}};
@@ -11624,7 +11692,10 @@ function landingCutscene(){
     {do:function(){cam.position.set(58,17,44);CS.lastLook.set(20,7,8);},
      cam:{to:[50,15,36],look:[24,5,8]},
      t:5.4,sfx:"creak",gain:0.3,
-     narrate:"The shallop was still in pieces in the hold. They would not begin to build her up until tomorrow, and would not launch her for two days after that. So they hoisted out a ship's boat."},
+     /* "would not launch her for two days after that" - two days after the 27th is the 29th.
+        Percy: "The seven and twentieth day we began to build up our Shallop" and "The
+        eighteenth day we lanched our Shallop", which Tyler corrects to the 28th (pp. 10-11). */
+     narrate:"The shallop was still in pieces in the hold. They would not begin to build her up until tomorrow, and would launch her the day after that. So they hoisted out a ship's boat."},
 
     {do:function(){landingStart(alongside,offing,9.5);
                    cam.position.set(52,9,-16);CS.lastLook.set(shore*0.3,6,4);},
@@ -17003,7 +17074,13 @@ const OPEN_SHOTS=[
    say:"In the winter of 1606, three small ships dropped down the Thames for a coast most Englishmen could not have found on a map."},
   {set:"space",t:6.5,
    fromLL:[51.5,-0.6,3.2],toLL:[52.6,-3.2,1.30],lookLL:[53.4,-2.6,1.0],
-   say:"A hundred and four men and boys sailed. They were four months and more at sea, and they did not sail west."},
+  /* "A hundred and four men and boys sailed." A hundred and four is the number LEFT in
+     Virginia on 22 June, after the dying had begun: "leauing vs (one hundred and foure
+     persons)" (Percy, Arber p. lxx). Smith's roll of the first planters runs "to the number
+     of 105" (Arber p. 93) and still carries Edward Brookes, who died on Mona before the
+     landing - so it reads best as the company that sailed. The usual modern figure is the
+     same: 105 colonists and 39 seamen (Jamestown-Yorktown Foundation). */
+   say:"About a hundred and five men and boys sailed, besides the seamen. They were four months and more at sea, and they did not sail west."},
   /* MEASURED, not guessed. The Susan Constant's bounding box is 145 long by 144
      tall about a centre at y 57, so to fill three fifths of a 52-degree frame the
      camera wants to be about 260 feet off her and pointed at that centre - not at
@@ -25813,8 +25890,12 @@ const CHAPTERS=[
    },
    end:{head:"The Crossing \u2014 Complete", yr:"Chapter I \u00b7 the same morning, 26 April 1607",
      nextWorld:"ch2", nextLabel:"Go Ashore \u2014 Chapter II",
+     /* "to set up a cross" this afternoon: the cross went up on the 29th, "The nine and
+        twentieth day we set up a Crosse at Chesupioc Bay" (Percy, Tyler p. 11). On the 26th
+        "wee landed and discovered a little way" (p. 9). Chapter II shows the landing week as
+        one afternoon and labels it; this line stated the cross as the day's purpose. */
      body:"<p>The bay opens west ahead of you. Roanoke's warning sits behind you, the Company's arithmetic understood, and its hidden tally seen with your own eyes.</p>"+
-       "<p>The boats are going down. Thirty men are to be put ashore on the southern cape this afternoon \u2014 the same day you first saw this country \u2014 to set up a cross and prove the pieces before dark. The sealed box is still shut.</p>"+
+       "<p>The boats are going down. Thirty men are to be put ashore on the southern cape this afternoon \u2014 the same day you first saw this country \u2014 to see what the country is and prove the pieces before dark. The sealed box is still shut.</p>"+
        "<p class='note'>Your figure now wears what you earned: the weathered traveller's cloak and the muted grey of the Lost Colony. Spend your Ink in the Wardrobe, then go ashore.</p>"}},
 
   {n:"II",yr:"1607",t:"Landfall",d:"Cape Henry \u2014 ashore that afternoon, 26 April 1607",
@@ -26430,8 +26511,10 @@ const PATCH_NOTES=[
 const ROUTES=[
 {id:"track",y:1606,era:"1606\u201307",col:0xc0392b,n:"The Outward Passage",
  view:{la:30,lo:-45,d:3100},
+ /* "a place that lies due west of England" - the capes are at 37 degrees north and London at
+    51 and a half (this entry's own points). Due west of England is Newfoundland. */
  d:"South first to the Canaries, then west with the trade winds to the Indies, and only "+
-   "then north along the coast. Four months and more, for a place that lies due west of England.",
+   "then north along the coast. Four months and more, for a place that lies west and well to the south of England.",
  p:[
   {la:51.4,lo:0.4,n:"The Downs",d:"The anchorage off Kent where the three ships lay six weeks in sight of home, held by a contrary wind before they had gone anywhere at all."},
   {la:50.9,lo:1.4},{la:49.5,lo:-5.0},{la:44.0,lo:-9.5},{la:36.0,lo:-12.0},
@@ -26439,9 +26522,16 @@ const ROUTES=[
   {la:24.0,lo:-22.0},{la:19.0,lo:-33.0},{la:16.0,lo:-45.0},{la:15.4,lo:-55.0},
   {la:15.4,lo:-61.4,n:"Dominica",d:"First landfall in the Indies after five weeks of open sea. They watered here and traded with the Kalinago, who had held the island against Spain for a century."},
   {la:17.2,lo:-62.6,n:"Nevis",d:"Six days ashore: bathing in the hot springs, and a gallows built for a mutiny that in the end was never carried out."},
-  {la:18.1,lo:-67.9,n:"Mona",d:"An islet off Puerto Rico. A gentleman died here of the heat, hunting iguanas ashore \u2014 the fleet\u2019s first loss on the far side."},
+  {la:18.1,lo:-67.9,n:"Mona",d:"An islet off Puerto Rico. A gentleman died here of the heat, hunting iguanas ashore \u2014 the only death on the crossing that anyone wrote down."},
+  /* "the fleet's first loss on the far side" implied others before it. Percy: "by good
+     fortune wee lost none but one Edward Brookes Gentleman" (Tyler p. 8). */
   {la:20.5,lo:-72.0},{la:25.0,lo:-76.5},{la:29.0,lo:-79.5},{la:32.5,lo:-78.0},{la:35.5,lo:-75.5},
-  {la:36.9,lo:-76.0,n:"Cape Henry",d:"Landfall, 26 April 1607, four months and eleven days out. They set up a cross, and were attacked the same evening going back aboard."}
+  /* "four months and eleven days out. They set up a cross, and were attacked the same
+     evening" - 20 December to 26 April is four months and six days (Percy: "On Saturday
+     the twentieth of December ... the fleet fell from London", Tyler p. 5), and the cross
+     went up on the 29th: "The nine and twentieth day we set up a Crosse at Chesupioc Bay"
+     (Tyler p. 11). The attack was the 26th, "At night, when wee were going aboard" (p. 10). */
+  {la:36.9,lo:-76.0,n:"Cape Henry",d:"Landfall, 26 April 1607, four months and six days out. They went ashore, and were attacked that evening going back aboard; the cross went up three days later."}
  ]},
 
 {id:"silk",y:-130,era:"c. 130 BC \u2014 AD 1450s",col:0xf0b429,n:"The Silk Road",
@@ -27470,7 +27560,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261126-2321";
+const BUILD="20261126-2349";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
