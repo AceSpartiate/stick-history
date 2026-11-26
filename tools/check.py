@@ -228,14 +228,26 @@ if long:
 else:
     ok("no narration line runs past 20s (%d narrating steps)" % len(rows))
 
-if short:
-    print("  note  %d shots are shorter than their own line, so the camera arrives" % len(short))
-    print("        and then waits. Not a truncation - both systems hold for the voice -")
-    print("        but the picture stops moving while the words carry on:")
-    for gap, line, txt in sorted(short, reverse=True)[:6]:
-        print("        %5.1fs short  ~line %-6d %s..." % (gap, line, txt))
+# AND THE NOTE THAT USED TO FOLLOW HERE WAS ABOUT THE WRONG RUNTIME (2026-11-26). It listed
+# every shot whose authored t is shorter than its line - 66 of them - as "the camera arrives
+# and then waits". It never did: both runners already ease the camera over the LONGER of the
+# two. What was really wrong was the guess (2.3 words a second) against a voice that speaks
+# 3.1, so shots glided on in silence after their line. lineTick() now owns a shot's length
+# while its voice runs, in both runners, and a short authored t is simply a floor. So what
+# is worth asserting is that both runners go through it.
+def _body(src, head):
+    i = src.find(head)
+    return src[i:src.find("\n}", i)] if i >= 0 else ""
+_cs = _body(s, "function updateCutscene(dt){")
+_op = _body(s, "function playOpening(")          # its tick is frame(), nested inside
+_miss = [n for n, b in (("updateCutscene", _cs), ("the opening's tick", _op)) if "lineTick(" not in b]
+if "function lineTick(" not in s or _miss:
+    bad("a cutscene runner times its camera off the guess, not the voice (no lineTick in: %s)"
+        % ", ".join(_miss or ["lineTick is gone"]))
 else:
-    ok("every shot lasts as long as the line spoken over it")
+    ok("every shot moves for as long as its line is spoken: %d of %d narrated shots take their "
+       "length from the voice rather than their authored t (lineTick, in both runners)"
+       % (len(short), len(rows)))
 
 print("\n8. Every shipped asset is local, registered and licensed to share")
 # This was "no texture or image assets" until 8 November 2026, when the owner replaced

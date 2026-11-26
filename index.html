@@ -10734,11 +10734,14 @@ function csNext(){
   if(s.wait)CS.dur=Math.max(CS.dur||0,s.wait);
   if(!CS.dur)CS.dur=0.02;
   CS.said=!!s.narrate;
+  /* the shortest this step may be (what was authored), and the plan the speech cap counts
+     from; lineTick moves CS.dur between the two as the voice actually runs */
+  CS.min=s.narrate?Math.max(s.t||0,s.wait||0,2.6):CS.dur;CS.plan=CS.dur;CS.k=0;
 }
 function updateCutscene(dt){
   const s=CS.step;if(!s)return;
   CS.t+=dt;
-  const k=CS.dur>0?Math.min(1,CS.t/CS.dur):1;
+  const k=lineTick(CS,dt,csSpeaking());
   const e=k<0.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
   const shotCam=s._cam||s.cam;
   if(shotCam&&CS.camFrom){
@@ -10786,12 +10789,47 @@ function updateCutscene(dt){
 }
 function csSpeaking(){
   if(!CS.said||!SPEECH_OK||!VOICE_ON)return false;
-  if(CS.t>CS.dur+14)return false;
+  if(CS.t>(CS.plan||CS.dur)+14)return false;     /* the PLAN: lineTick moves dur */
   if(SAY_Q.length||voPlaying())return true;
   try{
     const ss=window.speechSynthesis;
     return !!(ss&&(ss.speaking||ss.pending));
   }catch(e){return false;}
+}
+/* ---- A SHOT THAT CARRIES A LINE MOVES FOR AS LONG AS THE LINE IS SPOKEN ----
+   tools/check.py check 7 reported 66 shots "shorter than their own line, so the camera
+   arrives and then waits". Read against the runners, that was not what happened: csNext and
+   the opening already set a step's length to the LONGER of its authored `t` and
+   speechSeconds(), and the camera eases across that whole length. The fault was the other
+   way round. speechSeconds() is a guess at 2.3 words a second, and the voice that actually
+   speaks is faster: the recorded narration measures 3.1 words a second over 2,080 sentences
+   (median 2.1 s under the guess), and Chrome's own voice spoke a 36-word line in 12.3 s
+   against a guessed 16.5. So most shots went on gliding, in silence, for two to five
+   seconds after their line had finished - and on a slow system voice the guess can still
+   come in short, when the camera did arrive and freeze.
+   So the guess only opens the shot. While the voice runs, this is the owner of how long the
+   shot is: if the line ends early the move settles in a beat (never below what was
+   authored), and if it runs long the move stretches over what is left of it. Progress is
+   carried forward rather than recomputed as t/dur, so moving the end never makes the camera
+   jump. c: {t (already advanced by dt), k, dur, min}. Returns 0..1. */
+const LINE_BEAT=0.6;
+function lineTick(c,dt,talking){
+  if(c.t>0.3&&c.min!==undefined){
+    if(!talking){if(c.dur>Math.max(c.min,c.t+LINE_BEAT))c.dur=Math.max(c.min,c.t+LINE_BEAT);}
+    else if(c.dur-c.t<0.5)c.dur=c.t+Math.max(0.5,speechLeft())+LINE_BEAT;
+  }
+  const left=c.dur-(c.t-dt), k0=c.k||0;
+  c.k=(left>dt)?k0+(1-k0)*dt/left:1;
+  return c.k;
+}
+/* what is left of the line being spoken: the recording's own clock where there is one, the
+   guess for every sentence still queued behind it */
+function speechLeft(){
+  let s=1;
+  try{if(voPlaying()&&isFinite(VO_EL.duration))
+    s=Math.max(0,VO_EL.duration-VO_EL.currentTime)/(VO_EL.playbackRate||1);}catch(e){}
+  for(let i=0;i<SAY_Q.length;i++)s+=Math.max(0.5,speechSeconds(SAY_Q[i].text)-0.8);
+  return s;
 }
 function endCutscene(){
   if(!CS.active)return;
@@ -16983,7 +17021,7 @@ function openShotDur(sh){
 function openSpeaking(){
   const sh=OPEN_SHOTS[OPEN.shot];
   if(!sh||!sh.say||!SPEECH_OK||!VOICE_ON)return false;
-  if(OPEN.t>OPEN.dur+10)return false;
+  if(OPEN.t>(OPEN.plan||OPEN.dur)+10)return false;     /* the PLAN: lineTick moves dur */
   if(SAY_Q.length||voPlaying())return true;
   try{
     const ss=window.speechSynthesis;
@@ -17175,6 +17213,7 @@ function playOpening(onDone){
       }
       s=OPEN_SHOTS[OPEN.shot];
       OPEN.dur=openShotDur(s);
+      OPEN.plan=OPEN.dur;OPEN.k=0;OPEN.min=s.say?Math.max(0.4,s.t||0):OPEN.dur;
       const inSpace=(s.set==="space");
       if(!inSpace)buildSeaNow();          /* first time only, at the measured detail */
       space.visible=inSpace;seaSet.visible=!inSpace;
@@ -17201,8 +17240,9 @@ function playOpening(onDone){
       if(s.title)$("openTitle").classList.add("on");
     }
     /* the camera move spans the WHOLE shot, so a line that takes ten seconds gets ten
-       seconds of camera rather than six seconds of camera and four of a frozen frame */
-    const kk=Math.min(1,OPEN.t/OPEN.dur);
+       seconds of camera rather than six seconds of camera and four of a frozen frame -
+       and lineTick makes "the whole shot" the line as it is really spoken */
+    const kk=lineTick(OPEN,dt,openSpeaking());
     shotAt(s,kk);
     c.position.copy(V);
     /* A SLOW ROLL. A camera hand-held off a crane is never perfectly level, and a
@@ -23556,8 +23596,11 @@ function fortAfterStretch(st){
 }
 function fortReport(){
   const bits=[];
-  for(const t of FORT_TASKS){const f=fortProg(t.id);if(f>0)bits.push(t.name.toLowerCase()+": "+fortWord(f));}
-  return bits.length?bits.join("; ")+".":"Nothing got done.";
+  /* only the first letter drops to lower case, so Kendall keeps his capital; the sentence
+     then gets one back */
+  for(const t of FORT_TASKS){const f=fortProg(t.id);if(f>0)bits.push(t.name.charAt(0).toLowerCase()+t.name.slice(1)+": "+fortWord(f));}
+  const r=bits.join("; ");
+  return bits.length?r.charAt(0).toUpperCase()+r.slice(1)+".":"Nothing got done.";
 }
 function fortEve(){
   fortResult("The twenty-sixth of May",
@@ -23638,6 +23681,8 @@ registerWorld("ch3",function(root){
     /* inside the triangle fort (and 25 ft beyond its walls), and the corn ground */
     const fx=x-FORT_O[0],fz=FORT_O[1]-z;
     if(w.epi&&fz>-25&&fz<247&&Math.abs(fx)<235-fz*0.946)return true;
+    /* and the bulwarks, which stand out past that line: a tree grew inside the south-east one */
+    if(w.epi&&(Math.hypot(fx+210,fz)<34||Math.hypot(fx-210,fz)<34||Math.hypot(fx,fz-222)<34))return true;
     if(Math.abs(x-FORT_CORN[0])<70&&Math.abs(z-FORT_CORN[1])<50)return true;
     if(x>-110&&x<110&&z<-70&&z>-235)return fell>((z+70)/-165)*0.9;   /* felled northward */
     return false;
@@ -23662,6 +23707,7 @@ registerWorld("ch3",function(root){
   if(w.epi){
     fortPlace(root,"fort_palisade",["palisade_river","palisade_east","palisade_west",
       "bulwark_sw","bulwark_se","bulwark_n","gate"],ox,oz,0);
+    fortBulwarkGuns(root,ox,oz);
     /* walls: the river side (with its gate) and the two landward sides as line colliders */
     fortWall(ox-210,oz,ox-6,oz);fortWall(ox+6,oz,ox+210,oz);
     fortWall(ox-210,oz,ox,oz-222);fortWall(ox+210,oz,ox,oz-222);
@@ -23713,13 +23759,31 @@ function fortWall(x0,z0,x1,z1){
   const n=Math.ceil(Math.hypot(x1-x0,z1-z0)/4);
   for(let i=0;i<=n;i++){const k=i/n;solid(x0+(x1-x0)*k,z0+(z1-z0)*k,2.2,2.2,LVL.MAIN,0);}
 }
-/* the counterfactual gun ashore: a saker on a field carriage at the boughs */
+/* The saker (tools/blender/fort/saker.py): a 9 1/2 ft piece of 3 1/2 in bore, its
+   trunnions at the model's origin and its muzzle toward -z. "saker" is on a two-wheeled
+   field carriage with a trail (5.4 ft of muzzle ahead, 8.6 ft of trail behind);
+   "saker_truck" is a ship's four-truck carriage, the ordnance landed into the bulwarks.
+   ry turns the muzzle: it points along (-sin ry, -cos ry). */
+function fortSaker(root,node,x,y,z,ry){
+  return placeModel(root,"assets/fort/saker.glb",node,x,y,z,ry||0);
+}
+/* the counterfactual gun ashore: a saker on a field carriage at the boughs, muzzle to the woods */
 function fortGun(root,G,x,z){
-  const g=new Geo(),y=G(x,z),wood=RGB(0x6b5236),iron=RGB(0x3a3a3a);
-  g.box(x,y+1.4,z,2.6,1.2,5.5,wood);
-  for(const s of [-1,1])for(const f of [-1.8,1.8])g.beam8([x+s*1.6,y+1.1,z+f],[x+s*1.95,y+1.1,z+f],2.2,2.2,wood,wood);
-  g.beam8([x,y+2.4,z+2.6],[x,y+2.7,z-5.5],1.25,0.95,iron,iron);
-  root.add(g.mesh(false,false));solid(x,z,2,4,LVL.MAIN,1);
+  fortSaker(root,"saker",x,G(x,z),z,0);
+  solid(x,z+1.6,2.2,7,LVL.MAIN,1);
+}
+/* 15 June: "foure or five pieces of Artillerie mounted in them" (Percy) - four here, on the
+   bulwarks’ plank platforms, 8 ft out from each centre (top 4.1 ft up the model, which fortPlace sets 1 ft up), each
+   pointing away from the middle of the triangle. Two at the landward apex. */
+function fortBulwarkGuns(root,ox,oz){
+  const MID=[ox,oz-74];
+  [[ox-210,oz,[0]],[ox+210,oz,[0]],[ox,oz-222,[-3.5,3.5]]].forEach(function(b){
+    let dx=b[0]-MID[0],dz=b[1]-MID[1];const L=Math.hypot(dx,dz);dx/=L;dz/=L;
+    for(const s of b[2]){
+      const x=b[0]+dx*8-dz*s,z=b[1]+dz*8+dx*s;
+      fortSaker(root,"saker_truck",x,5.1,z,Math.atan2(-dx,-dz));
+    }
+  });
 }
 function fortWell(root,G,x,z){
   const g=new Geo(),y=G(x,z),wood=RGB(0x7d6a52),dark=RGB(0x2a2118);
@@ -23792,7 +23856,10 @@ function fortAttackSpots(root,G){
   if(fortProg("arms")<1&&!a.casks)
     interactables.push({id:"casks",label:"The Casks",x:80,z:10,y:G(80,10),lvl:LVL.MAIN,r:9,
       action:"fort",data:{kind:"casks",verb:"Break the arms out of the casks"}});
-  const hurt=[[-22,-55,0.7],[48,-48,2.4]];
+  /* the second man lay at (48,-48), which is under a camp shelter (camp.py's (8,32) spot,
+     placed at the camp's (40,-15)): his label floated over a tent with nobody visible.
+     Twelve feet clear of it now, and still inside the line of the boughs. */
+  const hurt=[[-22,-55,0.7],[60,-52,2.4]];
   a.carried=a.carried||[];
   hurt.forEach(function(h,i){
     if(a.carried.indexOf(i)>=0)return;
@@ -23826,18 +23893,21 @@ function fortAct(d){
   if(d.kind==="hurt"){a.carried.push(d.i);fortDrop("hurt"+d.i);
     if(FORT.wounded[d.i])FORT.wounded[d.i].visible=false;
     toast(a.carried.length>1?"Both men behind the boughs.":"You drag him in behind the boughs.");return;}
-  if(d.kind==="gun"){a.gun=true;fortDrop("gun");fortFire(0,-62,"Your gun speaks from the boughs.");return;}
+  if(d.kind==="gun"){a.gun=true;fortDrop("gun");fortFire(0,-68,"Your gun speaks from the boughs.",3.6);return;}
   if(d.kind==="hail"){a.hailed=true;fortDrop("hail");fortFire(-150,100,"The Admiral answers. Then the others.");return;}
 }
 function fortDrop(id){
   for(let i=interactables.length-1;i>=0;i--)if(interactables[i].id===id){
     const it=interactables[i];if(it.el)it.el.style.display="none";interactables.splice(i,1);}
 }
-function fortFire(x,z,msg){
+/* h: how high the cloud starts. Nine feet suits a ship's gun port; the saker ashore has
+   its muzzle 3.6 ft up and 5.4 ft ahead of its trunnions, and its smoke had been starting
+   five feet above the barrel and back over the carriage. */
+function fortFire(x,z,msg,h){
   if(FORT.fired)return;
   FORT.fired=true;FORT.endT=FORT.t+5;
   try{boom();}catch(e){}
-  for(let i=0;i<10;i++)spawnPuff(POOL.smoke,x+(Math.random()-0.5)*6,WORLD.ground(x,z)+9,z-4,
+  for(let i=0;i<10;i++)spawnPuff(POOL.smoke,x+(Math.random()-0.5)*6,WORLD.ground(x,z)+(h||9),z-4,
     (Math.random()-0.5)*3,1.2,-2-Math.random()*3,{size:4,col:0xd9d4c8,op:0.8,life:5,grow:2.2});
   toast(msg);
 }
@@ -23884,7 +23954,10 @@ function fortAttackOver(){
     :"Nobody broke the casks open. The few gentlemen with their own weapons ready did the fighting.");
   if(fortProg("guns")>=1)yours.push(a.gun?"A gun was mounted ashore and you served it. <b>This is not what happened</b>: the record has every great gun still aboard the ships."
     :"A gun stood mounted ashore, and nobody brought it powder. (Not what happened: the guns were all aboard.)");
-  yours.push(a.hailed?"You hailed the ships, and they fired.":"Nobody hailed the ships; they fired when they saw it.");
+  /* the gun ashore, if it fires first, ends the fight before the ships do (fortFire fires
+     once), so "they fired when they saw it" described something the player never saw */
+  yours.push(a.hailed?"You hailed the ships, and they fired.":a.gun?"Nobody hailed the ships, and your gun spoke before they did. In the record it was the ships’ shot that ended it."
+    :"Nobody hailed the ships; they fired when they saw it.");
   const c=(a.carried||[]).length;
   yours.push(c===2?"You carried both of the fallen in.":c===1?"You carried one man in.":"The fallen lay where they fell until it was over.");
   fortResult("The Twenty-Sixth of May",
@@ -23897,7 +23970,7 @@ function fortAttackOver(){
 }
 function fortEpilogue(){
   const w=fortW();
-  fortResult("Fifteen Days Later",
+  fortResult("Twenty Days Later",            /* 26 May to 15 June; it said fifteen */
     "<p>“The fifteenth day of June, we had built and finished our Fort which was triangle wise, having three Bulwarkes, at every corner, like a halfe Moone, and foure or five pieces of Artillerie mounted in them.” — George Percy</p>"+
     "<p>They built it under arrows. On the thirty-first of May Eustace Clovill, “vnarmed stragling without the ffort”, was shot with six of them and came in “crying Arme Arme”. He died on the eighth of June.</p>"+
     "<p class='note'>The fort you will walk is a reconstruction: its sides follow William Strachey’s measurements of 1610, which the archaeologists of Jamestown Rediscovery have matched to the post lines of 1607.</p>",
@@ -24452,6 +24525,8 @@ const PATCH_NOTES=[
      "The houses at Kecoughtan were drawn as stacked boxes. They are now what John Smith described: frames of bent saplings covered with mats and bark, with a smoke hole over the fire and a mat hung across the door. The casks on the beach at Cape Henry are proper barrels now.",
      "<b>The store-keeper’s ledger</b>",
      "Chapter III now ends with a muster. When the fort is finished on 15 June, Thomas Studley, who kept the store, asks you six questions about these weeks before Newport sails home with letters. Pass with four right and the chapter closes. The questions are about evidence: what the sources say, who could have known it, and where historians still disagree.",
+     "<b>A saker for the fort</b>",
+     "The fort’s guns are a new model: a saker, the size of gun the ships carried, about nine and a half feet long and firing a five-pound ball. Land one before the twenty-sixth and it stands at the boughs on a two-wheeled field carriage. On 15 June four of them sit on ships’ carriages in the bulwarks, aimed through gaps cut in the palisade instead of into it. The wounded man who lay hidden under a tent can be found now, and cutscenes move on when their narration ends instead of drifting in silence for a few seconds.",
      "<b>The ground, without its grid</b>",
      "The ground textures were painted again. A fault in how they were joined left a faint cross in every tile, so the sand and earth showed a grid when you looked along them. It is gone.",
      "<b>A deer at the edge of the trees</b>",
@@ -25750,7 +25825,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261126-1626";
+const BUILD="20261126-2146";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

@@ -33,9 +33,7 @@ of split timbers set upright side by side: each post a Part.board about 1.1 ft w
 middle of the river side; Part gate = two heavy board gate leaves standing open inward plus two tall gate posts.
 At each corner a BULWARK (bulwark_sw at x=-210,y=0; bulwark_se at x=+210,y=0; bulwark_n at the apex): a circle
 about 50 ft across of the same palisade posts (leave the side facing the fort's inside open), with an earth
-platform inside (Part.mound, radius 20, height 4, earth colour) and ONE CANNON on the platform pointing outward
-(away from the fort's centre): barrel = Part.log iron, 8 ft long, radius 0.45 tapering to 0.35, on a carriage
-= Part.box 5x2.5x1.5 ft weathered timber with four small wheels (Part.log, short and wide, axis sideways).
+platform inside (Part.mound, radius 20, height 4, earth colour) and a plank gun platform on it (the guns are not in this model: they are the saker asset, placed by the game).
 palisade_river/east/west are the three walls between the bulwarks. To fit the budget, posts can be 4-sided boards
 (they are) and rails 6 sides.
 
@@ -93,3 +91,11 @@ earth (Part.mound, radius 1.2, height 0.6, 6 sides, 2 rings) in loose rows about
 (not a perfect grid), plus a short rail fence (a few forked posts and two rails) along the +Y side. cornfield_2:
 young green shoots on each hill (2-3 small thin tapered leaves per hill, Part.tri or tiny Part.log, green, 1 ft
 tall), in the same hill positions as cornfield_1 (compute the hill positions with the same seed in both).
+
+## saker
+out: fort/saker.glb | nodes: saker,saker_truck | budget: 3000 | grounded: yes
+Written by Claude (2026-11-26), not by a local model; the spec is the header for build_one.py. A saker of about
+1600: a cast muzzle-loader about 9 ft 6 in long, 3 1/2 in bore, a ball of about 5 lb, the trunnions over the origin
+and the muzzle toward +Y. Two Parts with the same barrel: saker on a two-wheeled field carriage with a trail (the
+gun the player may land and mount at the boughs before 26 May, the counterfactual), saker_truck on a ship's
+four-truck carriage (the ships' ordnance mounted in the bulwarks by 15 June). Under 1,500 triangles each.

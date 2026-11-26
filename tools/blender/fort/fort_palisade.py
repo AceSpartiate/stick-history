@@ -1,16 +1,19 @@
 # James Fort as finished 15 June 1607 (Percy): "triangle wise, having three bulwarks at every corner like a half
 # moon, and four or five pieces of artillery mounted in them". River side 420 ft on y=0; the apex about (0, 222).
 # Written by Claude, 2026-11-25.
-OAK, OLD, GREY, CUT, EARTH, IRON, WOOD = '#9a7b52', '#7d6a52', '#8a7a62', '#c9a874', '#6b5638', '#3a3a3a', '#6b5236'
+OAK, OLD, GREY, CUT, EARTH, PLANK = '#9a7b52', '#7d6a52', '#8a7a62', '#c9a874', '#6b5638', '#8a6e4a'
 SW, SE, N = Vector((-210, 0, 0)), Vector((210, 0, 0)), Vector((0, 222, 0))
 MID = (SW + SE + N) / 3
 BR = 25.0                                    # bulwark radius
 GATE = 5.0                                   # half the gate gap
 
 
-def post(P, r, at, out):
-    """One split timber set upright, flat face outward, its foot buried."""
+def post(P, r, at, out, top=None):
+    """One split timber set upright, flat face outward, its foot buried. top cuts it down (an embrasure) without
+    changing the random draws, so every other post stays where it was."""
     h = r.uniform(11.0, 11.8)
+    if top is not None:
+        h = top
     lean = Vector((r.uniform(-1, 1), r.uniform(-1, 1), 0)) * math.tan(math.radians(2)) * h
     c = r.random()
     P.board(at + Vector((0, 0, -0.3)), at + Vector((0, 0, h)) + lean, r.uniform(1.0, 1.15), 0.5,
@@ -50,45 +53,39 @@ def wall(P, r, a, b, skip=None):
         P.log(s0 + inn + Vector((0, 0, 8)), s1 + inn + Vector((0, 0, 8)), .22, .2, OLD, sides=6, cap_col=CUT)
 
 
-def gun(P, r, at, aim):
-    """A saker on a truck carriage, on the bulwark's platform, its muzzle toward aim."""
-    d = (aim - at)
-    d.z = 0
-    d.normalize()
-    side = Vector((-d.y, d.x, 0))
-    z = at.z
-    yaw = math.atan2(d.y, d.x)
-    P.box((at.x, at.y, z + .9), (5.0, 2.5, 1.2), WOOD, rot=yaw, taper=.9)
-    for f in (-1.7, 1.7):
-        for s in (-1, 1):
-            c = at + d * f + side * s * 1.45
-            P.log(c + Vector((0, 0, z + .75)) - side * s * .2, c + Vector((0, 0, z + .75)) + side * s * .25, .75, .75,
-                  WOOD, sides=8, cap_col='#4a3a26')
-    br = at + Vector((0, 0, z + 2.5)) - d * 2.6
-    P.log(br, br + d * 8 + Vector((0, 0, .25)), .45, .33, IRON, sides=8, cap_col='#1e1e1e')
-    P.log(br, br - d * .7, .3, .15, IRON, sides=6)                 # the cascabel
+# The guns' lines, as feet to the side of each bulwark's outward axis: the game places one saker_truck on each,
+# 8 ft out from the centre and pointing straight out (fortBulwarkGuns in index.html - keep the two in step).
+GUN_LINES = {'sw': [0.0], 'se': [0.0], 'n': [-3.5, 3.5]}
+SILL = 5.3                                   # an embrasure's posts stop here: the barrels lie at about 6.5
 
 
-def bulwark(P, r, c):
+def bulwark(P, r, c, lines):
     toward = (MID - c)
     toward.z = 0
     toward.normalize()
+    side = Vector((-toward.y, toward.x, 0))
     n = int(2 * math.pi * BR / 1.15)
     for i in range(n):
         a = 2 * math.pi * i / n
         rad = Vector((math.cos(a), math.sin(a), 0))
         if rad.dot(toward) > math.cos(math.radians(62)):            # leave the inside open
             continue
-        post(P, r, c + rad * BR, rad)
+        at = c + rad * BR
+        # an embrasure where a gun's line meets the palisade, or the guns fire into their own wall
+        emb = rad.dot(-toward) > 0.6 and any(abs((at - c).dot(side) - s) < 1.8 for s in lines)
+        post(P, r, at, rad, top=SILL if emb else None)
     P.mound(c, 20, 4.0, EARTH, sides=12, rings=3)
-    gun(P, r, c + Vector((0, 0, 3.6)) - toward * 9, c - toward * 60)
+    # a platform of plank on the earth for the guns, its top at z=4.1. The guns themselves are the saker model
+    # (saker.py, saker_truck), placed in the game: one gun, one owner (2026-11-26).
+    yaw = math.atan2(toward.y, toward.x)
+    P.box(tuple(c - toward * 7.5 + Vector((0, 0, 2.2))), (13.0, 15.0, 1.9), PLANK, rot=yaw, taper=0.96)
 
 
 def build():
     r = rng(1607)
     corners = {'sw': SW, 'se': SE, 'n': N}
     for k, c in corners.items():
-        bulwark(Part('bulwark_' + k), r, c)
+        bulwark(Part('bulwark_' + k), r, c, GUN_LINES[k])
 
     def between(a, b):
         d = (b - a).normalized()
