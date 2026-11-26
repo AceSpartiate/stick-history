@@ -40,6 +40,11 @@
     for(const k of Object.keys(v)){if(k==='voice'||k==='id')continue;try{walk(v[k],d+1,npcs[k]?k:who);}catch(e){}}
   }
   for(const n of names){try{const v=eval(n);if(v&&(typeof v==='object'||typeof v==='string'))walk(v,0,'narrator');}catch(e){}}
+  /* Cutscene lines live inside the functions that play them (narrate:"..." in a
+     playCutscene call), which no top-level name reaches: 74 of the game's 133 cutscene
+     sentences were never recorded (found 2026-11-26). Read them out of the source text. */
+  for(const m of src.matchAll(/\b(?:narrate|say|line):\s*("(?:[^"\\\n]|\\.)*")/g)){
+    try{const s=JSON.parse(m[1]).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();if(prose(s))add(s,'narrator');}catch(e){}}
   const panels=[];
   closeAllModals();const nb=document.getElementById('btnNotes');if(nb){nb.click();await new Promise(r=>setTimeout(r,300));}
   for(const el of document.querySelectorAll('[data-read]')){try{const t=readableText(el);if(t)panels.push(t);}catch(e){}}

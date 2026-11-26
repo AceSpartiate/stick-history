@@ -34,6 +34,8 @@ VOICES = {
     "snore": (25, 0.90),
     # Chapter III (stand-ins until the character voices are recorded)
     "gosnold": (24, 0.97), "laydon": (27, 1.00), "laxon": (25, 0.93), "smith": (26, 1.06),
+    # Chapter IV (stand-ins until voice_cast.py designs them)
+    "studley": (26, 0.94), "ratcliffe": (27, 1.01), "martin": (25, 0.96),
 }
 FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 
