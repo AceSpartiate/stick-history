@@ -105,13 +105,25 @@
   .lay.full{border-color:rgba(224,218,187,.32);margin-left:6px}
   .lay.full.on{background:linear-gradient(180deg,#5c9d8e,#3f7d70);color:#eafff9;border-color:var(--copper-bright)}
   @media (max-width:430px){#layout .laylab{display:none}#layout{padding:5px 6px}}
-  #title{align-items:center;justify-content:center;padding:22px;text-align:center;
+  /* SAFE center, not center. The title column is taller than a school laptop's window -
+     measured 924px of content in a 1024x768 pane - and a flex column centred with plain
+     `center` overflows at BOTH ends, so the top 78px went off the screen where no scrollbar
+     can reach: the figure's head was cut off and lay under the layout row (P2 again, by a
+     different road). `safe` falls back to the start when the content does not fit, so the
+     overflow is all at the bottom, where scrolling finds it. */
+  #title{align-items:center;justify-content:safe center;padding:22px;text-align:center;
     background:radial-gradient(90% 60% at 50% 20%,rgba(63,125,112,.16),transparent 60%),
     radial-gradient(120% 80% at 50% 120%,rgba(176,141,62,.14),transparent 60%),var(--ink)}
   #title h1{color:var(--parch);font-size:2.6rem;margin:0;line-height:1;text-shadow:0 2px 0 #000,0 0 30px rgba(92,157,142,.35)}
   #title .sub{color:var(--copper-bright);font-style:italic;font-size:1.2rem;margin:.1em 0 .2em}
   #title .yr{color:rgba(224,218,187,.55);letter-spacing:.3em;font-size:.76rem;margin-bottom:1.2em}
-  #title canvas{display:block;margin:0 auto .8em;border-radius:8px}
+  /* height:190px is the canvas's AUTHORED size, stated because nothing else states it.
+     paintTitleFig's setPixelRatio(2) doubles the drawing buffer to 400x380, and a canvas
+     with no CSS size displays at its buffer size - so the figure every comment calls
+     200x190 was drawn 400x380 and pushed the menu 190px down the screen. Width follows
+     from the aspect ratio. The short-window rule below still overrides this (same
+     specificity, later in source). */
+  #title canvas{display:block;height:190px;margin:0 auto .8em;border-radius:8px}
   #title .menu{display:flex;flex-direction:column;gap:.6em;max-width:280px;margin:0 auto}
   /* THE BOTTOM MARGIN IS LOAD-BEARING, NOT SPACING. #btnWipe and #btnNotes are
      position:absolute at bottom:14px, so they are out of flow and this text ran straight
@@ -274,6 +286,13 @@
     background:linear-gradient(180deg,#2f6a5e,#204a42);color:#eafff9;border:1px solid var(--copper-bright);
     box-shadow:0 4px 0 rgba(0,0,0,.45);font-family:'IM Fell English SC',serif;font-size:1rem;text-align:center;line-height:1.2}
   #action.on{display:block}
+  /* ON A PHONE IT STOOD IN THE MIDDLE STACK. The green button is bottom-right and up to 190
+     wide; the centre stack - piece button (bottom 14), carry chips (62-106) and Your Task
+     (116-146) - is 194 wide. Side by side they need about 610px. Measured at 375: the
+     button spanned x 170-355 and the chips 90-284, so chips 2 and 3 were drawn across
+     "Look at the chart", and the piece button ran under it too. Below 600 it stands above
+     the whole stack instead, still on the right-hand thumb's side. */
+  @media (max-width:600px){ #action{bottom:154px} }
   #action:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.45)}
   #action small{display:block;font-size:.68rem;opacity:.75;letter-spacing:.05em}
   #action .key{display:inline-block;min-width:1.35em;margin-right:.5em;padding:.05em .3em;
@@ -292,6 +311,16 @@
     background:linear-gradient(180deg,rgba(18,15,10,.62),rgba(18,15,10,.82));
     border:1px solid rgba(224,218,187,.24);color:var(--parch)}
   #gun.on{display:block}
+  /* THE DRILL PANEL IS SEE-THROUGH, AND WHAT SHOWED THROUGH IT WAS TEXT. #goalBtn (bottom
+     116) and #slots (bottom 62) sit inside the panel's own band, under a background of 62-82%
+     ink, so "YOUR TASK" and four empty chips read through the middle of "Charge the piece"
+     for the whole lesson. Neither is any use mid-drill - the task IS the drill, and nothing
+     is drawn from a slot with both hands on the piece - so they step out while it is up.
+     The green "Speak" button with them: it went on offering whichever bystander stood
+     nearest the mark, and F opened his chatter over the top of the lesson (doInteract
+     refuses it too). */
+  #viewport:has(#gun.on) #goalBtn,#viewport:has(#gun.on) #slots,
+  #viewport:has(#gun.on) #action{visibility:hidden}
   /* explicit, because the drawing buffer is 70x90 and any CSS stretch makes the
      figure look wrong in a way no amount of camera fitting can fix */
   #dlgFig{width:70px;height:90px;flex:none;display:block}
@@ -1372,6 +1401,12 @@ function newRun(){
   S.reached={ch1:true};
   S.corrections=0;S.reckTries=0;S.lashCount=0;S.chartSeen={};
   S.works={};
+  /* THREE GATES THAT SURVIVED A NEW RUN. S.spoke is npcDone's high-water mark and is saved,
+     so a second voyage began with every crewman already "asked out" - found by playing
+     Chapter I twice: the clerk counted as done before a word was said to him. And the
+     council's two flags, which restartChapter clears and this did not, so a replay arrived
+     at the survey with the site already chosen. */
+  S.spoke={};S.councilDone=false;S.councilWarned=false;
   if(typeof AMBUSH!=="undefined")AMBUSH.done=false;
 }
 /* named so the player knows what a checkpoint is: a boundary, not an autosave */
@@ -1999,7 +2034,11 @@ let CH={
       somebody else. Whoever else appears as Smith in a later chapter takes this
       same eq - see SMITH_EQ. */
    eq:SMITH_EQ,
-   lines:["\u201cLook your fill. The gentlemen say I'll hang before we sight Virginia.\u201d",
+   /* "...I'll hang before we SIGHT Virginia" - said on the morning the chapter card opens
+      with "Land was descried at four this morning". Past tense now: the threat was made at
+      Nevis, where they built the gallows, and the land has since been sighted with him
+      still alive below. The one line in the hold that contradicted the card above it. */
+   lines:["\u201cLook your fill. The gentlemen swore I'd hang before we sighted Virginia.\u201d",
      "\u201cI said what wanted saying about who ought to command here. That is the whole of my crime.\u201d",
      "\u201cAsk them what I actually did. They'll not tell you, because there's nothing to tell.\u201d",
      "\u201cNewport will come round. Or he won't, and there's an end of me.\u201d",
@@ -2018,7 +2057,9 @@ let CH={
      {q:"\u201cWhy was the beef so tough, the gentleman wanted to know?\u201d",a:"\u201cI told him it had been a hard life for the both of them.\u201d"},
      {q:"\u201cThey say an army marches upon its belly. And this company?\u201d",a:"\u201cIt crawls upon it, and I am blamed for the pace.\u201d"}
    ]},
-  {id:"snore",name:"Sleeping Sailor",voice:"male",role:"off watch",lvl:1,pos:[4,-8],face:0,
+  /* `lie`: he was built standing bolt upright, eyes shut, against a gun tackle - while his
+     own lines say he rolls over and that you could step over him. See place(). */
+  {id:"snore",name:"Sleeping Sailor",voice:"male",role:"off watch",lvl:1,pos:[4,-8],face:0,lie:true,
    eq:{skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"head_cap",build:"build_normal",face:"sleepy"},
    lines:["\u201c...mmf. Watch's not till eight bells. Go 'way.\u201d",
      "He does not wake. Somewhere under the snoring is the word \u201cgold.\u201d",
@@ -2034,7 +2075,9 @@ let CH={
   title:"The First Charter of Virginia",
   parts:[
    {q:"JAMES, by the Grace of God, King of England, Scotland, France and Ireland, Defender of the Faith...",
-    g:"Granted by <b>King James I</b> to the Virginia Company on 10 April 1606 \u2014 a year and a month before you will sight land."},
+    /* "a year and a month before you WILL sight land" - read on the morning land was
+       sighted, and 10 April 1606 to 26 April 1607 is a year and sixteen days. */
+    g:"Granted by <b>King James I</b> to the Virginia Company on 10 April 1606 \u2014 a little over a year before you sighted land this morning."},
    {q:"...to make Habitation, Plantation, and to deduce a colony of sundry of our People into that part of America commonly called VIRGINIA... either appertaining unto us, or which are not now actually possessed by any Christian Prince or People...",
     g:"<b>Read that last clause twice.</b> The land is described as available if no <i>Christian</i> ruler holds it. The Powhatan, some fifteen thousand strong, are simply not counted by the document that gives it away."},
    {q:"...which may, by the Providence of Almighty God, hereafter tend to the Glory of his Divine Majesty, in propagating of Christian Religion to such People, as yet live in Darkness and miserable Ignorance of the true Knowledge and Worship of God...",
@@ -8100,6 +8143,25 @@ registerWorld("ch1",function(root){
         }
         m.rotation.x=0.10;
       }
+      /* AND SOME ARE ASLEEP. Laid on his back, head forward (-z), hands folded on his belly -
+         a straight man on his back with his arms at his sides reads as a corpse on a ship
+         where men are about to start dying. YXZ so the lie is applied before the facing.
+         Lifted by the figure's own lowest point rather than a typed number, the same way the
+         posed crowd is planted. No extra collider: the 0.5K one at his feet below is all he
+         had standing, and stepping over him is what his last line says people do. Excluded
+         from the idles with the seated, so he is not turned on his heel to face you. */
+      if(n.lie){
+        const q=m.userData.parts;
+        if(q){
+          q.ra.rotation.set(-0.15,-1.4,0); q.la.rotation.set(-0.15,1.4,0);
+          if(q.elbowR)q.elbowR.rotation.x=-1.45;
+          if(q.elbowL)q.elbowL.rotation.x=-1.45;
+        }
+        m.rotation.order="YXZ";m.rotation.x=-Math.PI/2;
+        m.updateMatrixWorld(true);
+        const wp=new THREE.Vector3();m.getWorldPosition(wp);
+        m.position.y+=wp.y-new THREE.Box3().setFromObject(m).min.y;
+      }
       npcMeshes.push({npc:n,mesh:m});
       /* A MAN'S BODY SHOULD NOT BE ABLE TO WALL A PASSAGE, and one was. The
          Ship's Cook stood on the centreline under the forecastle at x=0, and
@@ -9132,16 +9194,42 @@ function toast(m){
   if(toastEl)toastEl.remove();
   toastEl=document.createElement("div");toastEl.textContent=m;
   const st=toastEl.style;
-  st.position="absolute";st.left="50%";st.top="50px";st.transform="translateX(-50%)";
+  /* ---- BELOW THE BANNER THAT SAYS WHERE TO GO, NOT ON TOP OF IT ----
+     At a fixed 50px this landed square on #guide (64px) every time a ladder was climbed -
+     "'Tween Deck" printed over "Gentleman Adventurer - 24 paces" at the one moment the
+     arrow had something new to say - and on the hint in the first seconds of a chapter.
+     Placed under whichever of the two is actually showing. */
+  let top=50;
+  const vr=$("viewport").getBoundingClientRect();
+  ["guide","hint"].forEach(function(id){
+    const e=$(id);if(!e)return;
+    const cs=getComputedStyle(e);
+    if(cs.display==="none"||cs.visibility==="hidden"||parseFloat(cs.opacity)<0.05)return;
+    const r=e.getBoundingClientRect();
+    if(r.height>=4)top=Math.max(top,Math.round(r.bottom-vr.top+8));
+  });
+  st.position="absolute";st.left="50%";st.top=top+"px";st.transform="translateX(-50%)";
   st.background="rgba(23,19,12,.9)";st.color="#e7dabb";st.border="1px solid rgba(176,141,62,.5)";
   st.padding=".5em .9em";st.borderRadius="4px";st.zIndex=9;st.fontStyle="italic";
   st.fontSize=".9rem";st.maxWidth="70%";st.textAlign="center";st.pointerEvents="none";
   $("viewport").appendChild(toastEl);
-  setTimeout(function(){if(toastEl){toastEl.remove();toastEl=null;}},2600);
+  /* ---- LONG ENOUGH TO READ ----
+     Every toast had 2.6 seconds, whatever it said - and the survey reports its findings in
+     a toast. The Jamestown landing is 300 characters, Kecoughtan's finding 190: gone before
+     a twelve-year-old is halfway through, and that finding is the evidence the council
+     then asks for. About 45ms a character (some 4 words a second) on top of a floor, capped
+     so a long one does not sit on the screen for ever; a newer toast still replaces it.
+     The timer is tied to THIS toast, or an old timer would cut a newer one short. */
+  const mine=toastEl;
+  setTimeout(function(){if(toastEl===mine){toastEl.remove();toastEl=null;}},
+    Math.min(12000,Math.max(2600,1200+String(m).length*45)));
 }
 
 function doInteract(){
   if(!activeSpot)return;
+  /* not in the middle of Kendall's lesson: F is the key a child presses to "use", and it
+     opened a bystander's small talk on top of the loading drill */
+  if(GUN.active)return;
   const a=activeSpot.action;
   if(a==="talk")openDialogue(activeSpot.data);
   else if(a==="idle")openIdle(activeSpot.data);
@@ -9207,7 +9295,16 @@ function drawPortrait(eq){
   }
   if(portScene.userData.fig)portScene.remove(portScene.userData.fig);
   const f=buildFigure(eq);f.rotation.y=0.5;portScene.add(f);portScene.userData.fig=f;
-  portR.setSize(c.width,c.height,false);
+  /* ---- THE PORTRAIT DOUBLED ITSELF EVERY TIME ANYBODY SPOKE ----
+     setSize() takes CSS pixels and multiplies them by the pixel ratio; this handed it
+     c.width/c.height, which are the DRAWING BUFFER that setPixelRatio(2) had already
+     doubled. So every conversation doubled the canvas again - 140x180, 280x360, 560x720...
+     Measured in one play-through of Chapters I and II: 573440 x 737280 by the council,
+     thirteen conversations in, and Master Wingfield's portrait an empty grey box because no
+     GPU will allocate that. Well before it went blank it was hundreds of megabytes of
+     antialiased buffer, re-rendered every frame a dialogue was open, on a Chromebook.
+     The authored size is 70x90 (the <canvas> and #dlgFig in the CSS); it never changes. */
+  portR.setSize(70,90,false);
   framePortrait(f,c);
   portR.render(portScene,portCam);
   if(!portScene.userData.looping){
@@ -9296,8 +9393,7 @@ function openDialogue(npc){
   $("dlgLeave").textContent="Step away";$("dlgLeave").style.display="";
   openModal("mDlg");setPaused(true);
   if(dlg.finished){
-    $("dlgMeter").style.width=Math.round(100*reckReady()/reckNeed())+"%";
-    $("dlgProgress").textContent="Asked out: "+reckReady()+" of "+reckNeed();
+    meters();          /* one owner for the "Asked out" line - see meters() */
     $("dlgRapport").textContent="";
     $("dlgChoices").innerHTML="";
     sayLine("dlgLine",npc.done||"\u201cWe have said all we have to say to one another. Mind what I told you.\u201d",
@@ -9349,10 +9445,15 @@ function openIdle(npc){
         i++;
         $("dlgChoices").innerHTML="";
         if(i<ls.length){
+          /* "or press F" was printed under this and F did nothing: the key handler answers
+             dlg.cont, and this button was never registered as it. Measured on the man in
+             irons - five lines, the footer promising F on four of them, and the line not
+             moving. Registered now, the way contBtn() registers its own. */
           const b=document.createElement("button");
-          b.className="choice";b.textContent="Go on.";
-          b.onclick=step;
+          b.className="choice cont";b.textContent="Go on.";
+          b.onclick=function(){dlg.cont=null;step();};
           $("dlgChoices").appendChild(b);
+          dlg.cont=b;
           $("dlgFoot").textContent="or press F";
           $("dlgLeave").style.display="";
           $("dlgLeave").textContent="Step away";
@@ -9383,8 +9484,12 @@ function meters(){
     $("dlgMeter").style.width=Math.round(100*dlg.trust/dlg.npc.need)+"%";
     $("dlgProgress").textContent="His patience";$("dlgRapport").textContent="";return;
   }
-  $("dlgMeter").style.width=Math.round(100*reckReady()/reckNeed())+"%";
-  $("dlgProgress").textContent="Asked out: "+reckReady()+" of "+reckNeed();
+  /* "Asked out" is Chapter I's count - its three crewmen and the Charter. Chapter II's npcs
+     list is empty, so Captain Kendall's conversation read "Asked out: 0 of 1", the 1 being
+     a Charter nobody on the beach has. Shown only where there are men to ask out. */
+  const askOut=CH.npcs&&CH.npcs.length;
+  $("dlgMeter").style.width=askOut?Math.round(100*reckReady()/reckNeed())+"%":"0%";
+  $("dlgProgress").textContent=askOut?"Asked out: "+reckReady()+" of "+reckNeed():"";
   /* left alone unless a beat has just paid out, in which case pick() has written
      the Ink into it and this must not stamp on the number */
   if(!dlg.paid)
@@ -9447,8 +9552,24 @@ function beatPay(base,tries){
 const BEAT_SHOW=4;
 function beatSlate(b){
   const shut=[],wise=[],rest=[];
+  /* ---- AN ANSWER YOU HAVE ALREADY EARNED IS NOT OFFERED BACK TO YOU ----
+     firstOpenBeat holds a beat open until EVERY sound answer you could give has been given,
+     and a beat can carry two. Played as the guide leads - sailor first - the clerk's third
+     beat offers both "Whim and Ledger" (opened by the sailor) and "Profit or Perish"; either
+     one moves the talk on, the other stays owed, he is not asked out, and coming back put
+     the SAME four up again with the one already earned still clickable. Pick it a second
+     time and it pays nothing, the talk runs to "That is all I have for you" and he is still
+     not done: a loop with no exit a child could see. So while a beat still owes something
+     reachable, the answers already earned in it stand aside and the guaranteed slot below
+     goes to one that is not. Insight conversations only; the council counts trust, not
+     insights. */
+  const owes=dlg.mode==="insight"&&b.choices.some(function(c){
+    return c.wise&&c.insight&&!S.insight[c.insight.b]&&
+      !(c.needs&&!S.insight[c.needs])&&!(c.evid&&!found(c.evid));
+  });
   b.choices.forEach(function(c,i){
     if(dlg.spent[i])return;
+    if(owes&&c.wise&&c.insight&&S.insight[c.insight.b])return;
     if((c.needs&&!S.insight[c.needs])||(c.evid&&!found(c.evid))){shut.push(i);return;}
     (c.wise?wise:rest).push(i);
   });
@@ -9621,7 +9742,12 @@ function endDialogue(){
     toast("He told you something he tells no one. +"+n.bonus.ink+" Ink");
   }
   meters();
-  $("dlgLine").textContent="\u201cThat is all I have for you. Mind what I have said.\u201d"+tail;
+  /* "That is all I have for you" was said to a player he still had something for - the
+     label over his head went on reading "has something to tell you" and the HUD did not
+     move. When a beat is still owed (see beatSlate), he says so instead. */
+  $("dlgLine").textContent=(firstOpenBeat(n)>=0
+    ?"\u201cThat will do for now. There was more in what I told you than you took from it \u2014 come back and ask me again.\u201d"
+    :"\u201cThat is all I have for you. Mind what I have said.\u201d")+tail;
   showLeave("Take your leave");
   /* A finished conversation is a boundary, and it is the natural unit of
      Chapter I's progress. Nothing in this chapter used to save at all, so a
@@ -12662,7 +12788,12 @@ function openReckoning(){
      would be, and the only place in this chapter where a man is standing in front of an
      officer with time to speak. Not scored, deliberately: in April 1607 nobody knew which
      answer was the safe one, and the record keeps both. */
-  if(CURRENT_WORLD==="ch2"&&S.heardKendall&&S.reportedKendall===null){
+  /* CHAPTER II, NOT THE WORLD CALLED ch2. The muster is sat from the chart (see "AND WHERE
+     THE PAPER IS SAT"), and the council that opens it is called from a survey site -
+     comfort, archers and james are worlds of their own. Keyed on the cape's world id, the
+     promise above was skipped unless the player sailed back to the cape first: measured at
+     Jamestown, the paper opened with reportedKendall still null. */
+  if((chapterOf(CURRENT_WORLD)||{}).world==="ch2"&&S.heardKendall&&S.reportedKendall===null){
     askKendall(openReckoning);
     return;
   }
@@ -13514,6 +13645,8 @@ function beginWorld(worldId){
      invent a chapter that was never played. */
   const ch=chapterOf(worldId);
   if(ch&&ch.world){S.reached=S.reached||{};S.reached[ch.world]=true;}
+  /* the last chapter's "done" does not cross into this one - see LEAVING_CHAPTER */
+  if(LEAVING_CHAPTER){S.chapterDone=false;LEAVING_CHAPTER=false;}
   show("scene");closeAllModals();setPaused(false);
   /* ---- THE MAIN LOOP HAS TO BE STARTED WHETHER OR NOT WE MADE THE RENDERER ----
      Reported from play: "after i watched it, i appeared in the cargo hold... but i
@@ -13569,6 +13702,8 @@ $("endTitle").onclick=goHome;
    entry now, so a chapter ends by describing itself. */
 /* which chapter's ending is on screen, so the wardrobe can come back to it */
 let ENDING_WORLD="ch1";
+/* set by the ending's way onward, spent by beginWorld - see the "Go Ashore" handler */
+let LEAVING_CHAPTER=false;
 function showEnding(worldId){
   const c=chapterOf(worldId||CURRENT_WORLD);
   ENDING_WORLD=(c&&c.world)||"ch1";
@@ -13590,8 +13725,21 @@ function showEnding(worldId){
          water, and the cape - so the boat can pull for the beach in it before the
          Chapter II card comes up. Guarded: if anything about the scene is not
          available, the button does what it always did. */
+      /* THE FLAG IS ABOUT THE CHAPTER YOU ARE IN, AND YOU ARE LEAVING IT. S.chapterDone is
+         one global that Chapter I's paper sets and Chapter II reads for its OWN muster, and
+         nothing cleared it on the way across - so Chapter II opened with the HUD reading
+         "Chapter complete" and its muster row already ticked, the first second you stood on
+         the beach. Marked here, at the one door between chapters, and CLEARED in beginWorld
+         as the next chapter is entered - where the checkpoint saves it. Not cleared here:
+         a save taken now would hold a Chapter I with nothing done and nothing to do, and
+         Continue would put the player back aboard it instead of on this ending. */
+      LEAVING_CHAPTER=true;
       if(e.nextWorld==="ch2"&&CURRENT_WORLD==="ch1"&&typeof landingCutscene==="function"){
-        show("game");
+        /* "scene", not "game". There is no screen called game: show() turned every screen
+           off, animate() returns at once unless #scene is on, and the landing stood on its
+           first caption over a black frame for ever - Skip dead too (see endOpening). Every
+           student who finished Chapter I in the same sitting as the opening met it. */
+        show("scene");
         try{
           playCutscene(landingCutscene(),function(){openIntro(e.nextWorld);});
           return;
@@ -17065,7 +17213,12 @@ function endOpening(){
   $("cine").classList.remove("on");
   $("cineSub").classList.remove("on");
   $("openTitle").classList.remove("on");
-  $("cineSkip").onclick=null;
+  /* HANDED BACK, NOT NULLED. The opening borrows #cineSkip and this used to set it to null
+     on the way out - which also threw away the cutscene skip wired at load (cineSkipCS), so
+     after a new game every later cutscene's Skip was a button that did nothing. Measured:
+     onclick null for the whole of Chapters I and II in a fresh run; a Continue never saw it,
+     because Continue has no opening. */
+  $("cineSkip").onclick=cineSkipCS;
   hushVoice();
   /* let the world's own screen keep the black until it has something to show */
   $("cineFade").style.transition="none";$("cineFade").style.opacity="0";
@@ -18164,10 +18317,12 @@ if(drillFlag())setTimeout(function(){
   }
 },1200);
 if($("slotCarry"))$("slotCarry").onclick=function(){openKit();};
-if($("cineSkip"))$("cineSkip").onclick=function(){
+/* named, so the opening can hand the button back to it when it is done - see endOpening */
+function cineSkipCS(){
   if(LESSON.on)endLesson();
   else if(CS.active)endCutscene();
-};
+}
+if($("cineSkip"))$("cineSkip").onclick=cineSkipCS;
 /* ========== WHAT YOU OVERHEAR ==========
    The drill ends, Kendall walks off a few paces, and you catch him talking to
    another man. Nothing in it is treason on 26 April. No one has yet shown a
@@ -18254,8 +18409,15 @@ const SHORE_TASKS=[
   {task:"camp", names:["Thomas Couper","Jonas Profit","James Brumfield"],
    kind:"labour", at:[[-4.5,26.5],[-1.5,22.5],[-13.5,18.5]]},
   /* gentlemen, a third of the company, mostly watching other men work */
+  /* TWO OF THEM STOOD IN THE RANGE. The mark is at (57.8,34) and the student fires from
+     (0,34); Thomas Studley was at [36,30] and Richard Crofts at [54,30], four feet off the
+     line of fire and Crofts within three feet of the stump itself. Measured: a properly
+     loaded, level, steady shot at the mark - exactly what Kendall asks for - wounded Crofts,
+     and the student was given twelve lashes for doing as they were told. Moved to twelve
+     feet clear of the line to the stump and fifteen of the line to the butt, which is past
+     the worst three-sigma group the piece throws at that range. */
   {task:"idle", names:["Dru Pickhouse","Ellis Kingston","Thomas Studley","Jeremy Alicock","Richard Crofts","Thomas Webbe","Francis Snarsbrough","Robert Ford"],
-   kind:"gent", at:[[-26,52],[-16,56],[36,30],[46,18],[54,30],[-8,58],[18,56],[30,50]]},
+   kind:"gent", at:[[-26,52],[-16,56],[36,22],[46,18],[60,24],[-8,58],[18,56],[30,50]]},
   /* landing the stores out of the boats */
   {task:"stores", names:["John Laydon","William Rods","Henry Tavin","George Golding","John Dods"],
    kind:"labour", at:[[-64,54],[-58,58],[-70,50],[-66,60],[-72,56]]},
@@ -18470,7 +18632,7 @@ function registerCh1Idles(){
   for(let i=0;i<npcMeshes.length;i++){
     const r=npcMeshes[i], n=r.npc, m=r.mesh;
     if(!m||!n||!m.userData||!m.userData.parts)continue;
-    if(n.sat){CH1_SAT_COUNT++;continue;}  /* he keeps the pose he was given */
+    if(n.sat||n.lie){CH1_SAT_COUNT++;continue;}  /* he keeps the pose he was given */
     const p=m.userData.parts;
     CH1_IDLE.push({id:n.id,mesh:m,p:p,face:m.rotation.y,seed:i+1,
       kind:CH1_IDLE_KIND[n.id]||{k:"look",r:0.6},
@@ -19189,6 +19351,19 @@ function buildThinSite(root,key){
   interactables.push({id:"boat",label:"Back to the Boat",
     x:site.land[0]+6,z:site.land[1]+6,
     y:G(site.land[0]+6,site.land[1]+6),lvl:LVL.MAIN,r:11,action:"chart"});
+  /* ---- AND THE BOAT, WHICH WAS NOT THERE ----
+     "Back to the Boat" stood over bare sand at every site - a label with nothing under it,
+     the first thing a player sees on landing. The cape's own shallop, drawn up the same way
+     it is there (sunk a little, listing a little), bow up the beach and stern to the water:
+     every site has its sea at +z, and buildShallop's long axis is z at yaw 0. NO collider,
+     deliberately - the player lands six feet off its side and blocked() pads every collider
+     by a body, so a solid() here would close the landing spot. ceiling: you can walk
+     through the boat; a narrower collider set clear of site.land if that is ever reported. */
+  {
+    const bx=site.land[0]+6, bz=site.land[1]+6, B=new Geo();
+    buildShallop(B,bx,G(bx,bz)-0.7,bz,0,0.05);
+    root.add(B.mesh(false,false));
+  }
   player=buildFigure(S.equip);
   player.position.set(site.land[0],G(site.land[0],site.land[1]),site.land[1]);
   player.rotation.y=Math.PI;
@@ -19445,7 +19620,13 @@ function flatShip(variant,s){
   SHARED.add(out);
   return SHIP_FLAT[key]=out;
 }
-const FLAT_SHIP_MAT=new THREE.MeshLambertMaterial({vertexColors:true});
+/* DOUBLE-SIDED, because what is flattened into it was. buildConsort draws the hull (4,324
+   triangles) and the decks on DoubleSide materials, one skin wound one way, and the flatten
+   keeps the triangles but not the material - so on this FrontSide one the half of the hull
+   wound inward was culled. From every survey beach the ships showed their landward side: a
+   strip of inner bulwark with the gunport frames hanging in the air beneath it and the sea
+   straight through where the hull should be. Back faces cost fill only where they are seen. */
+const FLAT_SHIP_MAT=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
 SHARED.add(FLAT_SHIP_MAT);
 /* the bow is at -z in buildConsort's frame (the bowsprit reaches 85 units forward at K) */
 function placeShip(root,variant,s,x,z,yaw){
@@ -21678,7 +21859,11 @@ function openChart(){
          twelve. It now states the arithmetic instead of promising a scarcity the
          numbers do not deliver, and says what the daylight buys. Whether twelve is the
          right number is a balance question and a separate one. */
-      'Seventeen days were spent choosing where to sit down. You have twelve, and a day goes on every passage and every thing you stop to look at.</div>'+
+      /* "You have twelve" was typed, and surveyBudget() derives the days from the sites -
+         fourteen since a site gained a fourth survey - so the line sat directly under
+         "Daylight left: 14" and disagreed with it. Asked of the budget now, and "were given"
+         rather than "have", because this line is read again with fewer days left. */
+      'Seventeen days were spent choosing where to sit down. You were given '+surveyBudget()+', and a day goes on every passage and every thing you stop to look at.</div>'+
        rows+'</div>';
   }
   $("mapGloss").innerHTML=g;
@@ -21789,7 +21974,10 @@ function sealedBox(){
      narrate:"\u201cAnd John Smith.\u201d They bring him up with his wrists still bound \u2014 a prisoner since the Canaries, charged with plotting to make himself king of Virginia."},
     {shot:{of:["smith"],dist:7*K,height:5.0*K,lookH:4.4*K,tight:true},t:5.4,
      narrate:knewSmith
-       ?"You know him. He told you below the half deck that the box would be opened, and asked whether that would not be a morning. He was not joking."
+       /* "below the half deck" was the third of the lines the patch notes say were moved to
+          the hold, and the one that was missed: he is in irons in the HOLD, the "else" line
+          two rows down says so, and that is where the player met him. */
+       ?"You know him. He told you down in the hold that the box would be opened, and asked whether that would not be a morning. He was not joking."
        :"You never spoke to him. He has sat in irons in the hold for weeks, down among the ballast, and he is one of the seven appointed to govern this place."},
     {shot:{of:["player","smith"],dist:16*K,height:8.5*K,lookH:5*K},t:5.6,
      narrate:"Nobody unties him. The list was written in London in the autumn, by men who could not know what the voyage would make of it. He is not sworn for another six weeks."}
@@ -21816,8 +22004,16 @@ function sealedBox(){
       knewSmith?["+"+ink+" Ink","You knew the man in irons"]:["+"+ink+" Ink"],
       function(){
         setPaused(false);checkpoint("the box is opened");
-        /* the box is the last beat of Chapter II, so this is where it closes */
-        setTimeout(function(){showEnding("ch2");},900);
+        /* ---- THE BOX IS NOT THE LAST BEAT ANY MORE, SO IT DOES NOT CLOSE THE CHAPTER ----
+           This put up "Landfall - Complete ... Chapter II complete" 900ms after the box, a
+           line from July when the box WAS the end. Since 13 August the chapter goes on - the
+           survey, the council and the muster, which is Chapter II's whole assessment - and the
+           HUD, the errands and the status line all say so ("the boats are yours"). The ending
+           screen offered only "Up the River - Chapter III", so a student following the game
+           went straight past all three and never sat Chapter II's paper. The ending is
+           reached from the muster now, which already calls showEnding when it is passed. */
+        setTimeout(function(){if(CURRENT_WORLD==="ch2")
+          toast("The boats are yours. The Captain's chart is where every passage starts.");},2700);
       });
   });
 }
@@ -25042,7 +25238,11 @@ const CHAPTERS=[
      need:[["land","landed","ashore","first","arriv","cape henry"],
            ["attack","attacked","fight","fought","wound","arrow","shot at","ambush","set upon","drove"]],
      model:"About thirty men came ashore for the first time and spent the day walking the country. At dusk, as they were going back to the boats, they were attacked by the people whose country it was, and two men were wounded \u2014 Gabriel Archer through both hands, and a sailor called Mathew Morton.",
-     wrongWhy:"Three things belong in the answer: the first landing, the cross and the service of thanks, and the attack that same evening. The day began with a ceremony claiming the place and ended with the English discovering it was not empty."},
+     /* The marking note still asked for "the cross and the service of thanks" after `need`
+        stopped asking for the cross (comment above) - and the Cross panel on the cape tells
+        the same student that the cross went up on the 29th and that no 1607 writer records
+        a service at all. The feedback now marks what the question marks. */
+     wrongWhy:"Two things belong in the answer: the first landing, and the attack that same evening. The day began with the English ashore for the first time and ended with them discovering the country was not empty."},
     {id:"box",when:function(){return S.insight["The Seven Named in the Box"];},
      q:"The Company sent the names of the council sealed in a box, not to be opened until landfall. Why do you think they did that?",
      need:[["seal","sealed","secret","closed","hidden","not open","unopened","box"],
@@ -25077,7 +25277,10 @@ const CHAPTERS=[
          done:musterOpen(),goal:true,locked:!S.boxOpened},
        {t:S.councilDone?"The council has chosen":"Call the council when you have seen enough",
          done:!!S.councilDone,goal:true,locked:!S.boxOpened},
-       {t:"Stand the muster at the scrivener's desk",
+       /* There is no desk in this chapter - on purpose, see "AND WHERE THE PAPER IS SAT":
+          the muster is a button on the Captain's chart. The errand and the status line both
+          sent a student looking for furniture that does not exist. */
+       {t:"Stand the muster at the Captain's chart",
          done:!!S.chapterDone,goal:true,locked:!S.councilDone}
      ];
    },
@@ -25088,7 +25291,7 @@ const CHAPTERS=[
        /* And once everything the scrivener wants is in hand, say THAT instead. A status
           line still reading "the boats are yours" when the only thing left is to sit
           down is the same fault as "Chapter complete", one step further along. */
-       if(S.councilDone&&musterOpen())return "Ready \u00b7 the scrivener will sit with you";
+       if(S.councilDone&&musterOpen())return "Ready \u00b7 the muster is on the chart";
        return "The landing is done \u00b7 the boats are yours";
      }
      if(AMBUSH.on)return "Arrows \u00b7 get to the boats";
@@ -25100,7 +25303,31 @@ const CHAPTERS=[
      /* Once the arrows start, nothing the arrow could point at is any help -
         and pointing at a treeline you are not meant to shoot into would be a
         lie about what this scene wants from you. */
-     if(AMBUSH.on||S.boxOpened)return null;
+     if(AMBUSH.on)return null;
+     /* ---- AND AFTER THE BOX THE ARROW HAD NOTHING TO SAY AT ALL ----
+        This returned null for the whole second half of the chapter, so from the box to the
+        muster - the survey, the council and the paper - there was no arrow, and the only
+        clue was "the boats are yours" over a beach with no boat interactable on it. The
+        chart is where every passage, the council and the muster are done (the "Back to the
+        Boat" prompt opens the same chart at a site). So: at a site, the nearest thing still
+        to look at until the scrivener has enough, then the boat; everywhere else, the chart.
+        The arrow can still be pinned to anything from the errands list. */
+     if(S.boxOpened){
+       if(S.chapterDone)return null;
+       const here=siteOf(CURRENT_WORLD);
+       if(here&&!here.home&&!musterOpen()&&surveyDays()>0){
+         const p=player.position;let best=null,bd=1e9;
+         for(let i=0;i<interactables.length;i++){
+           const it=interactables[i];
+           if(it.action!=="survey"||!it.data||found(it.data.site+"."+it.data.sv.k))continue;
+           const d=Math.hypot(it.x-p.x,it.z-p.z);
+           if(d<bd){bd=d;best=it;}
+         }
+         if(best)return {it:best,why:"is still to be looked at"};
+       }
+       const ch=findSpot(function(it){return it.action==="chart";});
+       return ch?{it:ch,why:"is where the next passage is chosen"}:null;
+     }
      if(!S.insight["Proved the Piece"]){
        const k=findSpot(function(it){return it.id==="kendall";});
        if(k)return {it:k,why:"will teach you the drill"};
@@ -26604,7 +26831,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261126-2223";
+const BUILD="20261126-2345";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
