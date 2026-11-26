@@ -63,6 +63,13 @@ CAST = {
               f"voice, {ENG}.",
     'irons': f"An English prisoner held in chains below decks: hoarse, low, desperate and bitter, {ENG}.",
     'helmsman': f"A middle-aged English seaman at the helm: steady, terse and calm, a plain working voice, {ENG}.",
+    # Chapter IV. Their ages are not recorded; these are only what their parts call for.
+    'studley': f"An English merchant clerk keeping a colony's store: careful, anxious and tired, counting every "
+               f"measure, a quiet precise middle voice, {ENG}.",
+    'ratcliffe': f"An English sea captain of the council, sick and resentful: bitter, aggrieved and blustering, "
+                 f"a harsh middle-aged voice, {ENG}.",
+    'martin': f"An English gentleman of the council, a father whose son is sick: grieving and angry, a strained "
+              f"older voice, {ENG}.",
 }
 REEL_GAP = 0.6
 
