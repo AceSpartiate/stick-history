@@ -12684,6 +12684,7 @@ function rkEnd(){
   const rw=$("resReward");rw.innerHTML="";
   if(passed){
     S.ink+=20;S.chapterDone=true;
+    if(R.onPass)R.onPass();     /* a chapter whose outcome lives elsewhere records it here */
     (CH.unlocks||[]).forEach(function(u){
       const s=document.createElement("span");s.className="tagpill";
       if(u.k==="palette"){
@@ -23815,7 +23816,8 @@ function fortAttackSpots(root,G){
 function fortAct(d){
   const w=fortW(), a=w.attack;
   if(d.kind==="orders"){openFortOrders();return;}
-  if(d.kind==="record"){w.done=true;checkpoint("fort-done");showEnding("ch3");return;}
+  /* the record is closed by sitting the muster; once it has been passed, the ending again */
+  if(d.kind==="record"){if(w.done)showEnding("ch3");else openReckoning();return;}
   if(!a||a.over)return;
   if(d.kind==="casks"){a.casks=true;fortDrop("casks");
     toast("The heads stove in. Calivers and pikes into every hand that will take one.");
@@ -23929,16 +23931,194 @@ function fortResult(title,body,pills,after){
    against it by hand: Newport went up the river in a boat, the ships stayed. */
 const FORT_SAYS={"wingfield": [["“The Council hath set us to work. Trees for the tents, clapboard for the ships, gardens for the spring. We are to build this place with our own hands.”","“I will not have the men running about with muskets in their fists. We are to hold them to watching, warding, and working. That is the order.”","“The Company’s charge is plain: we are not to offend the naturals. So we work, we keep the peace, and we build what we can with the hands we have.”"],["“The werowance of Paspahegh came to our quarter with a hundred of his men, armed. He made signs for us to lay our arms away. We would not trust him so far.”","“One of them stole a hatchet. A man took it back by force and struck him over the arm. The werowance went away in great anger. I will not say who was in the wrong.”","“On the twentieth, forty of his men came with a deer. They would have lain in our fort all night. We would not suffer them. That is the order I give.”"],["“Newport is gone upriver with the best hands. Five gentlemen, four mariners, fourteen sailors. That is the pick of this camp, and they are out of sight.”","“What is left here must keep working. The clapboard, the tents, the half-moon. I will not have the work slacken because the ships are gone upriver.”","“The arms remain in their casks. I hold that order. The men who are here are to watching, warding, and working. That does not change.”"],["“The men are setting corn today. That is the work. The half-moon stands. The casks are sealed. I hold the order: watching, warding, working.”","“Captain Newport is still up the river with the best hands. Until he is back, I will not have the men armed and running about. That is my charge.”","“The half-moon of boughs is what we have. I would have more, but I will not have the men pulling their axes from the corn to swing at the air.”"],["“On the twenty-sixth, they came, and I was here. One arrow went clean through my beard, and I escaped hurt. Nobody counted them the same way afterward.”","“Two hundred, some say four hundred. A boy killed in the pinnace. Eleven men hurt, or seventeen, or fourteen. I do not know which is true. I know I was there.”","“Today the fort is done. A triangle, three bulwarks, guns mounted. It was a cross-bar shot from the ships that brought a bough down among them, and they retired.”"]],"kendall": [["“You see that half-moon of boughs by the water? That is all the fort we have. I have been at it since before the sun was up, and my hands are split.”","“I would have the men drilled, the muskets out of those casks and into their hands. A soldier without his arms is a man waiting to be killed.”","“Now, I know the President holds a different view. He holds us to work and watching. I respect the Council’s order, but I would not sleep well with those casks still sealed.”"],["“A hundred armed men, walking into our camp. And the arms are still in the casks. I watched them and I thought: if this had been a day later, where would we stand?”","“On the twentieth, one of their arrows went a foot through our target. Against steel it burst to pieces. I note that. I note that we have no wall to shoot from.”","“I said to the President, plainly, that I would have the men exercised. He will not have it. So the casks stay shut, and I pray it is not needed.”"],["“The best hands are upriver. I am here with the rest. The half-moon of boughs is the same, but the men to man it are fewer. I note that.”","“I have been at the boughs since before the sun. My hands are raw. But I will not stop. If this is all the fort we have, I will make it as strong as boughs can be.”","“I would have the men I have here exercised. The President says no. So I keep them at work, and I keep my eye on the treeline.”"],["“They are setting corn. Good. We will need it. But I am at the boughs, adding what I can. A half-moon is a thin thing.”","“The casks are still sealed. I have said my piece to the President. He will not move. So I keep the men at work and I keep my eye on the treeline.”","“Newport is not back. I count the days. When he comes I will say again what I have said: the men need their arms.”"],["“I stood at the front with the Council. The half-moon of boughs was all between us and them. Four of us that stood in front were hurt, and the President was not.”","“The arms were in the casks. I said so for a fortnight. On the twenty-sixth, a few gentlemen had their weapons ready. The rest of us had boughs and our hands.”","“Today the triangle is done. Three bulwarks, guns in them. I helped raise it. My hands are the same hands that raised the boughs. But I will not raise boughs again.”"]],"gosnold": [["“We lade the clapboard and the timber aboard, and the ships go home to England. That is the first thing. The Company must see we have landed safe.”","“The guns are aboard the ships, and that is where they do the most good. A ship’s broadside is a thing no camp can match.”","“But when those ships sail, we are here. On this island. With boughs and a prayer. I think on that more than I care to.”"],["“The ships are still here, and the guns are aboard them. That is a comfort. A hundred men came to our quarter and the ships were in the river.”","“They sent a deer. Forty men with it. A gift, or a test, I cannot say. We let them go. The ships are the thing that keeps this place from being a very small target.”","“When the ships sail for England, those guns go with them. And we are left with boughs. I keep thinking on that.”"],["“Newport has taken the best hands up the river in the boat. The ships lie here at the trees with their guns, and fewer men to work them.”","“We are a small company here. The best hands are gone. The work goes on, but it goes on slower, and it goes on with fewer eyes on the water.”","“If something comes while Newport is away, we have boughs, and the ships’ guns at our backs. I have thought on that since the first day we landed.”"],["“Newport is due back from up the river. I watch the water every morning. The ships are moored where they were, and their guns are loaded.”","“We are setting corn. The half-moon stands. The casks are sealed. It is a camp, not a fort. I have said that before. I will say it again.”","“The guns are on those ships, not on this ground. If they come at us from the woods, it is the ships that must answer. I do not like the arithmetic of it.”"],["“I was at the fort. The ships were in the river, and their small shot was heard. I have heard the cross-bar shot brought a bough down among them, and they retired.”","“Today the guns are mounted ashore. Three bulwarks. A triangle. We needed a wall from the first day, and it took arrows to get one.”","“A boy is dead. I do not know his name. He was in the pinnace. Men are hurt, and the accounts disagree on how many. I do not need them to agree to know the cost.”"]],"laydon": [["“I have been at the axe since dark. Trees for the tents, trees for the clapboard, trees for God knows what. My shoulders are on fire.”","“The gentlemen sit and council and choose who is President. I am the one with the axe in my hands and the sap in my eyes.”","“They say the arms are in the casks. Fine. I did not cross the ocean to sit by a cask. I crossed it to work, and I am working.”"],["“A hundred of them, armed, walking up to our quarter. I was in the trees, felling. I heard them and I put the axe down. I did not know what to do.”","“They brought a deer on the twentieth. Forty men. They wanted to stay the night. We said no. I do not blame them for wanting to, and I do not blame us for saying no.”","“I saw the arrow go through the target. A foot clean into the wood. And I am the one out in the trees with an axe while they could have shot me standing still.”"],["“The good hands are gone upriver. I am here. I have been here since dark and I will be here till dark again. The trees do not care who is President.”","“I fell, I dig, I carry. The gentlemen who went up the river went in the boat. I am here in the mud with my axe. That is the lot of a labourer.”","“That half-moon of boughs is our wall. I helped put it up. It is not much. But it is all there is, and I will not let it fall.”"],["“I have been setting corn since the sun was up. My back is a knot. The corn will grow or it will not. I have done my part.”","“That half-moon is our wall. I helped build it. It is boughs and mud. I would not call it a fort. But it is what we have.”","“Newport is not back. I do not know where he is. I know I am here, and I know the corn is in the ground, and I know my hands are bleeding.”"],["“I was in the field setting corn. I heard the arrows and I ran. I ran to the boughs and I stood there. I did not have a musket. I had my hands.”","“Clovill went out of the fort unarmed, straggling. Six arrows in him. He cried ’Arme, Arme.’ He is dead. I did not know him well. I knew his name. That is not enough.”","“Today the palisade is up. A triangle. I helped carry the timbers. My back is the same back that set the corn. But I will not set corn in the open again.”"]],"laxon": [["“Four of us carpenters, and the whole island to build. I have measured the timber for the storehouse and there is not enough to spare.”","“The Company wants clapboard laded on the ships. That is a day’s work for each board, cut and dressed. We have the ships waiting.”","“You want a wall? A roof? A proper shelter? You want hands. We have axes and we have wood, but hands are the thing we lack.”"],["“The work does not stop because a hundred men walked past. I was dressing clapboard and I am dressing clapboard. The ships need lading.”","“On the twentieth one of their arrows went a foot into a wooden target. Against steel it broke to pieces. I can make boards. I cannot make steel.”","“Four carpenters. That is all. I cannot build a storehouse and a palisade and a roof with four hands. I need the labourers, and the labourers need rest.”"],["“Newport is up the river. The clapboard is not all laded. I am here with three other carpenters and a pile of green timber. We keep working.”","“The storehouse is not built. The tents are not all pitched. I have measured and I have cut, and there is still more to cut. Fewer hands, same work.”","“I would have a proper wall. Timber, dressed and set. But I have boughs and I have four hands. I make the best of it.”"],["“The corn is set. The tents are up. The clapboard is half laded. I have done what four carpenters can do, and it is not enough.”","“I have added to the half-moon where I can. Boughs, lashed and set. It is not a wall. It is a suggestion of a wall. But it is what I have.”","“The storehouse is still not built. I have the timber measured and cut. It waits. I will not let it rot.”"],["“I was at the boughs. I held my place. The arrows came thick. I do not know how many men were out there. Two hundred, four hundred. I was looking at the arrows, not counting the men.”","“Today the triangle is finished. Three bulwarks, half-moon shaped at each corner. Guns mounted. I dressed the timber, set the palisade, nailed the boards. My hands know every inch of it.”","“A boy is dead, killed in the pinnace. I do not know his name. The fort is done. God keep us inside it.”"]],"hunt": [["“We have hung an old sail to three trees for shade, and a bar of wood nailed between two more for the pulpit. God hears us plain enough.”","“There is friction among us. Men quarrel over who does what, who is above whom. I would have them remember they are one company.”","“The Company’s word is that we are not to offend them. I take that as a command from God as much as from London. We keep the peace.”"],["“There was a great anger when the werowance left. I saw the men’s faces. I would have them remember that a deer is a gift, and a gift is not a threat.”","“The hatchet was stolen, and a man struck in anger. I do not excuse it, but I do not excuse the theft either. Two wrongs do not make a peace.”","“Forty men came with a deer and would have lain with us. We said no. I understand why. But I would have them see that a door shut is not the same as a door broken.”"],["“The best hands are gone upriver. We are a smaller company here. I hold my services under the sail, and I see fewer faces than last week.”","“I would have the men who are here keep the peace among themselves. There is less room for quarrel when there are fewer men. I would have them remember that.”","“The werowance has been in anger since the hatchet. I do not know what he will do. I pray for Newport’s safe return, and for patience in this camp.”"],["“The men are setting corn. I see them in the field, and I am glad. A man with work in his hands is a man less likely to quarrel with his neighbour.”","“Newport is not yet back. I have prayed for his safe return. I have prayed for the peace of this camp. I do not know which prayer is harder to answer.”","“We have our half-moon. We have our sail for the pulpit. We have our corn in the ground. It is a small life. I would have them see it as God’s provision, not as a lack.”"],["“I was in the fort. I held my prayers and I held my place. I saw men fall. A boy was killed in the pinnace. I do not have words for it.”","“Clovill went out unarmed. He cried for arms. Six arrows took him, and he lived eight days. I would have him known. He was a man, not a number in a ledger.”","“The triangle is done. The guns are mounted. I will hold my services within those walls now. I will pray for the men who are hurt, and for the boy who is not.”"]],"smith": [["“They made an oration and I was not admitted of the Council. I was named for it in London, and here I am told to stand aside. Well.”","“I see the work. Trees felled, tents pitched, a half-moon of boughs called a fort. It is a start. I would call it a beginning of a start.”","“The arms sit in their casks while we swing axes. I have no quarrel with the President, but a man with a musket is not the same as a man with an axe.”"],["“A hundred armed men, and the President will not let us have our muskets. I would not trust them so far, as they say. But I would trust a loaded musket more.”","“A hatchet stolen, a man struck. The werowance went in great anger. I have no love for the man who stole, but I have no love for the man who swung either.”","“Forty men, a deer, and they wanted to stay the night. We said no. I would have said yes, and put a man on watch. But I am not in the Council.”"],[],[],[]]};
 
-/* ---- CHAPTER III'S CONTENT ----
-   It has no muster yet (CH3-FORT.md: the bank is still to be written off this chapter's
-   findings), so the scrivener's machinery is given an empty one rather than inheriting
-   Chapter I's - CH falling back to CH1 is how Chapter II once asked a man on a beach about
-   rations in a ship's hold. */
+/* ---- CHAPTER III'S CONTENT, AND ITS MUSTER ----
+   The muster is sat at "Close the Record" on 15 June, so everyone who sits it has given
+   the orders, lived through the twenty-sixth and walked the finished fort: every item is
+   ungated, and every stimulus carries the words its question needs. Written off
+   docs/CH3-RECORD.md, quotations in the sources' own spelling. A local model (qwen3.8:27b,
+   tools/muster_draft.py) drafted a first bank; read against the record, it gave quotations
+   to the wrong writers and left out the two things this chapter is most about - that
+   nobody who wrote about 26 May saw it, and that historians disagree on who ordered it -
+   so the bank was rewritten by hand, keeping what was sound (26 November 2026).
+   The sitter is Thomas Studley, who kept the store and stayed at the fort: the 1612
+   Proceedings chapter that comes nearest to an eyewitness is credited to him. */
 CONTENT.ch3={
   people:FORT_PEOPLE, npcs:[],
   charter:{insight:{b:"The Half Moon"}},
-  reck:[],
-  ready:function(){return {ok:false,missing:["a muster for this chapter, which is not written yet"]};},
+  reck:{seal:"records",kick:"The Store-Keeper\u2019s Ledger",title:"Set Down the Fort",
+    frame:"\u201cNewport sails for England with letters,\u201d says Thomas Studley, his ledger open on a cask. \u201cWhat goes home in them ought to be true. Six questions about these weeks; I\u2019ll bear two wrong \u2014 no more.\u201d",
+    lockLine:"Not yet. The record is closed when the fort is finished, on the fifteenth of June.",
+    pass:{title:"The Record Holds",
+      body:"You can say what happened on this island, how anyone knows it, and where nobody does. The letters go home with Newport on the twenty-second. Not everything in them is true, but your part is."},
+    fail:{title:"The Record Does Not Hold",
+      body:"Too much of what you would send home is guesswork set down as knowing. Walk the fort, read the accounts of the twenty-sixth again, and come back. Newport does not sail until the twenty-second."},
+    /* the chapter's outcome lives in S.works.ch3, not in the global chapterDone */
+    onPass:function(){fortW().done=true;},
+    q:[
+    {stim:"The 1612 Proceedings: “the Councell contriue the Fort, the rest cut downe trees to make place to pitch their Tents; some provide clapbord to relade the ships; some make gardens, some nets.”",
+     q:"What does this passage show about how the company was organised?",
+     o:["A few men decided and the rest did the heavy work",
+        "Every man voted on where the fort should stand",
+        "The labourers drew up the plan of the fort themselves",
+        "The work was shared out evenly among all ranks"],a:0},
+
+    {stim:"In the same weeks that they cut trees and made gardens, some of the men split clapboard “to relade the ships” for the voyage home.",
+     q:"Clapboard for the ships shows that, from the first weeks, the colony was ALSO expected to -",
+     o:["send goods home that showed the Company a return",
+        "build houses for the Powhatan towns nearby",
+        "repair the ships for a second voyage up the river",
+        "store timber against a winter months away"],a:0},
+
+    {stim:"The 1612 Proceedings blame “The Presidents overweening iealousie”, which “would admit no exercise at armes, or fortification but the boughs of trees cast together in the forme of a halfe moone”. Wingfield, defending himself later, wrote that he “held them to watching, warding, and workeing.”",
+     q:"A careful historian should treat the Proceedings’ charge against Wingfield as -",
+     o:["the view of his opponents, to be weighed against his own defence",
+        "settled fact, because it was printed in a published book",
+        "worthless, because Wingfield denied every word of it",
+        "proof that Wingfield wrote out an order to pack the arms"],a:0},
+
+    {stim:"On 26 May the men were “busied in setting Corne”, and “their armes beeing then in driefats” - packed in casks (True Relation, 1608).",
+     q:"Packed arms mattered MOST on the twenty-sixth because -",
+     o:["men at work in the open could not quickly arm themselves",
+        "the powder in the casks had been spoiled by the sea",
+        "the Paspahegh had been told where the casks were kept",
+        "the casks had already been laded aboard the ships"],a:0},
+
+    {stim:"The True Relation and the Proceedings both say the arms were still in casks on 26 May. Neither quotes an order keeping them there; the Proceedings blame the President’s “iealousie” in general.",
+     q:"What can a careful historian conclude about the packed arms?",
+     o:["That they were packed is recorded; who kept them so is the writers’ judgement",
+        "Wingfield signed a written order that kept them packed",
+        "The Paspahegh had asked the English to put them away",
+        "Newport took the arms up the river and left the casks empty"],a:0},
+
+    {stim:"Percy, 18 May: the werowance of Paspahegh came “with one hundred Savages armed” and made signs, as the English read them, “that he would give us as much land as we would desire.”",
+     q:"Percy’s report of an offer of “as much land as we would desire” needs care because -",
+     o:["it is the English reading of signs, not words both sides understood",
+        "Percy had already gone up the river with Newport",
+        "the werowance spoke to the council in plain English",
+        "the werowance later set the offer down in writing"],a:0},
+
+    {stim:"Percy, 18 May: “one of them stole a Hatchet”; an Englishman “tooke it from him by force, and also strooke him over the arme”, and the werowance “went suddenly away with all his company in great anger.”",
+     q:"The hatchet quarrel is BEST used as evidence that -",
+     o:["small incidents were already straining relations before the attack",
+        "the English and the Paspahegh traded freely without dispute",
+        "the English punished every theft with death",
+        "the werowance approved of what his man had done"],a:0},
+
+    {stim:"Percy, 20 May: an English target was shot “a foote thorow” by a Paspahegh arrow, but against steel the arrow “burst … all to pieces”.",
+     q:"The trial of the target suggests the English learned that -",
+     o:["steel would stop an arrow that a wooden target would not",
+        "Paspahegh arrows could not pierce wood at all",
+        "the Paspahegh refused to show what their bows could do",
+        "their muskets could not reach as far as a Powhatan bow"],a:0},
+
+    {stim:"Percy, 20 May: forty of the werowance’s men came with a deer and “would have layne in our Fort all night, but wee would not suffer them.”",
+     q:"Turning the forty men away for the night shows the English were -",
+     o:["accepting gifts while refusing to trust the givers",
+        "at open war with the Paspahegh by the twentieth",
+        "short of food and unable to feed guests",
+        "obeying a Paspahegh custom about strangers"],a:0},
+
+    {stim:"Percy, 24 May, reports a werowance answering his own people’s complaints about the English: “They take but a litle waste ground, which doth you nor any of us any good.”",
+     q:"This line shows that among the Powhatan -",
+     o:["people disagreed about how to answer the English",
+        "everyone agreed the English must be driven off at once",
+        "the island was prized as their best farmland",
+        "the English had paid for the island in trade goods"],a:0},
+
+    {stim:"Percy calls the place “our seating place in Paspihas Countrey”.",
+     q:"Percy’s own words show that the English -",
+     o:["knew the island lay in Paspahegh land",
+        "believed the island had never had an owner",
+        "had bought the island from Powhatan before landing",
+        "thought the Paspahegh lived far down the bay"],a:0},
+
+    {stim:"On 21 May Newport took “5. gentlemen. 4. Maryners and. 14. Saylours” up the river, among them Archer, Smith and Percy. They came back on the twenty-seventh.",
+     q:"Newport’s journey up the river matters to the story of 26 May because it -",
+     o:["left the fort short of hands, and took away the men who wrote about it",
+        "carried all of the colony’s guns and powder up the river",
+        "brought the werowance’s warriors down the river behind it",
+        "stopped all work on the fort until the boat came back"],a:0},
+
+    {stim:"Archer, Smith and Percy were up the river on 26 May; they wrote what they were told when they returned. Wingfield was at the fort, but his own account begins on 22 June.",
+     q:"The surviving English accounts of the attack are BEST described as -",
+     o:["reports by men who were not there, from what others told them",
+        "eyewitness accounts by men standing in the half-moon",
+        "Paspahegh accounts written down by English clerks",
+        "a report Wingfield sent to London on the day itself"],a:0},
+
+    {stim:"Archer counts “aboue. 200.” attackers. The True Relation says “400. Indians”. Neither writer was there.",
+     q:"The difference between these two numbers is BEST explained by -",
+     o:["each writer passing on an estimate made by men who did not count",
+        "a second attack on another day that doubled the number",
+        "a printer copying one of the figures twice by mistake",
+        "the Paspahegh bringing more men after the first hour"],a:0},
+
+    {stim:"Wounded on 26 May: Archer, “11. men”; the True Relation, “thirteene or fourteene”; the Proceedings, “17 men”. All three agree a boy was killed.",
+     q:"With three different counts of the wounded, a historian should -",
+     o:["give the range and say plainly that the sources disagree",
+        "use the largest, since the latest account must be best",
+        "average the three and give that as the true figure",
+        "leave the attack out, since none of it can be trusted"],a:0},
+
+    {stim:"Archer: “the Shippes ordinance with their small shott”. The Proceedings: “a crosse barre shot from the ships strooke down a bough from a tree amongst them, that caused them to retire.”",
+     q:"According to the record, what made the attackers draw off?",
+     o:["Fire from the ships, when a shot brought a bough down among them",
+        "A charge by the gentlemen out from behind the boughs",
+        "The sight of Newport’s boat returning down the river",
+        "The guns mounted in the fort’s three bulwarks"],a:0},
+
+    {stim:"Afterwards, says the Proceedings, Wingfield agreed the fort “should be pallisadoed, the ordinance mounted, his men armed and exercised.”",
+     q:"This agreement tells us that BEFORE 26 May -",
+     o:["there was no palisade, no guns ashore, and no drill",
+        "guns stood ashore already but had no powder",
+        "the men drilled daily but had no palisade",
+        "the triangle fort stood already, but unmanned"],a:0},
+
+    {stim:"Archer: “ffoure of the Counsell that stood in front were hurt”, and Wingfield “had one shott cleane through his bearde, yet scaped hurte.”",
+     q:"These details suggest that during the attack the council -",
+     o:["stood in the front of the defence with the others",
+        "sheltered aboard the ships until it was over",
+        "were away up the river with Captain Newport",
+        "watched from the woods behind the Paspahegh"],a:0},
+
+    {stim:"31 May: Eustace Clovill, “vnarmed stragling without the ffort”, was shot with six arrows and came in “crying Arme Arme”. He died on 8 June.",
+     q:"Clovill’s death, five days after the attack, shows that -",
+     o:["the danger did not end on the twenty-sixth, least of all outside the fort",
+        "the attack of the twenty-sixth went on for five days",
+        "Clovill had been wounded inside the fort on the twenty-sixth",
+        "the English had made peace and stopped keeping watch"],a:0},
+
+    {stim:"Before: “the boughs of trees cast together in the forme of a halfe moone”. By 15 June, Percy: “triangle wise, having three Bulwarkes, at every corner, like a halfe Moone, and foure or five pieces of Artillerie mounted in them.”",
+     q:"The change from boughs to the triangle is BEST explained as -",
+     o:["a response to the attack, which showed the camp could not hold",
+        "an order from London that came back with Newport’s boat",
+        "a permission the Paspahegh gave after the attack",
+        "a plan from England, finished on the day it was due"],a:0},
+
+    {stim:"14 June: the guide Navirans named five peoples as “our Contracted Enemyes” and “counselled vs to Cutt Downe the long weedes rounde about our fforte”.",
+     q:"Navirans’s advice BEST shows that -",
+     o:["some Powhatan people helped the English against enemies of their own",
+        "the English had already cleared the ground round the fort",
+        "Navirans wanted the English to plant corn round the walls",
+        "every Powhatan town was now at war with the English"],a:0},
+
+    {stim:"Historian Helen Rountree reads 26 May as the work of a local alliance, perhaps prompted by Newport going up the river. Virtual Jamestown finds “little doubt that Chief Powhatan authorized and coordinated the attack.”",
+     q:"Historians can disagree about who ordered the attack because -",
+     o:["no source records the Powhatan leaders’ own decision",
+        "Powhatan wrote a letter that they read in different ways",
+        "the English accounts name two different war leaders",
+        "no English account mentions the attack at all"],a:0},
+
+    {stim:"13 May: “an oration made, whie Captaine Smith was not admitted of the Councell”, though the Company had named him to it. He was sworn on 10 June.",
+     q:"Keeping Smith off the council suggests that, on the spot, the council -",
+     o:["could set aside one of London’s own choices for a time",
+        "had no power over who sat among its members",
+        "was elected by the whole company at the landing",
+        "followed the Company’s list exactly as written"],a:0}
+    ]},
+  ready:function(){
+    return fortW().epi?{ok:true,missing:[]}:{ok:false,missing:["the finished fort, on the fifteenth of June"]};
+  },
   targets:[], unlocks:[]
 };
 
@@ -24140,7 +24320,7 @@ const CHAPTERS=[
        {t:"Give the council’s orders ("+Math.min(w.stretch,4)+" of 4 stretches)",done:w.stretch>=4},
        {t:"Speak with the people on the island",done:met>=3,opt:true},
        {t:"Live through the twenty-sixth of May",done:!!(w.attack&&w.attack.over),goal:true,locked:w.stretch<4},
-       {t:"Walk the finished fort, 15 June",done:!!w.done,goal:true,locked:!w.epi}
+       {t:"Walk the finished fort and close the record, 15 June",done:!!w.done,goal:true,locked:!w.epi}
      ];
    },
    status:function(){
@@ -24270,6 +24450,10 @@ const PATCH_NOTES=[
      "The fort, the camp, the storehouse, the clearing and the fields are new 3D models, built in Blender for this game. The barrels and chests began as free models from Poly Haven.",
      "<b>Kecoughtan, rebuilt</b>",
      "The houses at Kecoughtan were drawn as stacked boxes. They are now what John Smith described: frames of bent saplings covered with mats and bark, with a smoke hole over the fire and a mat hung across the door. The casks on the beach at Cape Henry are proper barrels now.",
+     "<b>The store-keeper’s ledger</b>",
+     "Chapter III now ends with a muster. When the fort is finished on 15 June, Thomas Studley, who kept the store, asks you six questions about these weeks before Newport sails home with letters. Pass with four right and the chapter closes. The questions are about evidence: what the sources say, who could have known it, and where historians still disagree.",
+     "<b>The ground, without its grid</b>",
+     "The ground textures were painted again. A fault in how they were joined left a faint cross in every tile, so the sand and earth showed a grid when you looked along them. It is gone.",
      "<b>A deer at the edge of the trees</b>",
      "At Archer’s Hope, across the neck from Jamestown, and in the woods past the fort there is now a deer. John Smith wrote in 1612 that deer were the chief beasts of the country, many toward the heads of the rivers “but amongst the riuers few”, so there is only one, and it will not let you near. It has no antlers: in May a buck’s are still short and in velvet.",
      "<b>The accounts disagree, and the game says so</b>",
@@ -25566,7 +25750,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261126-0753";
+const BUILD="20261126-1626";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

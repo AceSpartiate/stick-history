@@ -37,14 +37,18 @@ MEAN, SPREAD = 0.82, 0.10
 
 
 def seamless(a):
-    """Offset-and-blend: the rolled copy is continuous across the tile edges, the original across the middle."""
-    h, w = a.shape[:2]
-    r = np.roll(np.roll(a, h // 2, 0), w // 2, 1)
-    y = np.minimum(np.arange(h), h - 1 - np.arange(h)) / (h / 2)
-    x = np.minimum(np.arange(w), w - 1 - np.arange(w)) / (w / 2)
-    m = np.clip(np.minimum.outer(y, x) * 1.6, 0, 1)
-    m = (m * m * (3 - 2 * m))[..., None] if a.ndim == 3 else m * m * (3 - 2 * m)
-    return a * m + r * (1 - m)
+    """Offset-and-blend, one axis at a time: the copy rolled half a tile is continuous across the tile edges, the
+    original across the middle, and each pass keeps the original wherever the rolled copy has its own seam.
+    Both axes in one pass (a min(x, y) mask) left the rolled copy's seam showing along the tile's midlines near the
+    edges: a faint cross through every tile, seen in the 2x2 previews on 2026-11-26."""
+    for ax in (0, 1):
+        n = a.shape[ax]
+        d = np.minimum(np.arange(n), n - 1 - np.arange(n)) / (n / 2)
+        m = np.clip(d * 1.6, 0, 1)
+        m = m * m * (3 - 2 * m)
+        m = m.reshape([-1 if i == ax else 1 for i in range(a.ndim)])
+        a = a * m + np.roll(a, n // 2, ax) * (1 - m)
+    return a
 
 
 def detail(img):
