@@ -17534,9 +17534,9 @@ function buildCamp(G,cx,cz){
   /* ---- 4. THE REST OF IT: stores landed while the light holds ---- */
   function cask(x,z,r,h){
     const y=gy(x,z);
-    G.oct(x,z,y,y+h, r*2,r*2, r*1.75,r*1.75, 0.35, RGB(0x6f5836),RGB(0x7d6440),0.85);
-    G.oct(x,z,y+h*0.30,y+h*0.42, r*2.1,r*2.1, r*2.1,r*2.1, 0.3, iron,iron,0.9);
-    G.oct(x,z,y+h*0.70,y+h*0.82, r*2.0,r*2.0, r*2.0,r*2.0, 0.3, iron,iron,0.9);
+    /* a CC0 Poly Haven barrel, 3 ft tall as baked; two variants, turned so no two match */
+    const v=(x*7+z*3)&1?"barrel":"barrel_b";
+    placeModel(worldRoot||scene,"assets/props/"+v+".glb",v,x,y,z,x*1.3+z,r/1.2,h/3,r/1.2);
     solid(x,z,r*1.6,r*1.6,LVL.MAIN);
   }
   cask(cx+7.5,cz+1.5,1.15,3.0);          /* victuals, stacked off the wet sand */
@@ -19206,27 +19206,31 @@ SITE_TERRAIN.james={sea:78,shore:34,flat:-8,deep:-3.6,fall:0.05,rise:1.5,inland:
    A Powhatan house is not a tepee and it is not a wigwam of the northern sort: it is a
    barrel-vaulted frame of bent saplings lashed at the crown and sheathed in bark or in
    woven reed mats, twenty to thirty feet long, twelve or so wide, and high enough inside
-   to stand up in. There is a smoke hole in the roof and a mat over the door, and Strachey
-   describes them as warm and close. Built here as a stepped vault - five courses of
-   decreasing width - which in flat-shaded low poly reads as the curve it is approximating
-   without pretending to a smoothness the rest of this game does not have.
-   `turn` swaps length for width, because Geo.box carries a z rotation and no y one, and a
-   town where every house points the same way looks issued rather than lived in. */
-function yehakin(G,x,gy,z,len,wid,hgt,turn){
-  const MAT=RGB(0x8a7550), MAT2=RGB(0x6f5c3e), DARK=RGB(0x2a2118);
-  const L=turn?wid:len, W=turn?len:wid;
-  const COURSES=5;
-  for(let i=0;i<COURSES;i++){
-    const t=(i+0.5)/COURSES;
-    /* a half-ellipse: full width at the ground, drawn in at the crown */
-    const k=Math.sqrt(Math.max(0.04,1-t*t*0.92));
-    const y0=gy+(i/COURSES)*hgt, y1=gy+((i+1)/COURSES)*hgt;
-    /* the vault draws in ACROSS its width and holds its length, whichever way it faces */
-    G.box(x,(y0+y1)/2,z,turn?L*k:L,y1-y0,turn?W:W*k,(i%2)?MAT:MAT2);
-  }
-  /* the smoke hole, and the mat hung over the door */
-  G.box(x,gy+hgt-0.05,z,L*0.16,0.16,W*0.16,DARK);
-  G.box(x+(turn?L*0.5:0),gy+2.0,z+(turn?0:W*0.5),turn?0.14:2.0,4.0,turn?2.0:0.14,DARK);
+   to stand up in. Smith: "built like our arbors of small young springs bowed and tied, and
+   so close covered with mats or the barks of trees very handsomely", with "a hole made for
+   the smoke to go into right over the fire."
+   It was drawn here as five stacked boxes, which read as a log pile. It is now a Blender
+   model (tools/blender/ch2/yehakin.py): a loaf with rounded ends, mats on the lower walls
+   and bark above in lapped courses, the smoke hole, and a mat hung across the door at the
+   +x end. The model is 24 x 12 x 10 ft and each house scales it to its own size;
+   `turn` turns it a quarter, so the town is not issued all facing one way. */
+function yehakin(root,x,gy,z,len,wid,hgt,turn){
+  return placeModel(root,"assets/ch2/yehakin.glb","yehakin",x,gy,z,turn?Math.PI/2:0,len/24,hgt/10,wid/12);
+}
+/* Place one node of a Blender model: loaded once, shared, drawn with the vertex-colour
+   material. Returns the group at once; the mesh arrives when the file has loaded, and not
+   at all if the world has been left meanwhile. */
+function placeModel(root,file,node,x,y,z,ry,sx,sy,sz){
+  const grp=new THREE.Group();
+  grp.position.set(x,y,z);grp.rotation.y=ry||0;grp.scale.set(sx||1,sy||sx||1,sz||sx||1);root.add(grp);
+  const myRoot=worldRoot;
+  loadGLB(file).then(function(g){
+    if(worldRoot!==myRoot)return;
+    if(!g[node]){console.warn("model: no node "+node+" in "+file);return;}
+    SHARED.add(g[node]);
+    grp.add(new THREE.Mesh(g[node],FORT_MAT));
+  }).catch(function(e){console.warn("model",file,e);});
+  return grp;
 }
 SITE_TERRAIN.comfort.dress=function(root,G){
   /* THE FLEET, riding at anchor off the point. They really did anchor here on the
@@ -19352,7 +19356,7 @@ function buildKecoughtan(root,G){
                [-34,-26,20,12,10,1],[6,-34,28,14,11,0]];
   for(let i=0;i<HOUSE.length;i++){
     const h=HOUSE[i];
-    yehakin(K,h[0],G(h[0],h[1]),h[1],h[2],h[3],h[4],h[5]);
+    yehakin(root,h[0],G(h[0],h[1]),h[1],h[2],h[3],h[4],h[5]);
     /* A house is a house. The footprint is whichever way it was turned - yehakin swaps
        length for width on `turn` - and the height is passed on so a ball stops in the
        wall rather than sailing through the town. */
@@ -24197,6 +24201,8 @@ const PATCH_NOTES=[
      "<b>The island changes with your orders</b>",
      "Walk it between orders and you see what the work made: stumps where trees stood, stacks of clapboard for the ships, the fence of boughs growing a quarter at a time, the storehouse frame going up. Then the twenty-sixth of May is played, and what your fortnight built is set beside what the colonists’ own accounts say happened. Last, you walk the triangle fort that was finished on the fifteenth of June.",
      "The fort, the camp, the storehouse, the clearing and the fields are new 3D models, built in Blender for this game. The barrels and chests began as free models from Poly Haven.",
+     "<b>Kecoughtan, rebuilt</b>",
+     "The houses at Kecoughtan were drawn as stacked boxes. They are now what John Smith described: frames of bent saplings covered with mats and bark, with a smoke hole over the fire and a mat hung across the door. The casks on the beach at Cape Henry are proper barrels now.",
      "<b>The accounts disagree, and the game says so</b>",
      "Nobody whose writing survives saw the attack of 26 May: the men who wrote it down were up the river with Captain Newport. So where Archer, Smith and the 1612 account give different numbers, you are shown all of them."
    ]},
@@ -25491,7 +25497,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261126-0510";
+const BUILD="20261126-0515";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

@@ -17,6 +17,18 @@
       "source": "made for this game: greyscale ground detail maps painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI) through tools/textures/make_textures.py, made seamless and chosen by a local model (qwen3.8:27b)",
       "licence": "own",
       "notes": "512 px JPEG luminance, mean 0.82; multiplied over vertex colours by groundMat()"
+    },
+    {
+      "path": "assets/ch2/",
+      "source": "made for this game: Chapter II's models, built in Blender 5.2 from scripts in tools/blender/ch2/ (written by Claude for this game, 2026-11-25) with the kit in tools/blender/kit.py",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, no textures; placed by placeModel() in index.html"
+    },
+    {
+      "path": "assets/props/",
+      "source": "Poly Haven 'wooden_barrels_01' (polyhaven.com/a/wooden_barrels_01), reduced to a few hundred triangles with its colour baked into the vertices by tools/blender/bake_glb.py",
+      "licence": "CC0-1.0",
+      "notes": "binary glTF, vertex colours only; placed by placeModel() in index.html"
     }
   ]
 }
