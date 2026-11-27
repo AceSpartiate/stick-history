@@ -27691,6 +27691,17 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"27 November 2026 · latest",
+   head:"Chapter VI: Smith & the Record",
+   lines:[
+     "<b>A new chapter: two years of John Smith</b>",
+     "From the spring of 1608 to October 1609, in eight scenes. The refiners dig for gold in the river sand, and Smith is stung by a stingray on the Bay. Captain Ratcliffe’s house rises in the woods. Captain Newport crowns Powhatan, who will not kneel. The first two Englishwomen arrive. The river freezes at Werowocomoco, and the rats eat the corn. “He that will not work shall not eat.” In the end a powder bag explodes in Smith’s boat, and he sails home burned.",
+     "<b>You are one of the writers</b>",
+     "Almost everything we know about these years was written by men who served under Smith, and two of them admit they were “a partie”. After every scene Anas Todkill, whose name is on most of their book, asks what to set down. Then you see what they printed. The few letters by Smith’s enemies come in at the end, and the chapter closes on a list of stores set beside an enemy’s letter of the same day.",
+     "<b>New things to look at</b>",
+     "The first Englishwomen in the game, a glasshouse in the woods, Ratcliffe’s half-built house, Powhatan in a scarlet cloak and an English crown, a river frozen half a mile out, and a sandy isle with reeds at the mouth of the Rappahannock.",
+     "<b>Where to find it</b>",
+     "Pass Chapter V’s muster and its ending leads on to Chapter VI. If you passed it before today, Chapter VI is already open in the chapter list."]},
+  {when:"27 November 2026",
    head:"The first chapters, checked again",
    lines:[
      "<b>The record, read again</b>",
@@ -29046,7 +29057,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0047";
+const BUILD="20261127-0049";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

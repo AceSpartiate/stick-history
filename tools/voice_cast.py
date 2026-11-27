@@ -75,6 +75,13 @@ CAST = {
             f"voice, {ENG}.",
     'bargeman': f"An English soldier in a cold boat on a winter river: tired, restless and grumbling, a plain "
                 f"working voice, {ENG}.",
+    # Chapter VI. Their ages are not recorded either; these are what their parts call for.
+    'scrivener': f"A young English gentleman of the council in his twenties: earnest, capable and a little "
+                 f"harried, a clear educated voice, {ENG}.",
+    'todkill': f"An English soldier and servant in his twenties who writes things down: plain, observant and "
+               f"loyal, a steady working man's voice with a dry edge, {ENG}.",
+    'russell': f"An English doctor of physic in his forties: calm, learned and wry, a measured, reassuring "
+               f"voice, {ENG}.",
 }
 REEL_GAP = 0.6
 
