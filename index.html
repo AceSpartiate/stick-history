@@ -11805,7 +11805,7 @@ function landingCutscene(){
      },
      cam:{to:[8,70,-268],look:[5,12,130]},
      t:5.2,sfx:"wind",gain:0.16,
-     narrate:"The six and twentieth of April. By afternoon the fleet lay at anchor inside the southern cape."},
+     narrate:"The twenty-sixth of April. By afternoon the fleet lay at anchor inside the southern cape."},
 
     {do:function(){cam.position.set(58,17,44);CS.lastLook.set(20,7,8);},
      cam:{to:[50,15,36],look:[24,5,8]},
@@ -11813,13 +11813,13 @@ function landingCutscene(){
      /* "would not launch her for two days after that" - two days after the 27th is the 29th.
         Percy: "The seven and twentieth day we began to build up our Shallop" and "The
         eighteenth day we lanched our Shallop", which Tyler corrects to the 28th (pp. 10-11). */
-     narrate:"The shallop was still in pieces in the hold, so they hoisted out a ship's boat."},
+     narrate:"The shallop was still in pieces, so they lowered a ship's boat."},
 
     {do:function(){landingStart(alongside,offing,9.5);
                    cam.position.set(52,9,-16);CS.lastLook.set(shore*0.3,6,4);},
      cam:{to:[86,11,-10],look:[shore*0.42,5,3]},
      t:5.6,
-     narrate:"About thirty men went in her, Wingfield, Gosnold and the Captain among them."},
+     narrate:"About thirty men went in her."},
 
     /* HIGHER THAN IT WANTS TO BE. The swell is drawn as low flat slabs, which is right
        at a distance and reads as floating plate glass when the camera sits at 11 units
@@ -11828,7 +11828,7 @@ function landingCutscene(){
     {do:function(){cam.position.set(offing[0]-70,28,-58);CS.lastLook.set(offing[0],5,0);},
      cam:{to:[offing[0]-40,24,-46],look:[offing[0]+40,3,0]},
      t:5.6,
-     narrate:"Nobody wrote down who pulled at the oars. What they wrote down is that they went."},
+     narrate:"Nobody wrote down who rowed. They wrote down that they went."},
 
     /* ---- THE LAST STRETCH, NOT THE WHOLE PASSAGE ----
        This ran her from the offing to the beach across the length of the shot, with the
@@ -11898,7 +11898,7 @@ function executionSteps(tx,ty,tz,steps,site){
       do:function(){
         if(player){player.position.set(tx,ty,tz);player.rotation.y=EXEC_YAW-0.42;}
       },
-      narrate:"You are stood against the trees. You came aboard dressed as a gentleman, and a gentleman is shot."});
+      narrate:"You came aboard dressed as a gentleman, and a gentleman is shot."});
     /* in to -2.40 .. +6.29, so he is 63% of it, and the volley lands on a closer man */
     steps.push({shot:{of:["player"],dist:9,height:3.6,lookH:2.7,yaw:EXEC_YAW,cut:true},t:2.8,
       sfx:"boom",gain:0.5,shake:0.06,fade:"out",narrate:"They do it quickly."});
@@ -11931,7 +11931,7 @@ function executionSteps(tx,ty,tz,steps,site){
         if(player){player.position.set(tx,ty,tz);player.rotation.y=EXEC_YAW-0.42;}
         buildHangRope(tx,ty,tz,limbY,neckY,gx,gz);
       },
-      narrate:"A rope goes over a limb. You came aboard in a labourer\u2019s clothes, and a labouring man is hanged."});
+      narrate:"You came aboard in a labourer\u2019s clothes, and a labouring man is hanged."});
     /* THE FACE, framed so the rope is out of shot. Camera 4.9, looking level at 4.9, one
        and a half out: the frame runs 4.10 to 5.70 against a head spanning 4.20 to 5.47, so
        he fills four fifths of it and the noose at 6.40 is above the top edge. `cut` matters
@@ -11945,7 +11945,7 @@ function executionSteps(tx,ty,tz,steps,site){
         if(typeof refreshPlayer==="function")refreshPlayer();
         if(player){player.position.set(tx,ty,tz);player.rotation.y=EXEC_YAW;}
       },
-      narrate:"They ask if you have anything to say. You find that you have not."});
+      narrate:"They ask if you have anything to say. You have not."});
     /* ---- THE FEET, WHICH TOOK THREE PASSES AND TWO OF THEM WERE ARITHMETIC ----
        Pass one put the camera at ankle height looking DOWN. The frame it computes is right -
        ty-0.54 to ty+2.95, top edge at mid-shin - but that number only describes the vertical
@@ -11979,7 +11979,7 @@ function executionSteps(tx,ty,tz,steps,site){
     steps.push({shot:{of:["player"],dist:2.9,height:1.15,lookH:-0.85,yaw:EXEC_YAW,hold:true},t:4.8,
       fade:"out",
       do:function(){HANG_ON=false;},
-      narrate:"And then the wood is quiet again, and the drill goes on without you."});
+      narrate:"Then the wood is quiet, and the drill goes on without you."});
   }
   return steps;
 }
@@ -12106,17 +12106,17 @@ function slingLesson(){
   refreshPlayer();refreshGunHud();
   playCutscene({steps:[
     {shot:{of:["player"],dist:9*K,height:5.2*K,lookH:4.8*K,tight:true},t:3.2,
-     narrate:"Kendall takes the piece out of your hands and turns it over once."},
+     narrate:"Kendall takes the piece and turns it over once."},
     {shot:{of:["player"],dist:7*K,height:5.6*K,lookH:5.0*K,tight:true},t:4.4,
-     narrate:"\u201cShe goes on your back when you are not using her, muzzle up, strap across the chest.\u201d"},
+     narrate:"\u201cShe goes on your back when you are not using her.\u201d"},
     {shot:{of:["player"],dist:11*K,height:6.2*K,lookH:4.6*K},t:4.6,
-     narrate:"\u201cWhen you want her, look to what you carry. Press I, or find it in the menu.\u201d"},
+     narrate:"\u201cPress I to find her again.\u201d"},
     {shot:{of:["player"],dist:8*K,height:5.4*K,lookH:5.0*K,tight:true},t:3.0,
      narrate:"He hands her back. \u201cShe is yours now. Mind the match.\u201d"}
   ]},function(){
     /* result() writes with textContent, so this must be plain prose - no markup */
     result(true,"The piece is yours",
-      "Slung across your back. Press I to see what you carry. \u201cCount what that cost you. The better part of a minute, for one ball.\u201d",
+      "Slung on your back. Press I for your kit. \u201cThe better part of a minute, for one ball.\u201d",
       ["+12 Ink","Slung on your back","Press I for your kit"],function(){
         setPaused(false);
         checkpoint("the piece is yours");
@@ -12481,46 +12481,46 @@ const COUNCIL={
      grant in code is a fact the registry cannot see, and every derived list - targets, the
      goals readout, the Atlas link - is wrong by exactly that much and says nothing. */
   outcome:{g:"known",b:"Overruled",
-    s:"The president of the council chose the site, not a vote. A colonist could be right and still be overruled."},
+    s:"The council's president chose the site, not a vote. Being right did not decide it."},
   eq:{skin:"english",palette:"company",cloak:"cloak_weathered",torso:"torso_merchant",
       accessory:"none_acc",head:"head_capotain",build:"build_normal",face:"shrewd",
       dye:{torso:"company",breech:"slate",stock:"ink",cloak:"lostcolony",head:"ink"}},
   beats:[
-   {npc:"\u201cWe must choose a seat for the fort before the ships are wanted elsewhere. You have been up the river. Where would you plant?\u201d",
+   {npc:"\u201cWe must choose a seat for the fort. You have been up the river. Where would you plant?\u201d",
     choices:[
      {t:"Archer's Hope. The best ground I have set foot on.",evid:"archers.ground",
       gate:"You have not walked that ground.",wise:true,ink:6,
-      reply:"\u201cThe whole company says so, loudly. Give me your reason, and only what you saw yourself.\u201d"},
+      reply:"\u201cEveryone says so. Give me your reason, from what you saw.\u201d"},
      {t:"The island up the river. A ship may lie hard against the bank there.",evid:"james.depth",
       gate:"You have not sounded the island.",wise:true,ink:6,
-      reply:"\u201cThat argument will carry the day, and you may not like where it leads. Say the rest of what you found.\u201d"},
+      reply:"\u201cThat argument will carry the day. Say the rest of what you found.\u201d"},
      {t:"Point Comfort, where the deep channel runs close in.",evid:"comfort.depth",
       gate:"You have not sounded Point Comfort.",wise:true,ink:5,
-      reply:"\u201cDeep water, and not a drop to drink. Say the rest of what you found.\u201d"},
+      reply:"\u201cDeep water, and nothing to drink. What else?\u201d"},
      {t:"Anywhere at all. Four months aboard, and the men want off the ships.",wise:false,
-      reply:"\u201cThen you have nothing. I will hear from a man who went and looked.\u201d"}
+      reply:"\u201cThen you have nothing. I'll hear a man who looked.\u201d"}
     ]},
-   {npc:"\u201cNow the reason. Plainly, and only what you saw yourself.\u201d",
+   {npc:"\u201cNow the reason, from what you saw.\u201d",
     choices:[
      {t:"Archer's Hope is shoal. Nothing can be landed there off a ship's side.",
       evid:"archers.berth",gate:"You have not sounded that bank.",wise:true,ink:9,
-      insight:{g:"known",b:"Why Jamestown Was Chosen",s:"The company wanted Archer's Hope for its ground, but a ship could not lie against its bank. Jamestown Island was chosen because ships could moor to the trees and unload. Supply, not health, decided the site."},
+      insight:{g:"known",b:"Why Jamestown Was Chosen",s:"The company wanted Archer's Hope, but a ship could not lie against its bank. Jamestown Island was chosen because ships could moor to the trees. Supply, not health, decided it."},
       reply:"\u201cYou have argued yourself out of the place you wanted. We cannot feed a town we cannot reach.\u201d"},
      {t:"The island's water is already brackish, and it is only May.",
       evid:"james.water",gate:"You have not tasted the water there.",wise:true,ink:10,
-      insight:{g:"known",b:"The Water at Jamestown",s:"The river at Jamestown Island was already brackish, or salty, in May, and worse by summer. The settlers drank it anyway, and the sickness that followed was not bad luck."},
-      reply:"\u201cThen we shall dig a well.\u201d He is closing the subject, not answering it."},
+      insight:{g:"known",b:"The Water at Jamestown",s:"The river at Jamestown was brackish in May and worse by summer. The settlers drank it anyway, and sickness followed."},
+      reply:"\u201cThen we shall dig a well.\u201d He closes the subject."},
      {t:"It is marsh, and nobody lives there, in a country where every good acre is farmed.",
       evid:"james.ground",gate:"You have not walked the island.",wise:true,ink:10,
-      insight:{g:"known",b:"The Island Nobody Farmed",s:"Jamestown Island was empty in a country that was not. The Powhatan farmed the good ground and left the marsh, so its being free was evidence against it."},
-      reply:"\u201cYou think the naturals left it out of ignorance.\u201d A pause. \u201cYou may be right. It will not change my mind.\u201d"},
+      insight:{g:"known",b:"The Island Nobody Farmed",s:"Jamestown Island was empty in a country that was not. The Powhatan left the marsh and farmed the good ground."},
+      reply:"\u201cYou think the naturals left it out of ignorance. You may be right. It will not change my mind.\u201d"},
      {t:"Point Comfort has no fresh water, for all its deep channel.",
       evid:"comfort.ground",gate:"You have not walked Point Comfort.",wise:true,ink:7,
-      reply:"\u201cAgreed. That is Point Comfort finished. Which leaves two.\u201d"},
+      reply:"\u201cAgreed. That leaves two.\u201d"},
      {t:"At Point Comfort you can see clean out of the bay, and so can anything coming in.",
       evid:"comfort.sea",gate:"You have not looked to the sea there.",wise:true,ink:7,
-      insight:{g:"known",b:"Seen From the Sea",s:"Point Comfort watched the river mouth both ways: the English could see a Spanish sail, and it could see them. The fort went upriver partly to hide from the sea."},
-      reply:"\u201cThe Spanish. Yes. The Company would read that argument twice.\u201d"},
+      insight:{g:"known",b:"Seen From the Sea",s:"From Point Comfort the English could see a Spanish sail coming, and it could see them. The fort went upriver partly to hide."},
+      reply:"\u201cThe Spanish. The Company would read that twice.\u201d"},
      /* ---- AN HONEST ANSWER FOR A STUDENT WHO DID NOT SEE ENOUGH ----
         Found in a play-test, 26 November 2026: a student whose findings were the depth at
         Point Comfort, Kecoughtan and the depth at Jamestown reached this beat with every
@@ -12528,10 +12528,10 @@ const COUNCIL={
         one, under "there is no walking away from this". Saying what you do not know is
         the other sound answer to "only what you saw yourself", so it is always open. It
         is fair, not wise: it earns no insight, and the reasons stay to be found. */
-     {t:"I can speak only to what I saw, and I did not see enough to judge the rest.",fair:true,ink:3,
-      reply:"\u201cAn honest answer, and rare in this company.\u201d He makes a note. \u201cI shall weigh it with what the others found.\u201d"},
+     {t:"I can speak only to what I saw, and it was not enough.",fair:true,ink:3,
+      reply:"\u201cAn honest answer, and rare.\u201d He makes a note."},
      {t:"The ground hardly matters. We are told to plant, so let us plant.",wise:false,
-      reply:"\u201cIt is the only thing that matters, and in a year you will know it.\u201d"}
+      reply:"\u201cIt is the only thing that matters. In a year you will know it.\u201d"}
     ]}
   ]
 };
@@ -12554,9 +12554,9 @@ function endCouncil(){
   checkpoint("the council has chosen");
   result(true,"The Island",
     "\u201cWe plant on the island.\u201d Wingfield does not put it to a vote."+
-    "\u201cA ship may be moored to the trees there and unloaded over her side.\u201d"+
-    (warned?" He does not say you were wrong. It is written down that you said it."
-           :" Nobody in the room has walked the island, so nobody argues."),
+    "\u201cA ship may be moored to the trees there and unloaded.\u201d"+
+    (warned?" It is written down that you said otherwise."
+           :" Nobody else has walked the island, so nobody argues."),
     ["Recorded: the seat of the fort"],function(){setPaused(false);});
 }
 
@@ -12808,11 +12808,11 @@ let rk=null;
 function askKendall(after){
   const K=[
     {t:"Tell Captain Newport what Kendall said.",v:"told",
-     r:"Newport hears you out. \u201cSay that again before the Council, if asked. Not before.\u201d He does not send for Kendall. Not today."},
+     r:"Newport hears you out. \u201cSay that again before the Council, if asked.\u201d He does not send for Kendall."},
     {t:"Say nothing. You only heard him talking.",v:"kept",
-     r:"You keep it. Half the men heard it too, and keep it as well."},
+     r:"You keep it, like half the men who heard it."},
     {t:"Ask Master Percy to set it down in his account, and no more.",v:"written",
-     r:"Percy dips the pen. \u201cI shall write that it was said, by whom, and that I had it from you. It will still be there in ten years.\u201d"}
+     r:"Percy dips the pen. \u201cI shall write that it was said, and by whom. It will still be there in ten years.\u201d"}
   ];
   const host=$("dlgChoices");
   dlg={npc:{id:"kendallchoice",name:"The Muster",role:"before the paper",voice:"male"},
@@ -12821,7 +12821,7 @@ function askKendall(after){
   $("dlgMeter").style.width="0%";
   $("dlgProgress").textContent="";$("dlgRapport").textContent="";
   $("dlgLeave").style.display="none";
-  sayLine("dlgLine","First, other business: what Captain Kendall said on the strand, and whether anyone will repeat it.","narrator","narrator");
+  sayLine("dlgLine","First: what Kendall said on the strand, and whether anyone will repeat it.","narrator","narrator");
   $("dlgFoot").textContent="Neither answer is scored. The record keeps both.";
   host.innerHTML="";
   K.forEach(function(k){
@@ -13391,29 +13391,29 @@ const SOURCES=[
        The right date also makes the source BETTER: the cross went up three days after
        the landing, so the naming was not part of the first hour ashore. */
     {t:"The nine and twentieth day we set up a Crosse at Chesupioc Bay, and named that place Cape Henry.",
-     n:"Three days after they landed, they named a place that already had a name. The claim is made in the act."},
+     n:"Three days after landing, they named a place that already had a name. The naming was the claim."},
     {t:"At night, when wee were going aboard, there came the Savages creeping upon all foure, from the Hills, like Beares, with their Bowes in their mouthes\u2026 hurt Captaine Gabrill Archer in both his hands, and a sayler in two places of the body very dangerous.",
-     n:"Read it twice: once for WHAT it reports, the attack and the wounds, and once for HOW. Calling men Savages and bears tells you about Percy. The Powhatan left no written account."}
+     n:"Read it for WHAT it reports, the attack and the wounds, and for HOW. Calling men Savages and bears tells you about Percy."}
    ]},
   {k:"percy_misery", who:"George Percy", when:"1607, printed 1625",
    work:"Observations gathered out of a Discourse...",
    need:"Why Jamestown Was Chosen",
-   about:"The same account, later in the year, after the site was chosen and the ships had gone home.",
-   doubt:"Percy describes a disaster he survived. He does not explain much about WHY it happened.",
+   about:"The same account, after the site was chosen and the ships had gone.",
+   doubt:"Percy describes a disaster he survived, but not WHY it happened.",
    lines:[
     {t:"There were never Englishmen left in a forreigne Countrey in such miserie as wee were in this new discovered Virginia.",
-     n:"Written of the summer and autumn of 1607, within months of the choice of site."},
+     n:"Written of summer and autumn 1607."},
     {t:"Our men were destroyed with cruell diseases as Swellings, Flixes, Burning Fevers, and by warres\u2026 but for the most part they died of meere famine.",
-     n:"'Flixes' is dysentery. 'Meere famine' means starvation. Set this beside what the council chose."}
+     n:"'Flixes' is dysentery. 'Meere famine' means starvation."}
    ]},
   {k:"smith_gold", who:"Captain John Smith", when:"1624",
    work:"The Generall Historie of Virginia, New-England, and the Summer Isles",
    need:"Gold in Virginia",
-   about:"One of the seven named in the sealed box, later president. Much of this period is known only through him.",
-   doubt:"Written seventeen years later, by a man defending his record. Where Smith is the ONLY source for what Smith did, be careful.",
+   about:"One of the seven named in the sealed box, later president.",
+   doubt:"Written seventeen years later, by a man defending his record. Be careful where Smith is the only source on Smith.",
    lines:[
     {t:"there was no talke, no hope, nor worke, but dig gold, wash gold, refine gold, loade gold.",
-     n:"The gold was fool's gold. The labour was real, and was not spent on food or walls."}
+     n:"The gold was fool's gold. The labour was not spent on food or walls."}
    ]}
 ];
 function sourceOpen(sc){return !sc.need||!!S.insight[sc.need];}
@@ -15023,7 +15023,7 @@ function gPaint(){
    yours - and it threw on its first line, so the insight was never awarded and
    `slingLesson()` at the end of the function never ran. */
 const PROVED_INSIGHT={g:"known",b:"What the Piece Could Actually Do",
-  s:"A caliver ball would go through armour at a hundred paces, but past forty yards aiming at one man is a guess. So soldiers fired together. And loading took the better part of a minute. Reach was never the problem. The minute was."};
+  s:"A caliver ball goes through armour at a hundred paces, but past forty yards it cannot pick out one man. So soldiers fired together. Loading took most of a minute."};
 /* ---- HE COMES OVER AND CORRECTS YOU ----
    Proving the piece is a skill gate and the day's end is locked behind it. It is not a
    dead end - the drill stays open, any scoring hit counts, and the near mark is twice
@@ -15037,12 +15037,12 @@ function aimMiss(){
   if(!GUN.active||S.insight["Proved the Piece"])return;
   GUN.misses=(GUN.misses||0)+1;
   if(GUN.misses===3){
-    toast("Kendall, behind you: \u201cYou are snatching at her. Hold the aim after"+
-          "she goes, and take the near mark, not the far one.\u201d");
+    toast("Kendall: \u201cYou are snatching. Hold the aim after"+
+          "she goes, and take the near mark.\u201d");
   } else if(GUN.misses===6&&!GUN.rest){
     GUN.rest=true;
-    toast("Kendall sets a forked rest under the barrel. \u201cShe weighs ten pound."+
-          "Let the wood hold her, not your arms.\u201d");
+    toast("Kendall sets a forked rest under the barrel."+
+          "\u201cLet the wood hold her.\u201d");
   }
 }
 function serjeantHit(inner,dist){
@@ -15131,7 +15131,7 @@ function giveFire(){
     bang(function(){
       playSfx("boom",0.62);gunSmoke(1.35);
       knock={vx:0,vz:0,t:0};camKick=0.10;
-      toast("She burst at the breech: far too much powder. Charge her again, and watch the green.");
+      toast("She burst: far too much powder. Charge her again, and watch the green.");
     });
     S.corrections=(S.corrections||0)+1;incur("a correction");
     /* Cleared HERE and not left to done(), whose reset only runs inside the taught
@@ -15152,12 +15152,12 @@ function giveFire(){
     /* powder and no ball is a blank: loud, and it sends nothing */
     bang(function(){
       playSfx("boom",0.42);gunSmoke(0.8);knock={vx:0,vz:0,t:0};camKick=0.03;
-      toast("A loud report, and nothing sent \u2014 there was no ball down her.");});
+      toast("A loud report, and nothing sent. There was no ball.");});
     resetCharge();done();return;
   }
   if(GUN.glow<0.18){
     pan(function(){playSfx("click",0.5);
-      toast("Nothing. The match is dead. Blow it up and prime her again.");});
+      toast("The match is dead. Blow it up and prime again.");});
     done(true);return;}
   if(GUN.prime>P_HI*1.5&&Math.random()<0.75){
     /* ---- A FLASH IN THE PAN FLASHES IN THE PAN ----
@@ -15171,12 +15171,12 @@ function giveFire(){
   }
   if(GUN.prime<P_LO*0.6){
     pan(function(){playSfx("click",0.5);
-      toast("Nothing \u2014 too little powder in the pan. Prime her again.");});
+      toast("Too little powder in the pan. Prime her again.");});
     done(true);return;}
   const ARM=ARMS[GUN.arm];
   if(Math.random()<resolveMisfire(ARM,armState(ARM))){
     pan(function(){playSfx("click",0.5);
-      toast("Misfire. It did not catch, but the charge is still down her.");});
+      toast("Misfire. The charge is still down her.");});
     done(true);return;
   }
   if(Math.random()<ARM.hangfire){
@@ -15650,21 +15650,21 @@ function shotAMan(who,off,radius){
           {size:0.6,col:0xd0bd91,op:0.65,life:1.4,grow:0.9});
       }
     },
-    narrate:killed?(who.name+" is down, and does not move. The men beside him stop working.")
-                  :(who.name+" goes down hard. The men beside him stop working.")});
+    narrate:killed?(who.name+" is down, and does not move.")
+                  :(who.name+" goes down hard.")});
   if(!killed){
     steps.push({shot:{of:["player"],dist:8*K,height:4.6*K,lookH:2.4*K,tight:true},t:3.4,
       narrate:"\u201cI am shot. God\u2019s mercy, I am shot \u2014 by one of our own.\u201d"});
   } else {
     steps.push({shot:{of:["player"],dist:8*K,height:4.6*K,lookH:2.4*K,tight:true},t:3.6,
-      narrate:"Someone kneels at him, and then stands up again, and says nothing at all."});
+      narrate:"Someone kneels by him, then stands, and says nothing."});
   }
   /* ---- judgement ---- */
   if(killed){
     steps.push({shot:{of:["player"],dist:13*K,height:8*K,lookH:5*K},t:5.0,
       narrate:onAuthority
-        ?("You have killed "+auth.name+", "+auth.rank+". No one here can pardon that, and there is no prison.")
-        :("You have killed a man of this company. There is no prison here. There is a rope.")});
+        ?("You have killed "+auth.name+", "+auth.rank+". There is no one to pardon you, and no prison.")
+        :("You have killed a man of this company. There is a rope.")});
     /* Jamestown's own precedent, and it turned on rank. George Kendall - a
        gentleman and a councillor - was executed by firing squad. James Read, a
        blacksmith, was sentenced to HANG for striking at the president, and a
@@ -15677,13 +15677,13 @@ function shotAMan(who,off,radius){
     steps.push({shot:{of:["player"],dist:12*K,height:7.4*K,lookH:5*K},t:5.2,
       narrate:"\u201cHe will live. You will not do that twice.\u201d "+
         auth.name.charAt(0).toUpperCase()+auth.name.slice(1)+
-        " says it without heat, which is worse. \u201cStrip him and tie him to that tree.\u201d"});
+        " says it without heat. \u201cStrip him and tie him to that tree.\u201d"});
     steps.push({shot:{of:["player"],dist:9*K,height:5.4*K,lookH:4*K,tight:true},t:3.0,
       sfx:"creak",gain:0.35,
       do:function(){
         if(player){player.position.set(tx,ty,tz);player.rotation.y=Math.PI;}
       },
-      narrate:lashes+" lashes. He counts them aloud, so the whole beach hears the number."});
+      narrate:lashes+" lashes. He counts them aloud."});
     /* the lashes: a count and a sound, and a back turned to the camera */
     steps.push({shot:{of:["player"],dist:7.5*K,height:5*K,lookH:4*K,tight:true},t:lashes*0.62,
       do:function(){
@@ -15699,7 +15699,7 @@ function shotAMan(who,off,radius){
       }});
     steps.push({shot:{of:["player"],dist:13*K,height:7*K,lookH:4.4*K},t:4.4,
       do:function(){if(player)player.rotation.z=0;},
-      narrate:"It is done. You are cut down, and the drill goes on without you."});
+      narrate:"It is done. You are cut down, and the drill goes on."});
   }
   setPaused(true);
   /* ---- EVERYTHING THE HANGING BORROWED MUST GO BACK ----
@@ -15730,9 +15730,9 @@ function shotAMan(who,off,radius){
          be reachable - the design rule is that losing changes what you are asked,
          never whether you are asked. */
       result(false,onAuthority?("You Killed "+auth.name):"Executed",
-        "A caliver ball will pass through a man at a hundred paces. That is why a company drills at a stump."+
-        "You are dead, and the expedition goes on without you, which is the most historically ordinary thing that could have happened."+
-        "This is recorded, and will be read back at the muster.",
+        "A caliver ball passes through a man at a hundred paces. That is why you drill at a stump."+
+        "You are dead, and the expedition goes on without you."+
+        "It will be read back at the muster.",
         ["No ink","Recorded: a man killed"],function(){
           /* the chapter you died in, not the one the game happened to start in */
           restartChapter();
@@ -15740,9 +15740,9 @@ function shotAMan(who,off,radius){
     } else {
       checkpoint("recorded against your name");
       result(false,lashes+" Lashes at the Tree",
-        "He will carry that wound for the rest of the voyage, and you will carry the count."+
-        "Discipline here was a man tied up and struck a stated number of times, in front of everyone."+
-        "This is recorded — and Captain Kendall means to hear you account for it.",
+        "He will carry that wound home, and you will carry the count."+
+        "Discipline here was a man tied up and struck a set number of times, before everyone."+
+        "Captain Kendall means to hear you account for it.",
         ["No ink","Recorded: a man wounded"],function(){openLashes("shot");});
     }
   });
@@ -18275,7 +18275,7 @@ const LESSON_STEPS=[
   {dur:2.8,cam:"shoulder",
    sub:"\u201cStand on the mark. Feet square, and the piece across your body.\u201d"},
   {dur:3.4,cam:"target",
-   sub:"\u201cYon stump, at twenty paces. Never mind the butt at forty today.\u201d"},
+   sub:"\u201cYon stump, at twenty paces.\u201d"},
   {dur:1.8,cam:"shoulder",
    sub:"\u201cSix motions, in order. And keep that match bright.\u201d"}
 ];
@@ -18500,16 +18500,16 @@ function kendallOverheard(){
   setPaused(true);
   playCutscene({steps:[
     {shot:{of:["player"],dist:12*K,height:6*K,lookH:4.6*K},t:3.4,
-     narrate:"Kendall walks off a dozen paces with another man, and hardly lowers his voice."},
+     narrate:"Kendall walks off with another man, and hardly lowers his voice."},
     {shot:{of:["player"],dist:8*K,height:5.2*K,lookH:4.4*K,tight:true},t:5.6,
-     narrate:"\u201cWe are commanded by a mariner with one arm and no land, set over gentlemen who have both.\u201d"},
+     narrate:"\u201cA mariner with one arm and no land, set over gentlemen who have both.\u201d"},
     {shot:{of:["player"],dist:8*K,height:5.2*K,lookH:4.4*K,tight:true},t:6.2,
-     narrate:"\u201cAnd none has shown a warrant. Our government is sealed in a box, and until it is opened we take orders on trust. I do not take orders on trust.\u201d"}
+     narrate:"\u201cAnd none has shown a warrant. Until that box is opened, we take orders on trust. I do not.\u201d"}
   ]},function(){
     result(true,"Overheard on the Strand",
-      "It is not treason. The box is still shut, and half the company grumbles."+
+      "It is not treason. The box is still shut."+
       "But it is close to the charge the council will bring that summer: that he did practise to sow discord between the president and council."+
-      "Carry this to Captain Newport, or keep it to yourself.",
+      "Tell Captain Newport, or keep it.",
       ["A choice, recorded either way"],function(){
         setPaused(false);
         checkpoint("what you overheard");
@@ -18520,7 +18520,7 @@ function kendallOverheard(){
 function openChoiceKendall(){
   /* deliberately not scored: nobody in 1607 knew which answer was safe */
   result(true,"What Will You Do?",
-    "Report him and you spoke first. Say nothing and you let it pass. The record keeps both.",
+    "Report him and you spoke first. Say nothing and you let it pass.",
     ["Decide at the muster"],function(){
       setPaused(false);
       if(CURRENT_WORLD==="ch2"&&!AMBUSH.done)setTimeout(beginAmbush,1800);
@@ -18604,51 +18604,51 @@ const SHORE_SAYS={
    labelling rather than a silent assertion. So the man who would be laying the first
    plank says he is not laying it today. Laxon's "two days and she swims" is then exactly
    right counted from here: begun on the twenty-seventh, launched on the twenty-eighth. */
-   "Edward Pising":["\u201cToday she comes out of the hold and gets counted. Tomorrow we start on her.\u201d"],
-  "Thomas Emry":["\u201cI would rather be building this than a fort. A boat can leave.\u201d"],
-  "Robert Small":["\u201cThirty foot of shallop, cut in London by men who never saw this beach.\u201d"],
-  "Anas Todkill":["\u201cI keep a note of things. Somebody will want to know.\u201d"],
+   "Edward Pising":["\u201cToday she gets counted. Tomorrow we build.\u201d"],
+  "Thomas Emry":["\u201cI'd rather build this than a fort. A boat can leave.\u201d"],
+  "Robert Small":["\u201cEvery joint of her cut in London.\u201d"],
+  "Anas Todkill":["\u201cI keep a note of things.\u201d"],
   "John Capper":["\u201cPass me the auger and stand out of my light.\u201d"],
   "John Herd":["\u201cWe set the cross in sand. It will not stand a winter.\u201d"],
   "William Garret":["\u201cNo lime on this coast. No mortar, no chimney.\u201d"],
-  "Edward Brinto":["\u201cA mason with nothing to cut, come three thousand miles to dig postholes.\u201d"],
+  "Edward Brinto":["\u201cA mason, come three thousand miles to dig postholes.\u201d"],
   "Robert Behethland":["\u201cWatch the trees, not the water.\u201d"],
   /* Powell keeps his own line and inherits Edward Brookes's. Brookes is on the
      Company's roll but died at Mona in the West Indies on the way over, nineteen
      days before this beach, so he could not have been standing here to say it -
      and the line was too good to lose. */
   "Nathaniell Powell":["\u201cThirty ashore, seventy still afloat, and the light going.\u201d",
-    "\u201cMy match has gone out twice in this wind. A guard with a dead match holds a stick.\u201d"],
+    "\u201cMy match has gone out twice. A guard with a dead match holds a stick.\u201d"],
   /* ---- the three at the camp, all named on the roll and none shown before ---- */
-  "Thomas Couper":["\u201cBarber, they have me down as. I shave, I bleed, I draw teeth.\u201d",
-    "\u201cThere is a second surgeon aboard. Neither of us has unpacked.\u201d"],
-  "Jonas Profit":["\u201cSailor on the roll, fisherman in fact. More in that water than in this sand.\u201d",
-    "\u201cSturgeon as long as your arm, they say. We shall see.\u201d"],
+  "Thomas Couper":["\u201cBarber. I shave, I bleed, I draw teeth.\u201d",
+    "\u201cTwo surgeons aboard. Neither has unpacked.\u201d"],
+  "Jonas Profit":["\u201cFisherman, in fact. More in that water than this sand.\u201d",
+    "\u201cSturgeon as long as your arm, they say.\u201d"],
   "James Brumfield":["\u201cI fetch for whoever shouts loudest, and they all shout.\u201d",
-    "\u201cFour of us boys. Samuell means to learn the country. I mean to learn where the food is kept.\u201d"],
+    "\u201cSamuell means to learn the country. I mean to learn where the food is.\u201d"],
   "William Bruster":["\u201cThey say the Spanish have a fort south of here.\u201d"],
-  "Kellam Throgmorton":["\u201cFour months at sea to stand in sand and watch a treeline.\u201d"],
+  "Kellam Throgmorton":["\u201cFour months at sea to watch a treeline.\u201d"],
   "George Walker":["\u201cIf anything comes out of that wood, run to the boats.\u201d"],
-  "Dru Pickhouse":["\u201cI did not come to dig. I have a man in London for that.\u201d"],
-  "Ellis Kingston":["\u201cWhere is the gold, then? That was the whole argument in London.\u201d"],
-  "Thomas Studley":["\u201cSomebody must keep the store when we land. I have offered.\u201d"],
-  "Jeremy Alicock":["\u201cA fine prospect. I shall write to my brother about it.\u201d"],
-  "Richard Crofts":["\u201cI am at leisure. It is not idleness, it is station.\u201d"],
-  "Thomas Webbe":["\u201cHow long does a man have to be here before he may go home?\u201d"],
-  "Francis Snarsbrough":["\u201cThe river runs west a long way, they say. West is the South Sea.\u201d"],
-  "Robert Ford":["\u201cKendall drills them at the stump. Somebody ought to drill the gentlemen.\u201d"],
-  "John Laydon":["\u201cCarpenter by trade, labourer on the roll. Either, so long as I eat.\u201d",
-                 "\u201cNot a woman in this whole company. Think what that means.\u201d"],
-  "William Rods":["\u201cCask, barrel, hogshead, up the beach and stack it. That is my Virginia so far.\u201d"],
+  "Dru Pickhouse":["\u201cI did not come to dig.\u201d"],
+  "Ellis Kingston":["\u201cWhere is the gold, then?\u201d"],
+  "Thomas Studley":["\u201cI have offered to keep the store.\u201d"],
+  "Jeremy Alicock":["\u201cA fine prospect. I shall write to my brother.\u201d"],
+  "Richard Crofts":["\u201cIt is not idleness. It is station.\u201d"],
+  "Thomas Webbe":["\u201cHow long before a man may go home?\u201d"],
+  "Francis Snarsbrough":["\u201cThe river runs west, they say. West is the South Sea.\u201d"],
+  "Robert Ford":["\u201cSomebody ought to drill the gentlemen.\u201d"],
+  "John Laydon":["\u201cCarpenter by trade, labourer on the roll.\u201d",
+                 "\u201cNot a woman in this whole company.\u201d"],
+  "William Rods":["\u201cUp the beach and stack it. That is my Virginia so far.\u201d"],
   "Henry Tavin":["\u201cThe water in the casks is four months old.\u201d"],
-  "George Golding":["\u201cFive years I am bound to the Company. And the land is theirs, not mine.\u201d"],
-  "John Dods":["\u201cMind the surf with that chest. Wet powder and we are all farmers.\u201d"],
-  "Thomas Wotton":["\u201cI am the surgeon, and I know nothing of this country's fevers.\u201d",
+  "George Golding":["\u201cFive years bound to the Company, and the land is theirs.\u201d"],
+  "John Dods":["\u201cWet powder and we are all farmers.\u201d"],
+  "Thomas Wotton":["\u201cI know nothing of this country's fevers.\u201d",
                    "\u201cIf they are shot tonight I can cut and bind. Past that it is God.\u201d"],
   "Nicholas Skot":["\u201cThe drum tells a hundred men one thing at once.\u201d"],
   "Samuell Collier":["\u201cI am to be somebody\u2019s page when they settle.\u201d"],
-  "Nathaniel Peacock":["\u201cThey send us up the masts because we weigh least. I have seen further than any gentleman.\u201d"],
-  "Richard Mutton":["\u201cI am the youngest aboard, they say. I do not feel it today.\u201d"],
+  "Nathaniel Peacock":["\u201cI have seen further from the masthead than any gentleman.\u201d"],
+  "Richard Mutton":["\u201cThe youngest aboard, they say.\u201d"],
   "James Read":["\u201cOne forge, one anvil, and every nail this colony will have.\u201d",
                 "\u201cI cannot abide men who order what they cannot do.\u201d"]
 };
@@ -18876,13 +18876,13 @@ function strayCheck(){
   if(d>=edge-26){
     if(now-STRAY_T>9){
       STRAY_T=now;
-      toast("\u201cNot that way. It is all mire beyond the reeds.\u201d");
+      toast("\u201cNot that way. It is all mire.\u201d");
     }
     return;
   }
   if(!STRAY_SAID&&d>=CAPE.WARN){
     STRAY_SAID=true;STRAY_T=now;
-    toast("A sentry whistles you back. You are too far from the party.");
+    toast("A sentry whistles you back.");
   }
 }
 
@@ -19553,18 +19553,18 @@ const SITES={
 
   comfort:{name:"Point Comfort",world:"comfort",cost:1,chapter:"ch2",
     gloss:"A low point inside the capes, where the deep channel runs close in.",
-    arrive:"The ships anchored off the point, and the shallop set you ashore. The channel sounds deep here after a day of shoals, and the name comes from that comfort.",
+    arrive:"The ships anchor off the point, and the shallop sets you ashore. Deep water after a day of shoals gave it its name.",
     /* The town spot stands OFF the town, not in it. At [-6,2] it was eighteen inches from
        the wall of the nearest house and the establishing shot was a brown slab: the wide
        needs the town in front of the player at a distance a town can be seen at. */
     land:[10,58], spots:[[0,52],[-46,4],[62,18],[-6,26]],
     surveys:[
-      {k:"depth", verb:"Sound the depth", d:"Six fathom a stone's throw from shore. A ship of any size could ride here."},
-      {k:"ground",verb:"Walk the ground", d:"Sand and low scrub, and no fresh water that you can find."},
-      {k:"sea",   verb:"Look to the sea", d:"You can see clean out of the bay, so anything coming in can see you."},
+      {k:"depth", verb:"Sound the depth", d:"Six fathom near the shore. Any ship could ride here."},
+      {k:"ground",verb:"Walk the ground", d:"Sand and scrub. No fresh water."},
+      {k:"sea",   verb:"Look to the sea", d:"You can see out of the bay, so anything coming in can see you."},
       /* The finding the Council actually asked for, and the one the English wrote
          down and then did not use. See buildKecoughtan for why it was missing. */
-      {k:"hosts", verb:"Go up to the town", d:"Kecoughtan. They feed you and dance. Your instructions say to judge ground by its people, and these people are fed."}]},
+      {k:"hosts", verb:"Go up to the town", d:"Kecoughtan. They feed you and dance. Judge ground by its people, say your instructions, and these are fed."}]},
 
   /* Many of the company preferred this place. Wingfield overruled them for one
      reason, and it is a reason a player can go and find: the water is too shoal
@@ -19575,13 +19575,13 @@ const SITES={
      nothing of fresh water here: the "water" finding below is the game's.) Good ground you cannot supply is not a
      colony, which is the whole argument of Phase 4 in one site. */
   archers:{name:"Archer's Hope",world:"archers",cost:1,chapter:"ch2",
-    gloss:"A creek off the north bank. Fine ground, and the men who saw it wanted it.",
-    arrive:"The ships cannot come near, so the shallop takes you in. Tall timber and black earth. The whole company would settle here tomorrow.",
+    gloss:"A creek off the north bank. Fine ground.",
+    arrive:"The ships cannot come near, so the shallop takes you in. Tall timber and black earth.",
     land:[8,54], spots:[[-40,10],[34,-22],[24,46]],
     surveys:[
-      {k:"ground",verb:"Walk the ground", d:"Deep soil, tall timber, and open ground a plough could take. The best land you have seen."},
-      {k:"water", verb:"Taste the water", d:"Fresh, running water. A spring you could build a town around."},
-      {k:"berth", verb:"Sound the berth", d:"Shoal. A ship cannot lie against this bank. Everything must be ferried ashore by boat."}]},
+      {k:"ground",verb:"Walk the ground", d:"Deep soil and tall timber. The best land you have seen."},
+      {k:"water", verb:"Taste the water", d:"Fresh, running water."},
+      {k:"berth", verb:"Sound the berth", d:"Shoal. A ship cannot lie against this bank."}]},
 
   /* Uninhabited, in a country that is not empty. The record is not silent about
      why - it is marsh, the water goes brackish by summer, and the Powhatan farmed
@@ -19589,15 +19589,15 @@ const SITES={
      soften it into bad luck. */
   james:{name:"Jamestown Island",world:"james",cost:1,chapter:"ch2",
     gloss:"A low island up the river, joined to the bank by a neck of sand.",
-    arrive:"The ships tie up to the trees, and you step ashore almost off the deck. Marsh smell and dead trees, but six fathom of water against the bank.",
+    arrive:"The ships tie up to the trees, and you step ashore almost off the deck. Six fathom against the bank.",
     land:[6,56], spots:[[-30,44],[44,6],[-8,-26],[-14,-38]],
     surveys:[
-      {k:"depth", verb:"Sound the depth", d:"Six fathom hard against the bank. A ship can moor to the trees."},
-      {k:"water", verb:"Taste the water", d:"Brackish, or salty, and this is May. By August the salt will push further up."},
-      {k:"ground",verb:"Walk the ground", d:"Marsh, thick with mosquitoes. Nobody lives here. In a country where the good ground is farmed, that is no accident."},
+      {k:"depth", verb:"Sound the depth", d:"Six fathom against the bank. A ship can moor to the trees."},
+      {k:"water", verb:"Taste the water", d:"Brackish, and this is May. It will be saltier by August."},
+      {k:"ground",verb:"Walk the ground", d:"Marsh and mosquitoes. Nobody lives here, in a country where good ground is farmed."},
       /* The other half of that sentence, and the one the English had already been told.
          See buildPaspaheghGround. */
-      {k:"whose", verb:"Ask whose ground this is", d:"Paspahegh's. Nobody living on it does not mean no owner. These people fed you on the fourth of May."}]}
+      {k:"whose", verb:"Ask whose ground this is", d:"Paspahegh's. Nobody on it does not mean no owner. They fed you on the fourth of May."}]}
 };
 /* terrain constants per site: same shape, different numbers */
 SITE_TERRAIN.comfort={sea:74,shore:26,flat:-20,deep:-3.2,fall:0.05,rise:2.4,inland:1.9,roll:0.9,
@@ -20143,8 +20143,8 @@ const CHARTS={
     title:"The King's River",
     x:0.428,y:0.430,      /* a creek off the north bank, some way up */
     gloss:"<b>You are here:</b> a creek off the north bank, some miles above the river's mouth. "+
-      "Gabriel Archer argued for this place, and many agreed. "+
-      "Wingfield overruled them, not for the ground but because a ship cannot lie against this bank."},
+      "Gabriel Archer wanted this place."+
+      "Wingfield overruled him: a ship cannot lie against this bank."},
   tobacco:{kick:"The tobacco ground \u00b7 a planter's sketch",
     title:"The Tobacco Ground",
     art:"tobacco", x:0.255,y:0.720,  /* up at the Appomattox, where the globe just flew */
@@ -20163,22 +20163,22 @@ const CHARTS={
   james:{kick:"Jamestown Island \u00b7 the chart, weighted with a stone",
     title:"James Ile",
     art:"james", x:0.28,y:0.645,
-    gloss:"<b>You are here:</b> a low island joined to the north bank by a neck of sand, some forty miles up from the capes. "+
-      "Far enough inland to see a Spanish sail coming, with deep water hard against the trees. "+
-      "Nobody lives on it, in a country whose good ground is farmed. Taste the water to learn why."},
+    gloss:"<b>You are here:</b> a low island some forty miles up from the capes."+
+      "Deep water against the trees, and far from the sea."+
+      "Nobody lives on it. Taste the water to learn why."},
   comfort:{kick:"Point Comfort \u00b7 the chart, held down with a stone",
     title:"The Mouth of the Bay",
     x:0.606,y:0.628,      /* the low point inside the capes */
-    gloss:"<b>You are here:</b> a low point inside the capes where the deep channel runs hard against the shore. "+
-      "Percy named it Cape Comfort when the channel here sounded six to twelve fathom, “which put us in good comfort”. "+
-      "Every ship entering the bay must pass it. That is the argument for it, and against it."},
+    gloss:"<b>You are here:</b> a low point where the deep channel runs close in."+
+      "Percy named it for the deep channel, “which put us in good comfort”."+
+      "Every ship entering the bay must pass it."},
   ch2:{kick:"Cape Henry \u00b7 the Captain\u2019s chart, spread on a chest",
     title:"The Mouth of the Bay",
     art:"cape", x:0.420,y:0.700,     /* beside the crosse, not on top of it */
-    gloss:"<b>You are here:</b> the southern cape at the mouth of the Chesapeake. It has no English name yet. The cross goes up and the naming happens on the 29th, three days from now. "+
-      "The northern cape across the water will be Cape Charles. "+
-      "The fleet will not stay: there is no depth here for the ships and no cover from the sea. "+
-      "Everything west of the capes on this sheet is a guess."}
+    gloss:"<b>You are here:</b> the southern cape of the Chesapeake. It will be named Cape Henry on the 29th."+
+      "Across the water is Cape Charles."+
+      "There is no anchorage here, so the fleet will not stay."+
+      "West of the capes, this sheet is guesswork."}
 };
 /* the lower Chesapeake, in normalised coordinates - east to the right */
 /* ========== MAPS FOR THE ASSESSMENT ==========
@@ -21621,26 +21621,26 @@ const SURVEY_SCENE={
     at:"water",
     shots:[
       {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.4,pose:"stand",
-       line:"The Council\u2019s instructions say: find the river that runs furthest inland, and go up it as far as a bark of fifty tons will float."},
+       line:"The Council\u2019s instructions: go up the river that runs furthest inland, as far as a bark of fifty tons will float."},
       /* Over his shoulder at three quarters, NOT square behind. Square behind put the
          throw directly down the lens: the lead flew away to a point and the line - which
          is the thing the shot is about - was end-on and therefore invisible. Off the
          quarter it runs across the frame as a diagonal and stays a line. Frame -1.95 to
          7.00, so he holds one side of it and the bay is the rest. */
       {dist:8,height:4.6,lookH:3.0,yaw:Math.PI*0.72,t:5.0,cut:true,throw:true,sfx:"splash",
-       line:"The lead goes out ahead, and you count the marks on the line as they pass your hand."},
+       line:"You count the marks on the line as they pass your hand."},
       /* round in front, level. Frame 2.00 to 5.90 - hip to a hand above his head, so his
          face is in the top third and the lead he is reading is in the middle. At 4.3/3.6
          the frame topped out at 5.40 and took his head off; at 2.6 out the lead was nearer
          the lens than he was and filled two thirds of the picture with a black slab. */
       {dist:3.67,height:3.95,lookH:3.95,front:true,t:5.0,cut:true,haul:true,
-       line:"The lead's base holds tallow, so it brings up whatever it landed on. Sand holds an anchor. Mud does not."}]},
+       line:"Tallow in the lead brings up the bottom. Sand holds an anchor. Mud does not."}]},
   /* the same act, asked of a bank rather than a channel - Archer's Hope fails on it */
   berth:{
     at:"water",
     shots:[
       {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.4,pose:"stand",
-       line:"Now the bank. If a ship cannot lie against it, everything she carries goes in by boat."},
+       line:"Now the bank. If a ship cannot lie against it, everything goes in by boat."},
       {dist:8,height:4.6,lookH:3.0,yaw:Math.PI*0.72,t:5.0,cut:true,throw:true,sfx:"splash",
        line:"So you sound close in, where a hull would sit."},
       {dist:3.67,height:3.95,lookH:3.95,front:true,t:5.0,cut:true,haul:true,
@@ -21653,7 +21653,7 @@ const SURVEY_SCENE={
     shots:[
       /* frame -3.58 to 8.29 - the whole man and the ground he is kneeling on */
       {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.2,pose:"kneel",
-       line:"You are told to plant in a wholesome place, not a low and moist one, because that will prove unhealthful."},
+       line:"You are told not to plant in a low and moist place, because that will prove unhealthful."},
       /* In close on the work, which is what this shot always wanted and could not have
          until the kneel existed. A kneeling man tops out at 4.58 rather than 5.81, so the
          frame is built for that: camera 3.0, looking 2.0, five feet out on the quarter,
@@ -21662,17 +21662,17 @@ const SURVEY_SCENE={
          of head clearance still cuts the pose in half. Eight out, 3.4 looking 2.2, frame
          -2.52 to 6.23 and he is half of it. */
       {dist:8.0,height:3.4,lookH:2.2,yaw:Math.PI*0.30,t:4.8,cut:true,pose:"kneel",
-       line:"There is no instrument for this. You kneel, turn a handful over, and look at what already grows in it."},
+       line:"You kneel and turn a handful over."},
       /* and up at the timber, from the same proved distance so he stays whole in frame */
       {dist:11,height:3.9,lookH:3.4,yaw:Math.PI*0.5,t:5.0,cut:true,pose:"stand",up:true,
-       line:"Standing timber shows how deep the ground is, and how long it takes to clear: over a year for twenty acres, say the instructions."}]},
+       line:"Standing timber shows deep ground, and slow clearing: over a year for twenty acres, say the instructions."}]},
   /* WATER. Tasted, because that is what they had. The scene is careful about the limit of
      what they understood: they could taste salt, and they could not see the rest. */
   water:{
     at:"spot",
     shots:[
       {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.0,pose:"kneel",
-       line:"Water is tested by drinking it. There is no other way here."},
+       line:"Water is tested by drinking it."},
       /* Kneeling, because you kneel to drink from a river. His head centres near 3.95 in
          that pose rather than 4.84, and both forearms come up to his mouth - so the frame
          is built round the POSE and not round the head: at 3.4 out, looking 3.4, it runs
@@ -21686,9 +21686,9 @@ const SURVEY_SCENE={
          side on at eight, camera 3.4, looking 2.2, frame -2.52 to 6.23. `front` is left
          alone and the puzzle is written down rather than papered over. */
       {dist:8.0,height:3.4,lookH:2.2,yaw:Math.PI*0.30,t:5.0,cut:true,pose:"kneel",drink:true,
-       line:"Salt you can taste at once, and it is only May. By August it will be worse."},
+       line:"Salt, at once, and it is only May."},
       {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.2,cut:true,pose:"stand",
-       line:"What you cannot taste is the rest: the river they drank from was the river they emptied into."}]},
+       line:"What you cannot taste: the river they drank from was the river they emptied into."}]},
   /* ---- GOING UP TO THE TOWN ----
      The Council's instruction is the strangest thing in the whole document and the most
      useful: "if the naturals be Strong and Clean made it is a true sign of a wholesome
@@ -21704,14 +21704,14 @@ const SURVEY_SCENE={
     shots:[
       /* over his shoulder, so the town is the subject and he is the near edge of frame */
       {dist:11,height:3.9,lookH:2.7,yaw:0,t:5.6,pose:"stand",face:Math.PI,
-       line:"Five men on the shore point you inland, to a town called Kecoughtan. It has been here a long time."},
+       line:"Men on the shore point you inland, to a town called Kecoughtan."},
       /* in among the houses, the fire and the corn */
       {dist:14,height:4.6,lookH:3.4,yaw:Math.PI*0.35,t:5.6,cut:true,pose:"stand",
        at:[-4,-16],face:Math.PI*0.15,
-       line:"They feed you bread of their corn and such dainties as they have, then tobacco, then dancing. Percy writes it down with no warmth."},
+       line:"They feed you bread of their corn and such dainties as they have, then tobacco, then dancing."},
       /* and back out, with the sentence the whole chapter turns on */
       {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:6.0,cut:true,pose:"stand",
-       line:"Your instructions: if the naturals be strong and clean made, it is a true sign of a wholesome soil. Here is your answer."}]},
+       line:"Your instructions: if the naturals be strong and clean made, it is a true sign of a wholesome soil."}]},
   /* ---- WHOSE GROUND THIS IS ----
      The one act in the survey with no instrument in it, because the question it asks is not
      a question the Council thought to ask. Their instructions are thorough about depth,
@@ -21729,14 +21729,14 @@ const SURVEY_SCENE={
     at:"spot",
     shots:[
       {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.4,pose:"stand",
-       line:"Nothing lives on this island. That is true, but empty is not the same as unowned."},
+       line:"Nothing lives on this island. But empty is not unowned."},
       /* behind him, looking inland with him at the worked ground beyond the neck */
       {dist:14,height:5.4,lookH:4.2,yaw:0,t:5.6,cut:true,pose:"stand",
-       line:"Across the neck the ground is cleared and planted. The good land was taken long ago. That is why this land was free."},
+       line:"Across the neck the ground is farmed. The good land was taken long ago, so this land was free."},
       {dist:11,height:3.9,lookH:2.7,yaw:Math.PI*0.5,t:5.6,cut:true,pose:"stand",
-       line:"On the fourth of May the Paspahegh received your party with much welcome. That was nine days ago."},
+       line:"On the fourth of May the Paspahegh received your party with much welcome."},
       {dist:9,height:4.4,lookH:3.4,front:true,t:6.0,cut:true,pose:"stand",
-       line:"Percy wrote that their weroance offered as much land as they desired. Could a man give his country away? Ask the man who wrote it."}]},
+       line:"Percy wrote that their weroance offered as much land as they desired. Could a man give his country away?"}]},
   /* THE SEA. The clause about not planting near the entrance, which is the one clause
      Jamestown Island actually satisfies - and it is the reason a bad site won. */
   sea:{
@@ -21747,9 +21747,9 @@ const SURVEY_SCENE={
       /* behind his shoulder, looking out with him: he holds the near edge and the bay is
          the rest of the frame, which is the point of the line over it */
       {dist:5.5,height:5.0,lookH:4.4,yaw:Math.PI,t:4.8,cut:true,pose:"stand",shade:true,
-       line:"You can see clean out of the bay, so anything coming in can see you. Spain has wiped out a French settlement on this coast before."},
+       line:"Anything coming into the bay can see you. Spain has wiped out a French settlement on this coast before."},
       {dist:15,height:4.6,lookH:2.6,yaw:Math.PI*0.5,t:5.0,cut:true,pose:"stand",
-       line:"Whatever else is wrong with a place far up the river, nobody finds it from the sea by accident."}]}
+       line:"Nobody finds a place far upriver from the sea by accident."}]}
 };
 /* the lead, its line, and the small state that throws them */
 let SOUND={on:false,t:0,mode:0,lead:null,cord:null,from:null,to:null};
@@ -21906,8 +21906,8 @@ function doSurvey(d){
      you can do may leave the muster out of reach - and it is the search that decides,
      not a special case. */
   if(!gateReachable(surveyDays()-1,d.site,key)){
-    toast("Note that one and the day is gone, and with it the passage to a"+
-          "second place to compare. Look somewhere else first.");
+    toast("Note that, and the day is gone, with the passage to a"+
+          "second place. Look elsewhere first.");
     return;
   }
   spendDay(1);
@@ -21937,7 +21937,7 @@ function travelTo(key){
   if(!site)return;
   if(site.world===CURRENT_WORLD){toast("You are already here.");return;}
   if(!surveyOpen()&&!site.home){
-    toast("Not yet. The box is still shut, and no boat leaves before it is read.");
+    toast("Not yet. The box is still shut.");
     return;
   }
   const cost=site.cost||0;
@@ -21957,7 +21957,7 @@ function travelTo(key){
        describe the shortfall differently. */
     const want=Math.max(0,MUSTER_FINDINGS-findingsHeld());
     const spread=sitesSurveyed()<MUSTER_SITES;
-    toast("Spend the day on that passage and you will not have daylight left for what the "+
+    toast("Spend the day on that passage and you will lack daylight for what the"+
           "scrivener wants"+
           (want?" \u2014 "+want+" more thing"+(want===1?"":"s")+" to note":"")+
           (spread?((want?", and ":" \u2014 ")+"a second place to set against the first"):"")+
@@ -22025,7 +22025,7 @@ function openChart(){
          fourteen since a site gained a fourth survey - so the line sat directly under
          "Daylight left: 14" and disagreed with it. Asked of the budget now, and "were given"
          rather than "have", because this line is read again with fewer days left. */
-      'Seventeen days were spent choosing where to settle. You were given'+surveyBudget()+'. Every passage and every thing you stop to look at costs a day.</div>'+
+      'Choosing the site took seventeen days. You were given'+surveyBudget()+'. Each passage and each thing you look at costs a day.</div>'+
        rows+'</div>';
   }
   $("mapGloss").innerHTML=g;
@@ -22049,8 +22049,8 @@ function openChart(){
     cb.id="chartCouncil";
     cb.innerHTML="Call the council"+
       '<small style="display:block;font-size:.72rem;opacity:.8">'+
-      (anyFound?"You have been and looked. Say so, while it is still open."
-               :"You have surveyed nothing. You have nothing to tell them.")+
+      (anyFound?"You have been and looked. Say so."
+               :"You have surveyed nothing to tell them.")+
       /* ---- SAY THAT IT IS A DOOR THAT SHUTS ----
          endCouncil latches councilWarned at the instant it resolves - whether you held
          the water or the farming finding AT THAT MOMENT - and the muster reads it back.
@@ -22058,7 +22058,7 @@ function openChart(){
          nothing said so, so the student most likely to press this early is the one who
          has understood least. Stated it is a decision; unstated it is a trap. */
       '<small style="display:block;font-size:.7rem;opacity:.62;margin-top:.35em">'+
-      "Once they choose, what you knew then is what the record will show."+
+      "Once they choose, what you knew then is the record."+
       "</small></small>";
     cb.disabled=!anyFound;
     $("mapGloss").appendChild(cb);
@@ -22080,7 +22080,7 @@ function openChart(){
     rb.innerHTML=(CH.reck.kick||"The muster")+
       '<small style="display:block;font-size:.72rem;opacity:.8">'+
       (ready?"Account for what you saw and what was done with it."
-            :"Not yet. You have seen too little of this country to be asked.")+"</small>";
+            :"Not yet. You have seen too little of this country.")+"</small>";
     rb.disabled=!ready;
     $("mapGloss").appendChild(rb);
     rb.onclick=function(){$("mMap").classList.remove("on");openReckoning();};
@@ -22115,7 +22115,7 @@ const SEALED_INSIGHT={g:"known",b:"The Seven Named in the Box",
   /* It said nobody knew "who held authority" (Newport commanded the voyage; it was the governors
      who were not "knowne untill they arived", Proceedings), and that Kendall was a problem the
      moment the box opened, which no source says. */
-  s:"The Company sealed the names of the seven councillors in a box until they reached Virginia, so nobody knew at sea who would govern. John Smith was under arrest when his name was read. George Kendall would be executed within the year."};
+  s:"The Company sealed the seven councillors' names in a box until landfall, so nobody knew at sea who would govern. Smith was under arrest when named. Kendall would be executed within the year."};
 function sealedBox(){
   if(S.boxOpened)return;
   S.boxOpened=true;
@@ -22125,12 +22125,12 @@ function sealedBox(){
   const steps=[
     {shot:{of:["player"],dist:14*K,height:7*K,lookH:5*K},t:4.0,
      sfx:"creak",gain:0.4,
-     narrate:"A locked box is brought up from the Susan Constant. By the Company's order, it has crossed the Atlantic unopened."},
+     narrate:"A locked box comes up from the Susan Constant. It has crossed the Atlantic unopened."},
     {shot:{of:["player"],dist:9*K,height:5.6*K,lookH:4.4*K,tight:true},t:5.2,
      sfx:"crack",gain:0.45,
      narrate:"\u201cThese seven are named to govern: Edward Maria Wingfield. Bartholomew Gosnold. Christopher Newport. John Ratcliffe. John Martin.\u201d"},
     {shot:{of:["player"],dist:8*K,height:5.4*K,lookH:4.6*K,tight:true},t:5.0,
-     narrate:"\u201cGeorge Kendall.\u201d An hour ago he said no man here had shown a warrant. His name was in the box."},
+     narrate:"\u201cGeorge Kendall.\u201d An hour ago he said nobody had a warrant."},
     /* the prisoner, brought up under guard */
     {spawn:{id:"smith",eq:{skin:"english",palette:"lostcolony",cloak:"none_cloak",
        torso:"torso_buffcoat",accessory:"none_acc",head:"none_head",
@@ -22138,16 +22138,16 @@ function sealedBox(){
        dye:{torso:"lostcolony",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"}},
       at:[px+9,gy,pz-7],face:Math.PI*0.85},
      shot:{of:["smith"],dist:8*K,height:5.2*K,lookH:4.4*K,tight:true},t:5.6,
-     narrate:"\u201cAnd John Smith.\u201d They bring him up in bonds, a prisoner since the Canaries, charged with plotting to make himself king."},
+     narrate:"\u201cAnd John Smith.\u201d He is brought up in bonds, a prisoner since the Canaries."},
     {shot:{of:["smith"],dist:7*K,height:5.0*K,lookH:4.4*K,tight:true},t:5.4,
      narrate:knewSmith
        /* "below the half deck" was the third of the lines the patch notes say were moved to
           the hold, and the one that was missed: he is in irons in the HOLD, the "else" line
           two rows down says so, and that is where the player met him. */
-       ?"You know him. In the hold he said the box would be opened. He was not joking."
-       :"You never spoke to him. He sat in irons in the hold, and he is one of the seven."},
+       ?"You know him. He said the box would be opened."
+       :"You never spoke to him. He is one of the seven."},
     {shot:{of:["player","smith"],dist:16*K,height:8.5*K,lookH:5*K},t:5.6,
-     narrate:"Nobody unties him. The list was written in London last autumn, by men who could not know what the voyage would bring."}
+     narrate:"Nobody unties him. London wrote the list, not knowing what the voyage would bring."}
   ];
   setPaused(true);
   /* Skippable. The timing rule stretches every step to fit its narration, which
@@ -22163,11 +22163,11 @@ function sealedBox(){
     if(knewSmith){ink+=6;S.smithRecognised=true;}
     S.ink+=ink;updateInk();
     result(true,"The Box Is Opened",
-      "Seven names, sealed in London last autumn and carried three thousand miles unread."+
+      "Seven names, carried three thousand miles unread."+
       (knewSmith
-        ? "You had met the man in irons, and now you know what he is. That counts at the muster."
-        : "One of the seven has been in irons since the Canaries, and you never spoke to him.")+
-      " Kendall heard his name an hour after complaining that nobody had a warrant. Within the year the council will have him shot.",
+        ? "You had met the man in irons. That counts at the muster."
+        : "You never spoke to the man in irons.")+
+      " Kendall, who said nobody had a warrant, is named too. Within the year the council will have him shot.",
       knewSmith?["+"+ink+" Ink","You knew the man in irons"]:["+"+ink+" Ink"],
       function(){
         setPaused(false);checkpoint("the box is opened");
@@ -22180,7 +22180,7 @@ function sealedBox(){
            went straight past all three and never sat Chapter II's paper. The ending is
            reached from the muster now, which already calls showEnding when it is passed. */
         setTimeout(function(){if(CURRENT_WORLD==="ch2")
-          toast("The boats are yours. Every passage starts at the Captain's chart.");},2700);
+          toast("The boats are yours. Passages start at the Captain's chart.");},2700);
       });
   });
 }
@@ -22787,7 +22787,7 @@ function updateAmbush(dt){
     toast("\u201cTo the boats \u2014 quietly. Keep your faces to the hill.\u201d");});
   /* the shout goes up ON the first flight, not before it - Smith is explicit */
   beat(2,12.0,function(){playSfx("crack",0.35);
-    toast("They rise, and all five loose together. The shouting starts after the arrows.");});
+    toast("All five loose together. The shouting starts after.");});
   beat(3,17.0,function(){
     toast("Captain Archer is hit in both hands.");camKick=0.06;
     for(let i=0;i<npcMeshes.length;i++)
@@ -22811,8 +22811,8 @@ function endAmbush(){
   /* Recorded for the muster roll, and rewarded with nothing. Whether you got a
      shot away did not decide this and the game should not pretend it did. */
   const body=AMBUSH.fired
-    ? "You got one shot away, into the dark. The boats pulled off with two men wounded. Bowmen shoot six times while one man loads."
-    : "You never got her loaded. The boats pulled off with two men wounded, and your piece never spoke.";   /* "not a shot fired from the shore" was wrong: Percy has them feel "the sharpnesse of our shot", and the True Relation has Newport fire */
+    ? "You got one shot away, into the dark. Two men wounded. Bowmen shoot six times while one man loads."
+    : "You never got her loaded. Two men wounded, and your piece never spoke.";   /* "not a shot fired from the shore" was wrong: Percy has them feel "the sharpnesse of our shot", and the True Relation has Newport fire */
   result(false,"Withdrawn to the Boats",body,
     AMBUSH.fired?["Recorded: one shot fired"]:["Recorded: no shot fired"],
     function(){
@@ -23237,23 +23237,23 @@ const CAPE_PEOPLE=[
        accessory:"none_acc",head:"head_feather",build:"build_normal",face:"stern",
        arm:"no_right",
        dye:{torso:"company",breech:"slate",stock:"ink",cloak:"lostcolony",head:"ink"}},
-   lines:["\u201cThe cross goes up, the shallop comes out in pieces, and then we go looking for a river.\u201d",
+   lines:["\u201cThe cross goes up, the shallop gets built, and then we look for a river.\u201d",
           /* "three times" was wrong: he lost the arm off Cuba in 1590 and went back to the West
              Indies year after year (Encyclopedia Virginia, "Newport, Christopher") */
-          "\u201cI have one arm, and have crossed this ocean many times with it.\u201d",
-          "\u201cWe are not staying. This is a cape: no depth for the ships and no cover.\u201d"]},
+          "\u201cI have crossed this ocean many times with one arm.\u201d",
+          "\u201cThis is a cape: no depth for the ships and no cover.\u201d"]},
   {id:"archer",name:"Captain Archer",voice:"male",role:"of the shore party",
    pos:[-24,18],face:0.9,
    eq:{skin:"english",palette:"slate",cloak:"none_cloak",torso:"torso_doublet",
        accessory:"none_acc",head:"head_capotain",build:"build_normal",face:"keen"},
-   lines:["\u201cThirty of us ashore, and none of us knows what is in those trees.\u201d",
-          "\u201cI keep asking the Captain to sound the channel before dark.\u201d"]},
+   lines:["\u201cNone of us knows what is in those trees.\u201d",
+          "\u201cI want the channel sounded before dark.\u201d"]},
   {id:"percy",name:"Master Percy",voice:"male",role:"keeps an account",
    pos:[8,40],face:-1.9,
    eq:{skin:"english",palette:"lostcolony",cloak:"none_cloak",torso:"torso_merchant",
        accessory:"none_acc",head:"head_capotain",build:"build_normal",face:"mild"},
-   lines:["\u201cThe six and twentieth day of April, about four in the morning, we descried the land of Virginia. I have written it down.\u201d",
-          "\u201cHalf of what England knows of this place will be what I write tonight.\u201d"]},
+   lines:["\u201cAbout four in the morning, we descried the land of Virginia. I have written it down.\u201d",
+          "\u201cWhat England knows of this place will be what I write.\u201d"]},
   {id:"hunt",name:"Reverend Hunt",voice:"male",role:"chaplain to the voyage",
    pos:[26,-2],face:3.0,
    eq:{skin:"english",palette:"ink",cloak:"cloak_weathered",torso:"torso_doublet",
@@ -23261,7 +23261,7 @@ const CAPE_PEOPLE=[
    /* He gave thanks at no cross: no 1607 document records a service there (see CAPE_DOC). And he
       was sick in the Downs, not after the Canaries - "all which time, Mr Hunt our Preacher, was
       so weake and sicke, that few expected his recoverie" (Proceedings 1612). */
-   lines:["\u201cNobody has asked me to say anything over the cross, but the men will want something said.\u201d",
+   lines:["\u201cThe men will want something said over the cross.\u201d",
           "\u201cSick since the Downs, and not one service missed.\u201d"]}
 ];
 /* ========== CAPTAIN GEORGE KENDALL ==========
@@ -23294,36 +23294,36 @@ const SERJEANT={
   eq:{skin:"english",palette:"slate",cloak:"none_cloak",torso:"torso_buffcoat",
       accessory:"none_acc",head:"head_capotain",build:"build_normal",face:"shrewd",
       dye:{torso:"slate",breech:"slate",stock:"ink",cloak:"ink",head:"ink"}},
-  done:"\u201cThe piece is yours. Keep the match alive and you may be some use.\u201d",
+  done:"\u201cThe piece is yours. Keep the match alive.\u201d",
   beats:[
-  {npc:"\u201cWe prove the pieces before dark, and you learn the drill. Have you ever handled a caliver?\u201d",
+  {npc:"\u201cWe prove the pieces before dark. Have you ever handled a caliver?\u201d",
    choices:[
     {t:"Never. Show me the whole of it.",wise:true,ink:6,
-     reply:"\u201cGood. A man who pretends will burst a barrel and take my hand with it.\u201d He hands you a matchlock and a lit slow match.",
-     insight:{g:"known",b:"The Matchlock Caliver",s:"The gun carried to Virginia in 1607: a matchlock, fired by touching a lit slow match to powder in an open pan. One or two shots a minute in trained hands."}},
+     reply:"\u201cGood. A man who pretends bursts barrels.\u201d He hands you a matchlock and a lit slow match.",
+     insight:{g:"known",b:"The Matchlock Caliver",s:"The matchlock: fired by touching a lit slow match to powder in an open pan. One or two shots a minute."}},
     {t:"I have fired a fowling piece. It cannot be so different.",wise:false,
-     reply:"\u201cThis takes six motions in order. Miss one and it fails, or goes off in your face. Have you handled one?\u201d"},
+     reply:"\u201cSix motions in order. Miss one and it fails, or blows up in your face.\u201d"},
     {t:"How hard can it be to point a gun?",wise:false,
-     reply:"\u201cIt is not the pointing. This must stay alight for a minute while you do six other things.\u201d"}
+     reply:"\u201cIt is not the pointing. This must stay alight while you do six other things.\u201d"}
    ]},
-  {npc:"\u201cNow. Before I let you at the powder, what fires the charge?\u201d",
+  {npc:"\u201cBefore the powder: what fires the charge?\u201d",
    choices:[
     {t:"The match, touched to powder in the pan.",wise:true,ink:8,
-     reply:"\u201cJust so. Let the match go cold and you carry a club.\u201d He shows you how to blow the coal bright. \u201cMind it.\u201d",
-     insight:{g:"known",b:"Why the Match Matters",s:"A matchlock is fired by a lit cord. It must glow through loading, shows the firer at night, and is nearly useless in rain or wind."}},
+     reply:"\u201cJust so. Let the match go cold and you carry a club. Blow it bright, and mind it.\u201d",
+     insight:{g:"known",b:"Why the Match Matters",s:"A matchlock is fired by a lit cord. It shows the firer at night and fails in rain or wind."}},
     {t:"A spark from the flint.",wise:false,
-     reply:"\u201cThere is no flint. That is a cord, and it is burning. Try again.\u201d"},
+     reply:"\u201cThere is no flint. That is a burning cord.\u201d"},
     {t:"The ramming stick drives it off.",wise:false,
-     reply:"\u201cThe stick seats the ball. It fires nothing. What sets off the powder?\u201d"}
+     reply:"\u201cThe stick seats the ball. What sets off the powder?\u201d"}
    ]},
-  {npc:"\u201cThen take it. Six motions, in order, and put a ball in the mark yonder.\u201d",
+  {npc:"\u201cThen take it. Six motions, and a ball in the mark yonder.\u201d",
    choices:[
     {t:"Show me the drill.",wise:true,ink:6,teach:true,
      /* de Gheyn's order, 1607 - see G_ORDER: the pan first, the match back in the cock last */
-     reply:"\u201cPrime your pan and shut it. Powder. Ball. Ram it home. Cock your match. Present. And keep that match bright.\u201d",
-     insight:{g:"known",b:"The Six Motions",s:"Prime the pan and shut it, powder, ball, ram it home, cock the match, then open the pan, present and give fire, keeping the match alight."}},
+     reply:"\u201cPrime your pan and shut it. Powder. Ball. Ram it home. Cock your match. Present.\u201d",
+     insight:{g:"known",b:"The Six Motions",s:"Prime and shut the pan, powder, ball, ram, cock the match, then open the pan, present and give fire."}},
     {t:"I would rather watch someone else first.",wise:false,
-     reply:"\u201cThere is no one else. Every man ashore learns it today. Take it.\u201d"}
+     reply:"\u201cEvery man ashore learns it today. Take it.\u201d"}
    ]}
   ],
   bonus:{ink:8,line:"\u201cYou listened. Most do not, until the first misfire.\u201d",
@@ -23335,14 +23335,14 @@ const CAPE_DOC={
   title:"The Cross on the Cape",
   parts:[
    {q:"The six and twentieth day of Aprill, about foure a clocke in the morning, wee descried the Land of Virginia.",
-    g:"George Percy kept an account of the voyage. After four months at sea they sighted land at first light."},
+    g:"George Percy, on first sight of land."},
    {q:"The nine and twentieth day we set up a Crosse at Chesupioc Bay, and named that place Cape Henry.",
-    g:"Named for Henry, Prince of Wales. <b>Percy dates this to the twenty-ninth</b>, three days after the landing. The chapter folds that week into one afternoon."+
-      "You may read that <b>Robert Hunt</b> held a service here. No 1607 document says so. It is a later tradition, told so often it sounds like evidence."},
+    g:"Named for Henry, Prince of Wales, three days after the landing. The chapter folds that week into one afternoon."+
+      "You may read that <b>Robert Hunt</b> held a service here. No 1607 document says so."},
    {q:"At night, when wee were going aboard, there came the Savages creeping upon all foure, from the Hills, like Beares, with their Bowes in their mouthes\u2026",
-    g:"<b>Gabriel Archer</b> was shot through both hands and a sailor badly wounded. Smith’s <i>True Relation</i> of 1608 names him <b>Mathew Morton</b>."}
+    g:"<b>Gabriel Archer</b> was shot through both hands and a sailor, <b>Mathew Morton</b>, badly wounded."}
   ],
-  insight:{g:"known",b:"Cape Henry",s:"The English first landed at Cape Henry on 26 April 1607 and were attacked at dusk. Gabriel Archer was shot through both hands and a sailor wounded."}
+  insight:{g:"known",b:"Cape Henry",s:"The English first landed at Cape Henry on 26 April 1607 and were attacked at dusk. Archer was shot through both hands and a sailor wounded."}
 };
 
 /* ---- CHAPTER TWO'S CONTENT, UNDER ITS OWN NAME AT LAST ----
@@ -28868,38 +28868,38 @@ const CHAPTERS=[
       the exact insight titles the chapter grants. */
    lashPool:[
     {id:"shot",when:null,
-     q:"You shot a man of this company. Say plainly why that is worse here than in England.",
+     q:"You shot a man of this company. Why is that worse here than in England?",
      need:[["thirty","few","fewer","small","number","hand","every man","short","no more","replace","cannot spare","one less"],
            ["no doctor","no surgeon","no help","no law","no prison","no court","alone","far","supply","relief","month","ship","no one coming"]],
-     model:"There are only about thirty of us, with no more coming for months. He cannot be replaced, a surgeon can do little, and there is no court but the Captain.",
+     model:"There are only about thirty of us, with no more coming. He cannot be replaced, and there is no court but the Captain.",
      wrongWhy:"The company cannot spare a man, and the only law here is the Captain's."},
     {id:"motions",when:function(){return S.insight["The Six Motions"];},
-     q:"Name the six motions of loading a caliver, and say why the order cannot change.",
+     q:"Name the six motions of loading, and why the order cannot change.",
      need:[["powder","charge"],["ball","shot"],["ram","rod","home"],["prime","pan"],
            ["order","sequence","out of order","miss","skip","left out","wrong order","each","before","after"]],
      /* The drill book of 1607 (de Gheyn; see G_ORDER) primes FIRST and cocks the match
         LAST. This used to say "priming last so the pan is not shaken out", which taught
         the wrong order with a reason the period never gives. */
-     model:"Prime, powder, ball, ram, cock the match, present and give fire. Each step depends on the last, and the match goes in last so no fire nears the pan too soon.",
-     wrongWhy:"Prime, powder, ball, ram, cock, present. The match comes last so no fire touches the powder too soon."},
+     model:"Prime, powder, ball, ram, cock, present and fire. The match goes in last so no fire nears the pan too soon.",
+     wrongWhy:"Each step depends on the last, and the match comes last."},
     {id:"match",when:function(){return S.insight["Why the Match Matters"];},
-     q:"The match must burn the whole time you load. Give two reasons that is dangerous.",
+     q:"The match burns while you load. Give two reasons that is dangerous.",
      need:[["powder","charge","flask","horn","pan","prime","spark","blow up","explode","set off","alight","fire"],
            ["night","dark","see","seen","show","give away","betray","reveal","glow","light","enemy","ambush","hide"]],
-     model:"A spark from the lit cord can fire the powder while you load. And the glow and smell give you away in the dark.",
+     model:"A spark can fire the powder while you load, and the glow gives you away in the dark.",
      wrongWhy:"The powder, and the giveaway glow at night."},
     {id:"rain",when:function(){return S.insight["A Matchlock in the Rain"];},
      q:"Why might a bow have served this company better than a matchlock?",
      need:[["rain","wet","damp","weather","wind","water"],
            ["bow","arrow","string","no match","works","still","useless","dead","fail","cannot fire","will not"]],
-     model:"Rain or wind puts out the match and spoils the priming. A bow needs no flame and no powder, and shoots faster.",
-     wrongWhy:"Weather. A wet matchlock will not fire. A bow will, so in the rain the Powhatan were better armed."},
+     model:"Rain puts out the match and spoils the priming. A bow needs no flame and shoots faster.",
+     wrongWhy:"A wet matchlock will not fire. A bow will."},
     {id:"caliver",when:function(){return S.insight["The Matchlock Caliver"];},
-     q:"A trained man fires a caliver once or twice a minute. What does that mean for how the company must fight?",
+     q:"A man fires a caliver once or twice a minute. What does that mean for how they fight?",
      need:[["one","two","1","2","slow","rate","minute","few","once","twice"],
            ["together","volley","rank","line","turn","cover","group","all at once","reload","while","protect","support","alone"]],
-     model:"No man can fight alone with one. The pieces fire together in a volley, and men cover each other while they load.",
-     wrongWhy:"A man is helpless while reloading, so they must fight together, in volleys."},
+     model:"No man can fight alone. They fire together in volleys and cover each other while loading.",
+     wrongWhy:"A man is helpless while reloading, so they fight together."},
     {id:"capehenry",when:function(){return S.insight["Cape Henry"];},
      q:"What happened at Cape Henry on 26 April 1607, and how did the day end?",
      /* The cross was not required here any more: it went up on the twenty-ninth, and a
@@ -28907,18 +28907,18 @@ const CHAPTERS=[
         short for leaving out something that had not happened yet. */
      need:[["land","landed","ashore","first","arriv","cape henry"],
            ["attack","attacked","fight","fought","wound","arrow","shot at","ambush","set upon","drove"]],
-     model:"About thirty men came ashore and walked the country. At dusk they were attacked by the people whose country it was. Gabriel Archer was shot through both hands, and a sailor, Mathew Morton, wounded.",
+     model:"About thirty men came ashore. At dusk they were attacked by the people whose country it was. Gabriel Archer and a sailor, Mathew Morton, were wounded.",
      /* The marking note still asked for "the cross and the service of thanks" after `need`
         stopped asking for the cross (comment above) - and the Cross panel on the cape tells
         the same student that the cross went up on the 29th and that no 1607 writer records
         a service at all. The feedback now marks what the question marks. */
-     wrongWhy:"The first landing, and the attack that evening: the country was not empty."},
+     wrongWhy:"The first landing, and the attack that evening."},
     {id:"box",when:function(){return S.insight["The Seven Named in the Box"];},
-     q:"The Company sent the council's names sealed in a box, not to be opened until landfall. Why do you think they did that?",
+     q:"The council's names were sealed in a box until landfall. Why?",
      need:[["seal","sealed","secret","closed","hidden","not open","unopened","box"],
            ["quarrel","argue","fight","mutin","plot","challenge","dispute","authority","obey","undermine","crossing","voyage","at sea","command","power"]],
-     model:"So nobody knew who would rule until the voyage was over. Four months at sea is long enough to plot against a council named in London.",
-     wrongWhy:"Naming the council early gives the discontented four months to plot. Sealed, there was nothing to challenge until landfall."}
+     model:"So nobody knew who would rule until the voyage was over, leaving nothing to plot against at sea.",
+     wrongWhy:"A council named early gives the discontented four months to plot."}
    ],
    intro:function(){
      return "The ships are anchored inside the capes and the boats are down. About thirty of you are put ashore on a low sandy point, the afternoon of the day you first saw this country. There are stores to land and a shallop to build while the light holds. Captain Kendall must prove the pieces before dark, and every man is to learn the drill. Nobody has opened the sealed box yet.";
@@ -29006,8 +29006,8 @@ const CHAPTERS=[
    },
    end:{head:"Landfall \u2014 Complete", yr:"Chapter II \u00b7 to be continued",
      nextWorld:"ch3", nextLabel:"Up the River — Chapter III",
-     body:"<p>Two men wounded, a cross that will not stand through a winter, and seven names read out of a box that crossed an ocean shut.</p>"+
-       "<p>One of the seven has been in irons since the Canaries. Another heard his name an hour after complaining that nobody had shown a warrant, and within the year the council will have him shot. Nobody on this beach can see that yet.</p>"+
+     body:"<p>Two men wounded, a cross in the sand, and seven names read out of a box.</p>"+
+       "<p>One of the seven was in irons. Another complained an hour before that nobody had a warrant, and within the year the council will have him shot.</p>"+
        "<p class='note'>Chapter II complete. Upstream lie the fort, and the Powhatan whose homeland this already is.</p>"}},
   /* ---- III: THE FORT ----
      Was a placeholder, "First Contact - the Powhatan homeland". The fort chapter is the
@@ -30642,7 +30642,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0542";
+const BUILD="20261127-0544";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
