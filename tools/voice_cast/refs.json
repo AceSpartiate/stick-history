@@ -110,5 +110,25 @@
  "russell": {
   "text": "Much of the fashion of a thornback, with a longer tail, and on the tail a poisoned sting two or three inches long.",
   "desc": "An English doctor of physic in his forties: calm, learned and wry, a measured, reassuring voice, an English accent of the early 1600s, not American."
+ },
+ "spelman": {
+  "text": "Savage will not go back without one of us.",
+  "desc": "An English boy of about fourteen, a gentleman's son, starving and wary: quick, young and thin-voiced, a little frightened, an English accent of the early 1600s, not American."
+ },
+ "davis": {
+  "text": "and that the crabs your hogs ate wold have been a greate relefe unto us and saved many of our Lyves.",
+  "desc": "An English soldier captain in his thirties holding a small fort: blunt, defensive and wary, a hard plain voice, an English accent of the early 1600s, not American."
+ },
+ "strachey": {
+  "text": "Nine months and more on an island in the sea, two pinnaces built with our own hands, and we come to this.",
+  "desc": "An English gentleman writer and secretary in his late thirties: observant, articulate and grave, a cultivated measured voice, an English accent of the early 1600s, not American."
+ },
+ "gates": {
+  "text": "Let us see who comes.",
+  "desc": "An English soldier knight in his fifties, a governor: grave, firm and commanding, a deep steady voice, an English accent of the early 1600s, not American."
+ },
+ "digger": {
+  "text": "Everything in this cellar was thrown away in one winter, and it is all evidence.",
+  "desc": "A modern American archaeologist in his thirties: careful, warm and plain-spoken, a clear friendly voice, a present-day American accent."
  }
 }
