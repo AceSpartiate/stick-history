@@ -65,6 +65,10 @@
     if(prose(c)&&(/\s/.test(c)||/^[A-Z][a-z]{2,}[.!?]?$/.test(c)))add(c,'narrator');
     if(/<b>|<p>|<br>/i.test(v))for(const p of v.split(/<\/?(?:b|p|br)\s*\/?>/i)){const q=clean(p);if(prose(q)&&/\s/.test(q))add(q,'narrator');}
     if(/<[a-z]/i.test(v)&&prose(c)){try{off.innerHTML=v;const r=readableText(off);if(r)add(r,'narrator');}catch(e){}}}
+  /* Chapter IX explains only the cause rows a player placed differently, so which ones are
+     said depends on the player: every row's explanation is read here */
+  try{for(const d of Object.keys(PRICE_CAUSE))for(const r of PRICE_CAUSE[d]){
+    off.innerHTML="<ul><li>"+r.t+" — <b>"+PRICE_K[r.k]+"</b>: "+r.why+"</li></ul>";add(readableText(off),'narrator');}}catch(e){}
   off.remove();
   /* counts said aloud: "You answered "+right+" of "+n+"..." for every count a paper can give */
   const TPL=/("(?:[^"\\\n]|\\.)*")\s*\+\s*([\w.$()\[\]]+)\s*\+\s*("(?:[^"\\\n]|\\.)*")(?:\s*\+\s*([\w.$()\[\]]+)\s*\+\s*("(?:[^"\\\n]|\\.)*"))?/g;

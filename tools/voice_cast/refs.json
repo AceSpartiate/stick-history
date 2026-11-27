@@ -150,5 +150,21 @@
  "argall": {
   "text": "I mean to possess myself of his daughter by any stratagem I can, to ransom them.",
   "desc": "An English sea captain in his thirties, practical and calculating: blunt, quick and cool, a firm seaman's voice, an English accent of the early 1600s, not American."
+ },
+ "yeardley": {
+  "text": "Every burgess has taken the oath of supremacy, called in order and by name.",
+  "desc": "An English soldier and new governor in his early thirties, newly knighted: measured, formal and careful to sound lawful, a steady middle voice, an English accent of the early 1600s, not American."
+ },
+ "pory": {
+  "text": "He reads you a line: the people have gotten the raines of former servitude into their owne swindge, and must be governed.",
+  "desc": "An English scholar and secretary in his fifties, a well-travelled talker: dry, witty and precise, a mellow educated voice, an English accent of the early 1600s, not American."
+ },
+ "persey": {
+  "text": "Lay your commandment on me, and I will take the tobacco at that price.",
+  "desc": "An English merchant in his thirties who keeps the Company's store: guarded, businesslike and a little defensive, a plain clipped voice, an English accent of the early 1600s, not American."
+ },
+ "spence": {
+  "text": "I have chosen my dividend, and I mean to clear it and plant.",
+  "desc": "An English farmer and old soldier in his forties, one of the first settlers: weathered, plain-spoken and slow, a rough country voice, an English accent of the early 1600s, not American."
  }
 }

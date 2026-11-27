@@ -10654,7 +10654,7 @@ function readableText(el){
          its own ran on into the next block: "...Saw or heard it himself Percy: ..." in one breath,
          a line no recording can match, so the browser's flat voice read it (27 Nov). Entering and
          leaving a block now closes whatever came before it. */
-      const blk=/^(P|LI|DIV|UL|OL|H[1-6]|BLOCKQUOTE|TABLE|TR|SECTION)$/.test(tag);
+      const blk=/^(P|LI|DIV|UL|OL|H[1-6]|BLOCKQUOTE|TABLE|TR|SECTION)$/.test(tag)||!!(c.classList&&c.classList.contains("tagpill"));
       if(blk)endStop();
       walk(c,inOpts);
       if(blk)endStop();
@@ -13112,8 +13112,10 @@ function rkEnd(){
     body:"The account does not yet hold. Go back over the ground and come again."};
   $("resSeal").textContent=passed?"\u2713":"\u2715";
   $("resSeal").style.background=passed?"radial-gradient(circle at 35% 30%,#5c9d8e,#2f5b50)":"radial-gradient(circle at 35% 30%,#a34638,#6d271d)";
-  $("resKick").textContent=passed?"The Record Stands":"Not Yet";
-  $("resTitle").textContent=(passed?PASS.title:FAIL.title)+"  ("+rk.correct+"/"+RECK_ASK+")";
+  /* the score rides on the kicker line, not the title: "Title  (3/6)" was read as one line no
+     recording could match, in every chapter's muster (27 Nov). Fourteen fixed lines instead. */
+  $("resKick").textContent=(passed?"The Record Stands":"Not Yet")+" · "+rk.correct+" of "+RECK_ASK;
+  $("resTitle").textContent=passed?PASS.title:FAIL.title;
   $("resBody").textContent=passed?PASS.body:FAIL.body;
   const rw=$("resReward");rw.innerHTML="";
   if(passed){
@@ -13138,7 +13140,8 @@ function rkEnd(){
     if(c===0)earned="cool"; else if(c<=3)earned="grin";
     S.faces.add("smile");S.faces.add(earned);S.equip.face=earned;
     const fp=document.createElement("span");fp.className="tagpill";
-    fp.textContent=FACES[earned].icon+"  "+FACES[earned].name;rw.appendChild(fp);
+    /* the emoji is not read: "🙂 Content" matched no recording (27 Nov) */
+    fp.innerHTML="<span class=\"noRead\">"+FACES[earned].icon+"</span>  "+FACES[earned].name;rw.appendChild(fp);
     const cp=document.createElement("span");cp.className="tagpill";
     cp.textContent=(c===0?"a flawless passage":c+" correction"+(c===1?"":"s")+" needed");rw.appendChild(cp);
     refreshPlayer();$("resBtn").textContent="See how the chapter ends";
@@ -30230,7 +30233,7 @@ const PRICE_CAUSE={
      {t:"Argall fixes tobacco at three shillings a pound",k:0,why:"a law made for tobacco"},
      {t:"Captain Argall comes to govern the colony",k:2,why:"the Company in London sent him"}],
   1:[{t:"Every man must plant two acres of corn",k:0,why:"men were planting tobacco instead"},
-     {t:"No hay to “sweat their Tob°”",k:0,why:"curing tobacco took the cattle’s fodder"},
+     {t:"Cattle short of hay, used to “sweat their Tob°” (dry their tobacco)",k:0,why:"curing tobacco took the cattle’s fodder"},
      {t:"Opechancanough sends a basket of earth",k:2,why:"killings, and keeping the peace"},
      {t:"De La Warr dies at sea",k:2,why:"contrary winds, and sickness"}],
   2:[{t:"Fifty acres for each person shipped, to whoever paid",k:1,why:"London wanted settlers; tobacco made the land worth having"},
@@ -30239,12 +30242,12 @@ const PRICE_CAUSE={
   /* review, 27 Nov: was "Argall sails home “privatly”"; the record's "privatly" is the pinnace that came from England for him (GH, Tyler p. 335) */
   3:[{t:"A pinnace comes “privatly” to take Argall home",k:2,why:"a quarrel inside the Company"},
      {t:"Freed planters hurry to clear their land",k:1,why:"freed by London’s rules; eager to plant"},
-     {t:"Planters “so covetous” they “make little good”",k:0,why:"Rolfe, of tobacco, 1619"},
+     {t:"Planters so greedy (“so covetous”) they “make little good”",k:0,why:"Rolfe, of tobacco, 1619"},
      {t:"A plentiful summer, and many dead",k:2,why:"sickness, English and Indian"}],
   4:[{t:"The Assembly meets in the church",k:2,why:"London’s charter ordered it"},
      {t:"The cape merchant must take tobacco at three shillings",k:0,why:"a law made for tobacco"},
      {t:"Laws keep servants to their masters and terms",k:0,why:"tobacco needed hands, and hands were short"},
-     {t:"Six mulberry trees and ten vines a year, by law",k:0,why:"London wanted silk and wine; everyone grew tobacco"},
+     {t:"A law to plant mulberry trees and vines, not only tobacco",k:0,why:"everyone grew tobacco, and London wanted silk and wine too"},
      {t:"Martin’s burgesses shut out",k:2,why:"one law for every plantation"}],
   6:[{t:"A Dutch man-of-war comes to Point Comfort",k:2,why:"chance, and privateers at sea"},
      {t:"The governor and cape merchant buy the Africans",k:1,why:"Rolfe: “for victualls”; but both buyers lived by tobacco"},
@@ -30679,7 +30682,11 @@ registerWorld("ch9",function(root){
     /* the shelter at (22,-22) is gone: its ground is the tobacco, the corn and the woodpile.
        In 1617-18 "the Palizado's broken" (GH, Tyler p. 330): two gaps, cut as Chapter VII's
        are, without its charred stumps; the colliders stay, so nobody walks out through one */
-    PRICE.cut={tents:[[22,-22]],gaps:w.day<=1?STARVE_GAPS.slice(0,2).map(starveGap):[]};
+    PRICE.cut={tents:STARVE_TENTS.slice(),gaps:w.day<=1?STARVE_GAPS.slice(0,2).map(starveGap):[]};
+    /* 27 Nov: the 1607 camp's canvas tents still stood in 1620. Smith's book has "but five or six
+       houses" in the fort in 1617 (Tyler p. 330): every tent goes, and on five of their sites stands
+       a framed house of the kind Chapter VIII builds at Henrico */
+    STARVE_TENTS.filter(function(t){return !(t[0]===22&&t[1]===-22);}).forEach(function(t){leafHouse(root,G,t[0],t[1],0);});
     if(w.day<=1){
       /* "the market-place, and streets, and all other spare places planted with Tobacco" (GH, Tyler p. 330) */
       priceLeaves(root,G,6,2,7,2);priceLeaves(root,G,6,16.5,7,2);
@@ -30813,6 +30820,8 @@ function updatePrice(dt){
     const C=PRICE.cut, once=function(k,test){const p=FORT.parts[k];if(p&&!p.userData.priceCut){p.userData.priceCut=true;starveCut(p,test);}};
     if(C.tents.length)once("camp_shelters",function(x,z){return C.tents.some(function(h){return Math.hypot(x-h[0],z-h[1])<9;});});
     if(C.gaps.length){const gap=function(x,z){return C.gaps.some(function(h){return Math.hypot(x-h[0],z-h[1])<6;});};once("palisade_east",gap);once("palisade_west",gap);}
+    /* the 1607 sail-awning they prayed under; by 1619 they met in a church, and a house stands there */
+    const aw=FORT.parts.awning;if(aw&&aw.visible)aw.visible=false;
   }
   if(!PRICE.lit){
     const sd=priceDay(), grey=sd.where==="pointcomfort"||sd.where==="london";
@@ -32859,7 +32868,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0911";
+const BUILD="20261127-0944";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
