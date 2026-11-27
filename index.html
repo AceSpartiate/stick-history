@@ -6363,11 +6363,23 @@ function itemHeld(id){const st=itemState(id);return st==="stowed"||st==="carried
    Declared up here rather than beside the drill because refreshGunUI reads it and
    runs at top level; further down it would be in the temporal dead zone. */
 const RELOAD={on:false,t:0,dur:0,stage:-1,reprime:false};
-/* fractions of the whole, summing to 1. Ramming is the long part, which is true. */
+/* fractions of the whole, summing to 1. Ramming is the long part, which is true.
+   In de Gheyn's order - prime first, the match cocked last; see G_ORDER, which this
+   must walk in the same order. Read by key through reloadSpan, never by index, so
+   re-ordering the drill cannot leave an animation timed against the wrong motion. */
 const RELOAD_STAGES=[
-  {k:"powder",f:0.22},{k:"ball",f:0.10},{k:"wad",f:0.10},
-  {k:"ram",f:0.30},{k:"prime",f:0.18},{k:"ready",f:0.10}
+  {k:"prime",f:0.16},{k:"powder",f:0.20},{k:"ball",f:0.10},
+  {k:"ram",f:0.30},{k:"match",f:0.14},{k:"ready",f:0.10}
 ];
+/* where one motion sits in the automatic reload, as fractions of the whole */
+function reloadSpan(k){
+  let base=0;
+  for(let i=0;i<RELOAD_STAGES.length;i++){
+    if(RELOAD_STAGES[i].k===k)return {i:i,base:base,f:RELOAD_STAGES[i].f};
+    base+=RELOAD_STAGES[i].f;
+  }
+  return {i:-1,base:0,f:1};
+}
 let INPUT=(("ontouchstart" in window)||(navigator.maxTouchPoints||0)>0)?"touch":"kbm";
 function setInput(m){
   if(INPUT===m)return;
@@ -6570,7 +6582,7 @@ function gunInHands(){return itemState("matchlock")==="carried";}
 /* the drill has been given and a ball put in the mark: from here the piece is
    yours to use, and the six motions are not asked for again */
 function gunEarned(){return !!S.insight["Proved the Piece"];}
-function gunReady(){return gunInHands()&&GUN.hasBall&&GUN.hasWad&&!GUN.spent&&!RELOAD.on;}
+function gunReady(){return gunInHands()&&GUN.hasBall&&!GUN.spent&&!RELOAD.on;}
 
 /* ---- the icon: drawn, not an asset ----
    A 2D silhouette rather than a fifth WebGLRenderer. There are already four
@@ -13882,8 +13894,8 @@ function resolveMisfire(arm,st){
    different count. Derived once, so the strike counter, the pips, the seating
    animation and the automatic reload cannot come to disagree about it. */
 const RAM_NEED=4;
-const GUN={arm:"matchlock",step:"powder",charge:0,prime:0,ramQ:0,ramHits:0,
-  hasBall:false,hasWad:false,glow:0.6,active:false,t0:0,shots:0,hits:0,
+const GUN={arm:"matchlock",step:"prime",charge:0,prime:0,ramQ:0,ramHits:0,
+  hasBall:false,glow:0.6,active:false,t0:0,shots:0,hits:0,
   onHit:null,pourOn:false,poseT:0,sightT:0,ramT:0,ramAnim:0,ramCycle:0,ramSeat:0,cont:null,
   serpT:0,ballHold:0,ballT0:0};
 /* One swing of the scouring stick. Short enough that four of them is a rhythm to
@@ -13897,24 +13909,64 @@ const RAM_PERIOD=1.35;
    that lands, which is the ball seating, shown rather than scored in silence. */
 const RAM_HOME_MIN=2.98, RAM_HOME_MAX=3.40;
 const G_LO=0.52,G_HI=0.74,P_LO=0.28,P_HI=0.50;
-const G_ORDER=["powder","ball","wad","ram","prime","ready"];
-const G_NAME={powder:"Charge the piece",ball:"Ball",wad:"Wad",ram:"Ram it home",
-  prime:"Prime the pan",ready:"Present, and give fire"};
+/* ---- THE ORDER OF THE DRILL, TAKEN FROM THE DRILL BOOK OF THE YEAR ITSELF ----
+   This taught powder, ball, wad, ram, and priming LAST. The period drill does not.
+   Jacob de Gheyn's Wapenhandelinghe, published in English in 1607 as "The Exercise
+   of Armes for Calivres, Muskettes, and Pikes" - Maurice of Nassau's drill, and the
+   standard one of the decade Jamestown was planted - loads the caliver in this order
+   (plates 13-42, read in the transcription of the 1607 English edition at
+   https://www.wiktenauer.com/wiki/Page:The_Exercise_of_Armes_For_Calivres,_Muskettes,_and_Pikes_(Jacob_de_Gheyn_II)_1607.pdf/6
+   and /7 on the same site):
+     13-14  the match taken OUT of the cock after firing, its coal kept alight
+     15-19  blow the pan clear, prime it from the touch-box, shut it, cast off and
+            blow off the loose grains so the piece does not go off when he tries
+            the match
+     20-29  cast about, charge powder from the flask, draw the scouring stick, the
+            bullet from the mouth into the muzzle, ram powder and bullet, return the
+            stick
+     38-42  take the match, blow it, cock it, try it, guard and open the pan
+     then present, and give fire.
+   So PRIMING COMES FIRST and the burning match comes back to the lock LAST: the pan
+   is filled and shut while there is no fire anywhere near it. That is the reason
+   for the order, and it is a better one than "priming last so the pan is not shaken
+   out", which the muster used to give and which nothing in the period says.
+   AND THERE IS NO WAD. Not one of the forty-two caliver plates mentions wad, tow or
+   paper (the musket plates were not checked): the ball goes in "out of his mouth" and
+   is rammed down on the powder. Windage is real - plate 10 tells the man to bring
+   the piece down from above so a ball not rammed fast does "not fall out" - but the
+   drill's answer to it is handling, not a wad, so the wad step is gone rather than
+   kept on a guess. Still six motions: the match is a motion of its own in the book,
+   and it is the one that carries the lesson about fire and powder. */
+const G_ORDER=["prime","powder","ball","ram","match","ready"];
+const G_NAME={prime:"Prime the pan",powder:"Charge the piece",ball:"Ball",ram:"Ram it home",
+  match:"Cock the match",ready:"Present, and give fire"};
 /* the present participle of each motion, for the button while it runs itself */
-const G_DOING={powder:"charging",ball:"ball down her",wad:"wadding",
-  ram:"ramming home",prime:"priming",ready:"ready"};
+const G_DOING={prime:"priming",powder:"charging",ball:"ball down her",
+  ram:"ramming home",match:"cocking the match",ready:"ready"};
+/* Is the charge still down her? Then a pan that failed only wants priming and the
+   match again, not the whole drill - the same question startReload asks. */
+function gCharged(){return GUN.hasBall&&GUN.charge>=G_LO*0.5;}
+/* Is the match in the cock? Not while the pan is being filled and the barrel loaded:
+   de Gheyn has it out of the cock from just after the shot (plate 13) until it is
+   cocked again (plate 40), held burning in the left hand. Outside a load it stays in,
+   as it would on a piece carried ready. */
+function gMatchCocked(){
+  if(!(GUN.active||RELOAD.on))return true;
+  const i=G_ORDER.indexOf(GUN.step);
+  return i<0||i>=G_ORDER.indexOf("match");
+}
 const G_HINT={
   powder:"Hold to pour from the flask. Stop inside the green \u2014 too little will not carry, too much may burst the barrel.",
   ball:"Drop the ball down the muzzle.",
-  wad:"Now the wad, to hold the ball in. Skip it and the ball rolls out again.",
   ram:"Four strokes. Watch the stick, not the bar — strike at the bottom of the swing, when it is hard down on the ball.",
-  prime:"A little powder in the pan. Too much and it will only flash.",
-  ready:"Drag to aim. Hold still and the sway settles. The match must be bright."
+  prime:"Blow the pan clear and put a little powder in it. Too much and it will only flash. Then shut the pan.",
+  match:"Now the match goes back in the cock. Blow the coal bright first, then cock it and try it.",
+  ready:"Open the pan and present. Drag to aim; hold still and the sway settles. The match must be bright."
 };
 let TARGETS=[],gunPiece=null,gunFlask=null,gunRammer=null,gunStream=null,gunCoal=null;
 /* the stowed scouring stick, the ball going down the bore, and the serpentine -
    see buildGunModel */
-let gunRamStow=null,gunBall=null,gunSerp=null,gunRear=null,gunWrist=null;
+let gunRamStow=null,gunBall=null,gunSerp=null,gunRear=null,gunWrist=null,gunMatch=null;
 /* scratch for the depth tests in updateDrill; THREE is not loaded yet here */
 let G_HEEL=null;
 /* The two parts that can end up inside the near plane, and the gun-local point on
@@ -14082,7 +14134,8 @@ const G_BORE=[0,0,-4.30];        /* the muzzle */
    until a player did. Anything that goes down this barrel is measured off G_CAL.
    A caliver ran about seven tenths of an inch; the ball ran UNDER that, because a
    barrel fouls after two shots and a tight ball cannot be rammed at all. That
-   windage is why the drill has a wad: without one the ball rolls back out. */
+   windage is real, and the drill of 1607 met it with handling, not a wad - see
+   G_ORDER. */
 const G_CAL=0.70;                /* inches: the bore */
 const G_BALL=G_CAL-0.04;         /* inches: under bore, for windage */
 /* Moved in with the pan when the whole piece came down to true scale: the old
@@ -14427,7 +14480,11 @@ function buildGunModel(){
   /* 0.32 at the clamped end against a 0.30 gap, so the jaws bite into it. Drawn
      dead equal it measured 0.01 short of both plates - a clamp holding nothing by
      a hundredth of an inch, which is the whole weapon's failure mode in miniature. */
-  Sp.beam8([0.028,0.082*SPY,0.048],[0.024,0.211*SPY,-0.005], 0.30*IN*AF,0.32*IN*AF, cordD,cord);
+  /* ITS OWN MESH NOW, so it can come out of the cock: the 1607 drill takes the match
+     out after the shot and cocks it again only once the pan is primed and the barrel
+     loaded (see G_ORDER, gMatchCocked). The coal rides on it. One draw call. */
+  const Mt=new Geo();
+  Mt.beam8([0.028,0.082*SPY,0.048],[0.024,0.211*SPY,-0.005], 0.30*IN*AF,0.32*IN*AF, cordD,cord);
   gunSerp=new THREE.Group();
   /* The pivot is placed so the coal's reach EQUALS the distance to the pan: 0.265
      back along the bore and 0.04 up is 0.268, which is exactly where the coal sits
@@ -14480,7 +14537,8 @@ function buildGunModel(){
      gradeRenderer still owns tone mapping for everything else. */
   gunCoal=new THREE.Mesh(boxGeom(0.026,0.026,0.026),
     new THREE.MeshBasicMaterial({color:lin(0xff7a1e),toneMapped:false}));
-  gunCoal.position.set(0.024,0.245*SPY,-0.004);gunSerp.add(gunCoal);
+  gunCoal.position.set(0.024,0.245*SPY,-0.004);
+  gunMatch=Mt.mesh(true,false);gunMatch.add(gunCoal);gunSerp.add(gunMatch);
 
   /* Everything the hands do is parented to the PIECE, not the camera. Parented
      to the camera they stayed level while the gun tilted to load, so nothing
@@ -14607,7 +14665,7 @@ function openDrill(onHit){
   /* the taught drill owns the screen while it runs, so the standing gun control
      stands down - without this it lingers for a few frames until the poll notices */
   cancelReload();refreshGunUI();
-  gStep("powder");
+  gStep("prime");                  /* the pan first - see G_ORDER */
 }
 /* ========== THE AUTOMATIC RELOAD ========== */
 function startReload(){
@@ -14621,10 +14679,10 @@ function startReload(){
   buildGunModel();
   if(gunPiece)gunPiece.visible=true;
   /* IS THE CHARGE STILL DOWN HER? Then this is a re-prime, not a reload. A ball
-     and wad rammed home do not fall out because the pan failed, and making a
+     rammed home does not fall out because the pan failed, and making a
      player stand through the whole drill again to answer a flash in the pan is the
      game lying about the weapon. Six seconds against thirty-eight. */
-  RELOAD.reprime=(GUN.hasBall&&GUN.hasWad&&GUN.charge>=G_LO*0.5);
+  RELOAD.reprime=gCharged();
   if(!RELOAD.reprime)resetCharge(); else GUN.prime=0;
   RELOAD.on=true;RELOAD.t=0;RELOAD.stage=-1;
   /* ARMS.reload has sat in the weapon table since it was written, read by nothing.
@@ -14653,13 +14711,15 @@ function updateReload(dt){
   if(!gunInHands()){cancelReload();return;}
   RELOAD.t+=dt;
   const k=Math.min(1,RELOAD.t/RELOAD.dur);
-  /* which motion are we on. A RE-PRIME is only ever two of them: the pan, then
-     ready. Walking the full table at a sixth of the duration would have flashed
-     powder-ball-wad-ram past in four seconds and told the player she had been
-     completely reloaded, which is the opposite of what just happened. */
+  /* which motion are we on. A RE-PRIME is only ever three of them: the pan, the
+     match back in the cock, then ready. Walking the full table at a sixth of the
+     duration would have flashed powder-ball-ram past in four seconds and told the
+     player she had been completely reloaded, which is the opposite of what just
+     happened. */
   let idx;
   if(RELOAD.reprime){
-    idx=(k<0.82)?RELOAD_STAGES.findIndex(function(x){return x.k==="prime";})
+    idx=(k<0.55)?reloadSpan("prime").i
+       :(k<0.85)?reloadSpan("match").i
                 :RELOAD_STAGES.length-1;
   } else {
     let acc=0;idx=RELOAD_STAGES.length-1;
@@ -14676,14 +14736,17 @@ function updateReload(dt){
     if(st==="powder"||st==="prime"){GUN.pourOn=true;playSfx("pour",0.14);}
     else{GUN.pourOn=false;stopSfx();
       if(st==="ram")playSfx("ram",0.30);
-      else if(st==="ball"||st==="wad")playSfx("click",0.22);}
+      else if(st==="ball")playSfx("click",0.22);
+      else if(st==="match")playSfx("blow",0.10);
+    }
+    RELOAD.st0=RELOAD.t;RELOAD.tried=false;
     if(st==="ready"){
       /* Loaded competently, because the soldier is doing it rather than the player
          fumbling. What remains uncertain is the WEAPON, not the handling: misfire
          and hang fire are untouched, which is the historical point. */
       GUN.charge=(G_LO+G_HI)/2;
       GUN.prime=(P_LO+P_HI)/2;
-      GUN.hasBall=true;GUN.hasWad=true;GUN.ramQ=1;GUN.ramHits=RAM_NEED;
+      GUN.hasBall=true;GUN.ramQ=1;GUN.ramHits=RAM_NEED;
       GUN.spent=false;
       /* the match is tended as part of the sequence - it is one of the motions.
          It still burns down afterwards, so a piece held loaded too long goes cold
@@ -14692,6 +14755,15 @@ function updateReload(dt){
       GUN.glow=Math.max(GUN.glow,0.85);
     }
     refreshGunUI();
+  }
+  /* THE MATCH, BACK TO THE LOCK. Blown bright while it is cocked, and then tried:
+     the arm brought down onto the shut pan to see it falls true, which is why the
+     loose grains were blown off the pan back at the start (de Gheyn, plates 18 and
+     41). Halfway through the motion, whichever reload this is. */
+  if(GUN.step==="match"){
+    GUN.glow=Math.min(1,GUN.glow+dt*0.5);
+    const len=RELOAD.dur*(RELOAD.reprime?0.30:reloadSpan("match").f);
+    if(!RELOAD.tried&&RELOAD.t-(RELOAD.st0||0)>len*0.5){RELOAD.tried=true;GUN.serpT=1;}
   }
   const f=$("gunFill");
   if(f)f.style.width=(k*100).toFixed(1)+"%";
@@ -14764,7 +14836,7 @@ function closeDrill(){
   if(GUN.savedZoom!==undefined){setZoom(GUN.savedZoom);GUN.savedZoom=undefined;}
 }
 function resetCharge(){
-  GUN.charge=0;GUN.prime=0;GUN.ramQ=0;GUN.ramHits=0;GUN.hasBall=false;GUN.hasWad=false;
+  GUN.charge=0;GUN.prime=0;GUN.ramQ=0;GUN.ramHits=0;GUN.hasBall=false;
   GUN.spent=false;                 /* the piece may be fired again once reloaded */
 }
 function gGauge(id,lo,hi){
@@ -14797,13 +14869,7 @@ function gStep(k){
     GUN.ballHold=0;GUN.ballT0=0;
     $("gBall").onclick=function(){const b=this;if(b.disabled)return;b.disabled=true;b.textContent="\u2026";
       playSfx("click",0.3);GUN.ballT0=performance.now();
-      setTimeout(function(){GUN.hasBall=true;gStep("wad");},G_DROP_MS);};
-  } else if(k==="wad"){
-    ui.innerHTML='<div class="grow"><button class="gact small" id="gWad">Ram in the wad</button>'+
-      '<button class="gact small danger" id="gSkip">Skip it</button></div>';
-    $("gWad").onclick=function(){const b=this;if(b.disabled)return;b.disabled=true;b.textContent="\u2026";
-      playSfx("click",0.3);setTimeout(function(){GUN.hasWad=true;gStep("ram");},950);};
-    $("gSkip").onclick=function(){GUN.hasWad=false;gStep("ram");toast("No wad \u2014 the ball will not stay put.");};
+      setTimeout(function(){GUN.hasBall=true;gStep("ram");},G_DROP_MS);};
   } else if(k==="ram"){
     /* the bar reads the STICK's depth in the bore now: hard right is hard home */
     ui.innerHTML='<div class="ggauge"><div class="band" style="left:82%;width:18%"></div>'+
@@ -14817,7 +14883,23 @@ function gStep(k){
     ui.innerHTML=gGauge("gPrimeFill",P_LO,P_HI)+'<button class="gact" id="gPrime">Hold to prime the pan</button>';
     gHold($("gPrime"),function(){GUN.pourOn=true;playSfx("pour",0.12);},
       function(dt){GUN.prime=Math.min(1.2,GUN.prime+dt*0.15);gPaint();},
-      function(){GUN.pourOn=false;stopSfx();gStep("ready");});
+      /* the pan shut on its priming, and then the barrel - unless the charge is
+         still down her from a shot whose pan failed, when it is straight to the
+         match. Priming first is what makes that skip honest: nothing about the
+         pan touches what is already rammed. */
+      function(){GUN.pourOn=false;stopSfx();gStep(gCharged()?"match":"powder");});
+  } else if(k==="match"){
+    /* TAKE THE MATCH, BLOW IT, COCK IT, TRY IT - de Gheyn plates 38-41. It comes
+       back to the lock only now, with the pan shut and the barrel loaded, which is
+       the whole reason for the order. A cold coal will not be cocked: blow it first,
+       with the button beside this one. Trying it brings the arm down onto the shut
+       pan, which is why the loose grains had to be blown off at the start. */
+    ui.innerHTML='<button class="gact" id="gCock">Cock the match</button>';
+    $("gCock").onclick=function(){const b=this;if(b.disabled)return;
+      if(GUN.glow<0.18){toast("The coal is too cold to cock — blow it bright first.");return;}
+      b.disabled=true;b.textContent="…";
+      playSfx("click",0.3);GUN.serpT=1;
+      setTimeout(function(){if(GUN.active&&GUN.step==="match")gStep("ready");},900);};
   } else {
     ui.innerHTML='<div class="grow"><button class="gact small" id="gFire">Give fire</button>'+
       '<button class="gact small" id="gBlow">Blow the match</button></div>'+
@@ -14885,7 +14967,7 @@ function gRamStrike(){
   /* thrown back up, and the swing starts again from the top - so each strike is
      its own stroke rather than a tap into a wave that was passing anyway */
   GUN.ramCycle=0;
-  if(GUN.ramHits>=RAM_NEED){GUN.ramQ=1;gStep("prime");}
+  if(GUN.ramHits>=RAM_NEED){GUN.ramQ=1;gStep("match");}
   else if($("gRam"))
     $("gRam").textContent="Strike \u2014 "+(RAM_NEED-GUN.ramHits)+" of "+RAM_NEED+" to go";
 }
@@ -14961,9 +15043,9 @@ function giveFire(){
   /* Two defects here, and they compounded.
      1. Nothing stopped a second click. done() only schedules resetCharge 900ms
         later, so every click inside that window ran the whole thing again.
-     2. Nothing checked the piece was loaded. `hasBall && !hasWad` catches a
-        ball with no wad, but an EMPTY barrel matched none of the guards and
-        fell straight through to discharge - firing a ball never rammed.
+     2. Nothing checked the piece was loaded. An EMPTY barrel matched none of
+        the guards and fell straight through to discharge - firing a ball never
+        rammed.
      Together: unlimited shots without reloading. */
   if(GUN.spent)return;
   GUN.spent=true;
@@ -14978,18 +15060,20 @@ function giveFire(){
      here since this was written and was never once read, so every outcome sent the
      player back to "charge the piece" - forty seconds to answer a fault that cost
      a spoonful of priming.
-     The distinction is the weapon's own: powder, ball and wad are down the barrel
+     The distinction is the weapon's own: powder and ball are down the barrel
      and stay there. If only the PAN failed - a flash, too little priming, a dead
-     match, a serpentine that did not catch - you re-prime and try her again. If
-     the CHARGE was at fault - no powder, no ball, no wad to hold it - there is
+     match, a serpentine that did not catch - you re-prime, cock the match again and
+     try her. If the CHARGE was at fault - no powder, no ball - there is
      nothing down her and you start over. That is the difference between a bad
      minute and a lost one, and the weapon already knew it. */
   function done(keep){
     GUN.glow=Math.max(0,GUN.glow-0.07);
     setTimeout(function(){
       if(!GUN.active)return;
+      /* either way the match comes out of the cock and it is the pan first - de
+         Gheyn plates 13-15; the prime step then skips the barrel if it is charged */
       if(keep){GUN.spent=false;GUN.prime=0;GUN.t0=performance.now();gStep("prime");}
-      else{resetCharge();GUN.t0=performance.now();gStep("powder");}
+      else{resetCharge();GUN.t0=performance.now();gStep("prime");}
     },900);
   }
   /* ---- NOTHING HAPPENS UNTIL THE MATCH GETS THERE ----
@@ -15033,27 +15117,23 @@ function giveFire(){
     S.corrections=(S.corrections||0)+1;incur("a correction");
     /* Cleared HERE and not left to done(), whose reset only runs inside the taught
        drill. Outside it the recovery is startReload(), which decides between a
-       six-second re-prime and the full thirty-eight by asking whether ball, wad
+       six-second re-prime and the full thirty-eight by asking whether ball
        and charge are still down her - and after a burst they are emphatically
        not. Left to done() a burst barrel healed itself in six seconds. */
     resetCharge();
     done();return;                 /* vented: there is nothing down her now */
   }
-  /* Both of these BURN THE CHARGE, so both empty her - the same fault as the
+  /* This BURNS THE CHARGE, so it empties her - the same fault as the
      successful shot, and for the same reason: done() only resets inside the
      taught drill. A blank that leaves a full charge down the barrel would be
-     re-primed in six seconds and fired again, for ever. */
+     re-primed in six seconds and fired again, for ever.
+     (There was a second branch here, "the ball rolled out", for a load with no
+     wad. The 1607 drill has no wad - see G_ORDER - so it went with the step.) */
   if(!GUN.hasBall){
     /* powder and no ball is a blank: loud, and it sends nothing */
     bang(function(){
       playSfx("boom",0.42);gunSmoke(0.8);knock={vx:0,vz:0,t:0};camKick=0.03;
       toast("A loud report, and nothing sent \u2014 there was no ball down her.");});
-    resetCharge();done();return;
-  }
-  if(GUN.hasBall&&!GUN.hasWad){
-    bang(function(){
-      playSfx("boom",0.28);gunSmoke(0.5);
-      toast("A hollow report \u2014 the ball rolled out.");});
     resetCharge();done();return;
   }
   if(GUN.glow<0.18){
@@ -15663,11 +15743,11 @@ function discharge(hung){
       if(CURRENT_WORLD!==world||!gunPiece)return;
       ignite(hung);
       /* ---- AND SHE IS EMPTY NOW, WHICH NOBODY EVER SAID ----
-         The ball, the wad and the powder have all just left the barrel, and
+         The ball and the powder have both just left the barrel, and
          nothing in the file recorded that. done() resets the piece, but its
          body is gated on GUN.active - true only inside Kendall's taught drill -
          so from the moment the lesson ends and the automatic reload takes over,
-         every shot left hasBall, hasWad and a full charge standing.
+         every shot left hasBall and a full charge standing.
          startReload() then asks the right question, "is the charge still down
          her?", and got the wrong answer: it read every reload as a RE-PRIME.
          Measured: 6.08 seconds against the 38 that ARMS.matchlock.reload has
@@ -16054,9 +16134,12 @@ function updateDrill(dt){
      why ramming happened up at chest height where the stroke could not be seen.
      The pose is now a live position and rotation eased toward a NAMED target, so
      any number of stances can be added without unpicking the maths. */
+  /* Cocking the match shares the priming stance: both are work at the lock, and
+     that stance is the one solved to put the pan - and so the jaws of the cock just
+     behind it - a foot and a half from the eye. */
   const tgtName=(GUN.step==="ready")?"sight"
-               :(GUN.step==="prime")?"prime"
-               :(GUN.step==="ram"||GUN.step==="wad"||GUN.step==="ball")?"ground"
+               :(GUN.step==="prime"||GUN.step==="match")?"prime"
+               :(GUN.step==="ram"||GUN.step==="ball")?"ground"
                :"load";
   const TGT=G_POSE[tgtName];
   if(!GUN.pose)GUN.pose={p:G_POSE.load.p.slice(),r:G_POSE.load.r.slice()};
@@ -16157,6 +16240,9 @@ function updateDrill(dt){
       else GUN.pitchNudge=0;
     }
   } else if(GUN.step==="ready"){GUN.pitchStep=null;}
+  /* the burning end out of the jaws while the pan and barrel are loaded - the
+     panel's match pip still shows how it burns - and back in when it is cocked */
+  if(gunMatch)gunMatch.visible=gMatchCocked();
   if(gunCoal){
     const g=GUN.glow,live=Math.max(0,(g-0.06)/0.94);
     gunCoal.material.color.setRGB(0.16+live*0.84,0.09+live*0.42,0.07+live*0.10);
@@ -16197,7 +16283,7 @@ function updateDrill(dt){
     }
   }
   if(gunRammer){
-    const show=(GUN.step==="ram"||GUN.step==="wad")&&grounded;
+    const show=(GUN.step==="ram")&&grounded;
     gunRammer.visible=show;
     /* THE STICK COMES FROM SOMEWHERE. Its stowed copy hides exactly when the
        working one appears, so the eye sees it drawn from the pipe under the barrel
@@ -16210,9 +16296,8 @@ function updateDrill(dt){
          ramAnim is 0 hard home and 1 fully drawn back, on a cosine, so the stick
          dwells a moment at each end the way a swung thing does. */
       if(RELOAD.on&&!GUN.active){
-        const st=RELOAD_STAGES[3];                       /* the ram stage */
-        let base=0; for(let i=0;i<3;i++)base+=RELOAD_STAGES[i].f;
-        const within=Math.max(0,Math.min(1,(RELOAD.t/RELOAD.dur-base)/st.f));
+        const sp=reloadSpan("ram");                      /* the ram stage, by name */
+        const within=Math.max(0,Math.min(1,(RELOAD.t/RELOAD.dur-sp.base)/sp.f));
         const STROKES=4;
         const phase=(within*STROKES)%1;
         GUN.ramAnim=0.5+0.5*Math.cos(phase*Math.PI*2);
@@ -16221,7 +16306,7 @@ function updateDrill(dt){
         if(GUN.ramHeard!==strokeNo&&GUN.ramAnim<0.10){
           GUN.ramHeard=strokeNo;playSfx("ram",0.34);
         }
-      } else if(GUN.step==="ram"){
+      } else {
         GUN.ramCycle=(GUN.ramCycle||0)+dt/RAM_PERIOD;
         GUN.ramAnim=0.5+0.5*Math.cos(GUN.ramCycle*Math.PI*2);
         GUN.ramSeat=Math.min(1,(GUN.ramHits||0)/RAM_NEED);
@@ -16229,8 +16314,6 @@ function updateDrill(dt){
            bottom of the swing. One value driving both, so they cannot disagree. */
         const mk=$("gMark");
         if(mk)mk.style.left=((1-GUN.ramAnim)*100).toFixed(1)+"%";
-      } else {
-        GUN.ramAnim=Math.max(0,GUN.ramAnim-dt*3.2);      /* the wad step */
       }
       /* On the bore axis, sliding down it. With the butt grounded the bore runs
          upright, so this reads as the stroke it actually is - the stick driven
@@ -16255,11 +16338,13 @@ function updateDrill(dt){
     if(show){
       let k=0;
       if(RELOAD.on&&!GUN.active){
-        let base=0; for(let i=0;i<1;i++)base+=RELOAD_STAGES[i].f;
+        /* by name: this read "the stage at index 1", which stopped being the ball
+           the moment the pan moved to the front of the drill */
+        const sp=reloadSpan("ball");
         /* 1 MINUS the progress, to match the manual branch below. Written the
            other way round the automatic reload played the drop BACKWARDS - the
            ball climbed up out of the muzzle and hung in the air. */
-        k=1-Math.max(0,Math.min(1,(RELOAD.t/RELOAD.dur-base)/RELOAD_STAGES[1].f));
+        k=1-Math.max(0,Math.min(1,(RELOAD.t/RELOAD.dur-sp.base)/sp.f));
       } else {
         if(GUN.ballT0)GUN.ballHold=Math.min(1,(performance.now()-GUN.ballT0)/G_DROP_MS);
         k=1-Math.max(0,Math.min(1,GUN.ballHold||0));
@@ -23216,8 +23301,9 @@ const SERJEANT={
   {npc:"\u201cThen take it. Six motions, in order, and put a ball in the mark yonder.\u201d",
    choices:[
     {t:"Show me the drill.",wise:true,ink:6,teach:true,
-     reply:"\u201cPowder. Ball. Wad. Ram it home. Prime the pan. Present.\u201d He steps back. \u201cAnd keep that match bright.\u201d",
-     insight:{g:"known",b:"The Six Motions",s:"Charge with powder, drop the ball, seat a wad, ram it home, prime the pan, present and give fire - all while keeping the slow match alight."}},
+     /* de Gheyn's order, 1607 - see G_ORDER: the pan first, the match back in the cock last */
+     reply:"\u201cPrime your pan and shut it. Powder. Ball. Ram it home. Cock your match. Present.\u201d He steps back. \u201cAnd keep that match bright.\u201d",
+     insight:{g:"known",b:"The Six Motions",s:"Prime the pan and shut it, charge with powder, drop the ball, ram it home, cock the match, then open the pan, present and give fire - all while keeping the slow match alight."}},
     {t:"I would rather watch someone else first.",wise:false,
      reply:"\u201cThere is no one else. Every man ashore learns it today.\u201d He holds the piece out. \u201cTake it.\u201d"}
    ]}
@@ -26224,8 +26310,11 @@ const CHAPTERS=[
      q:"Name the six motions of loading a caliver, and say why the order cannot be changed.",
      need:[["powder","charge"],["ball","shot"],["ram","rod","home"],["prime","pan"],
            ["order","sequence","out of order","miss","skip","left out","wrong order","each","before","after"]],
-     model:"Charge with powder, drop the ball, seat a wad, ram it home, prime the pan, then present and give fire. The order cannot change because each motion depends on the one before it: powder before ball, ball before ramming, and priming last so the pan is not shaken out. Leave one out and the piece either does not fire or fires in your face.",
-     wrongWhy:"The six are: powder, ball, wad, ram, prime, present and give fire. The order matters because every motion depends on the last one - and a motion left out means the piece fails to go off, or goes off when you are not ready for it."},
+     /* The drill book of 1607 (de Gheyn; see G_ORDER) primes FIRST and cocks the match
+        LAST. This used to say "priming last so the pan is not shaken out", which taught
+        the wrong order with a reason the period never gives. */
+     model:"Prime the pan and shut it, charge with powder, drop the ball, ram it home, cock the match, then present and give fire. The order cannot change because each motion depends on the one before it: powder before ball, ball before ramming, and the burning match goes back in the cock last, so there is no fire near the pan until the piece is loaded. Leave one out and the piece either does not fire or fires in your face.",
+     wrongWhy:"The six are: prime the pan, powder, ball, ram, cock the match, then present and give fire. The order matters because every motion depends on the last one, and the match comes last so no fire touches the powder too soon. A motion left out means the piece fails to go off, or goes off when you are not ready for it."},
     {id:"match",when:function(){return S.insight["Why the Match Matters"];},
      q:"The match must be kept burning the whole time you load. Give two reasons that is dangerous.",
      need:[["powder","charge","flask","horn","pan","prime","spark","blow up","explode","set off","alight","fire"],
@@ -26551,7 +26640,20 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    list nobody finishes is a list nobody reads.
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
-  {when:"26 November 2026 · latest",
+  {when:"27 November 2026 · latest",
+   head:"The first chapters, checked again",
+   lines:[
+     "<b>The record, read again</b>",
+     "Chapters I to V were checked line by line against the colonists’ own words, and what did not hold up was put right. Where the game fills a gap the record leaves, it now says so.",
+     "<b>Loading a matchlock, the 1607 way</b>",
+     "The musket drill now follows Jacob de Gheyn’s drill book of 1607: take the burning match out of the cock, prime the pan and shut it, then powder, ball and ram, and only then put the match back and give fire. No fire comes near the powder until the piece is loaded. The wad is gone, because the book never uses one.",
+     "<b>An honest answer at the council</b>",
+     "In Chapter II, if you did not find enough on the river to back a reason, you can now say so plainly instead of being made to pick a wrong one.",
+     "<b>Fairer musters</b>",
+     "In the musters of Chapters I to III, the right answer is no longer the longest one to choose from.",
+     "<b>Fixes</b>",
+     "Chapter IV’s first record, Newport sailing for England, is shown when you arrive, and a duty you have finished leaves the map. Every changed line has a new recording, and Chapter V’s James Read and the bargeman have voices of their own."]},
+  {when:"26 November 2026",
    head:"Chapter V: Smith’s Relation",
    lines:[
      "<b>A new chapter: the winter of 1607</b>",
@@ -27894,7 +27996,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261126-2358";
+const BUILD="20261127-0008";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
