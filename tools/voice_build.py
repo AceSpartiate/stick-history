@@ -40,6 +40,8 @@ VOICES = {
     "read": (27, 0.94), "bargeman": (25, 1.02),
     # Chapter VI
     "scrivener": (24, 1.02), "todkill": (27, 0.98), "russell": (26, 0.96),
+    # Chapter VII
+    "spelman": (25, 1.10), "davis": (27, 1.03), "strachey": (24, 0.98), "gates": (26, 0.92), "digger": (25, 1.04),
 }
 FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 
