@@ -7737,6 +7737,7 @@ function disposeWorld(){
   worldRoot=null;
   /* every per-world list must be emptied or the next world inherits ghosts */
   interactables.length=0;colliders.length=0;npcMeshes.length=0;
+  if(typeof WORK!=="undefined"){WORK.list.length=0;WORK.bits.length=0;}
   CANNONS.length=0;CONSORTS.length=0;
   player=null;playerParts=null;activeSpot=null;
   smoke.length=0;knock=null;flash=null;
@@ -8531,7 +8532,7 @@ function animate(){
   /* play-test, 27 Nov: Chapter VI's ships, the boat from the falls, the rats and its night sky
      are driven by updatePres, which this branch never called - so "Captain Newport set sail"
      played over a ship riding at anchor, and the boat from the falls never came in */
-  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}
+  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateWork(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}
   if(CAMLOCK.on){
     updateFx(dt);updateFlog(dt);updateShadows();
     cam.position.lerp(CAMLOCK.pos,Math.min(1,dt*3.5));
@@ -8549,7 +8550,7 @@ function animate(){
     player.position.y=WORLD.ground(player.position.x,player.position.z)+JUMP.y;
   if(AMBUSH.on||DUSK.on){updateAmbush(dt);updateArrows(dt);}
   else if(FORT.on){updateFort(dt);updateArrows(dt);}
-  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);
+  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateWork(dt);
   if(LESSON.on){
     updateFx(dt);updateLesson(dt);updateShadows();
     renderer.render(scene,cam);return;
@@ -26255,6 +26256,257 @@ CONTENT.ch5={
   targets:collectInsights(CAPT_NPCS), unlocks:[]
 };
 
+/* ==================== WORK: PEOPLE WHO ARE DOING SOMETHING ====================
+   Asked, 27 November 2026: "Do the various necessary move? Do things? Not just swaying or
+   stuff/gimmicks like that." They did not. Outside Chapter II every working man in the
+   later chapters was a baked statue posed mid-task, and the player's own duties were pages.
+
+   This is work with a purpose and a result. A digger's spade goes in, comes up, and throws
+   earth that lands on a heap that GROWS. An axe comes down and chips fly off the trunk. A
+   carrier picks a cask up at one end, walks it to the other, sets it down on a stack that
+   gets taller, and walks back empty. A refiner swirls his pan and tips it out. The same
+   motions drive the player when a duty is physical (dig the grave, lift the cask, prise
+   the lid), framed by the cutscene camera so there is something to watch.
+
+   workMan() builds an ARTICULATED figure (not baked) and registers it; enterWorld's clear
+   empties the list. updateWork runs in both branches of the main loop, so work goes on
+   behind a cutscene too. Props are built in the figure's inner units (a man is about 1.9
+   tall) and hung on the right wrist, which is where a tool is held. */
+const WORK={list:[],bits:[],G:null};
+const WORK_PROP={
+  spade:function(){const g=new Geo(), wood=RGB(0x7a5a3a), iron=RGB(0x6c6f72);
+    g.beam8([0,0.25,0.05],[0,-1.05,0.12],0.05,0.05,wood,wood);g.box(0,-1.18,0.13,0.2,0.26,0.03,iron);return g.mesh(false,false);},
+  axe:function(){const g=new Geo(), wood=RGB(0x7a5a3a), iron=RGB(0x7a7d80);
+    g.beam8([0,0.1,0],[0,-0.95,0.04],0.045,0.045,wood,wood);g.box(0,-0.92,0.13,0.05,0.16,0.2,iron);return g.mesh(false,false);},
+  hammer:function(){const g=new Geo(), wood=RGB(0x7a5a3a), iron=RGB(0x5c5f62);
+    g.beam8([0,0.05,0],[0,-0.5,0.02],0.035,0.035,wood,wood);g.box(0,-0.52,0.04,0.07,0.07,0.2,iron);return g.mesh(false,false);},
+  pan:function(){const g=new Geo(), tin=RGB(0x8f8a80), sand=RGB(0xb59a5e);
+    g.oct(0,0.16,-0.18,-0.11,0.24,0.24,0.27,0.27,0.03,tin,tin);g.box(0,-0.12,0.16,0.32,0.02,0.32,sand);return g.mesh(false,false);},
+  paddle:function(){const g=new Geo(), wood=RGB(0x6a4c30);
+    g.beam8([0,0.3,0.05],[0,-1.3,0.2],0.04,0.04,wood,wood);g.box(0,-1.35,0.22,0.05,0.3,0.14,wood);return g.mesh(false,false);},
+  bar:function(){const g=new Geo(), iron=RGB(0x4e5154);g.beam8([0,0.15,0],[0,-0.75,0.1],0.04,0.03,iron,iron);return g.mesh(false,false);},
+  trowel:function(){const g=new Geo(), wood=RGB(0x7a5a3a), steel=RGB(0x9a9da0);
+    g.beam8([0,0,0],[0,-0.16,0.02],0.03,0.03,wood,wood);g.box(0,-0.22,0.06,0.09,0.02,0.14,steel);return g.mesh(false,false);},
+  bailer:function(){const g=new Geo(), wood=RGB(0x6a4c30);g.oct(0,0.05,-0.25,-0.1,0.14,0.18,0.16,0.2,0.02,wood,wood);return g.mesh(false,false);}};
+/* what a carrier carries, held against the chest: in the body's own space */
+const WORK_LOAD={
+  cask:function(){const g=new Geo(), st=RGB(0x7a5a3a), hp=RGB(0x3e3a34);
+    g.oct(0,0,-0.4,0.4,0.32,0.32,0.32,0.32,0.08,st,st);g.box(0,-0.22,0,0.66,0.05,0.66,hp);g.box(0,0.22,0,0.66,0.05,0.66,hp);
+    const m=g.mesh(false,false);m.rotation.z=Math.PI/2;const w=new THREE.Group();w.add(m);return w;},
+  basket:function(){const g=new Geo(), w=RGB(0xa88a52), c=RGB(0xd9b84a);g.oct(0,0,-0.2,0.2,0.26,0.26,0.32,0.32,0.04,w,w);g.box(0,0.21,0,0.5,0.06,0.5,c);return g.mesh(false,false);},
+  wood:function(){const g=new Geo(), b=RGB(0x6a5038);for(let i=0;i<4;i++)g.beam8([-0.45,-0.1+i*0.08,(i%2)*0.08-0.04],[0.45,-0.08+i*0.08,(i%2)*0.08-0.04],0.06,0.06,b,b);return g.mesh(false,false);},
+  board:function(){const g=new Geo(), b=RGB(0xa88a62);g.box(0,0,0,1.6,0.05,0.28,b);return g.mesh(false,false);}};
+
+function workFigureY(f){const G=WORK.G||WORLD.ground;return G?G(f.position.x,f.position.z):f.position.y;}
+/* a working man. task: dig chop hammer pan stir carry bail sift trowel row haul pry lift.
+   opt: target [x,z] he works at, heap {mesh,max} that grows, from/to for a carrier,
+   load (WORK_LOAD key), drop(n) called when a load is set down, prop (WORK_PROP key) */
+function workMan(root,eq,x,z,yaw,task,opt){
+  const f=buildFigure(eq);
+  f.position.set(x,workFigureY({position:{x:x,z:z,y:0}}),z);f.rotation.y=yaw||0;root.add(f);
+  return workAdd(f,task,opt||{});
+}
+const WORK_TILT={pan:1.2,spade:0.95,hammer:0.25,paddle:0.7,bar:0.8,trowel:0.9,bailer:1.0};
+const WORK_TOOL={dig:"spade",chop:"axe",hammer:"hammer",pan:"pan",stir:"paddle",bail:"bailer",trowel:"trowel",row:"paddle",pry:"bar"};
+function workAdd(f,task,opt){
+  const p=f.userData.parts;
+  const e={f:f,p:p,task:task,opt:opt,seed:srand(f.position.x*1.7+f.position.z*3.1)*6.28,t:0,last:0,n:0,
+           st:"go",wait:0,home:[f.position.x,f.position.z],prop:null,load:null};
+  const tool=opt.prop||WORK_TOOL[task];
+  /* a tool hangs along the forearm; tipped back by this much it sits in the hands the way it
+     is used (measured off the first captures: the pan stood on edge like a tray and the spade
+     stuck out ahead like a pike) */
+  if(tool&&p&&p.wristR){e.prop=WORK_PROP[tool]();e.prop.rotation.x=WORK_TILT[tool]||0;p.wristR.add(e.prop);}
+  if(task==="trowel"||task==="sift"&&opt.kneel)poseFigure(f,"kneel",3);
+  WORK.list.push(e);
+  return e;
+}
+function workRemove(e){
+  const i=WORK.list.indexOf(e);if(i>=0)WORK.list.splice(i,1);
+  if(e.prop&&e.prop.parent)e.prop.parent.remove(e.prop);
+  if(e.load&&e.load.parent)e.load.parent.remove(e.load);
+  workRest(e.p);
+}
+function workRest(p){
+  if(!p)return;
+  for(const k of ["shoulderL","shoulderR","elbowL","elbowR","hipL","hipR","kneeL","kneeR","ankleL","ankleR","wristL","wristR"])if(p[k])p[k].rotation.set(0,0,0);
+  if(p.body){p.body.rotation.x=0;p.body.rotation.z=0;}
+  if(p.neck)p.neck.rotation.set(0,0,0);
+}
+/* something thrown off the work: earth from a spade, a chip from an axe */
+function workBit(x,y,z,tx,tz,col,land){
+  if(WORK.bits.length>40)return;
+  const g=new Geo();g.box(0,0,0,0.35,0.25,0.3,col);const m=g.mesh(false,false);
+  m.position.set(x,y,z);(worldRoot||scene).add(m);
+  const d=Math.hypot(tx-x,tz-z)||1, T=0.7;
+  WORK.bits.push({m:m,vx:(tx-x)/T,vz:(tz-z)/T,vy:4.2,t:0,T:T,land:land});
+}
+function workToolTip(e){
+  /* where the tool's working end is in the world, near enough: in front of the man */
+  const f=e.f, a=f.rotation.y, r=e.task==="chop"?2.6:2.0;
+  return [f.position.x+Math.sin(a)*r,workFigureY(f)+0.4,f.position.z+Math.cos(a)*r];
+}
+function workGrow(e){
+  const h=e.opt.heap;if(!h||!h.mesh)return;
+  h.n=(h.n||0)+1;const s=Math.min(1,0.25+h.n/(h.max||30));
+  h.mesh.scale.set(s,s,s);h.mesh.visible=true;
+}
+
+function workPose(e,t){
+  const p=e.p, task=e.task, sd=e.seed;
+  if(!p)return;
+  const S=function(k,v){if(p[k])p[k].rotation.x=v;};
+  if(task==="dig"){
+    /* push in, lever, lift and throw: one stroke in 1.9 s */
+    const ph=(t*0.53+sd/6.28)%1;
+    const lift=ph<0.45?0:ph<0.75?(ph-0.45)/0.3:1-(ph-0.75)/0.25;
+    if(p.body)p.body.rotation.x=0.42-lift*0.18;
+    S("shoulderR",-0.5-lift*0.55);S("shoulderL",-0.7-lift*0.45);S("elbowR",-0.3-lift*0.85);S("elbowL",-0.45-lift*0.4);
+    S("kneeL",-0.25);S("kneeR",-0.1);
+    if(ph>0.72&&e.last<=0.72){const tip=workToolTip(e), h=e.opt.heap&&e.opt.heap.at;
+      if(h)workBit(tip[0],tip[1]+1.2,tip[2],h[0],h[1],RGB(0x5e4a32),function(){workGrow(e);});}
+    e.last=ph;
+  } else if(task==="chop"){
+    /* the axe goes up slowly and comes down fast */
+    const ph=(t*0.62+sd/6.28)%1;
+    const v=ph<0.72?ph/0.72:1-(ph-0.72)/0.28;
+    if(p.body)p.body.rotation.x=0.12+(1-v)*0.22;
+    S("shoulderR",-0.55-v*2.25);S("shoulderL",-0.55-v*2.05);S("elbowR",-0.3-v*0.5);S("elbowL",-0.3-v*0.5);
+    if(ph<0.06&&e.last>0.9){const tg=e.opt.target||workToolTip(e);
+      for(let i=0;i<3;i++)workBit(tg[0],workFigureY(e.f)+1.4,tg[1],tg[0]+(srand(t*7+i)-0.5)*5,tg[1]+(srand(t*3+i)-0.5)*5,RGB(0xc8a878),null);
+      e.n++;if(e.opt.onStrike)e.opt.onStrike(e.n);}
+    e.last=ph;
+  } else if(task==="hammer"){
+    const ph=(t*1.1+sd/6.28)%1, v=ph<0.6?ph/0.6:1-(ph-0.6)/0.4;
+    S("shoulderR",-1.1-v*1.3);S("elbowR",-0.7-v*0.6);S("shoulderL",-1.0);S("elbowL",-0.9);
+    if(p.body)p.body.rotation.x=0.08;
+  } else if(task==="pan"){
+    /* stooped at the water, the pan swirled in both hands, then tipped */
+    const ph=(t*0.18+sd/6.28)%1, sw=Math.sin(t*4.2+sd);
+    if(p.body)p.body.rotation.x=0.55;
+    S("shoulderR",-1.15+sw*0.12);S("shoulderL",-1.15-sw*0.12);S("elbowR",-0.55);S("elbowL",-0.55);
+    if(p.wristR){p.wristR.rotation.y=t*3.2;p.wristR.rotation.x=ph>0.85?-0.9:0;}
+    S("kneeL",-0.35);S("kneeR",-0.35);
+  } else if(task==="stir"){
+    const sw=Math.sin(t*1.6+sd);
+    S("shoulderR",-0.9+sw*0.35);S("shoulderL",-0.8-sw*0.35);S("elbowR",-0.6);S("elbowL",-0.7);
+    if(p.body){p.body.rotation.x=0.18+sw*0.06;}
+  } else if(task==="bail"){
+    const ph=(t*0.8+sd/6.28)%1, v=Math.sin(ph*Math.PI);
+    if(p.body)p.body.rotation.x=0.5-v*0.3;
+    S("shoulderR",-0.6-v*1.4);S("elbowR",-0.4);S("shoulderL",-0.4);
+    if(ph>0.5&&e.last<=0.5){const tip=workToolTip(e);workBit(e.f.position.x,workFigureY(e.f)+2,e.f.position.z,e.f.position.x+Math.sin(e.f.rotation.y+1.6)*4,e.f.position.z+Math.cos(e.f.rotation.y+1.6)*4,RGB(0x6f8f96),null);}
+    e.last=ph;
+  } else if(task==="sift"){
+    const sh=Math.sin(t*9+sd);
+    S("shoulderR",-1.2+sh*0.12);S("shoulderL",-1.2+sh*0.12);S("elbowR",-0.5);S("elbowL",-0.5);
+    if(p.body)p.body.rotation.z=sh*0.03;
+  } else if(task==="trowel"){
+    const sc=Math.sin(t*2.4+sd);
+    S("shoulderR",-0.9+sc*0.25);S("elbowR",-0.6-Math.abs(sc)*0.2);S("shoulderL",-0.6);
+    if(p.neck)p.neck.rotation.x=0.35;
+  } else if(task==="row"){
+    const sw=Math.sin(t*1.7+sd);
+    if(p.body)p.body.rotation.x=0.25*sw;
+    S("shoulderR",-1.3-sw*0.5);S("shoulderL",-1.3-sw*0.5);S("elbowR",-0.4-(1-sw)*0.35);S("elbowL",-0.4-(1-sw)*0.35);
+  } else if(task==="haul"){
+    const sw=Math.sin(t*1.3+sd);
+    if(p.body)p.body.rotation.x=-0.22+sw*0.08;
+    S("shoulderR",-1.25+sw*0.4);S("shoulderL",-1.25-sw*0.4);S("elbowR",-0.25);S("elbowL",-0.25);
+  } else if(task==="pry"){
+    const ph=(t*0.9+sd/6.28)%1, v=Math.sin(ph*Math.PI);
+    if(p.body)p.body.rotation.x=0.5;
+    S("shoulderR",-0.9-v*0.7);S("shoulderL",-0.9-v*0.6);S("elbowR",-0.4);S("elbowL",-0.4);
+  } else if(task==="lift"){
+    /* stoop to it, take it up, hold it at the chest */
+    const v=Math.min(1,t/1.4);
+    if(p.body)p.body.rotation.x=0.6*(1-v)+0.05;
+    S("shoulderR",-1.25);S("shoulderL",-1.25);S("elbowR",-1.1*v);S("elbowL",-1.1*v);
+    if(!e.load&&e.opt.load&&p.body){e.load=WORK_LOAD[e.opt.load]();e.load.position.set(0,1.0,0.42);p.body.add(e.load);}
+    if(e.load)e.load.position.y=0.55+v*0.5;
+  }
+}
+/* a carrier: pick up at `from`, walk to `to`, set down, walk back empty */
+function workCarry(e,dt){
+  const f=e.f, p=e.p, o=e.opt;
+  if(e.wait>0){
+    e.wait-=dt;
+    /* stooping to pick up or set down */
+    if(p.body)p.body.rotation.x=0.5*Math.sin(Math.min(1,1-e.wait/1.2)*Math.PI);
+    if(e.wait<=0){
+      if(e.st==="go"){                                   /* arrived at the far end: set it down */
+        if(e.load&&e.load.parent)e.load.parent.remove(e.load);e.load=null;
+        e.n++;if(o.drop)o.drop(e.n);e.st="back";
+      } else {                                           /* home: take up the next one */
+        if(p.body&&o.load){e.load=WORK_LOAD[o.load]();e.load.position.set(0,1.05,0.42);p.body.add(e.load);}
+        e.st="go";
+      }
+    }
+    return;
+  }
+  const dst=e.st==="go"?o.to:o.from;
+  const dx=dst[0]-f.position.x, dz=dst[1]-f.position.z, d=Math.hypot(dx,dz);
+  if(d<0.6){e.wait=1.2;return;}
+  const v=Math.min(d,(o.speed||3.2)*dt);
+  f.position.x+=dx/d*v;f.position.z+=dz/d*v;f.position.y=workFigureY(f);
+  const want=Math.atan2(dx,dz);let da=want-f.rotation.y;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
+  f.rotation.y+=Math.max(-3*dt,Math.min(3*dt,da));
+  e.ph=(e.ph||0)+v*1.7;
+  crowdWalk(p,e.ph,e.load?0.55:0.9);
+  if(p.body)p.body.rotation.x=e.load?0.04:0;
+  if(e.load){if(p.shoulderL)p.shoulderL.rotation.x=-1.25;if(p.shoulderR)p.shoulderR.rotation.x=-1.25;
+    if(p.elbowL)p.elbowL.rotation.x=-1.15;if(p.elbowR)p.elbowR.rotation.x=-1.15;}
+}
+function updateWork(dt){
+  if(!WORK.list.length&&!WORK.bits.length)return;
+  WORK.G=null;
+  for(let i=0;i<WORK.list.length;i++){
+    const e=WORK.list[i];
+    if(!e.f.parent&&e.f!==player)continue;
+    e.t+=dt;
+    if(e.task==="carry"){
+      if(!e.started){e.started=true;if(e.p&&e.p.body&&e.opt.load){e.load=WORK_LOAD[e.opt.load]();e.load.position.set(0,1.05,0.42);e.p.body.add(e.load);}}
+      workCarry(e,dt);
+    }
+    else workPose(e,e.t);
+  }
+  for(let i=WORK.bits.length-1;i>=0;i--){
+    const b=WORK.bits[i];b.t+=dt;
+    b.m.position.x+=b.vx*dt;b.m.position.z+=b.vz*dt;b.vy-=12*dt;b.m.position.y+=b.vy*dt;
+    b.m.rotation.x+=dt*6;b.m.rotation.z+=dt*4;
+    if(b.t>=b.T){if(b.m.parent)b.m.parent.remove(b.m);b.m.geometry.dispose();WORK.bits.splice(i,1);if(b.land)b.land();}
+  }
+}
+/* THE PLAYER DOES IT. The duty's action played on the player, framed by the cutscene
+   camera from beside them, for `secs`; then the page. Input is the cutscene's own lock. */
+function playerDoes(task,secs,narr,opt,after){
+  if(!player){if(after)after();return;}
+  const e=workAdd(player,task,opt||{});
+  const a=player.rotation.y+0.9, px=player.position.x, py=player.position.y, pz=player.position.z;
+  playCutscene({skippable:true,steps:[
+    {cam:{to:[px+Math.sin(a)*7,py+5.5,pz+Math.cos(a)*7],look:[px,py+2.6,pz],cut:true},t:secs,narrate:narr}]},
+    function(){workRemove(e);if(after)after();});
+}
+/* a heap that grows as a digger throws earth on it */
+function workHeap(root,x,z,col,max){
+  const g=new Geo(), G=WORLD.ground||function(){return 0;}, c=RGB(col||0x6a5538);
+  g.oct(0,0,-0.2,1.8,2.6,2.2,0.8,0.7,0.3,c,c);
+  const m=g.mesh(false,false);m.position.set(x,G(x,z),z);m.scale.set(0.25,0.25,0.25);root.add(m);
+  return {mesh:m,at:[x,z],max:max||30,n:0};
+}
+/* a stack that grows as carriers set their loads down: up to `max` casks, three to a row */
+function workStack(root,x,z,kind,max){
+  const pile={n:0,items:[]};
+  pile.drop=function(){
+    if(pile.items.length>=(max||9))return;
+    const k=pile.items.length, m=WORK_LOAD[kind||"cask"](), G=WORLD.ground||function(){return 0;};
+    const row=k%3, tier=Math.floor(k/3);
+    m.scale.setScalar(FIG_SCALE);
+    m.position.set(x+(row-1)*1.7+tier*0.85,G(x,z)+0.8+tier*1.45,z);root.add(m);pile.items.push(m);
+  };
+  return pile;
+}
+
 /* ==================== CHAPTER VI: SMITH & THE RECORD ====================
    February 1608 to early October 1609: the gilded dirt, the Bay and the stingray,
    Ratcliffe's palace, Smith's presidency, the crowning of Powhatan, the Second Supply,
@@ -26559,8 +26811,11 @@ function presAct(d){
   }
   /* 0 · the ship for England */
   if(d.kind==="load"){
+    /* work, 27 Nov: you load her: a cask taken up in your own arms before the page */
     const go=function(k,title,body){return function(){w.load=k;presDone("load");
-      fortResult(title,body,["+6 Ink"],function(){presNewportSails();});};};
+      playerDoes("lift",2.6,k==="dirt"?"Cask after cask of the refiners’ dirt goes down to the ship.":"You take up a load of cedar for Captain Smith’s cargo.",
+        {load:k==="dirt"?"cask":"wood"},function(){
+        fortResult(title,body,["+6 Ink"],function(){presNewportSails();});});};};
     presSheet("The fort · Captain Newport’s ship","Load the ship",
       "<p>Captain Newport’s ship has lain at the fort fourteen weeks. The refiners have a heap of yellow-flecked dirt by the river and swear it is gold. Captain Smith wants her laden with cedar, which England will certainly buy.</p>",
       [{t:"Load the refiners’ dirt",fn:go("dirt","Gilded dirt","<p>Into the hold it goes, cask after cask.</p><p><b>The record:</b> so it did. Smith’s friends called it “such a drunken ship with so much gilded durt”. No gold ever came of it.</p>")},
@@ -26574,6 +26829,12 @@ function presAct(d){
     return;
   }
   if(d.kind==="grave"){
+    /* work, 27 Nov: you dig it - the spade, and the sand coming up onto the heap - before the page */
+    if(!d.dug){d.dug=true;
+      player.rotation.y=Math.atan2(24-player.position.x,-18-player.position.z);
+      const hp=workHeap(worldRoot||scene,28.5,-18,0xb9a676,10);
+      playerDoes("dig",4.5,"You dig where he told you to, on the isle, long enough for a man.",{heap:hp},function(){presAct(d);});
+      return;}
     presDone("grave");
     /* review, 27 Nov: was "The point there is still called Stingray Point"; the identification is modern and unchecked (CH6-RECORD), and the 1612 sentence runs on "after the name of the fish" (p. 114) */
     fortResult("Stingeray Ile","<p>You dig it in the sand among the scrub, long enough for a man and deep enough to keep him.</p><p>It is not needed. By evening, through “a precious oile, Doctour Russel applyed”, the swelling goes down, and the Captain “eate the fish to his supper”.</p><p>“which then wee called Stingeray Ile, after the name of the fish.” <i>— Russell and Todkill, 1612</i>. A point at the river’s mouth is called Stingray Point today, and is usually taken to be the place.</p>",["+6 Ink"],function(){enterWorld("ch6");});
@@ -26613,6 +26874,12 @@ function presAct(d){
     return;
   }
   /* 4 · the supply */
+  if(d.kind==="oath"&&!d.cut){
+    /* work, 27 Nov: you take an axe beside them before Smith's cure */
+    d.cut=true;player.rotation.y=Math.atan2(250-player.position.x,-80-player.position.z);
+    playerDoes("chop",4,"You take an axe beside them. Every third blow, one of them swears.",{target:[250,-80]},function(){presAct(d);});
+    return;
+  }
   if(d.kind==="oath"){
     presQuiz("The woods · felling trees","The two gallants",
       "<p>Gabriel Beadle and John Russell, “the only two gallants of this last supply”, are learning to fell trees. Every third blow brings “a lowd oath”. Smith means to cure them. How?</p>",
@@ -26665,6 +26932,12 @@ function presAct(d){
       [["Only the sick","Except by sickness","<p>Only the sick. Not gentlemen, not councillors: “there are now no more Councells to protect you.” The rule echoes the Bible: Saint Paul’s second letter to the Thessalonians.</p>"],
        ["Gentlemen, who were not bred to labour","Not gentlemen","<p>Not gentlemen. That was the point. “there are now no more Councells to protect you.” Only the sick were excused.</p>"],
        ["Nobody at all","The sick","<p>The sick were excused: “except by sicknesse he be disabled.” Everyone else worked or did not eat.</p>"]],"law");
+    return;
+  }
+  if(d.kind==="cask"&&!d.prised){
+    /* work, 27 Nov: you prise the lid up with a bar, and then the rats */
+    d.prised=true;player.rotation.y=Math.atan2(d.x-player.position.x,d.z-2-player.position.z);
+    playerDoes("pry",1.8,"",{},function(){presAct(d);});
     return;
   }
   if(d.kind==="cask"){
@@ -26992,9 +27265,14 @@ function presGlasshouse(root,G,x,z){
   for(let i=0;i<9;i++)g.box(x+8+srand(i*3.3)*3,gy+0.2,z-6+srand(i*1.7)*3,0.5,0.35,0.5,RGB(i%2?0x5f8a6e:0x7aa38c));
   root.add(g.mesh(false,false));solid(x,z,6,6,LVL.MAIN,0);
   blazeAt(root,x,gy+1.2,z+5.0,2.4,1.6).smoke=false;
-  const men=[[x-6,z+8,0.6],[x+5,z+9,-0.5],[x-9,z-2,1.4]];
-  men.forEach(function(a,i){const f=buildFigure(crowdEq("hand",30+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];
-    poseFigure(f,"stoop",i*3+1);root.add(bakeFigure(f));});
+  /* work, 27 Nov: three statues. One works the furnace, one carries wood to it from the
+     pile, one breaks up cullet */
+  const W=new Geo(), bark=RGB(0x5a4836);
+  for(let i=0;i<6;i++)W.beam8([x+15,G(x+15,z+13)+0.4+i*0.5,z+11+i%2],[x+19,G(x+19,z+13)+0.4+i*0.5,z+11+i%2],0.45,0.45,bark,bark);
+  root.add(W.mesh(false,false));
+  workMan(root,crowdEq("hand",30),x-2,z+8,Math.PI,"stir");
+  workMan(root,crowdEq("hand",31),x+12,z+10,0,"carry",{from:[x+14,z+10],to:[x+3,z+8],load:"wood"});
+  workMan(root,crowdEq("hand",32),x+6,z-3,1.6,"hammer");
 }
 function presStingray(){
   /* "much of the fashion of a Thornebacke with a longer taile": a flat diamond, a long tail */
@@ -27053,8 +27331,17 @@ registerWorld("ch6",function(root){
       R.oct(-60,52,G(-60,52)-0.2,G(-60,52)+2.6,4.5,3.5,1.2,0.9,0.3,dirt,dirt);
       for(let i=0;i<24;i++)R.box(-60+(srand(i*2.1)-0.5)*5,G(-60,52)+0.5+srand(i*1.3)*1.8,52+(srand(i*3.7)-0.5)*3.6,0.14,0.14,0.14,gilt);
       root.add(R.mesh(false,false));solid(-60,52,4,3,LVL.MAIN,0);
-      [[-66,58,0.4],[-54,57,-0.6],[-61,63,0]].forEach(function(a,i){const f=buildFigure(crowdEq("hand",40+i));
-        f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];poseFigure(f,"stoop",i*5+2);root.add(bakeFigure(f));});
+      /* work, 27 Nov: they were three statues stooped over nothing. Two pan at the water's
+         edge, one digs sand and throws it on a heap that grows, and two carry casks of the
+         dirt down to Newport's landing, where the stack grows until she sails */
+      [[-66,60,0.2],[-54,60,-0.3]].forEach(function(a,i){workMan(root,crowdEq("hand",40+i),a[0],a[1],a[2],"pan");});
+      const sandHeap=workHeap(root,-52,50,0x8f7a4c,40);
+      workMan(root,crowdEq("hand",43),-56,55,2.4,"dig",{heap:sandHeap});
+      if(!w.did.sailed0){
+        const landing=workStack(root,-106,60,"cask",9);
+        workMan(root,crowdEq("hand",44),-62,48,0,"carry",{from:[-62,47],to:[-102,58],load:"cask",drop:landing.drop});
+        workMan(root,crowdEq("hand",45),-84,52,0,"carry",{from:[-62,47],to:[-102,58],load:"cask",drop:landing.drop});
+      }
       duty("load","Captain Newport’s Ship",-110,52,{kind:"load",verb:"Load her for England"});
     }
     if(w.day===2){
@@ -27063,6 +27350,13 @@ registerWorld("ch6",function(root){
          trunk lying through its frame, and the only way to it was round the whole fort. In the
          woods off the south-east bulwark now, which is where the trees are; presRoute leads there */
       presPalace(root,G,250,-20);
+      /* work, 27 Nov: the house was going up until Smith stopped it on 10 September - "the
+         building of Ratcliffes pallas staide" - so until the patent, men are at it */
+      if(!w.did.patent){
+        workMan(root,crowdEq("hand",48),236,-12,1.2,"hammer");
+        workMan(root,crowdEq("hand",49),264,-30,-1.9,"hammer");
+        workMan(root,crowdEq("hand",50),226,0,0,"carry",{from:[224,2],to:[244,-8],load:"board"});
+      }
       duty("palace","The President’s House",250,-2,{kind:"palace",verb:"Look at it"});
       duty("patent","The Letters Patent",-70,16,{kind:"patent",verb:"See who takes them"});
       /* Ratcliffe, under guard: no voice, because none of his survives */
@@ -27088,8 +27382,10 @@ registerWorld("ch6",function(root){
       /* play-test, 27 Nov: they were out past the east curtain, about 450 feet of walking round
          the fort; moved into the woods off the south-east bulwark, and presRoute leads there */
       const T=new Geo(), bark=RGB(0x5a4836);T.beam8([240,G(240,-78)+0.9,-78],[260,G(260,-85)+0.9,-85],1.8,1.6,bark,bark);root.add(T.mesh(false,false));
-      [[244,-70,2.6],[254,-72,3.4]].forEach(function(a,i){const f=buildFigure(crowdEq("gent",50+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];
-        poseFigure(f,"stoop",i+9);root.add(bakeFigure(f));});
+      /* work, 27 Nov: two statues stooped by a log. Their axes come down on it now, and the
+         chips fly */
+      [[245,-76,2.9,[248,-80]],[255,-77,3.4,[254,-82]]].forEach(function(a,i){
+        workMan(root,crowdEq("gent",50+i),a[0],a[1],a[2],"chop",{target:a[3]});});
       duty("oath","The Two Gallants",248,-62,{kind:"oath",verb:"Work beside them"});
       duty("letter","Smith’s Letter",-70,16,{kind:"letter",verb:"Read it"});
     }
@@ -27118,8 +27414,13 @@ registerWorld("ch6",function(root){
          first on an awning post. The well dug that spring, Kemps and Tassore at the ground, and
          the table of every man's deserts */
       fortWell(root,G,-62,-34);
+      /* work, 27 Nov: Kemps and Tassore "taught vs how to order and plant our fields": they
+         break the ground with digging sticks, and the earth comes up */
       [[-30,-34,0.3],[-25,-36,-0.4]].forEach(function(a,i){const f=tidewaterFigure();f.position.set(a[0],G(a[0],a[1]),a[1]);
-        f.rotation.y=a[2];poseFigure(f,"stoop",i+90);root.add(bakeFigure(f));});
+        f.rotation.y=a[2];root.add(f);workAdd(f,"dig",{prop:"bar",heap:workHeap(root,a[0]+1.5,a[1]+3,0x5e4a32,24)});});
+      /* and the company goes out to live off the country, baskets on their backs, to the boats */
+      if(!w.did.disperse)[[6,44],[-6,48]].forEach(function(a,i){
+        workMan(root,crowdEq("hand",95+i),a[0],a[1],0,"carry",{from:[a[0],40],to:[a[0]+28,74],load:"basket",speed:2.8});});
       presTable(root,G,-42,11);
       duty("disperse","The Gate",0,30,{kind:"disperse",verb:"Go where you are sent"});
     }
@@ -27132,6 +27433,10 @@ registerWorld("ch6",function(root){
       /* play-test, 27 Nov: it was a fourth label in a knot of three men's names by the awning;
          papers are read at the store door, as Smith's letter was */
       duty("archer","Master Archer’s Letter",-70,16,{kind:"archer",verb:"Read it"});
+      /* work, 27 Nov: the new ships' stores carried up from the landing into the store */
+      if(!w.did.sailed){const st=workStack(root,-88,25,"cask",9);
+        [[-100,66],[-94,50],[-108,58]].forEach(function(a,i){
+          workMan(root,crowdEq(i===2?"soldier":"hand",100+i),a[0],a[1],0,"carry",{from:[-104,68],to:[-90,28],load:i===1?"basket":"cask",drop:st.drop});});}
       if(!w.did.burn){
         const B=new Geo();buildShallop(B,40,-0.3,150,Math.PI/2,0.02);PRES.boat={m:B.mesh(false,false),go:false,to:-34};
         root.add(PRES.boat.m);
@@ -27146,6 +27451,8 @@ registerWorld("ch6",function(root){
   if(where==="bay"){
     G=captLand(root,"bay",{trees:70,winter:false,clear:function(x,z){return z>-24||Math.abs(x)<30&&z>-60;}});
     captBarge(root,G,14,72,0.3);
+    /* work, 27 Nov: a man in the barge bailing: "of two tunnes burden", open, and it rained */
+    {const b=workMan(root,crowdEq("hand",47),14,72,1.9,"bail");b.f.position.y=-0.15;b.fixY=true;}
     /* the isle: reeds along the water, scrub and low pine behind the beach */
     const V=new Geo(), reed=RGB(0x8a8a52), reedD=RGB(0x6a6c40), scrub=RGB(0x4d5a32), scrubD=RGB(0x3a4426);
     for(let i=0;i<70;i++){const x=-200+i*6+srand(i*1.9)*4, z=56+srand(i*2.3)*9, gy=G(x,z);
@@ -27171,7 +27478,9 @@ registerWorld("ch6",function(root){
       blazeAt(root,0,G(0,22)+0.2,22,2.6,1.6).smoke=false;
       const P=new Geo(), pit=RGB(0x3a3022), sand=RGB(0xb9a676);
       const gx=24, gz=-18, gy=G(gx,gz);
-      if(w.did.grave){P.box(gx,gy-0.6,gz,3.2,0.2,7.2,pit);P.oct(gx+3.6,gz,gy,gy+1.2,1.8,3.8,1.2,3.0,0.2,sand,sand);}
+      /* work, 27 Nov: the pit was drawn at gy-0.6, under the ground, which hides it; the ground
+         cannot be cut, so the grave is a dark cut on the surface, with its heap beside it */
+      if(w.did.grave){P.box(gx,gy+0.04,gz,3.2,0.06,7.2,pit);P.box(gx,gy+0.08,gz,2.4,0.06,6.2,RGB(0x2a2218));P.oct(gx+4.5,gz,gy,gy+1.2,1.8,3.8,1.2,3.0,0.2,sand,sand);}
       else P.box(gx,gy+0.02,gz,3.2,0.05,7.2,RGB(0xa89668));
       P.beam8([gx-2.6,gy,gz+4.6],[gx-2.4,gy+4.6,gz+4.4],0.18,0.18,RGB(0x6a543a),RGB(0x6a543a));
       root.add(P.mesh(false,false));
@@ -30087,7 +30396,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0208";
+const BUILD="20261127-0214";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
