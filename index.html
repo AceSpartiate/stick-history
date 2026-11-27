@@ -1379,6 +1379,7 @@ function applyBlob(d){
     if(S.works.ch5&&S.works.ch5.done)S.reached["ch6"]=true;
     if(S.works.ch6&&S.works.ch6.done)S.reached["ch7"]=true;
     if(S.works.ch7&&S.works.ch7.done)S.reached["ch8"]=true;
+    if(S.works.ch8&&S.works.ch8.done)S.reached["ch9"]=true;
     if(typeof AMBUSH!=="undefined")AMBUSH.done=!!d.ambushDone;
     SAVED_WORLD=d.world||"ch1";
     return true;
@@ -8544,7 +8545,7 @@ function animate(){
   /* play-test, 27 Nov: Chapter VI's ships, the boat from the falls, the rats and its night sky
      are driven by updatePres, which this branch never called - so "Captain Newport set sail"
      played over a ship riding at anchor, and the boat from the falls never came in */
-  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
+  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
   if(CAMLOCK.on){
     updateFx(dt);updateFlog(dt);updateShadows();
     cam.position.lerp(CAMLOCK.pos,Math.min(1,dt*3.5));
@@ -8563,7 +8564,7 @@ function animate(){
     player.position.y=WORLD.ground(player.position.x,player.position.z)+JUMP.y;
   if(AMBUSH.on||DUSK.on){updateAmbush(dt);updateArrows(dt);}
   else if(FORT.on){updateFort(dt);updateArrows(dt);}
-  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updateWork(dt);
+  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateWork(dt);
   if(LESSON.on){
     updateFx(dt);updateLesson(dt);updateShadows();
     renderer.render(scene,cam);return;
@@ -8734,6 +8735,7 @@ function animate(){
         :best.action==="pres"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="starve"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="leaf"?((best.data&&best.data.verb)||"Go to it")
+        :best.action==="price"?((best.data&&best.data.verb)||"Go to it")
         /* Named explicitly rather than inherited. A new action with no verb used
            to fall through to "Read the papers", which hid the mistake; now it
            reads "Use" and is obviously unfinished. */
@@ -9324,6 +9326,7 @@ function doInteract(){
   else if(a==="pres"){presAct(activeSpot.data);}
   else if(a==="starve"){starveAct(activeSpot.data);}
   else if(a==="leaf"){leafAct(activeSpot.data);}
+  else if(a==="price"){priceAct(activeSpot.data);}
   else if(a==="reck"){
     if(chapterReady())openReckoning();
     else toast("The scrivener will not sit with you yet. Still to ask: "+reckMissing().join("; ")+".");}
@@ -10790,9 +10793,9 @@ const MUSIC_FILES={
   sickness:"assets/music/sickness.ogg", president:"assets/music/president.ogg",
   starving:"assets/music/starving.ogg", tobacco:"assets/music/tobacco.ogg"};
 const MUSIC_BY_WORLD={ch1:"voyage", ch2:"fort", comfort:"fort", archers:"fort", james:"fort", ch3:"fort",
-  ch4:"sickness", ch5:"sickness", ch6:"president", ch7:"starving", ch8:"tobacco"};
+  ch4:"sickness", ch5:"sickness", ch6:"president", ch7:"starving", ch8:"tobacco", ch9:"tobacco"};
 /* places with no music (see above) - the `where` of a chapter's day */
-const MUSIC_SILENT={kecoughtan:true, york:true, orapakes:true, dig:true};
+const MUSIC_SILENT={kecoughtan:true, york:true, orapakes:true, dig:true, pointcomfort:true};   /* pointcomfort: Chapter IX, the Africans' arrival - documents only, quiet */
 const MUSIC_VOL=0.32, MUSIC_DUCK=0.2, MUSIC_FADE=2.4;
 const MUSIC_CAN=VO_CAN;
 const MUSIC={live:false, decks:[], i:0, cur:null, duck:-1, master:null};
@@ -10803,6 +10806,7 @@ function musicWhere(w){
     if(w==="ch5")return CAPT.telling?"york":captDay().where;
     if(w==="ch6")return presDay().where;
     if(w==="ch7")return starveDay().where;
+    if(w==="ch9")return priceDay().where;
   }catch(e){}
   return null;
 }
@@ -13867,7 +13871,7 @@ function openIntro(worldId){
   $("introDate").textContent=c.d;
   $("introBody").textContent=c.intro?c.intro():"";
   $("introObj").textContent=c.obj?c.obj():"";
-  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":(worldId==="ch8")?"To the Fort":"Into the Boats";
+  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":(worldId==="ch8")?"To the Fort":(worldId==="ch9")?"To Jamestown":"Into the Boats";
   show("intro");
 }
 function beginWorld(worldId){
@@ -14048,7 +14052,7 @@ const CONDITIONS={weather:0,fouling:0,supply:0};
    not evidenced: the ship's hold is still air, and every outdoor scene here is an
    open shore in April with wind coming off the water. */
 /* ch4: the summer of 1607 was a drought (Stahle et al. 1998) - the driest air the game has */
-const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22, ch8:0.10};   /* ch5: a wet winter on the rivers */
+const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22, ch8:0.10, ch9:0.10};   /* ch5: a wet winter on the rivers */
 function armState(arm){
   return {
     /* a match above 0.7 takes no penalty at all - good play is rewarded in
@@ -29991,6 +29995,833 @@ CONTENT.ch8={
   targets:collectInsights(LEAF_NPCS), unlocks:[]
 };
 
+/* ==================== CHAPTER IX: THE PRICE OF TOBACCO ====================
+   15 May 1617, Argall at Point Comfort, to Rolfe's letter home of January 1620 and the muster
+   of March 1620: tobacco in Jamestown's streets, Argall's edicts, Powhatan's death, the Great
+   Charter and the headright, the ancient planters set free, the General Assembly in the church,
+   the Africans at Point Comfort, and Pory's letter home.
+   Design: notes docs/CH9-DESIGN.md. Every fact is in docs/CH9-RECORD.md, checked 27 November.
+
+   WHAT THE CHAPTER IS ABOUT. Weighing causes: "Did tobacco cause this?" After each scene the
+   player puts its events on a board - caused by tobacco, helped by it, or not tobacco at all
+   (chance or politics) - and the result names the document that decides each. Tobacco caused
+   the fixed price, the corn laws, the scramble for servants and the Assembly's laws about
+   them; it helped the headright and the purchase; it did not cause the Assembly itself or the
+   ship's arrival. The trap is the record's: the most famous event of 1619 was chance; what
+   happened after the ship left was shaped by tobacco.
+
+   CONTENT. Point Comfort is documents and witnesses only: a ship far out, an empty landing,
+   papers on chests, no music, nobody at work. Rolfe's sentence once, quoted and attributed; our
+   prose says Africans, enslaved Africans, captives; the contested "pretended" is trimmed out;
+   their names are an empty card; whether they were held for life or a term, the record does
+   not say. Garnett's pillory and the Killingbeck and Fairfax killings are text only. */
+
+/* ---- THE SCENES ---- */
+const PRICE_DAYS=[
+  {where:"fort",date:"May and June 1617 — Jamestown",need:["streets","edict","hoe"],next:"Did Tobacco Cause It?"},
+  {where:"fort",date:"1618 — Jamestown",need:["basket","powhatan","corn"],next:"Did Tobacco Cause It?"},
+  {where:"london",date:"London, 18 November 1618",need:["charter","headright"],next:"Did Tobacco Cause It?"},
+  {where:"farm",date:"April to July 1619 — the ancient planters’ land",need:["argall","clear","summer"],next:"Did Tobacco Cause It?"},
+  {where:"church",date:"30 July to 4 August 1619 — the church at James City",need:["oath","martin","price","servants"],next:"Did Tobacco Cause It?"},
+  {where:"pointcomfort",date:"Late August 1619 — Point Comfort",need:["rolfe","voyage","names"],next:"Go On"},
+  {where:"fort",date:"September 1619 to March 1620 — Jamestown",need:["pory","muster32"],next:"Did Tobacco Cause It?"}];
+const PRICE_DUTY={
+  streets:"Look at the streets",edict:"Read Argall’s edict",hoe:"Hoe the tobacco",
+  basket:"Read Opechancanough’s answer",powhatan:"Read Master Rolfe’s news",corn:"Plant the two acres",
+  charter:"Read the Company’s new rules",headright:"Work out the headright",
+  argall:"Hear why Argall left",clear:"Clear your dividend",summer:"Read of the summer",
+  oath:"Go into the church",martin:"Hear Captain Martin’s case",price:"Hear the price laid down",servants:"Sort the laws",
+  rolfe:"Read Master Rolfe’s letter",voyage:"Read where they came from",names:"Read what is known of them",
+  pory:"Read Master Pory’s letter",muster32:"Read the muster"};
+function priceW(){
+  S.works=S.works||{};
+  if(!S.works.ch9)S.works.ch9={day:0,did:{},cause:{},marks:{},done:false};
+  return S.works.ch9;
+}
+function priceDay(){return PRICE_DAYS[Math.min(priceW().day,PRICE_DAYS.length-1)];}
+function priceNeed(){const w=priceW(), sd=priceDay();for(const k of sd.need)if(!w.did[k])return k;return null;}
+const PRICE={later:[],lit:false,plot:null,church:null,t:0};
+
+/* ---- THE PEOPLE ---- */
+const PRICE_PEOPLE=[
+  {id:"argall",name:"Captain Argall",voice:"male",role:"governs the colony, 1617 to 1619",eq:crowdEq("soldier",28)},
+  {id:"rolfe",name:"Master Rolfe",voice:"male",role:"of the governor’s council",eq:crowdEq("gent",27)},
+  {id:"yeardley",name:"Sir George Yeardley",voice:"male",role:"governor, from April 1619",eq:crowdEq("soldier",36)},
+  {id:"pory",name:"Master Pory",voice:"male",role:"Secretary, and Speaker of the Assembly",eq:crowdEq("gent",34)},
+  {id:"persey",name:"Master Persey",voice:"male",role:"the cape merchant",eq:crowdEq("gent",37)},
+  {id:"spence",name:"Ensign Spence",voice:"male",role:"an ancient planter, set free",eq:crowdEq("hand",38)}];
+function pricePerson(id){return PRICE_PEOPLE.filter(function(p){return p.id===id;})[0];}
+
+const PRICE_SAYS={
+  /* Rolfe to Sandys, 8 June 1617 (Kingsbury III:71); Rolfe, 15 June 1618 (GH, Tyler p. 334) */
+  "rolfe":[["“Wee found the Colony, God be thanked, in good estate, and inioyng a firmer Peace and more plenty.”"],
+    ["“Powhatan died this last Aprill, yet the Indians continue in peace.”"],[],[],[],[],[]],
+  /* Argall's edicts of 18 May 1618, abstracts (Kingsbury III:93) */
+  "argall":[[],["“Every man to set two acres with corn, tradesmen excepted. And no hay to sweat tobacco: it robs the beasts of their fodder.”"],[],[],[],[],[]],
+  /* appointed governor after De La Warr's death; sails January 1619 with Pory (Tyler pp. 249 n. 1, 281) */
+  "yeardley":[[],[],["“I am named governor of Virginia. Master Pory sails with me as Secretary, and we carry the Company’s charter.”"],[],
+    ["“Every burgess will take the oath of supremacy, called in order and by name.”"],[],[]], /* Pory, Tyler p. 251 */
+  /* Persey "was unwilling to yield, till suche time as the Governor and Assembly had layd their commandment upon him" (Tyler p. 260) */
+  "persey":[[],[],[],[],["“I have no such order from the Magazine. Lay your commandment on me, and I will take the tobacco at that price.”"],[],[]],
+  /* the ancient planters "being set free" choose their dividends (Kingsbury III:245; GH, Tyler p. 337) */
+  "spence":[[],[],[],["“Set free of the Company’s service. I have chosen my dividend, and I mean to clear it and plant.”"],[],[],[]],
+  /* Pory to Carleton, 30 September 1619 (Tyler p. 284) */
+  "pory":[[],[],[],[],[],[],["“All our riches for the present doe consiste in Tobacco.”"]]};
+
+/* ---- THE THREE WHO ARE ASKED ---- */
+const PRICE_NPCS=[
+  {id:"argall",name:"Captain Argall",voice:"male",role:"governs the colony, 1617 to 1619",at:0,eq:PRICE_PEOPLE[0].eq,
+   done:"“Plant your corn, and sell your tobacco at the price.”",
+   beats:[
+    /* GH: "but five or six houses, the Church downe" (Tyler p. 330); the edict of 7 June 1617 (Kingsbury III:69) */
+    {npc:"“I found the church down and tobacco in the streets. I have set the price by edict. Ask.”",
+     choices:[
+      {t:"Why fix tobacco at three shillings?",wise:true,ink:8,
+       reply:"His edict: tobacco “at 3/ p [lb] & not under or over”. A planter knows his price before he plants. Nobody bargains.",
+       insight:{g:"known",b:"A Fixed Price",s:"Argall fixed tobacco at three shillings a pound in June 1617. The Company set it again in 1618, and the Assembly in 1619. It was never a market price."}},
+      /* "Slave" in 1617-18: an Englishman sentenced to unpaid labour for the colony, for a week, a year or three years (CH9-RECORD, The edicts) */
+      {t:"What is “3 years Slavery to the Colony”?",fair:true,ink:3,
+       reply:"“Three years’ work for the colony, unpaid. Then he is his own man again.” An Englishman’s sentence, with an end."},
+      {t:"Let the buyers pay what they like.",wise:false,
+       reply:"“Not under or over,” he says. “The price is the law here.”"}]}]},
+  {id:"pory",name:"Master Pory",voice:"male",role:"Secretary, and Speaker of the Assembly",at:4,eq:PRICE_PEOPLE[3].eq,
+   done:"“I send home titles rather than laws. Read them as such.”", /* "titles rather then lawes" (Tyler p. 277) */
+   beats:[
+    {npc:"“I am Speaker, and I keep the record. Six days of laws, in this heat. Ask.”",
+     choices:[
+      /* Pory to Carleton, 30 Sept. 1619 (Tyler p. 285); the servant laws (Tyler pp. 263-274) */
+      {t:"Why so many laws about servants?",wise:true,ink:8,
+       reply:"“Our principall wealth … consisteth in servants,” he will write in September. Land came easy. Hands to work it did not.",
+       insight:{g:"known",b:"Wealth in Servants",s:"Pory: “Our principall wealth … consisteth in servants.” At least nine of the 1619 laws are about servants: their terms, contracts, runaways and marriages."}},
+      /* "his sumons all over the Country ... for the election of Burgesses" (Tyler p. 249) */
+      {t:"Who chose the burgesses?",fair:true,ink:3,
+       reply:"“The governor sent his summons all over the country.” Who voted, he does not write down."},
+      /* Tyler pp. 277-278 */
+      {t:"So now every man is free.",wise:false,
+       reply:"He reads you a line: the people “have gotten the raines of former servitude into their owne swindge”, and must be governed. Not every man."}]}]},
+  {id:"rolfe",name:"Master Rolfe",voice:"male",role:"of the governor’s council",at:6,eq:PRICE_PEOPLE[1].eq,
+   done:"“I have written what I saw. Sir Edwin will judge.”",
+   beats:[
+    {npc:"“I am writing to Sir Edwin Sandys, the Company’s Treasurer: the Assembly, the harvest, the ships. Ask what I put in.”",
+     choices:[
+      /* Rolfe to Sandys, January 1619/20 (Kingsbury III:243) */
+      {t:"What did you write of the Dutch ship?",wise:true,ink:8,
+       reply:"He shows you the line: “20. and odd … bought for victualls”. No names. No ages. Not servants, not slaves: bought.",
+       insight:{g:"known",b:"Bought for Victualls",s:"Rolfe’s letter of January 1620 is the main record of the Africans’ arrival. The governor and the cape merchant bought them, for food. He names none of them."}},
+      /* Kingsbury III:247 */
+      {t:"Why defend Captain Argall?",fair:true,ink:3,
+       reply:"Argall, “w’th whom my reputacon hath bene vniustly joynted”, he writes. He calls Argall’s accusers falsehearted."},
+      {t:"So they are servants, like the English.",wise:false,
+       reply:"He taps the page. He wrote “bought”. No one wrote down a term for any of them."}]}]}];
+
+function priceSpeaker(id){
+  const day=priceW().day;
+  for(const n of PRICE_NPCS)if(n.id===id&&n.at===day)return n;
+  const set=PRICE_SAYS[id], lines=set&&set[day];
+  if(!lines||!lines.length)return null;
+  return Object.assign({},pricePerson(id),{lines:lines});
+}
+
+/* ---- THE RECORD THAT OPENS EACH SCENE ---- */
+const PRICE_OPEN=[
+  /* "arryved at Point Comfort ye 15th of May" (Kingsbury III:70); "in May he arrived at James towne" (GH, Tyler p. 330) */
+  {t:"Tobacco in the streets",b:"<p class=\"note\">The buying and selling of people, harsh punishments, and period words for Africans and Indians: in the sources’ words, none of it shown.</p><p>15 May 1617. Captain Argall lands at Point Comfort, and comes up the river to Jamestown.</p>"},
+  /* GH, Tyler p. 333; undated, GH's margin puts it under 1618 */
+  {t:"Two acres of corn",b:"<p>Smith’s book, under 1618: Chickahominy men killed the trader Richard Killingbeck and four others. Raiders killed a boy and three children at the Fairfax house.</p><p>Nothing of it is shown.</p>"},
+  /* the joint stock "expired, November 30, 1616" (Tyler p. 247); the Instructions of 18 Nov. 1618 (Kingsbury III:98) */
+  {t:"The Great Charter",b:"<p>The Virginia Company’s seven-year partnership had ended in 1616. It needed new settlers, and new money.</p><p>So it wrote new rules for Virginia.</p>"},
+  /* GH, Tyler pp. 335, 337; Rolfe, Kingsbury III:245 */
+  {t:"Set free",b:"<p>April 1619. Argall has sailed home. Sir George Yeardley lands with the charter.</p><p>The ancient planters are “set free” from the Company’s service, and choose their land.</p>"},
+  /* Pory, Tyler pp. 249-251 */
+  {t:"The General Assembly",b:"<p>Friday 30 July 1619. The governor, his council and the burgesses meet in the church at James City.</p><p>For six days they make laws for the colony.</p>"},
+  /* Rolfe, Kingsbury III:243; the record's content recommendations */
+  {t:"Point Comfort",b:"<p class=\"note\">This scene is about people who were captured and sold. It is told in documents. None of it is shown.</p><p>A ship comes in to Point Comfort, at the mouth of the river.</p>"},
+  /* Pory to Carleton, 30 Sept. 1619, sent by "this man of warre of Flushing" (Tyler pp. 282, 287) */
+  {t:"Letters home",b:"<p>30 September 1619. John Pory, the Secretary, writes to his patron, the English ambassador at The Hague.</p><p>His letter goes home on the Dutch ship that brought the Africans.</p>"}];
+
+/* ---- THINGS TO LOOK AT ---- [id, label, x, z, title, body] per scene */
+const PRICE_LOOKS=[
+  /* Rolfe to Sandys, 8 June 1617 (Kingsbury III:71-72) */
+  [["son","A Letter Home",-44,6,"The living ashes","<p>Rolfe, June 1617: he left his son Thomas at Plymouth, “the lyving ashes of his deceased Mother”.</p><p>Pocahontas had died in March. She leaves the record here.</p>"]],
+  /* Argall, 10 May 1618 (Kingsbury III:93); GH, Tyler pp. 331-332 */
+  [["church","The Church Bell",-24,22.5,"A slave the week following","<p>Argall, May 1618: church on Sundays, “or lye neck & heels on the Corps du Guard ye night following & be a slave ye week following”.</p><p>An Englishman’s punishment, for a week.</p>"],
+   ["neptune","News of the Neptune",14,11.5,"Lord De La Warr","<p>He sailed for Virginia in April 1618 with two hundred people. On the long passage thirty died, De La Warr among them.</p><p>His ship brought “very little provision”.</p>"]],
+  /* the instruction of 3 December 1618 (Tyler p. 260) */
+  [["price","The Price",24,16,"Three shillings","<p>On 3 December 1618 the Company set the price: the best tobacco at three shillings a pound, the second sort at eighteen pence.</p>"]],
+  /* Rolfe via GH, Tyler p. 336 */
+  [["plants","A Thousand Plants",30,30,"So covetous","<p>Rolfe, 1619: one man may tend four acres of corn and a thousand tobacco plants.</p><p>But “many are so covetous to have much, they make little good”.</p>"]],
+  /* Pory, Tyler pp. 268, 274-275; Rolfe, Kingsbury III:242 */
+  [["pillory","The Pillory",28,24,"Thomas Garnett","<p>A servant, for neglect and for falsely accusing his master, Captain William Powell, was sentenced: he “should stand fower dayes with his eares nayled to the Pillory”, and be whipped each day.</p><p>The first sentence in Pory’s record fell on a servant.</p>"],
+   ["spelman","Henry Spelman",-24,22.5,"A greater governor","<p>The interpreter Spelman told Opechancanough “that within a yeare there would come a Governor greatter then this that nowe is in place”.</p><p>Pory: he lost his captaincy and owed seven years’ service. Rolfe: he was pardoned.</p>"]],
+  /* Rolfe, Kingsbury III:243 */
+  [["treasurer","The Treasurer",8,60,"Gone out of the Bay","<p>Days later the <i>Treasurer</i>, Argall’s privateer, came in. The people of Kecoughtan would not feed her crew “vpon any termes”.</p><p>She sailed before the governor’s men could reach her.</p>"]],
+  /* Rolfe, Kingsbury III:244-245 */
+  [["message","Opechancanough’s Answer",14,11.5,"Kindly taken","<p>Autumn 1619. Rolfe and Captain Powell sent messengers up the Pamunkey to Opechancanough. Their message “was kindly taken”.</p><p>His people called the interpreter Poole a man who sought to break the league.</p>"]]];
+
+/* ---- DID TOBACCO CAUSE IT? ----  per scene; k: 0 caused it, 1 helped it, 2 not tobacco */
+const PRICE_K=["Caused it","Helped it","Not tobacco"];
+const PRICE_CAUSE={
+  0:[{t:"Tobacco planted in the market-place and streets",k:0,why:"Smith’s book: “planted with Tobacco”"},
+     {t:"Argall fixes tobacco at three shillings a pound",k:0,why:"a law made for tobacco"},
+     {t:"Captain Argall comes to govern the colony",k:2,why:"the Company in London sent him"}],
+  1:[{t:"Every man must plant two acres of corn",k:0,why:"men were planting tobacco instead"},
+     {t:"No hay to “sweat their Tob°”",k:0,why:"curing tobacco took the cattle’s fodder"},
+     {t:"Opechancanough sends a basket of earth",k:2,why:"killings, and keeping the peace"},
+     {t:"De La Warr dies at sea",k:2,why:"contrary winds, and sickness"}],
+  2:[{t:"Fifty acres for each person shipped, to whoever paid",k:1,why:"London wanted settlers; tobacco made the land worth having"},
+     {t:"A General Assembly ordered for Virginia",k:2,why:"London politics, after the partnership ended"},
+     {t:"Tobacco priced at three shillings and eighteen pence",k:0,why:"a rule made for tobacco"}],
+  3:[{t:"Argall sails home “privatly”",k:2,why:"a quarrel inside the Company"},
+     {t:"Freed planters hurry to clear their land",k:1,why:"freed by London’s rules; eager to plant"},
+     {t:"Planters “so covetous” they “make little good”",k:0,why:"Rolfe, of tobacco, 1619"},
+     {t:"A plentiful summer, and many dead",k:2,why:"sickness, English and Indian"}],
+  4:[{t:"The Assembly meets in the church",k:2,why:"London’s charter ordered it"},
+     {t:"The cape merchant must take tobacco at three shillings",k:0,why:"a law made for tobacco"},
+     {t:"Laws keep servants to their masters and terms",k:0,why:"tobacco needed hands, and hands were short"},
+     {t:"Six mulberry trees and ten vines a year, by law",k:0,why:"London wanted silk and wine; everyone grew tobacco"},
+     {t:"Martin’s burgesses shut out",k:2,why:"one law for every plantation"}],
+  6:[{t:"A Dutch man-of-war comes to Point Comfort",k:2,why:"chance, and privateers at sea"},
+     {t:"The governor and cape merchant buy the Africans",k:1,why:"Rolfe: “for victualls”; but both buyers lived by tobacco"},
+     {t:"Pory: “principall wealth … consisteth in servants”",k:0,why:"tobacco needed hands"},
+     {t:"The General Assembly meets",k:2,why:"London politics; its business was tobacco"},
+     {t:"Planters scramble for land and servants",k:0,why:"the headright, and the price of leaf"}]};
+const PRICE_CLOSE={
+  6:"<p>Tobacco did not bring the ship. It shaped what the buyers wanted. A strong cause is not the only cause.</p>"};
+
+/* ---- THE ASSEMBLY'S LAWS, SORTED ---- c: 0 about servants, 1 something else (Pory, Tyler pp. 263-274) */
+const PRICE_LAWS_K=["Servants","Something else"];
+const PRICE_LAWS=[
+  {t:"Contracts made in England with tenants and servants “may be caused to be duely performed”",c:0},
+  {t:"No man to entice away “the Tenants or Servants of any particular plantation”",c:0},
+  {t:"No one to sell the Indians “any piece shott or poulder”, on pain of hanging",c:1},
+  {t:"A runaway who comes over with a new master serves out both his terms",c:0},
+  {t:"Six mulberry trees and ten vines a year, for seven years",c:1},
+  {t:"No “maide or woman servant” to marry without consent",c:0},
+  {t:"Dice, cards and drunkenness to be punished",c:1},
+  {t:"Every man to enter “his own and all his servants’ names”, and their terms",c:0}];
+
+function priceDone(id){
+  const w=priceW();
+  if(!w.did[id]){w.did[id]=true;S.ink+=6;updateInk();checkpoint("ch9-"+id);}
+  for(let i=interactables.length-1;i>=0;i--){
+    const it=interactables[i];
+    if(it.action==="price"&&it.data&&it.data.kind===id){if(it.el)it.el.style.display="none";interactables.splice(i,1);}
+  }
+  for(let i=PRICE.later.length-1;i>=0;i--)if(PRICE.later[i].data.after===id){
+    const it=PRICE.later[i], el=document.createElement("div");el.className="lbl";
+    el.innerHTML="<b>"+it.label+"</b><i></i>";$("labels").appendChild(el);it.el=el;
+    interactables.push(it);PRICE.later.splice(i,1);}
+  const nx=interactables.filter(function(it){return it.id==="next";})[0];
+  if(nx)nx.data.verb=priceNeed()?"Not yet":"Go on";
+  updateGuide();
+}
+function priceQuiz(kick,title,body,opts,id,after){
+  sickSheet(kick,title,body,shuffle(opts.map(function(o){return {t:o[0],fn:function(){
+    priceDone(id);
+    if(o===opts[0])fortResult(o[1],o[2],["+6 Ink"],after||null);
+    else{result(false,o[1],"",["+6 Ink"],after||null);$("resBody").innerHTML=o[2];}}};})));
+}
+/* a physical duty turns the player to the work first, so the hoe or the axe meets the ground
+   or the log, not the air the player happened to be facing */
+function priceFace(d){if(d.face&&player)player.rotation.y=Math.atan2(d.face[0]-player.position.x,d.face[1]-player.position.z);}
+function priceCard(who,when,plain){return "<div class=\"starveCard\"><b>"+who+"</b> <i>— "+when+"</i><p>"+plain+"</p></div>";}
+/* a sheet of rows, each marked with one of `keys`; marks kept in w.marks[id] */
+function priceRows(kick,title,intro,rows,keys,id,done){
+  const w=priceW();
+  w.marks[id]=(w.marks[id]&&w.marks[id].length===rows.length)?w.marks[id]:rows.map(function(){return null;});
+  let h=intro;
+  rows.forEach(function(r,i){
+    h+="<div class=\"captRow\"><span>"+r.t+"</span> <div class=\"captBtns\">"+keys.map(function(v,k){
+      return "<button class=\"btn small\" data-lr=\""+i+"\" data-v=\""+k+"\">"+v+"</button>";}).join(" ")+" <b class=\"captMark\" id=\"lr"+i+"\"></b></div></div>";});
+  sickSheet(kick,title,h,[{t:"Done",fn:function(){
+    const m=w.marks[id];
+    if(m.some(function(x){return x==null;})){toast("Mark every row first.");setTimeout(function(){priceRows(kick,title,intro,rows,keys,id,done);},50);return;}
+    done(m.filter(function(x,i){return x===(rows[i].k!=null?rows[i].k:rows[i].c);}).length);}}]);
+  rows.forEach(function(r,i){if(w.marks[id][i]!=null)$("lr"+i).textContent=keys[w.marks[id][i]];});
+  document.querySelectorAll("#sickBody [data-lr]").forEach(function(b){
+    b.onclick=function(){const i=+b.dataset.lr;w.marks[id][i]=+b.dataset.v;$("lr"+i).textContent=keys[w.marks[id][i]];saveGame();};});
+}
+/* the Atlantic, as a sketch: Luanda to the Gulf of Mexico to Point Comfort. Equirectangular,
+   longitude -100..20, latitude 42..-14, three units a degree. The coasts are rough on purpose */
+function priceMap(){
+  const P=function(pts){return pts.map(function(q){return ((q[0]+100)*3).toFixed(1)+","+((42-q[1])*3).toFixed(1);}).join(" ");};
+  const africa=P([[-17,21],[-16,12],[-13,8],[-8,4.5],[0,5.5],[9,4],[9.5,1],[12,-5],[13,-9],[12.5,-14]]);
+  const america=P([[-76,40],[-75.5,35],[-81,31.5],[-80,25.5],[-81.5,25],[-82.6,28],[-84,30],[-89,30],[-94,29.5],[-97.5,26],[-97.5,21.5],[-96,19],[-94.5,18.2],[-91,18.7],[-90.5,21],[-87,21.5],[-88,16],[-84,15],[-83.4,10],[-80,9],[-77,8.5],[-75,11],[-71,12],[-62,10.5],[-60,8],[-52,5],[-50,0],[-44,-2.5],[-35,-5.5],[-35,-9],[-39,-14]]);
+  const route1=P([[13.2,-8.8],[0,-3],[-30,7],[-58,15],[-75,17],[-91,19.8],[-96.1,19.2]]);
+  const route2=P([[-91,19.8],[-84,23.5],[-78,28],[-75.5,34],[-76.3,37]]);
+  const dot=function(lon,lat){return "<circle cx=\""+((lon+100)*3).toFixed(1)+"\" cy=\""+((42-lat)*3).toFixed(1)+"\" r=\"3.2\" fill=\"#8f3f2f\"/>";};
+  return "<svg viewBox=\"0 0 360 168\" style=\"width:100%;max-width:520px;display:block;margin:6px auto;background:#efe6cf;border-radius:4px\" role=\"img\" aria-label=\"A sketch map: Luanda, in Angola, across the Atlantic to the Gulf of Mexico, then north to Point Comfort\">"+
+    "<polyline points=\""+africa+"\" fill=\"none\" stroke=\"#6b5a3a\" stroke-width=\"1.4\"/>"+
+    "<polyline points=\""+america+"\" fill=\"none\" stroke=\"#6b5a3a\" stroke-width=\"1.4\"/>"+
+    "<polyline points=\""+route1+"\" fill=\"none\" stroke=\"#8f3f2f\" stroke-width=\"1.3\" stroke-dasharray=\"4 3\"/>"+
+    "<polyline points=\""+route2+"\" fill=\"none\" stroke=\"#3d5a68\" stroke-width=\"1.3\" stroke-dasharray=\"4 3\"/>"+
+    dot(13.2,-8.8)+dot(-96.1,19.2)+dot(-91,19.8)+dot(-76.3,37)+
+    "<g font-family=\"Georgia,serif\" font-size=\"8.5\" fill=\"#3a2c1c\">"+
+    "<text x=\"352\" y=\"144\" text-anchor=\"end\">Luanda, Angola:</text><text x=\"352\" y=\"154\" text-anchor=\"end\">about 350 captives</text>"+
+    "<text x=\"6\" y=\"84\">Vera Cruz: about 147</text><text x=\"40\" y=\"58\">robbed off Campeche</text>"+
+    "<text x=\"80\" y=\"14\">Point Comfort: “20. and odd”</text>"+
+    "<text x=\"150\" y=\"128\" font-style=\"italic\">the Atlantic: many died</text></g></svg>"+
+    "<p class=\"note\">A sketch. The voyage and its numbers are Encyclopedia Virginia’s, from Spanish records; “20. and odd” is Rolfe’s.</p>";
+}
+
+function priceAct(d){
+  const w=priceW();
+  if(d.kind==="next"){priceNext();return;}
+  if(d.kind==="record"){if(w.done)showEnding("ch9");else openReckoning();return;}
+  if(d.kind==="look"){
+    const L=(PRICE_LOOKS[w.day]||[]).filter(function(a){return a[0]===d.id;})[0];
+    if(L){w.did["look_"+L[0]]=true;saveGame();fortResult(L[4],L[5],[]);}
+    return;
+  }
+  /* 0 · tobacco in the streets */
+  if(d.kind==="streets"){
+    /* GH, Tyler p. 330; Rolfe to Sandys, 8 June 1617 (Kingsbury III:71) */
+    priceQuiz("Jamestown · May 1617","Two pictures",
+      priceCard("Smith’s book","1624, from others’ reports","“but five or six houses, the Church downe, the Palizado’s broken … the market-place, and streets … planted with Tobacco”")+
+      priceCard("John Rolfe","a letter, 8 June 1617","“Wee found the Colony (God be thanked) in good estate”")+
+      "<p>The same weeks. Why two pictures?</p>",
+      [["Each writer had a purpose","Two writers","<p>Rolfe grew tobacco, and wrote to his patron. Smith’s book, in 1624, was hostile to the tobacco planters. Same weeks, two pictures.</p>"],
+       ["The town changed in a week","Same weeks","<p>Both describe the same weeks of 1617. The difference is in the writers.</p>"],
+       ["Rolfe could not see the town","He was there","<p>He was there, three weeks in. He was also a tobacco planter, writing to his patron.</p>"]],"streets");
+    return;
+  }
+  if(d.kind==="edict"){
+    /* Kingsbury III:69, an abstract by a later clerk */
+    priceQuiz("Jamestown · 7 June 1617","Argall’s edict",
+      "<p>Argall’s first orders, as a clerk later copied them: “Tob° at 3/ p [lb] & not under or over penalty 3 years Slavery to the Colony”.</p><p>Three shillings a pound, by law. Who gains from a fixed price?</p>",
+      [["The planter: he knows his price","A known price","<p>A planter knew what a pound would fetch before he planted. “Slavery” here is an Englishman’s sentence: unpaid work for the colony, for three years, with an end.</p>"],
+       ["The buyer: he pays what he likes","Not under or over","<p>The buyer could pay neither less nor more. “Slavery” here is an Englishman’s sentence of unpaid work, with an end.</p>"],
+       ["Nobody: tobacco had no price","It had one","<p>Three shillings a pound, fixed by law. “Slavery” here is an Englishman’s sentence of unpaid work, with an end.</p>"]],"edict");
+    return;
+  }
+  if(d.kind==="hoe"&&!d.worked){
+    d.worked=true;priceFace(d);
+    playerDoes("dig",4,"The market-place and streets, planted with tobacco.",{},function(){
+      if(PRICE.plot)PRICE.plot.visible=true;priceAct(d);});
+    return;
+  }
+  if(d.kind==="hoe"){
+    priceDone("hoe");
+    /* Rolfe, Kingsbury III:71; EV (Salmon): 20,000 lb shipped to England in 1617 */
+    fortResult("Tobacco greate plenty","<p>Rolfe, June 1617: “Tobacco greate plenty in the ground”.</p><p>Encyclopedia Virginia: about 20,000 pounds of it were shipped to England that year.</p>",["+6 Ink"]);
+    return;
+  }
+  /* 1 · two acres of corn */
+  if(d.kind==="basket"){
+    /* GH, Tyler pp. 333-334 */
+    priceQuiz("Jamestown · 1618","A basket of earth",
+      "<p>Opechancanough said he knew nothing of the killings. He asked Argall not to “revenge the injurie of those fugitives upon the innocent people of that towne; which towne he should have, and sent him a basket of earth”. <i>— Smith’s book</i></p><p>What was he offering?</p>",
+      [["Land, to keep the peace","A basket of earth","<p>A town, given as a basket of earth, so the innocent would not pay for the raiders. Smith’s book adds that he “never performed” his other promise. Only the English side wrote it down.</p>"],
+       ["Tobacco seed, as a gift","Earth, not seed","<p>Earth: land, given to keep the innocent from punishment.</p>"],
+       ["A threat of war","The opposite","<p>He offered land so the innocent would not be punished.</p>"]],"basket");
+    return;
+  }
+  if(d.kind==="powhatan"){
+    /* Rolfe, 15 June 1618 (GH, Tyler p. 334): the whole primary record */
+    priceQuiz("Jamestown · June 1618","Powhatan",
+      "<p>Rolfe: “Powhatan died this last Aprill, yet the Indians continue in peace. Itopatin his second brother succeeds him, and both hee and Opechankanough have confirmed our former league”.</p><p>That is the whole record. What mattered most to Rolfe?</p>",
+      [["That the peace would hold","The league","<p>No place, no cause, no day. Her father’s death, in one sentence, from her widower. Its point is the peace. Powhatan’s people left no written account.</p>"],
+       ["How Powhatan died","Not said","<p>Rolfe gives no cause, no place, no day. His point is the peace.</p>"],
+       ["Who would govern the English","Not that","<p>He names Powhatan’s successor, Itopatin, and the peace. Nothing more.</p>"]],"powhatan");
+    return;
+  }
+  if(d.kind==="corn"&&!d.worked){
+    d.worked=true;priceFace(d);
+    playerDoes("dig",4,"Two acres of corn, by order. Tradesmen excepted.",{},function(){
+      if(PRICE.plot)PRICE.plot.visible=true;priceAct(d);});
+    return;
+  }
+  if(d.kind==="corn"){
+    priceDone("corn");
+    /* Kingsbury III:93; EV (Fausz), paraphrased */
+    fortResult("Two acres","<p>Argall, 18 May 1618: “Every man to sett 2 acres with corn … & be a Slave a year to ye Colony”.</p><p>Why a law? Men were planting tobacco, not food.</p>",["+6 Ink"]);
+    return;
+  }
+  /* 2 · the Great Charter */
+  if(d.kind==="charter"){
+    /* Tyler p. 247; Kingsbury III:100-101 */
+    priceQuiz("London · the Company’s court","New rules",
+      "<p>The Company’s new rules: a governor, a council, and a General Assembly; four boroughs; a hundred acres for each of the “ancient planters”.</p><p>Why write new rules now?</p>",
+      [["To draw settlers and money","Settlers and money","<p>The partnership had ended. Land and an Assembly would draw people and investors. That is politics and money, in London.</p>"],
+       ["The King commanded it","Not the King","<p>The Company wrote it, to draw settlers and money.</p>"],
+       ["The colonists voted for it","No vote","<p>London wrote it. The Assembly would first meet the next summer.</p>"]],"charter");
+    return;
+  }
+  if(d.kind==="headright"){
+    /* Kingsbury III:108 */
+    priceQuiz("London · the charter","Fifty acres a head",
+      "<p>The charter: “If they continue there three years or dye after they are shiped there shall be a grant made of fifty acres for every person … at whose charges the said persons going to Inhabite in Virginia shall be transported”.</p><p>A planter pays the passage of six servants. Two die after they are shipped. How many acres?</p>",
+      [["Three hundred","Fifty a head","<p>Six times fifty, dead or alive. The land went to whoever paid. Land was cheap; hands to work it were not.</p>"],
+       ["Two hundred","The dead count","<p>“or dye after they are shiped”: the dead count too. Six times fifty is three hundred.</p>"],
+       ["None: the servants get it","The payer","<p>The grant went to whoever paid the passage. Six times fifty: three hundred acres.</p>"]],"headright");
+    return;
+  }
+  /* 3 · set free */
+  if(d.kind==="argall"){
+    /* GH, Tyler p. 335; Pory, Tyler pp. 275-276; Discourse, Tyler p. 433; Rolfe, Kingsbury III:247 */
+    priceQuiz("The planters’ land · Easter 1619","Argall goes home",
+      "<p>Argall sailed home about Easter, “privatly”. His enemies later accused him of selling land that was not his, and keeping men as servants past their time. Rolfe defended him.</p><p>What can a historian say?</p>",
+      [["Charges and a defence, unsettled","Charges","<p>His enemies wrote the charges; his friend wrote the defence. The record cannot say which was true. It was a Company quarrel, carried into Virginia.</p>"],
+       ["He was guilty of it all","Not proven","<p>Charges are not proof. Rolfe defended him, and London later knighted him.</p>"],
+       ["He was innocent of it all","Not proven","<p>A friend’s defence is not proof either. The record leaves it open.</p>"]],"argall");
+    return;
+  }
+  if(d.kind==="clear"&&!d.worked){
+    d.worked=true;priceFace(d);
+    playerDoes("chop",4.5,"Your own dividend: trees down, ground cleared, ready to plant.",{},function(){
+      if(PRICE.plot)PRICE.plot.visible=true;priceAct(d);});
+    return;
+  }
+  if(d.kind==="clear"){
+    priceDone("clear");
+    /* Rolfe, Kingsbury III:245; GH, Tyler p. 337 */
+    fortResult("Their owne lands","<p>Rolfe: “now knowing their owne lands, they strive and are p’pared to build houses & to cleere their grounds ready to plant”.</p><p>Ensign Spence and Sergeant Barret were the first to go out.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="summer"){
+    /* Rolfe, Kingsbury III:244; Pory, Tyler p. 283 */
+    priceQuiz("The planters’ land · summer 1619","Plenty and sickness",
+      "<p>Rolfe: “a more plentyfull yere then this, it hath not pleased God to send vs … yet very contagious for sycknes, whereof many both old and new men died”.</p><p>Plenty, and many dead. What killed them?</p>",
+      [["Sickness, not hunger","Sickness","<p>A plentiful year, and a sickly one. Pory says the Indians too were struck “with great sickness and mortality” that summer.</p>"],
+       ["Hunger, as in 1609","Not hunger","<p>Rolfe calls it the most plentiful year yet. It was sickness.</p>"],
+       ["Tobacco smoke","No source says","<p>Nobody blamed tobacco. Rolfe and Pory both write of sickness.</p>"]],"summer");
+    return;
+  }
+  /* 4 · the General Assembly */
+  if(d.kind==="oath"){
+    playCutscene({skippable:true,steps:PRICE_OATH()},function(){priceDone("oath");enterWorld("ch9");
+      /* Pory, Tyler pp. 248-251; the record: who voted is not said */
+      fortResult("The quire of the church","<p>Twenty-two burgesses were chosen, from eleven places; twenty sat. Who voted for them, Pory does not say.</p><p>No woman, servant, African or Indian sat.</p>",["+6 Ink"]);});
+    return;
+  }
+  if(d.kind==="martin"){
+    /* Pory, Tyler pp. 253-254, 261 */
+    priceQuiz("The church · Saturday 31 July","Captain Martin’s men",
+      "<p>Captain Martin’s men, trading in the bay, met Indians “refusing to sell their Corne”. They took it by force, and paid in beads. The Indians complained to Opechancanough, who sent word to the governor.</p><p>What did the Assembly do?</p>",
+      [["Made Martin answer for it","Security","<p>Martin had to give security against any such outrage again. His burgesses were shut out: his patent put his people outside the colony’s laws.</p>"],
+       ["Nothing: the Indians had no say","They acted","<p>The complaint came through Opechancanough, and the Assembly acted on it. It is the one Powhatan voice in Pory’s record.</p>"],
+       ["Gave the corn back","Not that","<p>Martin had to give security against any such outrage again. Pory does not say the corn went back.</p>"]],"martin");
+    return;
+  }
+  if(d.kind==="price"){
+    /* Pory, Tyler pp. 259-260, 266-268 */
+    priceQuiz("The church · the price","Three shillings",
+      "<p>The cape merchant, Abraham Persey, had no order to pay the set price. So the Assembly laid it on him: “you are bounde to accepte of the Tobacco of the Colony … at three shillings the beste and the second sorte at 18d the punde”.</p><p>Who gains?</p>",
+      [["The planters","A known price","<p>Every planter knew his price. Persey ran the Magazine, the store all tobacco had to pass through. Leaf too poor to sell was to be “burnt before the owner’s face”.</p>"],
+       ["The merchant","Not him","<p>He did not want it: he had no such order. The law protected the planters.</p>"],
+       ["The King","Not the King","<p>The price protected the planters, who had to sell to the Magazine.</p>"]],"price");
+    return;
+  }
+  if(d.kind==="servants"){
+    priceRows("The church · the laws","What is each law about?",
+      "<p>Some of the laws passed that week. Is each about servants, or about something else?</p>",
+      PRICE_LAWS,PRICE_LAWS_K,"servants",function(right){
+        priceDone("servants");
+        fortResult("Count them","<p>You sorted "+right+" of "+PRICE_LAWS.length+".</p><p>Pory’s record holds at least nine laws about servants: terms, contracts, runaways, marriages. Land was easy to get. Hands to work it were not.</p>",["+6 Ink"]);});
+    return;
+  }
+  /* 5 · Point Comfort: documents only */
+  if(d.kind==="rolfe"){
+    /* Kingsbury III:243, trimmed so the contested "p'tended" is not on screen */
+    priceQuiz("Point Comfort · late August 1619","Master Rolfe’s letter",
+      priceCard("John Rolfe","a letter to Sir Edwin Sandys, January 1620","“About the latter end of August, a Dutch man of Warr … arriued at Point-Comfort … He brought not any thing but 20. and odd Negroes, w’ch the Governo’r and Cape Marchant bought for victualls …”")+
+      "<p class=\"note\">“Negroes” is the word English writers used in 1619.</p><p>The governor was Yeardley; the cape merchant, Persey. What does Rolfe leave out?</p>",
+      [["Their names, ages and words","Not one name","<p>He gives a number, “20. and odd”, and a verb, “bought”. Not one name, age or word of theirs. He does not call them servants, or slaves.</p>"],
+       ["Who bought them","He says","<p>The governor and the cape merchant, he says. What he leaves out is the people: not one name, age or word.</p>"],
+       ["What was given for them","He says","<p>Food: “victualls”. What he leaves out is the people: not one name, age or word.</p>"]],"rolfe");
+    return;
+  }
+  if(d.kind==="voyage"){
+    /* EV (McCartney), from Sluiter's Spanish records; NPS */
+    priceQuiz("Point Comfort · where they came from","Luanda",
+      "<p>No Virginia document says where they came from. Spanish records point to a Portuguese slave ship, the <i>São João Bautista</i>, from Luanda in Angola, robbed by English privateers off Mexico.</p>"+priceMap()+
+      "<p>How do historians know this?</p>",
+      [["From Spanish and Portuguese records","Other archives","<p>Most were probably taken in wars in Ndongo, in present-day Angola. Many died on the crossing; the two privateers took about sixty of the captives.</p>"],
+       ["From Rolfe’s letter","Not Rolfe","<p>Rolfe says nothing of where they came from. Spanish records do.</p>"],
+       ["From their own letters","None survive","<p>Nothing written by them survives. Spanish records tell where they came from.</p>"]],"voyage");
+    return;
+  }
+  if(d.kind==="names"){
+    /* EV: the 1624 and 1625 musters; Pory, Tyler p. 250 (Tucker a burgess) */
+    priceQuiz("Point Comfort · what is known","Their names",
+      "<div class=\"starveCard leafBlank\"><b>Their names</b><p>In 1619: none recorded.</p></div>"+
+      "<p>Later musters name a few. 1624: Angela, at Jamestown. 1625: Antony and Isabella, and their son William, in the house of Captain William Tucker, a burgess in 1619.</p>"+
+      "<p>Rolfe wrote “bought”. The 1625 muster wrote “servants”. Virginia had no law of slavery yet. Were they held for life, or for a term?</p>",
+      [["The record does not say","Not recorded","<p>No term was written down for any of them. They were bought. The law had no word yet for what they were. Whatever it was, they did not choose it.</p>"],
+       ["For life, by Virginia law","No such law","<p>Virginia had no slavery law in 1619. The record does not say whether they were held for life, or for a term.</p>"],
+       ["For seven years, by contract","No contract","<p>No contract for any of them is known. The record does not say whether they were held for life, or for a term.</p>"]],"names");
+    return;
+  }
+  /* 6 · letters home */
+  if(d.kind==="pory"){
+    /* Pory to Carleton, Tyler pp. 284-287 */
+    priceQuiz("Jamestown · 30 September 1619","Master Pory’s letter",
+      "<p>Pory: one man made £200 in a year by his own labour; another, with six servants, £1,000. Then: “Our principall wealth (I should have said) consisteth in servants.”</p><p>He never mentions the Africans. What can a silence tell us?</p>",
+      [["What the writer chose to tell","His choice","<p>He sent it on the very ship that sold them, and wrote of servants as wealth, not of them. A silence is evidence too: of what a writer noticed, or chose to say.</p>"],
+       ["That nothing had happened","It had","<p>Rolfe records it. Pory’s silence is about Pory: what he thought worth telling.</p>"],
+       ["That he did not know of it","He knew the ship","<p>He gave his letter to that ship’s own pilot. His silence is about what he chose to tell.</p>"]],"pory");
+    return;
+  }
+  if(d.kind==="muster32"){
+    /* EV's report of the March 1619/20 muster; NPS reverses the sexes */
+    priceQuiz("Jamestown · March 1620","The muster",
+      "<p>March 1620. A muster of the colony counts 32 Africans, “15 male, 17 female”, among “Others not Christians in the Service of the English”. <i>— Encyclopedia Virginia’s report</i></p><p>Rolfe wrote “20. and odd”. Why might the numbers differ?</p>",
+      [["More may have come on other ships","More than one ship","<p>Encyclopedia Virginia: all 32 “could have arrived” on the two ships, the Dutch one and the <i>Treasurer</i>. Whether any came earlier is argued. Not one is named.</p>"],
+       ["The muster counted English too","Not English","<p>It counts Africans, apart. More may have come on the <i>Treasurer</i> or another ship; it is argued.</p>"],
+       ["Rolfe could not count","Not that","<p>“20. and odd” is a rough number. More may have come on another ship; it is argued.</p>"]],"muster32");
+    return;
+  }
+}
+
+/* the cause board: the way out of a scene that has one */
+function priceNext(fromBoard){
+  const w=priceW(), need=priceNeed();
+  if(need){toast("Not yet: "+PRICE_DUTY[need].charAt(0).toLowerCase()+PRICE_DUTY[need].slice(1)+".");return;}
+  const rows=PRICE_CAUSE[w.day];
+  if(rows&&!fromBoard&&w.cause[w.day]==null){
+    priceRows("Did tobacco cause it?","Weigh the causes",
+      "<p>Did tobacco cause it, help it, or not cause it at all (chance or politics)?</p>",
+      rows,PRICE_K,"cause"+w.day,function(right){
+        w.cause[w.day]=right;checkpoint("ch9-cause"+w.day);
+        fortResult("Did tobacco cause it?","<p>You placed "+right+" of "+rows.length+" as the record does.</p><ul>"+rows.map(function(r){return "<li>"+r.t+" — <b>"+PRICE_K[r.k]+"</b>: "+r.why+"</li>";}).join("")+"</ul>"+(PRICE_CLOSE[w.day]||""),
+          [],function(){priceNext(true);});});
+    return;
+  }
+  if(w.day>=PRICE_DAYS.length-1){w.did.closed=true;checkpoint("ch9-closed");enterWorld("ch9");return;}
+  w.day++;
+  checkpoint("ch9-day"+w.day);
+  const o=PRICE_OPEN[w.day];
+  fortResult(o.t,"<p class=\"sickDate\">"+PRICE_DAYS[w.day].date+"</p>"+o.b,[],function(){enterWorld("ch9");});
+}
+
+/* ---- THE OATH, IN THE QUIRE ---- (Pory, Tyler pp. 249-251) */
+function PRICE_OATH(){
+  /* play-test, 27 Nov: the people were spawned after the first shot, so it opened on an empty
+     church, and the second camera stood inside a burgess. Everyone is in place before the fade;
+     the burgesses stand in the nave in three rows, the governor's table is in the quire, and
+     each shot is from a wall, over their heads */
+  const cx=PRICE.church?PRICE.church[0]:45, cz=PRICE.church?PRICE.church[1]:4, gy=G8(cx,cz);
+  const at=function(x,z){return [x,G8(x,z),z];};
+  const steps=[
+    {spawn:{id:"tbl",make:function(){const g=new Geo(), wood=RGB(0x5a4128), cloth=RGB(0x3c4a3a), paper=RGB(0xe9e0c8);
+      for(const a of [[-0.8,-1.4],[0.8,-1.4],[-0.8,1.4],[0.8,1.4]])g.box(a[0],1.3,a[1],0.22,2.6,0.22,wood);
+      g.box(0,2.7,0,2.2,0.16,3.6,cloth);g.box(0.2,2.8,-0.6,0.9,0.03,1.1,paper);return g.mesh(false,false);},at:at(cx+8.5,cz),face:0}},
+    {spawn:{id:"gov",eq:PRICE_PEOPLE[2].eq,at:at(cx+10.2,cz),face:-Math.PI/2}},
+    {spawn:{id:"spk",eq:PRICE_PEOPLE[3].eq,at:at(cx+6.6,cz),face:-Math.PI/2}},
+    {spawn:{id:"min",eq:crowdEq("gent",60),at:at(cx+7,cz-3.8),face:-Math.PI/2}},
+    {spawn:{id:"clk",eq:crowdEq("gent",61),at:at(cx+7,cz+3.8),face:-Math.PI/2}},
+    {spawn:{id:"sgt",eq:crowdEq("soldier",62),at:at(cx+2,cz-4.6),face:-Math.PI/2}}];
+  [[cx+9.6,cz-3],[cx+9.6,cz+3],[cx+11,cz-4.6],[cx+11,cz+4.6]].forEach(function(a,i){
+    steps.push({spawn:{id:"cnl"+i,eq:crowdEq("gent",63+i),at:at(a[0],a[1]),face:-Math.PI/2}});});
+  for(let r=0;r<3;r++)for(let k=0;k<3;k++)
+    steps.push({spawn:{id:"b"+(r*3+k),eq:crowdEq(k%2?"gent":"soldier",70+r*3+k),at:at(cx-10+r*2.6,cz-3+k*3),face:Math.PI/2}});
+  return steps.concat([
+    {fade:"in",cam:{to:[cx-12.4,gy+11,cz],look:[cx+9,gy+3.5,cz],cut:true},t:4.5,
+     narrate:"Friday 30 July 1619. The quire of the church at James City."},
+    {cam:{to:[cx+5,gy+9.5,cz+5.3],look:[cx-7,gy+3.5,cz-1]},t:5,
+     narrate:"Mr. Bucke, the minister, said a prayer. Then the burgesses were called in, one by one, by name."},
+    {move:{id:"b8",to:at(cx+3.6,cz+1),face:Math.PI/2},t:4.5,
+     narrate:"Each took the oath of supremacy, “none staggering at it”, the Speaker wrote."},
+    {cam:{to:[cx-1,gy+10,cz-5.3],look:[cx+9,gy+3.5,cz+1]},t:5,
+     narrate:"Twenty-two burgesses were chosen. Who voted for them, the record does not say."},
+    {fade:"out",t:1}]);
+}
+
+/* ---- NEW THINGS IN THE WORLD ---- */
+/* tobacco: hills in rows, a few broad leaves to each plant, one mesh for the whole plot */
+function priceLeaves(root,G,x,z,cols,rows,vis){
+  const g=new Geo(), leaf=RGB(0x5d7a2e), leafD=RGB(0x45602a), hill=RGB(0x6a5538);
+  for(let r=0;r<rows;r++)for(let k=0;k<cols;k++){
+    const px=x+k*3.4, pz=z+r*3.4, gy=G(px,pz);
+    g.oct(px,pz,gy-0.2,gy+0.5,0.9,0.9,0.5,0.5,0.1,hill,hill);
+    for(let l=0;l<5;l++){const a=l*1.26+srand(r*7+k+x)*0.5, c=Math.cos(a), s=Math.sin(a), c2=Math.cos(a+0.4), s2=Math.sin(a+0.4);
+      const A=[px,gy+0.5,pz], B=[px+c*0.4,gy+1.6+l*0.25,pz+s*0.4], C=[px+c*1.3,gy+1.2+l*0.2,pz+s*1.3], D=[px+c2*0.6,gy+0.7,pz+s2*0.6];
+      g.quad(A,B,C,D,l%2?leaf:leafD);g.quad(D,C,B,A,l%2?leaf:leafD);}
+  }
+  const m=g.mesh(false,false);m.visible=vis!==false;root.add(m);return m;
+}
+/* the pillory at Jamestown: a post and a hinged board with three holes */
+function pricePillory(root,G,x,z){
+  const g=new Geo(), wood=RGB(0x6a5038), dark=RGB(0x2a2018), gy=G(x,z);
+  g.beam8([x,gy-0.3,z],[x,gy+6.2,z],0.35,0.3,wood,wood);
+  g.box(x,gy+5.0,z,4.2,0.9,0.4,wood);
+  for(const k of [-1.3,0,1.3])g.box(x+k,gy+5.0,z+0.22,k?0.35:0.6,k?0.35:0.55,0.04,dark);
+  root.add(g.mesh(false,false));solid(x,z,0.8,0.8,LVL.MAIN,0);
+}
+/* an empty landing at Point Comfort: a plank stage on posts, running out into the water */
+function priceLanding(root,G,x,z0,z1){
+  const g=new Geo(), plank=RGB(0x8a7050), post=RGB(0x4e3c2a);
+  for(let z=z0;z<z1;z+=1.2)g.box(x,Math.max(1.1,G(x,z)+0.35),z,3.6,0.18,1.1,plank);
+  for(let z=z0;z<=z1;z+=6)for(const k of [-1.6,1.6])g.beam8([x+k,Math.min(-1.5,G(x+k,z)-0.6),z],[x+k,Math.max(1.3,G(x+k,z)+0.5),z],0.18,0.16,post,post);
+  root.add(g.mesh(false,false));
+}
+/* felled trees on a new dividend: logs on the ground, and stumps */
+function priceLogs(root,G,pts){
+  const g=new Geo(), bark=RGB(0x5a4630), cut=RGB(0xc8a878);
+  pts.forEach(function(p){const gy=G(p[0],p[1]), a=p[2], L=p[3]||9;
+    g.beam8([p[0]-Math.cos(a)*L/2,gy+0.55,p[1]-Math.sin(a)*L/2],[p[0]+Math.cos(a)*L/2,gy+0.55,p[1]+Math.sin(a)*L/2],0.6,0.55,bark,bark);
+    g.oct(p[0]+4*Math.sin(a),p[1]-4*Math.cos(a),gy-0.2,gy+1.0,0.8,0.8,0.75,0.75,0.1,bark,cut);});
+  root.add(g.mesh(false,false));
+}
+
+/* ---- THE TERRAIN ---- */
+SITE_TERRAIN.dividend={sea:58,shore:30,flat:-12,deep:-1.2,fall:0.015,rise:1.8,inland:1.6,roll:1.0,
+  sky:0xa9c6d6,fog:0xbcd2dc,water:0x3e6064,near:0x8a9452,far:0x6f7c44,back:0x515c36,wet:0x7c7a52,
+  trees:0,treeZ:-40,treeH:50,seed:177};
+
+registerWorld("ch9",function(root){
+  const w=priceW(), sd=priceDay(), where=sd.where;
+  PRICE.lit=false;PRICE.later=[];PRICE.plot=null;PRICE.church=null;PRICE.cut=null;
+  let G, spots={}, at=[0,20], face=Math.PI, nextAt=null, look0=0, pitch0=0.30;
+  const duty=function(id,label,x,z,data){
+    if(data.kind&&PRICE_DUTY[data.kind]&&w.did[data.kind])return;
+    const it={id:id,label:label,x:x,z:z,y:G(x,z),lvl:LVL.MAIN,r:8,action:"price",data:data};
+    if(data.after&&!w.did[data.after]){PRICE.later.push(it);return;}
+    interactables.push(it);};
+
+  if(where==="fort"||where==="church"){
+    const view=Object.assign({},fortW(),{epi:true,stretch:4,attack:null});
+    buildFortWorld(root,view,{ships:["discovery"],people:false,record:false,winter:w.day===6});
+    G=fortGround;nextAt=[-44,23];at=[0,-2];presTable(root,G,-44,19.5);
+    /* the shelter at (22,-22) is gone: its ground is the tobacco, the corn and the woodpile.
+       In 1617-18 "the Palizado's broken" (GH, Tyler p. 330): two gaps, cut as Chapter VII's
+       are, without its charred stumps; the colliders stay, so nobody walks out through one */
+    PRICE.cut={tents:[[22,-22]],gaps:w.day<=1?STARVE_GAPS.slice(0,2).map(starveGap):[]};
+    if(w.day<=1){
+      /* "the market-place, and streets, and all other spare places planted with Tobacco" (GH, Tyler p. 330) */
+      priceLeaves(root,G,6,2,7,2);priceLeaves(root,G,6,16.5,7,2);
+      workMan(root,crowdEq("hand",230),9,7.6,Math.PI,"dig");
+      workMan(root,crowdEq("hand",231),23,14.4,0,"dig");
+      workMan(root,crowdEq("hand",232),30,11,0,"carry",{from:[30,11],to:[-2,11],load:"basket",speed:2.6});
+      addAnimal(root,G,"dog",4,-6,0,{way:[[4,-6],[-14,6],[16,-8]]});
+    }
+    if(w.day===0){
+      spots={argall:[-20,-2,2.6],rolfe:[-36,-2,2.4]};
+      duty("streets","The Streets",14,11.5,{kind:"streets",verb:"Look"});
+      duty("edict","Argall’s Edict",-30,8,{kind:"edict",verb:"Read it"});presTable(root,G,-30,4);
+      duty("hoe","A Tobacco Ground",28,-14,{kind:"hoe",after:"streets",verb:"Hoe it",face:[27,-14.6]});
+      PRICE.plot=priceLeaves(root,G,22,-18,4,3,!!w.did.hoe);
+      workMan(root,crowdEq("hand",233),34,-26,-0.6,"dig");
+      starveChest(root,G,-44,2.5);
+    }
+    if(w.day===1){
+      spots={rolfe:[-36,-2,2.4],argall:[-12,-14,2.6]};
+      duty("basket","Opechancanough’s Answer",-24,10,{kind:"basket",verb:"Read it"});presTable(root,G,-24,6);
+      duty("powhatan","Master Rolfe’s News",-44,6,{kind:"powhatan",verb:"Read it"});starveChest(root,G,-44,2.5);
+      duty("corn","The Corn Ground",28,-14,{kind:"corn",verb:"Plant it",face:[26.5,-15]});
+      {const cg=new THREE.Group();leafCorn(cg,G,22,-18,4,3);cg.visible=!!w.did.corn;root.add(cg);PRICE.plot=cg;}
+      workMan(root,crowdEq("hand",234),34,-26,-0.6,"dig");
+      starveBell(root,G,-24,19);starveChest(root,G,14,8);
+    }
+    if(w.day===4){
+      spots={pory:[-36,-2,2.4],yeardley:[-20,-2,2.6],persey:[-12,-14,2.6]};
+      PRICE.church=[45,4];leafChurch(root,G,45,4,0,false);
+      [[38,17,2.6],[52,18,-2.7],[41,20,3.0]].forEach(function(a,i){
+        const f=buildFigure(crowdEq(i%2?"soldier":"gent",80+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));solid(a[0],a[1],1,1,LVL.MAIN,0);});
+      duty("oath","The Church",45,13,{kind:"oath",verb:"Go in"});
+      duty("martin","Captain Martin’s Case",-24,10,{kind:"martin",after:"oath",verb:"Hear it"});presTable(root,G,-24,6);
+      duty("price","The Price",-44,6,{kind:"price",after:"oath",verb:"Hear it"});starveChest(root,G,-44,2.5);
+      duty("servants","The Laws",14,11.5,{kind:"servants",after:"price",verb:"Sort them"});presTable(root,G,14,8);
+      pricePillory(root,G,28,20);starveChest(root,G,-24,19);
+      workMan(root,crowdEq("hand",235),-70,24,0,"carry",{from:[-104,66],to:[-78,22],load:"cask",speed:3});
+    }
+    if(w.day===6){
+      /* once the chapter is closed Pory is at his table with the laws, not in the street too */
+      spots=w.did.closed?{rolfe:[-36,-2,2.4]}:{rolfe:[-36,-2,2.4],pory:[-20,-2,2.6]};
+      duty("pory","Master Pory’s Letter",-44,6,{kind:"pory",verb:"Read it"});starveChest(root,G,-44,2.5);
+      duty("muster32","The Muster",-24,10,{kind:"muster32",after:"pory",verb:"Read it"});presTable(root,G,-24,6);
+      starveChest(root,G,14,8);
+      workMan(root,crowdEq("hand",236),20,-20,0.4,"chop",{target:[21.5,-17]});
+      priceLogs(root,G,[[22,-16.5,0.3,6]]);
+      workMan(root,crowdEq("hand",237),-70,24,0,"carry",{from:[-104,66],to:[-78,22],load:"wood",speed:3});
+      if(w.did.closed){nextAt=null;
+        duty("record","Master Pory’s Papers",-44,23,{kind:"record",verb:"Close the chapter’s record"});
+        const pu=buildFigure(PRICE_PEOPLE[3].eq);pu.position.set(-44,G(-44,16.6),16.6);pu.rotation.y=0;root.add(pu);solid(-44,16.6,1,1,LVL.MAIN,0);}
+    }
+  }
+  if(where==="london"){
+    G=captLand(root,"thames",{trees:30,winter:true,clear:function(x,z){return Math.hypot(x,z)<140;}});
+    for(let k=0;k<5;k++){leafHouse(root,G,-56+k*26,-22,0);leafHouse(root,G,-43+k*26,-52,0);}
+    leafChurch(root,G,-70,10,Math.PI/2,true);
+    placeShip(root,"susan",1,-40,110,Math.PI/2);
+    captBarge(root,G,30,72,0.3);
+    spots={yeardley:[14,27,-0.7]};
+    starveChest(root,G,4,12.5);presTable(root,G,-22,16.5);starveChest(root,G,24,12.5);starveChest(root,G,-20,32.5);
+    duty("charter","The Company’s Rules",4,16,{kind:"charter",verb:"Read them"});
+    duty("headright","The Charter",-22,20,{kind:"headright",after:"charter",verb:"Read it"});
+    /* a ship loading for Virginia; a man at work on a house */
+    workMan(root,crowdEq("hand",240),40,6,0,"carry",{from:[40,6],to:[32,56],load:"cask",speed:3});
+    workMan(root,crowdEq("hand",241),46,4,0,"carry",{from:[48,4],to:[36,58],load:"cask",speed:2.7});
+    workMan(root,crowdEq("hand",242),20,-13,Math.PI,"hammer");
+    addAnimal(root,G,"horse",-36,22,0.4,{area:[-36,22,7,5]});
+    at=[0,40];nextAt=[-20,36];
+  }
+  if(where==="farm"){
+    G=captLand(root,"dividend",{trees:160,winter:false,clear:function(x,z){return Math.hypot(x,z-18)<62;}});
+    leafHouse(root,G,-32,-8,0);
+    PRICE.plot=priceLeaves(root,G,6,-2,6,4,!!w.did.clear);
+    priceLogs(root,G,[[28,11,0,7],[42,-12,0.5,10],[30,-26,1.2,8],[-8,-30,0.2,9]]);
+    spots={spence:[6,40,-1.6]};
+    /* clearing the ground: felling, hauling the wood, digging, and a house going up */
+    workMan(root,crowdEq("hand",250),38,-8,2.4,"chop",{target:[41,-11]});
+    workMan(root,crowdEq("hand",251),36,-6,0,"carry",{from:[36,-6],to:[-20,2],load:"wood",speed:2.6});
+    workMan(root,crowdEq("hand",252),-4,14,0.3,"dig",{heap:workHeap(root,-3,17,0x5e4a32,26)});
+    workMan(root,crowdEq("hand",253),-30,0,Math.PI,"hammer");
+    addAnimal(root,G,"dog",0,30,0,{way:[[6,34],[2,10],[-24,6]]});
+    starveChest(root,G,-12,40.5);starveChest(root,G,-4,30.5);starveChest(root,G,30,26.5);starveChest(root,G,22,42.5);
+    duty("argall","News of Argall",-12,44,{kind:"argall",verb:"Read it"});
+    duty("clear","Your Dividend",28,15,{kind:"clear",verb:"Clear it",face:[28,11]});
+    duty("summer","Master Rolfe’s Letter",-4,34,{kind:"summer",after:"clear",verb:"Read it"});
+    at=[8,52];nextAt=[22,46];
+  }
+  if(where==="pointcomfort"){
+    /* documents and witnesses only: a ship far out, an empty landing, papers on chests */
+    G=captLand(root,"comfort",{trees:40,winter:false,clear:function(x,z){return Math.hypot(x,z-40)<80;}});
+    placeShip(root,"susan",1,90,300,Math.PI/2);
+    priceLanding(root,G,-4,62,96);
+    starveChest(root,G,-14,36.5);starveChest(root,G,2,26.5);starveChest(root,G,18,36.5);starveChest(root,G,8,56.5);starveChest(root,G,-28,44.5);
+    duty("rolfe","Master Rolfe’s Letter",-14,40,{kind:"rolfe",verb:"Read it"});
+    duty("voyage","Where They Came From",2,30,{kind:"voyage",after:"rolfe",verb:"Read it"});
+    duty("names","Their Names",18,40,{kind:"names",after:"voyage",verb:"Read it"});
+    at=[0,46];nextAt=[-28,48];
+    face=Math.atan2(90,254);look0=Math.atan2(-90,-254);pitch0=0.12;
+  }
+
+  const LOOK_AFTER={son:"streets",neptune:"powhatan",plants:"clear",pillory:"oath",spelman:"oath",treasurer:"names",message:"pory"};
+  (PRICE_LOOKS[w.day]||[]).forEach(function(L){duty("look_"+L[0],L[1],L[2],L[3],{kind:"look",id:L[0],verb:"Look",after:LOOK_AFTER[L[0]]||null});});
+  for(const id in spots){
+    const d=priceSpeaker(id);
+    if(!d)continue;
+    const a=spots[id], x=a[0], z=a[1], gy=G(x,z);
+    const f=buildFigure(d.eq);f.position.set(x,gy,z);f.rotation.y=a[2];root.add(f);
+    npcMeshes.push({npc:d,mesh:f});solid(x,z,1,1,LVL.MAIN,0);
+    interactables.push({id:id,label:d.name,x:x,z:z+3,y:gy,lvl:LVL.MAIN,r:7,action:"talk",data:d});
+  }
+  if(nextAt&&sd.next)duty("next",sd.next,nextAt[0],nextAt[1],{kind:"next",verb:priceNeed()?"Not yet":"Go on"});
+
+  if(w.day===0&&!w.did.open0){
+    w.did.open0=true;
+    setTimeout(function(){if(CURRENT_WORLD==="ch9")
+      fortResult(PRICE_OPEN[0].t,"<p class=\"sickDate\">"+PRICE_DAYS[0].date+"</p>"+PRICE_OPEN[0].b,[]);},500);
+  }
+  if(where!=="fort"&&where!=="church"){player=buildFigure(S.equip);root.add(player);playerParts=player.userData.parts;dressCarried(player);}
+  player.position.set(at[0],G(at[0],at[1]),at[1]);player.rotation.y=face;
+  camYaw=look0;camPitch=pitch0;
+});
+
+function updatePrice(dt){
+  if(CURRENT_WORLD!=="ch9")return;
+  PRICE.t+=dt;
+  /* the fort's parts are single meshes that arrive later, so they are cut as they come */
+  if(PRICE.cut&&FORT.parts){
+    const C=PRICE.cut, once=function(k,test){const p=FORT.parts[k];if(p&&!p.userData.priceCut){p.userData.priceCut=true;starveCut(p,test);}};
+    if(C.tents.length)once("camp_shelters",function(x,z){return C.tents.some(function(h){return Math.hypot(x-h[0],z-h[1])<9;});});
+    if(C.gaps.length){const gap=function(x,z){return C.gaps.some(function(h){return Math.hypot(x-h[0],z-h[1])<6;});};once("palisade_east",gap);once("palisade_west",gap);}
+  }
+  if(!PRICE.lit){
+    const sd=priceDay(), grey=sd.where==="pointcomfort"||sd.where==="london";
+    if(grey){scene.background=new THREE.Color(0xa6adb1);if(hemiLight)hemiLight.intensity*=0.85;if(sunLight)sunLight.intensity*=0.7;
+      if(skyDome){
+        const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
+        for(let i=0;i<pp.count;i++){
+          const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=lerpHex(0xb2b9bc,0x8c969c,Math.pow(t,0.6));
+          cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
+        }
+        cc.needsUpdate=true;
+      }
+    }
+    PRICE.lit=true;
+  }
+}
+
+/* ---- CHAPTER IX'S CONTENT, AND ITS MUSTER ----
+   Sat with John Pory, Secretary, copying the Assembly's laws for London, after the last board.
+   Every item is ungated. Written off CH9-RECORD.md §Teaching hooks; keyed a:0, shuffled at
+   runtime, and no keyed option is the longest of its four. */
+CONTENT.ch9={
+  people:PRICE_PEOPLE,
+  npcs:PRICE_NPCS,
+  charter:{insight:{b:"The Price of Tobacco"}},
+  reck:{seal:"records",kick:"Master Pory’s Papers",title:"Did Tobacco Cause It?",
+    frame:"John Pory is copying the Assembly’s laws to send to London. “I wrote that our wealth is in servants. Tell me what tobacco did, and what it did not. Six questions; I’ll bear two wrong, no more.”",
+    lockLine:"Not yet. Master Pory will sit with you after the last letters.",
+    pass:{title:"The Papers Hold",body:"Pory ties up his papers. “Tobacco, and chance, and London. You can tell them apart.” He sent the laws home as “titles rather then lawes”."},
+    fail:{title:"The Papers Do Not Hold",body:"“You are blaming tobacco for everything, or for nothing,” says Pory. “Look again at what each paper says.”"},
+    onPass:function(){priceW().done=true;},
+    q:[
+      {stim:"Argall, June 1617: tobacco “at 3/ p [lb] & not under or over”, on pain of “3 years Slavery to the Colony”.",
+       q:"What kind of price is this?",
+       o:["A fixed price, set by law","A price set by buyers each day","A price set by the King in London","A price the Powhatan agreed to"],a:0},
+      {stim:"Argall, May 1618: “Every man to sett 2 acres with corn … & be a Slave a year to ye Colony”.",
+       q:"Why would a governor need that law?",
+       o:["Men were planting tobacco instead","The colony had too much corn already","The Company wanted corn shipped home","The Powhatan had asked for the corn"],a:0},
+      {stim:"In Argall’s orders, “slave” meant an Englishman sentenced to unpaid work for the colony, for a week, a year or three years.",
+       q:"What was different for the Africans bought in 1619?",
+       o:["No end to it was written down","They were paid wages for their work","They were all sent home within a year","They had signed contracts in England"],a:0},
+      {stim:"Smith’s book (1624): Jamestown in 1617 had “but five or six houses, the Church downe”. Rolfe, there in June 1617: the colony was “in good estate”.",
+       q:"Why might they disagree?",
+       o:["Each writer had his own purpose","One wrote about a different town","The town was rebuilt in a single week","Rolfe had not yet reached Virginia"],a:0},
+      {stim:"Opechancanough asked Argall not to punish “the innocent people of that towne”, and sent him “a basket of earth”.",
+       q:"What was he offering?",
+       o:["Land, to keep the peace","Corn, to pay for the raid","Warriors, to fight the Spanish","Tobacco seed, to plant"],a:0},
+      {stim:"Rolfe, 1618: “Powhatan died this last Aprill, yet the Indians continue in peace.” That is the whole record of his death.",
+       q:"What did Rolfe care about most in that sentence?",
+       o:["That the peace would hold","How and where Powhatan died","Who would govern the English","What Powhatan’s people felt"],a:0},
+      {stim:"The 1618 charter: fifty acres for each person shipped, even if they “dye after they are shiped”, granted to whoever paid the passage.",
+       q:"A planter ships six servants. How many acres does he get?",
+       o:["Three hundred","Fifty","Six hundred","None, if two die"],a:0},
+      {stim:"Pory, 1619: one man made £200 by his own labour; another, with six servants, £1,000. Then: “Our principall wealth (I should have said) consisteth in servants.”",
+       q:"Why the correction?",
+       o:["Servants made the big fortunes","Tobacco had stopped selling in England","Servants cost nothing to bring over","Pory had no servants of his own"],a:0},
+      {stim:"Of the laws the 1619 Assembly passed, at least nine are about servants: terms, contracts, runaways, marriages.",
+       q:"What does the number tell you?",
+       o:["Planters needed hands badly","Servants sat in the Assembly","There were few servants left","Servants had written the laws"],a:0},
+      {stim:"31 July 1619: the cape merchant, Abraham Persey, is “bounde to accepte” tobacco at three shillings. Four weeks later he and the governor bought the Africans.",
+       q:"What can a historian say about the link?",
+       o:["Likely, but no 1619 source says so","Proven by Persey’s own letter","Impossible: they were different men","Certain: the law ordered the purchase"],a:0},
+      {stim:"Captain Martin’s patent freed his people “from any comaunde of the Colony”. The Assembly shut out his burgesses as “spies rather than loyal Burgesses”.",
+       q:"What principle was the Assembly defending?",
+       o:["One law for every plantation","The right of any captain to rule","The King’s right to the tobacco","Martin’s right to his own land"],a:0},
+      {stim:"Martin’s men took corn from a canoe, paying in beads. The owners complained to Opechancanough, who told the governor.",
+       q:"What did the Assembly do?",
+       o:["Made Martin answer for it","Ignored the complaint","Sent soldiers to the canoe","Banished Opechancanough"],a:0},
+      {stim:"Garnett, a servant, accused his master and was nailed by the ears to the pillory. Spelman told Opechancanough a greater governor was coming, and was punished.",
+       q:"What do the two cases show?",
+       o:["Speaking against masters was risky","Servants could say what they liked","The Assembly had no power to punish","Spelman was the governor’s close friend"],a:0},
+      {stim:"Pory: the people had “gotten the raines of former servitude into their owne swindge”.",
+       q:"Whose servitude was ending in 1619?",
+       o:["The English planters’","The Africans’, just arrived","The Powhatan peoples’","Every servant’s in Virginia"],a:0},
+      {stim:"Rolfe: “20. and odd Negroes … bought for victualls”. Smith, 1624: a Dutch ship “sold us twenty Negars”. (The words English writers used.)",
+       q:"What did Smith change?",
+       o:["The number and the verb","He added the Africans’ names","He moved it to another year","He said the ship was English"],a:0},
+      {stim:"Pory sent his letter home on the ship that brought the Africans, and never mentioned them.",
+       q:"What does that silence tell a historian?",
+       o:["What the writer chose to tell","That nothing had happened that summer","That Pory never saw or heard of it","That the letter was lost at sea"],a:0},
+      {stim:"The Treasurer, Argall’s privateer, sailed away when Kecoughtan would not feed her crew “vpon any termes”. Her captain warned that the Spaniard would come.",
+       q:"Why might a colony refuse a privateer?",
+       o:["It could draw Spain upon them","They had no food at all that year","The ship was too large to come in","The crew spoke only Dutch to them"],a:0},
+      {stim:"No Virginia record says where the Africans came from. Spanish records point to Ndongo, in present-day Angola, and the São João Bautista.",
+       q:"How do historians find a history the colonists never wrote?",
+       o:["In Spain’s records","In Rolfe’s private diary","They cannot find it at all","In the Assembly’s laws"],a:0},
+      {stim:"The 1625 muster lists Antony, Isabella and their son William as “servants”. Bermuda’s governor called the Treasurer’s Africans “Slaves”.",
+       q:"What do the two words show?",
+       o:["No settled word for them yet","They were paid like English servants","All of them were freed by 1625","Bermuda held different people"],a:0},
+      {stim:"The 1619 Assembly was ordered by the Company in London, after its partnership ended, to draw settlers and money.",
+       q:"Did tobacco cause the Assembly?",
+       o:["Not itself: London politics did","Yes: the planters demanded it","Yes: the King ordered it for tobacco","No: Opechancanough asked for it"],a:0},
+      {stim:"The Dutch ship came to Point Comfort by chance, from privateering in the West Indies, its captain short of food.",
+       q:"Did tobacco bring the ship?",
+       o:["No: chance brought it","Yes: it came to buy tobacco","Yes: Virginia had sent for it","No: Spain sent it to Virginia"],a:0},
+      {stim:"Smith’s list of 1619–20, from the Company’s records: “young women to make wives ninety”.",
+       q:"Who decided what these women were for?",
+       o:["The Company in London","The women, each for herself","The Powhatan towns nearby","The burgesses at Jamestown"],a:0}]},
+  ready:function(){
+    const w=priceW();
+    return (w.day>=PRICE_DAYS.length-1&&w.did.closed)?{ok:true,missing:[]}:{ok:false,missing:["the letters home, in 1619"]};
+  },
+  targets:collectInsights(PRICE_NPCS), unlocks:[]
+};
+
 const CHAPTERS=[
   /* Percy: "The six and twentieth day of Aprill, about foure a clocke in the
      morning, wee descried the Land of Virginia." The ships stand into the bay at
@@ -30390,9 +31221,36 @@ const CHAPTERS=[
      const o=findSpot(function(it){return it.id==="next"||it.id==="record";});
      if(o)return {it:R(o),why:w.did.closed?"the chapter ends here":"the next date"};
      return null; },
-   end:{head:"The Golden Leaf — Complete",yr:"Chapter VIII · 21 March 1617",nextWorld:null,
+   end:{head:"The Golden Leaf — Complete",yr:"Chapter VIII · 21 March 1617",nextWorld:"ch9",nextLabel:"The Price of Tobacco — Chapter IX",
      body:"<p>In May 1617 Captain Argall came to Jamestown and found “but five or six houses, the Church downe, the Palizado’s broken … the market-place, and streets, and all other spare places planted with Tobacco”.</p>"+
        "<p>Their son Thomas stayed in England. Powhatan died the next year. The colony had found what England would buy. Now it needed land, and hands to work it.</p>"}},
+  {n:"IX",yr:"1617–20",t:"The Price of Tobacco",d:"Jamestown, London, the new farms and Point Comfort — May 1617 to March 1620",
+   ready:true,world:"ch9",pace:2.5,near:9,
+   intro:function(){ return "Tobacco sold at three shillings a pound, by law. Planters wanted land, and hands to work it. In 1619 Virginia’s General Assembly met, and four weeks later a ship brought twenty-some captive Africans. Did tobacco cause it all? The buying and selling of people, harsh punishments, period words: in the sources’ words, none of it shown."; },
+   obj:function(){ return "Live seven scenes, 1617 to 1620. After each, weigh the causes: did tobacco cause it, help it, or not cause it at all? Then sit with Master Pory."; },
+   goals:function(){
+     const w=priceW(), need=priceNeed();
+     return [
+       {t:"Live the three years ("+(w.day+1)+" of "+PRICE_DAYS.length+")",done:w.day>=PRICE_DAYS.length-1&&!!w.did.closed},
+       {t:need?PRICE_DUTY[need]:"Go on",done:!need},
+       {t:"Ask Captain Argall, Master Pory and Master Rolfe what they know",done:PRICE_NPCS.every(function(n){return npcDone(n.id);}),opt:true},
+       {t:"Sit with Master Pory",done:!!w.done,goal:true,locked:!(w.day>=PRICE_DAYS.length-1&&w.did.closed)}
+     ]; },
+   status:function(){ const w=priceW(), sd=priceDay(), need=priceNeed();
+     if(w.done)return "Chapter complete";
+     if(w.did.closed)return "1620 · Master Pory is waiting";
+     return sd.date.split(" — ")[0]+" · "+(need?PRICE_DUTY[need].charAt(0).toLowerCase()+PRICE_DUTY[need].slice(1):"go on when you are ready"); },
+   next:function(){ const w=priceW(), need=priceNeed();
+     /* in the fort the arrow routes by the gate, as Chapters VI to VIII do */
+     const fort=["fort","church"].indexOf(priceDay().where)>=0, R=function(it){return fort?presRoute(it,true):it;};
+     if(need){const c=findSpot(function(it){return it.action==="price"&&it.data&&it.data.kind===need;});if(c)return {it:R(c),why:"what the day asks"};}
+     const o=findSpot(function(it){return it.id==="next"||it.id==="record";});
+     if(o)return {it:R(o),why:w.did.closed?"the chapter ends here":"the next date"};
+     return null; },
+   /* Pory to Carleton, 30 Sept. 1619 (Tyler pp. 285-287); GH, Tyler p. 339 */
+   end:{head:"The Price of Tobacco — Complete",yr:"Chapter IX · January 1620",nextWorld:null,
+     body:"<p>Pory’s letter went home on the Dutch ship: “Our principall wealth (I should have said) consisteth in servants.” Of the Africans, not a word.</p>"+
+       "<p>The Company’s records for that year list, among the people sent: “young women to make wives ninety”.</p>"}},
 ];
 /* The title screen is shown before any world begins, so it needs painting once here.
    Safe at this point and not one line earlier: CHAPTERS is closed above. */
@@ -30484,6 +31342,17 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"27 November 2026 · latest",
+   head:"Chapter IX: The Price of Tobacco",
+   lines:[
+     "<b>A new chapter: 1617 to 1620</b>",
+     "Tobacco in Jamestown’s streets, Captain Argall’s fixed price, Powhatan’s death, the Company’s Great Charter, the General Assembly of 1619 in the church at James City, and the ship that brought the first Africans recorded in English Virginia to Point Comfort in late August 1619.",
+     "<b>A note for teachers</b>",
+     "This chapter includes the buying and selling of people, harsh punishments, and period words for Africans and Indians. All of it is in the words of the people who wrote it, with the writer named, and none of it is drawn. The Point Comfort scene is documents only, with no music.",
+     "<b>Did tobacco cause it?</b>",
+     "After each scene you weigh the causes: did tobacco cause it, help it, or not cause it at all? Tobacco drove the fixed price, the hunger for land and the laws about servants. It did not bring the ship.",
+     "<b>Where to find it</b>",
+     "Pass Chapter VIII’s muster and its ending leads on to Chapter IX. If you passed it before today, Chapter IX is already open in the chapter list."]},
+  {when:"27 November 2026",
    head:"Chapter VIII: The Golden Leaf",
    lines:[
      "<b>A new chapter: 1610 to 1617</b>",
@@ -31874,7 +32743,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0554";
+const BUILD="20261127-0623";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
