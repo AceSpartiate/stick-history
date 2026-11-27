@@ -423,7 +423,7 @@
     opacity:.55;margin:0 0 .35em}
   .pnote ul{margin:.1em 0 0;padding-left:1.05em}
   .pnote li{margin:.16em 0;font-size:.86rem;line-height:1.4}
-  #hudVoice{flex:none;width:30px;height:30px;border-radius:7px;font-size:.9rem;line-height:1;
+  #hudVoice,#hudMusic{flex:none;width:30px;height:30px;border-radius:7px;font-size:.9rem;line-height:1;
     font-family:system-ui,-apple-system,"Segoe UI Symbol",sans-serif;
     border:1px solid rgba(224,218,187,.3);background:rgba(24,20,14,.42);
     color:rgba(231,218,187,.85);pointer-events:auto;cursor:pointer}
@@ -466,7 +466,7 @@
   #fireBtn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.45)}
   #fireBtn.cold{background:radial-gradient(circle at 38% 32%,#5a5348,#332f28);
     border-color:rgba(224,218,187,.28);color:rgba(231,218,187,.5)}
-  #hudVoice.off{color:rgba(231,218,187,.32);text-decoration:line-through}
+  #hudVoice.off,#hudMusic.off{color:rgba(231,218,187,.32);text-decoration:line-through}
   #codeBox{margin-top:.6em;text-align:left}
   #codeBox textarea{width:100%;height:70px;font-family:ui-monospace,Menlo,monospace;
     font-size:.62rem;border:1px solid rgba(90,72,40,.4);border-radius:5px;
@@ -852,6 +852,8 @@
         <div class="chip"><span id="hudChapter">Ch. I — Main Deck</span> <span id="hudDays" style="display:none;color:var(--gold-bright)"></span><small id="hudObj"></small></div>
         <div class="ink"><span class="dot"></span><span id="hudInk">0</span></div>
         <button id="hudVoice" title="Narration (M)" aria-label="Narration on or off">&#9654;</button>
+        <!-- music, 27 Nov: its own switch, beside narration's -->
+        <button id="hudMusic" title="Music" aria-label="Music on or off">&#9834;</button>
         <button id="hudJump" title="Jump (space)">Jump</button>
       </div>
       <div id="guide"><span class="arw" id="guideArw">➤</span><span id="guideTxt"></span></div>
@@ -1066,6 +1068,7 @@
       <button class="btn ghost wide mt" id="pauseCodex">Historian's Notes</button>
       <button class="btn ghost wide mt" id="pauseFull">Full screen</button>
       <button class="btn ghost wide mt" id="pauseVoice">Narration: on</button>
+      <button class="btn ghost wide mt" id="pauseMusic">Music: on</button>
       <button class="btn ghost wide mt" id="pauseTitle">Main Menu</button>
       <p class="center" style="font-size:.82rem;color:#6a5836;margin-top:.9em">Progress is kept while the page stays open.</p>
     </div>
@@ -1235,6 +1238,8 @@ const COSMETICS={
 const S={ink:0,unlocked:new Set(["none_cloak","none_torso","none_acc","none_head","build_normal"]),
   paletteUnlocked:new Set(["ink"]),
   voicePref:{male:null,female:null,narrator:null},
+  /* music, 27 Nov: on by default and quiet (MUSIC_VOL); a setting, so a new run keeps it */
+  musicOn:true,
   items:{},itemAt:{},incidents:[],shotAMan:false,heardKendall:false,reportedKendall:null,
   boxOpened:false,smithRecognised:false,chartSeen:{},
   /* THE SURVEY. Seventeen historical days between landfall and choosing the site.
@@ -1302,6 +1307,8 @@ function saveBlob(){
        resume: the man un-finished himself and the quiz gate closed behind the player. */
     spoke:S.spoke,
     equip:S.equip, voicePref:S.voicePref,
+    /* music, 27 Nov: the music switch, so a class that turned it off is not greeted by it again */
+    musicOn:S.musicOn!==false,
     items:S.items, slot:S.slot, carry:S.carry, itemAt:S.itemAt, incidents:S.incidents, chartSeen:S.chartSeen,
     survey:S.survey,
     shotAMan:!!S.shotAMan, killedAMan:!!S.killedAMan,
@@ -1342,6 +1349,7 @@ function applyBlob(d){
     if(d.equip)S.equip=d.equip;
     if(!S.equip.dye)S.equip.dye={torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"};
     if(d.voicePref)S.voicePref=d.voicePref;
+    S.musicOn=d.musicOn!==false;   /* music, 27 Nov: an older save has none, and means on */
     S.items=d.items||{};S.slot=d.slot||{};S.carry=d.carry||null;S.itemAt=d.itemAt||{};S.incidents=d.incidents||[];
     S.chartSeen=d.chartSeen||{};
     S.survey=d.survey||{days:surveyBudget(),found:{},visited:{}};
@@ -10737,6 +10745,123 @@ function setVoiceOn(on){
 }
 function hushVoice(){
   SAY_Q.length=0;SAY_ON=false;SAYING=null;voStop();try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}}
+/* ========== MUSIC ==========
+   music, 27 Nov: a quiet loop per mood, English consort music of about 1600 - lute, viols,
+   recorder, cittern, tabor and pipe - made with ACE-Step 1.5 XL SFT (MIT) by tools/music_build.py
+   and registered in assets/register.json with caption and seed.
+   NO "NATIVE AMERICAN" MUSIC, ON PURPOSE. No record of Powhatan music survives that could be
+   used honestly, and invented "tribal" drums would be exactly the curated history this game
+   refuses. So in Powhatan places - Kecoughtan, Werowocomoco, Orapakes - the English music
+   fades out and nothing replaces it; the same at the 2012 dig, which is not 1600 at all, and
+   while the arrows fly at Cape Henry.
+   HOW IT SOUNDS UNDER SPEECH. The files sit at -20 dBFS RMS; MUSIC_VOL puts them some ten dB
+   under that, and whenever anything is being said - recorded narration, the browser voice, a
+   character - the master gain falls to a fifth of that within a quarter second and comes back
+   slowly after. Speech is never fighting the music.
+   COST. Two <audio> elements streamed through Web Audio gains (not decoded buffers: an 80 s
+   stereo cue decoded is 30 MB, and a Chromebook does not have that to spare), and a 200 ms
+   timer that compares a few strings. Nothing runs in the render loop.
+   Starts only after the first tap or key, as browsers require. Needs http(s) and Ogg Opus,
+   the same as the recorded narration (VO_CAN); without them the switches go and nothing plays.
+   ceiling: <audio loop> can leave a few milliseconds' gap at the seam on some browsers; the
+   cues are folded so the seam is a 4 s crossfade, and a gap there is a breath, not a click. */
+const MUSIC_FILES={
+  title:"assets/music/title.ogg", voyage:"assets/music/voyage.ogg", fort:"assets/music/fort.ogg",
+  sickness:"assets/music/sickness.ogg", president:"assets/music/president.ogg",
+  starving:"assets/music/starving.ogg", tobacco:"assets/music/tobacco.ogg"};
+const MUSIC_BY_WORLD={ch1:"voyage", ch2:"fort", comfort:"fort", archers:"fort", james:"fort", ch3:"fort",
+  ch4:"sickness", ch5:"sickness", ch6:"president", ch7:"starving", ch8:"tobacco"};
+/* places with no music (see above) - the `where` of a chapter's day */
+const MUSIC_SILENT={kecoughtan:true, york:true, orapakes:true, dig:true};
+const MUSIC_VOL=0.32, MUSIC_DUCK=0.2, MUSIC_FADE=2.4;
+const MUSIC_CAN=VO_CAN;
+const MUSIC={live:false, decks:[], i:0, cur:null, duck:-1, master:null};
+/* the title screen should honour a switch turned off last time, before any save is loaded */
+(function(){try{const d=loadedSave();if(d&&d.musicOn===false)S.musicOn=false;}catch(e){}})();
+function musicWhere(w){
+  try{
+    if(w==="ch5")return CAPT.telling?"york":captDay().where;
+    if(w==="ch6")return presDay().where;
+    if(w==="ch7")return starveDay().where;
+  }catch(e){}
+  return null;
+}
+/* which cue this moment wants, or null for silence */
+function musicCue(){
+  if(!S.musicOn||document.hidden)return null;
+  const on=function(id){return !!(screens[id]&&screens[id].classList.contains("on"));};
+  let w=null;
+  if(on("intro"))w=INTRO_WORLD;
+  else if(on("scene")||((on("wardrobe")||on("codex"))&&backTo==="scene"))w=CURRENT_WORLD;
+  if(!w)return "title";
+  if(MUSIC_SILENT[musicWhere(w)])return null;
+  if(w==="ch2"&&on("scene")&&AMBUSH.on)return null;
+  return MUSIC_BY_WORLD[w]||"title";
+}
+function musicDeck(a){
+  const el=new Audio();el.loop=true;el.preload="auto";
+  const g=a.createGain();g.gain.value=0;
+  a.createMediaElementSource(el).connect(g);g.connect(MUSIC.master);
+  return {el:el, g:g, cue:null, stopAt:0};
+}
+/* the first tap or key: build the two decks inside the gesture, which is what iOS needs */
+function musicWake(){
+  if(MUSIC.live||!MUSIC_CAN)return;
+  const a=actx();if(!a)return;
+  try{
+    MUSIC.master=a.createGain();MUSIC.master.gain.value=0;MUSIC.master.connect(a.destination);
+    MUSIC.decks=[musicDeck(a),musicDeck(a)];
+  }catch(e){return;}
+  MUSIC.live=true;
+  /* both elements must play once inside a gesture on iOS; the second plays silence */
+  const d=MUSIC.decks[1];
+  try{d.el.src="data:audio/wav;base64,UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";
+    const p=d.el.play();if(p&&p.catch)p.catch(function(){});d.stopAt=Date.now()+300;}catch(e){}
+  musicTick();
+}
+window.addEventListener("pointerdown",musicWake,{capture:true});
+window.addEventListener("keydown",musicWake,{capture:true});
+function musicTick(){
+  if(!MUSIC.live||!AC)return;
+  const t=AC.currentTime, now=Date.now();
+  let want=null;try{want=musicCue();}catch(e){}
+  if(want!==MUSIC.cur){
+    /* crossfade: the playing deck falls away while the other rises */
+    const A=MUSIC.decks[MUSIC.i];
+    if(A.cue){A.g.gain.cancelScheduledValues(t);A.g.gain.setTargetAtTime(0,t,MUSIC_FADE/3);A.stopAt=now+MUSIC_FADE*1500;}
+    MUSIC.cur=want;
+    if(want){
+      let B=A;
+      if(B.cue!==want){MUSIC.i^=1;B=MUSIC.decks[MUSIC.i];
+        if(B.cue!==want){B.el.src=MUSIC_FILES[want];B.cue=want;}}
+      B.stopAt=0;
+      try{const p=B.el.play();if(p&&p.catch)p.catch(function(){});}catch(e){}
+      B.g.gain.cancelScheduledValues(t);B.g.gain.setTargetAtTime(1,t,MUSIC_FADE/3);
+    }
+  }
+  for(let k=0;k<MUSIC.decks.length;k++){const d=MUSIC.decks[k];
+    if(d.stopAt&&now>d.stopAt){d.stopAt=0;try{d.el.pause();}catch(e){}}}
+  /* duck under anything being said: down fast, back up slowly */
+  const duck=saying()?MUSIC_DUCK:1;
+  if(duck!==MUSIC.duck){
+    MUSIC.master.gain.cancelScheduledValues(t);
+    MUSIC.master.gain.setTargetAtTime(MUSIC_VOL*duck,t,(duck<1||MUSIC.duck<0)?0.08:0.7);
+    MUSIC.duck=duck;
+  }
+}
+setInterval(musicTick,200);
+function musicUi(){
+  const pm=$("pauseMusic");if(pm)pm.textContent=MUSIC_CAN?"Music: "+(S.musicOn?"on":"off"):"Music: unavailable in this view";
+  const hm=$("hudMusic");if(hm)hm.classList.toggle("off",!S.musicOn);
+}
+/* one owner for the switch: the HUD button and the pause menu both come here */
+function setMusicOn(on){
+  S.musicOn=!!on;
+  saveGame();           /* a setting, banked at once, as the voice panel does */
+  musicUi();
+  toast(S.musicOn?"Music on.":"Music off.");
+  musicWake();musicTick();
+}
 /* ---- STOPPING A READING IS NOT THE SAME AS TURNING NARRATION OFF ----
    The only way to silence a reading in progress was setVoiceOn(false), which mutes the
    whole feature, toasts "Narration muted." and leaves it muted - so a pupil who pressed
@@ -13579,6 +13704,14 @@ $("pauseVoice").onclick=function(){
   setVoiceOn(!VOICE_ON);
 };
 $("hudVoice").onclick=function(e){e.stopPropagation();setVoiceOn(!VOICE_ON);};
+/* music, 27 Nov: the music switch, in the HUD and the pause menu */
+$("hudMusic").onclick=function(e){e.stopPropagation();setMusicOn(!S.musicOn);};
+$("pauseMusic").onclick=function(){
+  if(!MUSIC_CAN){toast("Music needs the game opened from its web address, in Chrome or a recent Safari.");return;}
+  setMusicOn(!S.musicOn);
+};
+if(!MUSIC_CAN){const hm=$("hudMusic");if(hm)hm.style.display="none";}
+musicUi();
 /* Where there is no speech engine there is nothing to mute, so the controls go
    rather than sitting there inert. */
 $("mapClose").onclick=function(){$("mMap").classList.remove("on");setPaused(false);};
@@ -30643,7 +30776,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0231";
+const BUILD="20261127-0504";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
