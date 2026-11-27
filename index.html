@@ -30045,7 +30045,9 @@ const PRICE={later:[],lit:false,plot:null,church:null,t:0};
 /* ---- THE PEOPLE ---- */
 const PRICE_PEOPLE=[
   {id:"argall",name:"Captain Argall",voice:"male",role:"governs the colony, 1617 to 1619",eq:crowdEq("soldier",28)},
-  {id:"rolfe",name:"Master Rolfe",voice:"male",role:"of the governor’s council",eq:crowdEq("gent",27)},
+  /* review, 27 Nov: was "of the governor's council"; this row speaks in 1617-18, when Rolfe was
+     "Secretary and Recorder" (CH9-RECORD, Who wrote); the council is Yeardley's, 1619 (GH, Tyler p. 335) */
+  {id:"rolfe",name:"Master Rolfe",voice:"male",role:"Secretary and Recorder of the colony",eq:crowdEq("gent",27)},
   {id:"yeardley",name:"Sir George Yeardley",voice:"male",role:"governor, from April 1619",eq:crowdEq("soldier",36)},
   {id:"pory",name:"Master Pory",voice:"male",role:"Secretary, and Speaker of the Assembly",eq:crowdEq("gent",34)},
   {id:"persey",name:"Master Persey",voice:"male",role:"the cape merchant",eq:crowdEq("gent",37)},
@@ -30054,7 +30056,8 @@ function pricePerson(id){return PRICE_PEOPLE.filter(function(p){return p.id===id
 
 const PRICE_SAYS={
   /* Rolfe to Sandys, 8 June 1617 (Kingsbury III:71); Rolfe, 15 June 1618 (GH, Tyler p. 334) */
-  "rolfe":[["“Wee found the Colony, God be thanked, in good estate, and inioyng a firmer Peace and more plenty.”"],
+  /* review, 27 Nov: was "the Colony, God be thanked, in good estate, and inioyng"; the letter's own punctuation (Kingsbury III:71) */
+  "rolfe":[["“Wee found the Colony (God be thanked) in good estate and inioyng a firmer Peace and more plenty.”"],
     ["“Powhatan died this last Aprill, yet the Indians continue in peace.”"],[],[],[],[],[]],
   /* Argall's edicts of 18 May 1618, abstracts (Kingsbury III:93) */
   "argall":[[],["“Every man to set two acres with corn, tradesmen excepted. And no hay to sweat tobacco: it robs the beasts of their fodder.”"],[],[],[],[],[]],
@@ -30071,7 +30074,8 @@ const PRICE_SAYS={
 /* ---- THE THREE WHO ARE ASKED ---- */
 const PRICE_NPCS=[
   {id:"argall",name:"Captain Argall",voice:"male",role:"governs the colony, 1617 to 1619",at:0,eq:PRICE_PEOPLE[0].eq,
-   done:"“Plant your corn, and sell your tobacco at the price.”",
+   /* review, 27 Nov: was "Plant your corn, and sell your tobacco at the price"; he speaks in 1617, and the two-acre corn edict is 18 May 1618 (Kingsbury III:93) */
+   done:"“Sell your tobacco at the price. Not under, nor over.”",
    beats:[
     /* GH: "but five or six houses, the Church downe" (Tyler p. 330); the edict of 7 June 1617 (Kingsbury III:69) */
     {npc:"“I found the church down and tobacco in the streets. I have set the price by edict. Ask.”",
@@ -30107,12 +30111,14 @@ const PRICE_NPCS=[
       /* Rolfe to Sandys, January 1619/20 (Kingsbury III:243) */
       {t:"What did you write of the Dutch ship?",wise:true,ink:8,
        reply:"He shows you the line: “20. and odd … bought for victualls”. No names. No ages. Not servants, not slaves: bought.",
-       insight:{g:"known",b:"Bought for Victualls",s:"Rolfe’s letter of January 1620 is the main record of the Africans’ arrival. The governor and the cape merchant bought them, for food. He names none of them."}},
+       /* review, 27 Nov: was "The governor and the cape merchant bought them, for food" as bare fact; it is Rolfe's account (Kingsbury III:243) */
+       insight:{g:"known",b:"Bought for Victualls",s:"Rolfe’s letter of January 1620 is the main record of the Africans’ arrival. By his account the governor and the cape merchant bought them, for food. He names none of them."}},
       /* Kingsbury III:247 */
       {t:"Why defend Captain Argall?",fair:true,ink:3,
        reply:"Argall, “w’th whom my reputacon hath bene vniustly joynted”, he writes. He calls Argall’s accusers falsehearted."},
       {t:"So they are servants, like the English.",wise:false,
-       reply:"He taps the page. He wrote “bought”. No one wrote down a term for any of them."}]}]}];
+       /* review, 27 Nov: was "No one wrote down a term for any of them"; the record says no such entry is known, and the register's absence "proves nothing either way" (CH9-RECORD, status) */
+       reply:"He taps the page. He wrote “bought”. No term for any of them is known."}]}]}];
 
 function priceSpeaker(id){
   const day=priceW().day;
@@ -30151,12 +30157,14 @@ const PRICE_LOOKS=[
   /* Rolfe via GH, Tyler p. 336 */
   [["plants","A Thousand Plants",30,30,"So covetous","<p>Rolfe, 1619: one man may tend four acres of corn and a thousand tobacco plants.</p><p>But “many are so covetous to have much, they make little good”.</p>"]],
   /* Pory, Tyler pp. 268, 274-275; Rolfe, Kingsbury III:242 */
-  [["pillory","The Pillory",28,24,"Thomas Garnett","<p>A servant, for neglect and for falsely accusing his master, Captain William Powell, was sentenced: he “should stand fower dayes with his eares nayled to the Pillory”, and be whipped each day.</p><p>The first sentence in Pory’s record fell on a servant.</p>"],
+  /* review, 27 Nov: was "for neglect and for falsely accusing his master" as bare fact; "falsely" is the court's finding (Pory, Tyler p. 268) */
+  [["pillory","The Pillory",28,24,"Thomas Garnett","<p>A servant, found guilty of neglect and of falsely accusing his master, Captain William Powell, was sentenced: he “should stand fower dayes with his eares nayled to the Pillory”, and be whipped each day.</p><p>The first sentence in Pory’s record fell on a servant.</p>"],
    ["spelman","Henry Spelman",-24,22.5,"A greater governor","<p>The interpreter Spelman told Opechancanough “that within a yeare there would come a Governor greatter then this that nowe is in place”.</p><p>Pory: he lost his captaincy and owed seven years’ service. Rolfe: he was pardoned.</p>"]],
   /* Rolfe, Kingsbury III:243 */
   [["treasurer","The Treasurer",8,60,"Gone out of the Bay","<p>Days later the <i>Treasurer</i>, Argall’s privateer, came in. The people of Kecoughtan would not feed her crew “vpon any termes”.</p><p>She sailed before the governor’s men could reach her.</p>"]],
   /* Rolfe, Kingsbury III:244-245 */
-  [["message","Opechancanough’s Answer",14,11.5,"Kindly taken","<p>Autumn 1619. Rolfe and Captain Powell sent messengers up the Pamunkey to Opechancanough. Their message “was kindly taken”.</p><p>His people called the interpreter Poole a man who sought to break the league.</p>"]]];
+  /* review, 27 Nov: unattributed; both lines are Rolfe's report (Kingsbury III:244-245) */
+  [["message","Opechancanough’s Answer",14,11.5,"Kindly taken","<p>Rolfe, autumn 1619: he and Captain Powell sent messengers up the Pamunkey to Opechancanough. Their message “was kindly taken”.</p><p>Rolfe writes that his people called the interpreter Poole a man who sought to break the league.</p>"]]];
 
 /* ---- DID TOBACCO CAUSE IT? ----  per scene; k: 0 caused it, 1 helped it, 2 not tobacco */
 const PRICE_K=["Caused it","Helped it","Not tobacco"];
@@ -30171,7 +30179,8 @@ const PRICE_CAUSE={
   2:[{t:"Fifty acres for each person shipped, to whoever paid",k:1,why:"London wanted settlers; tobacco made the land worth having"},
      {t:"A General Assembly ordered for Virginia",k:2,why:"London politics, after the partnership ended"},
      {t:"Tobacco priced at three shillings and eighteen pence",k:0,why:"a rule made for tobacco"}],
-  3:[{t:"Argall sails home “privatly”",k:2,why:"a quarrel inside the Company"},
+  /* review, 27 Nov: was "Argall sails home “privatly”"; the record's "privatly" is the pinnace that came from England for him (GH, Tyler p. 335) */
+  3:[{t:"A pinnace comes “privatly” to take Argall home",k:2,why:"a quarrel inside the Company"},
      {t:"Freed planters hurry to clear their land",k:1,why:"freed by London’s rules; eager to plant"},
      {t:"Planters “so covetous” they “make little good”",k:0,why:"Rolfe, of tobacco, 1619"},
      {t:"A plentiful summer, and many dead",k:2,why:"sickness, English and Indian"}],
@@ -30288,7 +30297,8 @@ function priceAct(d){
   if(d.kind==="edict"){
     /* Kingsbury III:69, an abstract by a later clerk */
     priceQuiz("Jamestown · 7 June 1617","Argall’s edict",
-      "<p>Argall’s first orders, as a clerk later copied them: “Tob° at 3/ p [lb] & not under or over penalty 3 years Slavery to the Colony”.</p><p>Three shillings a pound, by law. Who gains from a fixed price?</p>",
+      /* review, 27 Nov: was "first orders"; these are his first recorded edicts, abstracts of a lost register (Kingsbury III:69) */
+      "<p>Argall’s first recorded orders, as a clerk later copied them: “Tob° at 3/ p [lb] & not under or over penalty 3 years Slavery to the Colony”.</p><p>Three shillings a pound, by law. Who gains from a fixed price?</p>",
       [["The planter: he knows his price","A known price","<p>A planter knew what a pound would fetch before he planted. “Slavery” here is an Englishman’s sentence: unpaid work for the colony, for three years, with an end.</p>"],
        ["The buyer: he pays what he likes","Not under or over","<p>The buyer could pay neither less nor more. “Slavery” here is an Englishman’s sentence of unpaid work, with an end.</p>"],
        ["Nobody: tobacco had no price","It had one","<p>Three shillings a pound, fixed by law. “Slavery” here is an Englishman’s sentence of unpaid work, with an end.</p>"]],"edict");
@@ -30360,9 +30370,11 @@ function priceAct(d){
   if(d.kind==="argall"){
     /* GH, Tyler p. 335; Pory, Tyler pp. 275-276; Discourse, Tyler p. 433; Rolfe, Kingsbury III:247 */
     priceQuiz("The planters’ land · Easter 1619","Argall goes home",
-      "<p>Argall sailed home about Easter, “privatly”. His enemies later accused him of selling land that was not his, and keeping men as servants past their time. Rolfe defended him.</p><p>What can a historian say?</p>",
+      /* review, 27 Nov: was "Argall sailed home about Easter, “privatly”"; the pinnace came "privatly from England" for him (GH, Tyler p. 335) */
+      "<p>About Easter a pinnace came “privatly from England” for Argall, and he sailed home in her. His enemies later accused him of selling land that was not his, and keeping men as servants past their time. Rolfe defended him.</p><p>What can a historian say?</p>",
       [["Charges and a defence, unsettled","Charges","<p>His enemies wrote the charges; his friend wrote the defence. The record cannot say which was true. It was a Company quarrel, carried into Virginia.</p>"],
-       ["He was guilty of it all","Not proven","<p>Charges are not proof. Rolfe defended him, and London later knighted him.</p>"],
+       /* review, 27 Nov: was "London later knighted him"; EV: he defended himself in London and was knighted, 26 June 1622 */
+       ["He was guilty of it all","Not proven","<p>Charges are not proof. Rolfe defended him, and in 1622 he was knighted.</p>"],
        ["He was innocent of it all","Not proven","<p>A friend’s defence is not proof either. The record leaves it open.</p>"]],"argall");
     return;
   }
@@ -30375,7 +30387,7 @@ function priceAct(d){
   if(d.kind==="clear"){
     priceDone("clear");
     /* Rolfe, Kingsbury III:245; GH, Tyler p. 337 */
-    fortResult("Their owne lands","<p>Rolfe: “now knowing their owne lands, they strive and are p’pared to build houses & to cleere their grounds ready to plant”.</p><p>Ensign Spence and Sergeant Barret were the first to go out.</p>",["+6 Ink"]);
+    fortResult("Their owne lands","<p>Rolfe: “now knowing their owne lands, they strive and are p’pared to build houses & to cleere their grounds ready to plant”.</p><p>Smith’s book: Ensign Spence and Sergeant Barret were the first to go out.</p>",["+6 Ink"]); /* review, 27 Nov: attributed; the first farmers are GH's (Tyler p. 337), not Rolfe's letter */
     return;
   }
   if(d.kind==="summer"){
@@ -30396,8 +30408,10 @@ function priceAct(d){
   }
   if(d.kind==="martin"){
     /* Pory, Tyler pp. 253-254, 261 */
-    priceQuiz("The church · Saturday 31 July","Captain Martin’s men",
-      "<p>Captain Martin’s men, trading in the bay, met Indians “refusing to sell their Corne”. They took it by force, and paid in beads. The Indians complained to Opechancanough, who sent word to the governor.</p><p>What did the Assembly do?</p>",
+    /* review, 27 Nov: was "Saturday 31 July"; Pory does not date the canoe complaint, and it stands before his "Satturday, July 31" (pp. 253-254, 257-260).
+       Was told as bare fact; it is a complaint sworn by Thomas Davis (p. 253) */
+    priceQuiz("The church · Captain Martin’s patent","Captain Martin’s men",
+      "<p>A sworn complaint: Captain Martin’s men, trading in the bay, met Indians “refusing to sell their Corne”, took it by force, and paid in beads. The Indians complained to Opechancanough, who told the governor.</p><p>What did the Assembly do?</p>",
       [["Made Martin answer for it","Security","<p>Martin had to give security against any such outrage again. His burgesses were shut out: his patent put his people outside the colony’s laws.</p>"],
        ["Nothing: the Indians had no say","They acted","<p>The complaint came through Opechancanough, and the Assembly acted on it. It is the one Powhatan voice in Pory’s record.</p>"],
        ["Gave the corn back","Not that","<p>Martin had to give security against any such outrage again. Pory does not say the corn went back.</p>"]],"martin");
@@ -30406,9 +30420,10 @@ function priceAct(d){
   if(d.kind==="price"){
     /* Pory, Tyler pp. 259-260, 266-268 */
     priceQuiz("The church · the price","Three shillings",
-      "<p>The cape merchant, Abraham Persey, had no order to pay the set price. So the Assembly laid it on him: “you are bounde to accepte of the Tobacco of the Colony … at three shillings the beste and the second sorte at 18d the punde”.</p><p>Who gains?</p>",
+      /* review, 27 Nov: was "had no order" as bare fact; it is what Persey "said" (Pory, Tyler pp. 259-260) */
+      "<p>The cape merchant, Abraham Persey, said he had no order to pay the set price. So the Assembly laid it on him: “you are bounde to accepte of the Tobacco of the Colony … at three shillings the beste and the second sorte at 18d the punde”.</p><p>Who gains?</p>",
       [["The planters","A known price","<p>Every planter knew his price. Persey ran the Magazine, the store all tobacco had to pass through. Leaf too poor to sell was to be “burnt before the owner’s face”.</p>"],
-       ["The merchant","Not him","<p>He did not want it: he had no such order. The law protected the planters.</p>"],
+       ["The merchant","Not him","<p>He did not want it: he said he had no such order. The law protected the planters.</p>"],
        ["The King","Not the King","<p>The price protected the planters, who had to sell to the Magazine.</p>"]],"price");
     return;
   }
@@ -30445,9 +30460,10 @@ function priceAct(d){
     /* EV: the 1624 and 1625 musters; Pory, Tyler p. 250 (Tucker a burgess) */
     priceQuiz("Point Comfort · what is known","Their names",
       "<div class=\"starveCard leafBlank\"><b>Their names</b><p>In 1619: none recorded.</p></div>"+
-      "<p>Later musters name a few. 1624: Angela, at Jamestown. 1625: Antony and Isabella, and their son William, in the house of Captain William Tucker, a burgess in 1619.</p>"+
-      "<p>Rolfe wrote “bought”. The 1625 muster wrote “servants”. Virginia had no law of slavery yet. Were they held for life, or for a term?</p>",
-      [["The record does not say","Not recorded","<p>No term was written down for any of them. They were bought. The law had no word yet for what they were. Whatever it was, they did not choose it.</p>"],
+      /* review, 27 Nov: was "No term was written down for any of them"; no entry is known, and the register's absence "proves nothing either way" (CH9-RECORD, status). Card trimmed to budget */
+      "<p>Later musters name a few: Angela (1624, Jamestown); Antony, Isabella and their son William (1625, in the house of William Tucker, a 1619 burgess).</p>"+
+      "<p>Rolfe wrote “bought”; the 1625 muster, “servants”. Virginia had no slavery law yet. Held for life, or for a term?</p>",
+      [["The record does not say","Not recorded","<p>No term for any of them is known. They were bought. The law had no word yet for what they were. Whatever it was, they did not choose it.</p>"],
        ["For life, by Virginia law","No such law","<p>Virginia had no slavery law in 1619. The record does not say whether they were held for life, or for a term.</p>"],
        ["For seven years, by contract","No contract","<p>No contract for any of them is known. The record does not say whether they were held for life, or for a term.</p>"]],"names");
     return;
@@ -30761,7 +30777,8 @@ CONTENT.ch9={
        o:["Men were planting tobacco instead","The colony had too much corn already","The Company wanted corn shipped home","The Powhatan had asked for the corn"],a:0},
       {stim:"In Argall’s orders, “slave” meant an Englishman sentenced to unpaid work for the colony, for a week, a year or three years.",
        q:"What was different for the Africans bought in 1619?",
-       o:["No end to it was written down","They were paid wages for their work","They were all sent home within a year","They had signed contracts in England"],a:0},
+       /* review, 27 Nov: was "No end to it was written down"; the record "gives the captives none", but whether anyone recorded a term is not known */
+       o:["No end to it is on record","They were paid wages for their work","They were all sent home within a year","They had signed contracts in England"],a:0},
       {stim:"Smith’s book (1624): Jamestown in 1617 had “but five or six houses, the Church downe”. Rolfe, there in June 1617: the colony was “in good estate”.",
        q:"Why might they disagree?",
        o:["Each writer had his own purpose","One wrote about a different town","The town was rebuilt in a single week","Rolfe had not yet reached Virginia"],a:0},
@@ -30773,29 +30790,33 @@ CONTENT.ch9={
        o:["That the peace would hold","How and where Powhatan died","Who would govern the English","What Powhatan’s people felt"],a:0},
       {stim:"The 1618 charter: fifty acres for each person shipped, even if they “dye after they are shiped”, granted to whoever paid the passage.",
        q:"A planter ships six servants. How many acres does he get?",
-       o:["Three hundred","Fifty","Six hundred","None, if two die"],a:0},
+       /* review, 27 Nov: was "Six hundred"; arguably true, since the charter grants "as many more upon a second division" (Kingsbury III:108) */
+       o:["Three hundred","Fifty","Two hundred","None, if two die"],a:0},
       {stim:"Pory, 1619: one man made £200 by his own labour; another, with six servants, £1,000. Then: “Our principall wealth (I should have said) consisteth in servants.”",
        q:"Why the correction?",
        o:["Servants made the big fortunes","Tobacco had stopped selling in England","Servants cost nothing to bring over","Pory had no servants of his own"],a:0},
       {stim:"Of the laws the 1619 Assembly passed, at least nine are about servants: terms, contracts, runaways, marriages.",
        q:"What does the number tell you?",
        o:["Planters needed hands badly","Servants sat in the Assembly","There were few servants left","Servants had written the laws"],a:0},
-      {stim:"31 July 1619: the cape merchant, Abraham Persey, is “bounde to accepte” tobacco at three shillings. Four weeks later he and the governor bought the Africans.",
+      {stim:"31 July 1619: the cape merchant, Abraham Persey, is “bounde to accepte” tobacco at three shillings. Four weeks later, Rolfe writes, he and the governor bought the Africans.", /* review, 27 Nov: the purchase attributed to Rolfe (Kingsbury III:243) */
        q:"What can a historian say about the link?",
        o:["Likely, but no 1619 source says so","Proven by Persey’s own letter","Impossible: they were different men","Certain: the law ordered the purchase"],a:0},
       {stim:"Captain Martin’s patent freed his people “from any comaunde of the Colony”. The Assembly shut out his burgesses as “spies rather than loyal Burgesses”.",
        q:"What principle was the Assembly defending?",
        o:["One law for every plantation","The right of any captain to rule","The King’s right to the tobacco","Martin’s right to his own land"],a:0},
-      {stim:"Martin’s men took corn from a canoe, paying in beads. The owners complained to Opechancanough, who told the governor.",
+      /* review, 27 Nov: attributed; the canoe is a sworn complaint (Pory, Tyler p. 253) */
+      {stim:"A sworn complaint: Martin’s men took corn from a canoe, paying in beads. The owners complained to Opechancanough, who told the governor.",
        q:"What did the Assembly do?",
        o:["Made Martin answer for it","Ignored the complaint","Sent soldiers to the canoe","Banished Opechancanough"],a:0},
-      {stim:"Garnett, a servant, accused his master and was nailed by the ears to the pillory. Spelman told Opechancanough a greater governor was coming, and was punished.",
+      /* review, 27 Nov: was "was nailed by the ears" and "was punished"; the record has Garnett's sentence, not its carrying out, and Rolfe says Spelman was pardoned (Tyler pp. 268, 275; Kingsbury III:242) */
+      {stim:"Garnett, a servant, accused his master and was sentenced to the pillory, his ears nailed. Spelman told Opechancanough a greater governor was coming, and was sentenced too (Rolfe says pardoned).",
        q:"What do the two cases show?",
        o:["Speaking against masters was risky","Servants could say what they liked","The Assembly had no power to punish","Spelman was the governor’s close friend"],a:0},
       {stim:"Pory: the people had “gotten the raines of former servitude into their owne swindge”.",
        q:"Whose servitude was ending in 1619?",
        o:["The English planters’","The Africans’, just arrived","The Powhatan peoples’","Every servant’s in Virginia"],a:0},
-      {stim:"Rolfe: “20. and odd Negroes … bought for victualls”. Smith, 1624: a Dutch ship “sold us twenty Negars”. (The words English writers used.)",
+      /* review, 27 Nov: Rolfe's "Negroes" trimmed; the record keeps each period word to once on screen, and his is on the Point Comfort card */
+      {stim:"Rolfe: “20. and odd … bought for victualls”. Smith, 1624: a Dutch ship “sold us twenty Negars”. (The words English writers used.)",
        q:"What did Smith change?",
        o:["The number and the verb","He added the Africans’ names","He moved it to another year","He said the ship was English"],a:0},
       {stim:"Pory sent his letter home on the ship that brought the Africans, and never mentioned them.",
@@ -30809,16 +30830,19 @@ CONTENT.ch9={
        o:["In Spain’s records","In Rolfe’s private diary","They cannot find it at all","In the Assembly’s laws"],a:0},
       {stim:"The 1625 muster lists Antony, Isabella and their son William as “servants”. Bermuda’s governor called the Treasurer’s Africans “Slaves”.",
        q:"What do the two words show?",
-       o:["No settled word for them yet","They were paid like English servants","All of them were freed by 1625","Bermuda held different people"],a:0},
+       /* review, 27 Nov: was "Bermuda held different people"; literally true (the Treasurer's Africans went to Bermuda), so arguably right */
+       o:["No settled word for them yet","They were paid like English servants","All of them were freed by 1625","Both men saw them as free"],a:0},
       {stim:"The 1619 Assembly was ordered by the Company in London, after its partnership ended, to draw settlers and money.",
        q:"Did tobacco cause the Assembly?",
        o:["Not itself: London politics did","Yes: the planters demanded it","Yes: the King ordered it for tobacco","No: Opechancanough asked for it"],a:0},
-      {stim:"The Dutch ship came to Point Comfort by chance, from privateering in the West Indies, its captain short of food.",
+      /* review, 27 Nov: was "its captain short of food" as fact; Rolfe hedges it ("as he [p'tended]", Kingsbury III:243) */
+      {stim:"The Dutch ship came to Point Comfort by chance, from privateering in the West Indies. Its captain, Rolfe says, wanted food.",
        q:"Did tobacco bring the ship?",
        o:["No: chance brought it","Yes: it came to buy tobacco","Yes: Virginia had sent for it","No: Spain sent it to Virginia"],a:0},
       {stim:"Smith’s list of 1619–20, from the Company’s records: “young women to make wives ninety”.",
        q:"Who decided what these women were for?",
-       o:["The Company in London","The women, each for herself","The Powhatan towns nearby","The burgesses at Jamestown"],a:0}]},
+       /* review, 27 Nov: was "The women, each for herself"; arguably true, since they went by consent (Tyler p. 339 n. 2) */
+       o:["The Company in London","The King, by proclamation","The Powhatan towns nearby","The burgesses at Jamestown"],a:0}]},
   ready:function(){
     const w=priceW();
     return (w.day>=PRICE_DAYS.length-1&&w.did.closed)?{ok:true,missing:[]}:{ok:false,missing:["the letters home, in 1619"]};
@@ -31230,7 +31254,8 @@ const CHAPTERS=[
        "<p>Their son Thomas stayed in England. Powhatan died the next year. The colony had found what England would buy. Now it needed land, and hands to work it.</p>"}},
   {n:"IX",yr:"1617–20",t:"The Price of Tobacco",d:"Jamestown, London, the new farms and Point Comfort — May 1617 to March 1620",
    ready:true,world:"ch9",pace:2.5,near:9,
-   intro:function(){ return "Tobacco sold at three shillings a pound, by law. Planters wanted land, and hands to work it. In 1619 Virginia’s General Assembly met, and four weeks later a ship brought twenty-some captive Africans. Did tobacco cause it all? The buying and selling of people, harsh punishments, period words: in the sources’ words, none of it shown."; },
+   /* review, 27 Nov: trimmed to the card budget (was 45 words before the content note) */
+   intro:function(){ return "Tobacco sold at three shillings a pound, by law. Planters wanted land and hands. In 1619 an Assembly met; weeks later a ship brought captive Africans. Did tobacco cause it all? The buying and selling of people, harsh punishments, period words: in the sources’ words, none of it shown."; },
    obj:function(){ return "Live seven scenes, 1617 to 1620. After each, weigh the causes: did tobacco cause it, help it, or not cause it at all? Then sit with Master Pory."; },
    goals:function(){
      const w=priceW(), need=priceNeed();
@@ -31252,9 +31277,11 @@ const CHAPTERS=[
      if(o)return {it:R(o),why:w.did.closed?"the chapter ends here":"the next date"};
      return null; },
    /* Pory to Carleton, 30 Sept. 1619 (Tyler pp. 285-287); GH, Tyler p. 339 */
-   end:{head:"The Price of Tobacco — Complete",yr:"Chapter IX · January 1620",nextWorld:null,
+   /* review, 27 Nov: was "January 1620"; the chapter's last scene is the March 1620 muster. Was "The Company's records
+      for that year list"; the line is Smith's book, citing "the Companies records" (GH, Tyler p. 339) */
+   end:{head:"The Price of Tobacco — Complete",yr:"Chapter IX · March 1620",nextWorld:null,
      body:"<p>Pory’s letter went home on the Dutch ship: “Our principall wealth (I should have said) consisteth in servants.” Of the Africans, not a word.</p>"+
-       "<p>The Company’s records for that year list, among the people sent: “young women to make wives ninety”.</p>"}},
+       "<p>Smith’s book, from the Company’s records, lists among the people sent that year: “young women to make wives ninety”.</p>"}},
 ];
 /* The title screen is shown before any world begins, so it needs painting once here.
    Safe at this point and not one line earlier: CHAPTERS is closed above. */
@@ -32747,7 +32774,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0624";
+const BUILD="20261127-0641";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
