@@ -71,6 +71,12 @@
       "source": "made for this game: a brass basin with a ewer standing in it, one of the Company's presents to Powhatan. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 11, prompt \"An early seventeenth-century English brass basin, wide and shallow, with a tall brass ewer standing in it, plain hammered metal. Three-quarter view from slightly above, the whole object in frame with margin, every part visible, plain pure white studio background, soft even lighting, photoreal product photo.\"; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI; reduced and colour-baked by tools/blender/bake_glb.py (--tris 2500 --height 1.08 --voxel 0.01) (2026-11-27)",
       "licence": "own",
       "notes": "binary glTF, vertex colours only, 2,500 triangles, 250 KB; spawned in PRES_CROWN() in index.html (Chapter VI, the crowning)"
+    },
+    {
+      "path": "assets/props3d/carcass.glb",
+      "source": "made for this game: a white-tailed doe lying dead on her side, the venison Thomas Savage brought down from Powhatan. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7, prompt \"A dead white-tailed deer doe lying on her side on the ground, her four legs bound together with a cord, eyes closed, no blood and no wounds, brown summer coat with a white belly. Full body three-quarter view from slightly above showing the head, the legs and the tail, plain pure white background, photoreal, studio lighting.\"; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI; reduced and colour-baked by tools/blender/bake_glb.py (--tris 2000 --height 2.0 --voxel 0.025) (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 2,000 triangles, 200 KB; placed in the fort scene of Chapter VII (early October 1609) by the gate"
     }
   ]
 }

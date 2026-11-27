@@ -28509,10 +28509,15 @@ registerWorld("ch7",function(root){
         root.add(bakeFigure(f));solid(a[0],a[1],0.8,0.8,LVL.MAIN,0);});
       /* Thomas Savage, come down from Powhatan with venison */
       const sv=buildFigure(crowdEq("boy",9));sv.position.set(8,G(8,38),38);sv.rotation.y=-2.6;root.add(sv);solid(8,38,1,1,LVL.MAIN,0);
-      const V=new Geo(), deer=RGB(0x8a6440), deerD=RGB(0x5e4430), vy=G(8,41);
-      V.oct(8,41,vy,vy+1.0,0.9,1.7,0.7,1.4,0.2,deerD,deer);                 /* the carcass, lying */
-      V.box(8,vy+0.5,42.9,0.5,0.5,0.9,deer);V.beam8([7.6,vy+0.3,40.2],[6.4,vy+0.2,39.4],0.15,0.1,deerD,deerD);
-      V.beam8([8.4,vy+0.3,40.2],[9.6,vy+0.2,39.4],0.15,0.1,deerD,deerD);root.add(V.mesh(false,false));
+      /* 3d, 27 Nov: the carcass, lying, is assets/props3d/carcass.glb (TRELLIS.2): a doe on
+         her side, about 4 ft long, along z as the old one lay; the old octagon, box and legs
+         only if it fails */
+      const vy=G(8,41);
+      placeProp(root,"assets/props3d/carcass.glb","carcass",8,vy,41,Math.PI/2,1,function(){
+        const V=new Geo(), deer=RGB(0x8a6440), deerD=RGB(0x5e4430);
+        V.oct(8,41,vy,vy+1.0,0.9,1.7,0.7,1.4,0.2,deerD,deer);
+        V.box(8,vy+0.5,42.9,0.5,0.5,0.9,deer);V.beam8([7.6,vy+0.3,40.2],[6.4,vy+0.2,39.4],0.15,0.1,deerD,deerD);
+        V.beam8([8.4,vy+0.3,40.2],[9.6,vy+0.2,39.4],0.15,0.1,deerD,deerD);root.add(V.mesh(false,false));});
       presTable(root,G,-30,2.5);   /* play-test, 27 Nov: "Smith's List" was a label over bare ground */
       /* work, 27 Nov: Ratcliffe's company carrying their stores down to the pinnace, "to inhabit
          Point comfort" */
@@ -30690,7 +30695,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0528";
+const BUILD="20261127-0558";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
