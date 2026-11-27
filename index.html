@@ -2661,7 +2661,16 @@ const FACEDEF={
   /* THE ONLY FACE IN HERE THAT IS NOT A CHARACTER NOTE. Nineteen faces and not one of
      them was afraid, because until now nothing in the game needed a man to be. It is
      used for one shot, held close, and it is the whole of what the scene shows. */
-  afraid:    {eyes:"wide",   mouth:"open",  brow:"raised"}
+  afraid:    {eyes:"wide",   mouth:"open",  brow:"raised"},
+  /* THE FOUR A SCENE SWITCHES BETWEEN (setExpression). Not wardrobe faces and not character
+     notes: the plain states a person passes through. calm is also the face of anyone built
+     with none - a figure with no eyes was reported as a fault on the beach, and it was one. */
+  calm:      {eyes:"open",   mouth:"rest"},
+  worried:   {eyes:"open",   mouth:"worry", brow:"worried"},
+  angry:     {eyes:"narrow", mouth:"frown", brow:"angry"},
+  /* sick: the skin drawn toward grey-green from WHATEVER it was, unlike queasy's fixed green,
+     so it reads on every face in the game */
+  sick:      {eyes:"heavy",  mouth:"worry", brow:"worried", tintMix:0.36}
 };
 /* wardrobe entries the player can earn */
 const FACES={
@@ -2711,11 +2720,14 @@ function faceKeyOf(eq){
   const w=FACES[eq.face];
   return (w&&w.face)?w.face:eq.face;
 }
-function addFace(B,extra,key){
+function addFace(B,extra,key,L,bearded){
   const d=FACEDEF[key];if(!d)return;
   const DARK=RGB(0x241a12),WHITE=RGB(0xf7f3ea),GOLD=RGB(0xffd76a),PINK=RGB(0xcf6f78);
+  /* brows take the hair, darkened - a white-haired man's are not black */
+  const BROW=L?RGB(shadeHex(L.hairColor,L.hairColor>0x808080?0.70:0.62)):DARK;
   const EY=1.678,BR=1.752,MO=1.548,FZ=0.203,EX=0.082;
-  const f=function(w,h,x,y,col,rz,dz){B.box(x,y,FZ+(dz||0),w,h,0.028,col,rz||0);};
+  /* every feature is a flat plate on the face; at crowd detail only its front is built */
+  let f=function(w,h,x,y,col,rz,dz){figFlat(B,x,y,FZ+(dz||0),w,h,0.028,col,rz||0);};
   const E=d.eyes;
   const openEye=function(sx){f(0.055,0.078,sx*EX,EY,DARK);};
   const closedEye=function(sx){f(0.086,0.022,sx*EX,EY,DARK);};
@@ -2724,6 +2736,10 @@ function addFace(B,extra,key){
   const starEye=function(sx){
     f(0.096,0.021,sx*EX,EY,GOLD);f(0.021,0.096,sx*EX,EY,GOLD);
     f(0.072,0.018,sx*EX,EY,GOLD,0.79);f(0.072,0.018,sx*EX,EY,GOLD,-0.79);};
+  /* narrowed - angry, or squinting into the light: the eye a slot, tipped in at the nose */
+  const narrowEye=function(sx){f(0.064,0.036,sx*EX,EY-0.004,DARK,sx*0.16);};
+  /* heavy-lidded - sick, or worn out: half an eye under a lid line */
+  const heavyEye=function(sx){f(0.054,0.040,sx*EX,EY-0.016,DARK);f(0.074,0.018,sx*EX,EY+0.010,shadeRGB(DARK,1.6),sx*-0.10);};
   if(E==="open"){openEye(-1);openEye(1);}
   else if(E==="closed"){closedEye(-1);closedEye(1);}
   else if(E==="happy"){happyEye(-1);happyEye(1);}
@@ -2731,22 +2747,15 @@ function addFace(B,extra,key){
   else if(E==="star"){starEye(-1);starEye(1);}
   else if(E==="squint"){f(0.082,0.03,-EX,EY,DARK);openEye(1);}
   else if(E==="wink"){closedEye(-1);openEye(1);}
-  /* THE BEARD. Flat boxes on the face plane like everything else here, so it is in
-     keeping - and set a shade proud of it so it reads as hair over a jaw rather
-     than paint on one. The fork and the upturned moustache are the two things that
-     engraving is remembered for. */
-  if(d.beard==="forked"){
-    const HAIR=RGB(0x33251a),HAIR2=RGB(0x241a12);
-    f(0.236,0.072,0,1.474,HAIR,0,0.010);            /* the jaw */
-    f(0.196,0.062,0,1.412,HAIR,0,0.010);
-    f(0.076,0.076,-0.050,1.352,HAIR2,0.14,0.010);   /* and it forks */
-    f(0.076,0.076, 0.050,1.352,HAIR2,-0.14,0.010);
-    f(0.128,0.032,0,1.596,HAIR,0,0.014);            /* the moustache */
-    f(0.064,0.028,-0.082,1.608,HAIR,0.60,0.014);    /* turned up, both ends */
-    f(0.064,0.028, 0.082,1.608,HAIR,-0.60,0.014);
-  }
-  if(d.brow==="angry"){f(0.082,0.024,-EX,BR,DARK,-0.42);f(0.082,0.024,EX,BR,DARK,0.42);}
-  else if(d.brow==="raised"){f(0.072,0.02,-EX,BR-0.012,DARK,0.06);f(0.072,0.02,EX,BR+0.026,DARK,0.30);}
+  else if(E==="narrow"){narrowEye(-1);narrowEye(1);}
+  else if(E==="heavy"){heavyEye(-1);heavyEye(1);}
+  /* the beard is the head's (figHead), so it survives a change of expression */
+  if(d.brow==="angry"){f(0.082,0.024,-EX,BR-0.008,BROW,-0.42);f(0.082,0.024,EX,BR-0.008,BROW,0.42);}
+  else if(d.brow==="raised"){f(0.072,0.02,-EX,BR-0.012,BROW,0.06);f(0.072,0.02,EX,BR+0.026,BROW,0.30);}
+  else if(d.brow==="worried"){f(0.078,0.022,-EX,BR+0.010,BROW,0.34);f(0.078,0.022,EX,BR+0.010,BROW,-0.34);}
+  else if(E!=="none"&&E!=="star"){f(0.080,0.022,-EX,BR,BROW,0.05);f(0.080,0.022,EX,BR,BROW,-0.05);}
+  /* over a beard the mouth sits proud of it, or the beard swallows half of it */
+  if(bearded){const f0=f;f=function(w,h,x,y,col,rz,dz){f0(w,h,x,y,col,rz,(dz||0)+0.018);};}
   const arc=function(cx,cy,w,depth,n,down,col){
     for(let i=0;i<n;i++){
       const t=(n===1)?0:(i/(n-1))*2-1;
@@ -2762,6 +2771,10 @@ function addFace(B,extra,key){
   else if(M==="smirk"){arc(0.016,MO,0.15,0.045,5,false);f(0.03,0.026,0.088,MO+0.03,DARK);}
   else if(M==="open")f(0.088,0.078,0,MO-0.012,DARK);
   else if(M==="tongue"){arc(0,MO,0.17,0.05,5,false);f(0.062,0.05,0,MO-0.05,PINK,0,0.006);}
+  /* at rest: a short level mouth - neither pleased nor not */
+  else if(M==="rest")f(0.100,0.022,0,MO,DARK);
+  /* worried: a small mouth drawn down and pulled to one side */
+  else if(M==="worry"){f(0.062,0.022,0.008,MO-0.010,DARK);f(0.032,0.020,-0.036,MO-0.020,DARK,0.55);f(0.032,0.020,0.052,MO-0.020,DARK,-0.55);}
   const P=d.prop;
   if(P==="halo"){
     const h=new THREE.Mesh(new THREE.TorusGeometry(0.155,0.024,6,18),
@@ -2815,213 +2828,619 @@ const BOY_SCALE=0.86;
 /* feet -> figure-local, for anything world-sized built inside a figure */
 const FIG_FT=1/FIG_SCALE;
 
-/* ========== THE RIG ==========
-   Reported from play: "our normal models don't have hands, and they're missing
-   important joints for animation purposes."
+/* ========== THE LOOK: WHO A FIGURE IS, AS DATA ==========
+   Asked for (27 Nov 2026): better blocky people - shaped heads, hands, elbows and knees,
+   tapered limbs and real clothes - with ages and builds, a few expressions a scene can switch,
+   and NAMED PEOPLE RECOGNISABLE AND CONSISTENT. That last one is a data problem before it is
+   a modelling one. Every person in the game was one man in different clothes: the same head,
+   the same brown hair cap, no beard unless his FACE carried one (Smith's), the same height
+   unless he was a boy. So a figure now takes a LOOK - face shape, hair, beard, hat, colours,
+   build, age, sex - and the builder reads it. Nothing else changes for a caller: eq keeps
+   every field it had (torso, head, cloak, dye, face, boy...), and a figure with no `look`
+   is built from what eq already says.
 
-   Both were true. A figure was five meshes: one merged body, and four RIGID limbs
-   pinned at the shoulder and the hip. An arm was a single tapered tube from
-   shoulder to wrist with no elbow in it, so the only motion available was a swing
-   from the shoulder like a pendulum, and there was nothing on the end of it. The
-   only hand in the game was a bare skin band past the cuff, and only on the two
-   garments that HAVE a cuff.
+     eq.look = {                       every field optional; LOOK_DEFAULT fills the rest
+       sex:   "m" | "f"
+       age:   "child" | "boy" | "adult" | "old"     (eq.boy still means "boy")
+       build: "thin" | "normal" | "heavy"           (build_survivor still means "thin")
+       height: 1                       multiplier on top of the age's own scale
+       face:  "oval" | "round" | "long" | "square" | "narrow"      the shape of the head
+       hair:  "short" | "long" | "cropped" | "receding" | "bald" | "loose" | "bun" | "powhatan"
+       hairColor: hex                  (HAIR.* for the usual ones; an old man greys by himself)
+       beard: "none" | "stubble" | "short" | "full" | "pointed" | "forked" | "moustache"
+       beardColor: hex                 defaults to the hair
+       hat:   "cap" | "capotain" | "feather" | "broad" | "morion" | "coif" | "none"
+                                       null = whatever eq.head says (the wardrobe's hat)
+       dress: "shirt" | "doublet" | "buffcoat" | "merchant" | "bare" | "gown" | "tw"
+                                       null = whatever eq.torso says (the wardrobe's garment)
+       apron, mantle, beads, paint: booleans      (an apron on a gown or a Powhatan skirt;
+                                       a deerskin mantle; a chain of white beads; a red crown)
+       feet:  "shoes" | "moccasin" | "bare"
+       expr:  "calm"                   the resting face when eq.face names none
+       colors: {torso, breech, stock, cloak, hat, gown, apron, mantle, shoe}   raw hex,
+                                       each one winning over the dye for that part
+       skin:  hex                      over SKINS[eq.skin]
+     }
 
-   That is enough for walking and for nothing else. Every gesture this project will
-   ever want - a man hauling on a rope, holding a match to a pan, pointing at a
-   headland, shading his eyes, carrying a chest between two of them - needs an elbow
-   and a hand, and half of them need a knee.
+   eq.look may also be a STRING, the key of a named person in PEOPLE_LOOK. That table is
+   where the look book (stick-history-notes/docs/FIGURES-LOOKBOOK.md) gets wired, one entry
+   per person, so a man is the same man in his portrait, on the beach and in a cutscene -
+   they all go through here. Historical honesty applies: a look for a person with no
+   surviving likeness is a reconstruction from the record (age, rank, what he wore), and is
+   to be labelled so wherever a portrait is shown as him.
 
-   So the limbs are chains of joints now, each segment hung off the end of the one
-   above it:
+   ONE BUILDER, TWO DETAILS. buildFigure(eq,{lod:1}) is the crowd figure: the same man, the
+   same head and face, without the small parts nobody sees at fifty feet (buttons, thumbs,
+   garters, ears, the hidden ends of limbs), and with each hand and foot riding its forearm
+   and shin so he costs four fewer draw calls. bakeFigure gets the same saving by itself: the
+   small parts are marked as they are made (Geo.fine), and a bake leaves them out. */
+const HAIR={black:0x17120e,dark:0x2a1f16,brown:0x4e3a26,chestnut:0x613b22,auburn:0x7d4123,
+  sandy:0x9a7a4a,fair:0xbb9d64,grey:0x8c877f,white:0xcdc8bd};
+const LOOK_DEFAULT={sex:"m",age:"adult",build:"normal",height:1,face:"oval",hair:"short",
+  hairColor:HAIR.brown,beard:"none",beardColor:null,hat:null,dress:null,apron:false,
+  mantle:false,beads:false,paint:false,feet:"shoes",expr:"calm",colors:null,skin:null};
+/* named people, wired from the look book: PEOPLE_LOOK.smith={...}, then eq.look:"smith" */
+const PEOPLE_LOOK={};
+/* the age's own scale, and how much bigger the head is against the body: a child's head is
+   most of an adult's, which is the whole of what makes a small figure read as YOUNG rather
+   than as a man further away */
+const FIG_AGE={child:{s:0.70,head:1.16},boy:{s:BOY_SCALE,head:1.05},adult:{s:1,head:1},
+  old:{s:0.98,head:1,stoop:0.10}};
+/* width, depth and limb girth against a man of middling build */
+const FIG_BUILD={thin:{w:0.87,d:0.88,l:0.84},normal:{w:1,d:1,l:1},heavy:{w:1.15,d:1.26,l:1.14}};
+const FIG_HATS={head_cap:"cap",head_capotain:"capotain",head_feather:"feather"};
+function lookOf(eq){
+  const L=Object.assign({},LOOK_DEFAULT);
+  if(!eq)return L;
+  if(eq.boy)L.age="boy";
+  if(eq.build==="build_survivor")L.build="thin";
+  if(eq.skin==="tidewater"){L.hair="powhatan";L.hairColor=HAIR.black;L.feet="moccasin";}
+  let own=eq.look;
+  if(typeof own==="string")own=PEOPLE_LOOK[own]||null;
+  if(own){
+    for(const k in own)if(own[k]!==undefined&&own[k]!==null)L[k]=own[k];
+    /* a Powhatan woman's hair is not the men's half-shaved fashion */
+    if(L.sex==="f"&&eq.skin==="tidewater"&&!own.hair)L.hair="loose";
+  }
+  if(L.age==="old"&&!(own&&own.hairColor))L.hairColor=mixHex(L.hairColor,HAIR.grey,0.72);
+  if(L.beardColor===null)L.beardColor=L.hairColor;
+  return L;
+}
 
-     shoulder -> upper arm -> elbow -> forearm -> wrist -> hand (with a thumb)
-     hip      -> thigh     -> knee  -> shin    -> ankle -> foot
-     neck     -> head
+/* ---- the shape primitive the clothes needed ----
+   Geo.oct is a tapered octagon between two levels. A sleeve, a leg or a head is that. A
+   doublet is not: it has a waist and a chest and a peascod belly pushed forward, a gown is a
+   cone with a curve in its side, and a cloak is a shell open at the front. So: a LOFT through
+   any number of rings, each with its own height, half-width, half-depth and forward offset,
+   over the whole way round or only an arc of it.
+     rings: [[y, rx, rz, dz, colour], ...] bottom to top
+     n segments; a0..a1 an arc in radians from the front (+Z), clockwise seen from above -
+       omit for a closed ring, and then the front is a flat facet, the way it is on oct
+     two: emit both sides, for an open shell you can see into (a cloak, a skirt)
+     caps: "top" | "bottom" | "both" - closed ends, fanned from the middle
+     flank: as oct - the sides darker than the front, occlusion that survives turning
+   Caps that only ever face the inside of the body are marked fine, so a bake drops them. */
+function figLoft(G,cx,cz,rings,n,o){
+  o=o||{};
+  const full=(o.a0===undefined), A0=full?0:o.a0, A1=full?Math.PI*2:o.a1;
+  const sq=o.sq||2, fl=(o.flank===undefined)?1:o.flank, P=[], K=[];
+  const sp=function(v){return Math.sign(v)*Math.pow(Math.abs(v),2/sq);};
+  for(let k=0;k<rings.length;k++){
+    const r=rings[k], row=[], kr=[];
+    for(let i=0;i<=n;i++){
+      const a=full?((i+0.5)/n)*Math.PI*2:A0+(A1-A0)*i/n;
+      const s=Math.sin(a), c=Math.cos(a);
+      row.push([cx+sp(s)*r[1], r[0], cz+(r[3]||0)+sp(c)*r[2]]);
+      kr.push(1-(1-fl)*s*s);
+    }
+    P.push(row);K.push(kr);
+  }
+  const col=function(k){return rings[k][4]||rings[k-1][4];};
+  for(let k=0;k<rings.length-1;k++){
+    const c0=col(k), c1=col(k+1);
+    const inside=[cx,(rings[k][0]+rings[k+1][0])/2,cz+((rings[k][3]||0)+(rings[k+1][3]||0))/2];
+    for(let i=0;i<n;i++){
+      const a=P[k][i],b=P[k][i+1],c=P[k+1][i+1],d=P[k+1][i];
+      const ca=shadeRGB(c0,K[k][i]),cb=shadeRGB(c0,K[k][i+1]),cc=shadeRGB(c1,K[k+1][i+1]),cd=shadeRGB(c1,K[k+1][i]);
+      if(o.two){G.quad4(a,b,c,d,ca,cb,cc,cd);G.quad4(a,d,c,b,ca,cd,cc,cb);}
+      else quadOut4(G,a,b,c,d,ca,cb,cc,cd,inside);
+    }
+  }
+  const cap=function(k,inner){
+    const r=rings[k], ctr=[cx,r[0],cz+(r[3]||0)], cc=col(k||1);
+    const ref=[cx,(rings[0][0]+rings[rings.length-1][0])/2,cz];
+    const emit=function(){for(let i=0;i<n;i++)triOut4(G,ctr,P[k][i],P[k][i+1],cc,cc,cc,ref);};
+    if(inner)G.fine(emit);else emit();
+  };
+  const cp=o.caps||"";
+  if(cp==="top"||cp==="both")cap(rings.length-1,o.innerTop);
+  if(cp==="bottom"||cp==="both")cap(0,o.innerBottom);
+}
+/* a box whose front face is the whole of it at a distance: the other five faces are fine.
+   The face is drawn in these - an eye seen from the front is a dark rectangle, and the
+   depth of it only matters close to */
+function figFlat(G,x,y,z,w,h,d,col,rz){
+  if(G.lod){
+    const c=Math.cos(rz||0),s=Math.sin(rz||0),hx=w/2,hy=h/2,zf=z+d/2;
+    const q=function(a,b){return [x+a*c-b*s,y+a*s+b*c,zf];};
+    G.quad(q(-hx,-hy),q(hx,-hy),q(hx,hy),q(-hx,hy),col);
+    return;
+  }
+  const s=G.p.length;
+  G.box(x,y,z,w,h,d,col,rz);
+  /* box() emits +Z first (two triangles); everything after them is the relief */
+  const n=G.p.length/9, t0=s/9;
+  (G.F||(G.F=[])).push(t0+2,n);
+}
 
-   WHAT DOES NOT CHANGE: parts.la, parts.ra, parts.ll and parts.rl still name the
-   shoulder and hip nodes, because sixteen places in this file already rotate them
-   and every one of those keeps working untouched - rotating a shoulder still swings
-   the whole arm. The new joints are additions, not replacements.
+/* ========== THE HEAD ==========
+   Everything that turns when the head turns is in here: the skull, the face, the hair, the
+   beard and the HAT. Hats used to be built into the body mesh, so a man who looked round
+   left his hat facing the way he had been facing. In figure coordinates throughout, like
+   addFace, and pushed down to the neck pivot by the mesh's own offset. The face plate stays
+   at z=0.203 and 0.395 deep through the face band - see addFace. */
+function figHead(HD,ex,h,exprKey){
+  const L=h.L, fd=FACEDEF[exprKey]||FACEDEF.calm;
+  const SKH=h.skin;
+  const skinHex=fd.tint?fd.tint:(fd.tintMix?mixHex(SKH,0x9fae7a,fd.tintMix):SKH);
+  const SKIN=RGB(skinHex), SKD=shadeRGB(SKIN,0.86);
+  const FS={oval:[0.27,0.385,1.440],round:[0.33,0.400,1.450],long:[0.25,0.372,1.410],
+            square:[0.35,0.385,1.440],narrow:[0.24,0.355,1.432]}[L.face]||[0.27,0.385,1.44];
+  const jw=FS[0], cw=FS[1], chinY=FS[2];
+  const hc=RGB(L.hairColor), hcD=RGB(shadeHex(L.hairColor,0.72));
+  const bc=RGB(L.beardColor), bcD=RGB(shadeHex(L.beardColor,0.74));
+  const beard=L.beard!=="none"?L.beard:((FACEDEF[h.base]&&FACEDEF[h.base].beard)||"none");
+  /* stubble is a colour, not a shape: the jaw takes a little of the beard */
+  const jawC=(beard==="stubble")?RGB(mixHex(skinHex,L.beardColor,0.34)):SKIN;
+  /* chin to mouth: drawn back at the chin so the face has a jaw and not a front */
+  HD.oct(0,-0.012,chinY,1.495,jw,0.345,cw*0.93,0.395,0.40,shadeRGB(jawC,0.84),jawC,0.90);
+  HD.capsFine=true;                     /* the two middle sections: their ends are inside the head */
+  HD.oct(0,0,1.495,1.575,cw*0.93,0.395,cw,0.395,0.36,jawC,SKIN,0.90);
+  HD.oct(0,0,1.575,1.740,cw,0.395,cw,0.395,0.34,SKIN,SKIN,0.90);              /* cheek to brow */
+  HD.capsFine=false;
+  HD.oct(0,0,1.740,1.845,cw,0.395,cw*0.72,0.300,0.38,SKIN,shadeRGB(SKIN,0.94),0.90);  /* crown */
+  /* the back of the skull, which a head has and a box does not */
+  HD.oct(0,-0.040,1.545,1.800,cw*0.92,0.360,cw*0.88,0.350,0.42,SKD,SKIN,0.88);
 
-   WHAT IS STILL MISSING, said plainly: there is no spine. The torso is one merged
-   garment mesh - a doublet is drawn as continuous octagonal sections through the
-   waist - and bending a figure at the middle means splitting that, which is a
-   change to every garment rather than to the rig. Arms and head hang off the body
-   mesh, so leaning the chest alone would tear them off it. When a chapter needs a
-   man to bow or to bend over a boat, that is the next piece. */
+  /* a nose: four triangles proud of the face plate, lit from above and dark beneath */
+  const nT=[0,1.676,0.203],nL=[-0.031,1.582,0.203],nR=[0.031,1.582,0.203],nP=[0,1.592,0.243];
+  const nc=shadeRGB(SKIN,0.97), nd=shadeRGB(SKIN,0.70);
+  triOut4(HD,nT,nL,nP,nc,nc,nc,[0,1.62,0.15]);triOut4(HD,nT,nP,nR,nc,nc,nc,[0,1.62,0.15]);
+  triOut4(HD,nL,nR,nP,nd,nd,nd,[0,1.62,0.15]);
+  HD.fine(function(){                                                         /* ears */
+    for(let s=-1;s<=1;s+=2)HD.box(s*(cw/2+0.012),1.628,-0.012,0.03,0.092,0.072,SKD);
+  });
+
+  /* ---- hair ---- */
+  const hat=h.hat;
+  const covered=!!hat&&hat!=="none";
+  const H=L.hair;
+  if(H!=="bald"&&H!=="powhatan"&&!(covered&&hat==="coif")){
+    if(!covered&&H!=="receding")                                             /* the crown */
+      HD.oct(0,-0.012,1.795,1.878,cw*1.04,0.412,cw*0.88,0.36,0.36,hcD,hc);
+    const low=(H==="long"||H==="loose")?1.43:(H==="cropped")?1.64:(H==="receding")?1.57:1.56;
+    const top=(H==="receding")?1.74:1.815;
+    const wb=(H==="long")?1.10:(H==="cropped")?1.0:1.04;
+    HD.oct(0,-0.072,low,top,cw*wb,0.33,cw*1.04,0.345,0.40,hcD,hc,0.92);       /* back and sides */
+    if(!covered&&H!=="receding"&&H!=="cropped")                              /* the hairline */
+      HD.box(0,1.808,0.170,cw*0.80,0.045,0.070,hc);
+    if(H==="bun")HD.oct(0,-0.235,1.62,1.75,0.15,0.10,0.13,0.09,0.4,hcD,hc);
+  }
+  if(H==="powhatan"){
+    /* Percy at Kecoughtan: "they shave the right side of their heads with a shell, the
+       left side they weare of an ell long tied up with an artificiall knot". Asymmetric,
+       shaved RIGHT and long LEFT; the roach runs over the crown between them. */
+    HD.oct(-0.03,-0.02,1.790,1.880,0.28,0.38,0.22,0.32,0.40,hcD,hc);
+    HD.box(-0.178,1.640,-0.030,0.060,0.360,0.300,hcD);
+    HD.oct(-0.192,-0.085,1.330,1.470,0.120,0.120,0.135,0.135,0.40,hc,hc);       /* the knot */
+    HD.fine(function(){HD.box(0.186,1.70,-0.03,0.018,0.16,0.28,RGB(mixHex(skinHex,HAIR.black,0.30)));});
+  }
+
+  /* ---- beard ---- flat-faced and a shade proud of the jaw, so it reads as hair over it */
+  const must=function(){HD.box(0,1.596,0.214,0.128,0.030,0.024,bc);
+    HD.box(-0.072,1.590,0.212,0.050,0.026,0.022,bc,0.30);HD.box(0.072,1.590,0.212,0.050,0.026,0.022,bc,-0.30);};
+  if(beard==="short"){HD.oct(0,0.014,chinY-0.012,1.522,jw*1.06,0.360,cw*0.97,0.392,0.40,bcD,bc,0.9);must();}
+  else if(beard==="full"){HD.oct(0,0.018,chinY-0.050,1.522,jw*0.92,0.33,cw*0.96,0.396,0.42,bcD,bc,0.9);must();}
+  else if(beard==="pointed"){
+    must();
+    const t=[0,chinY-0.085,0.205],a=[-0.055,1.505,0.212],b=[0.055,1.505,0.212],c=[0,1.49,0.150];
+    triOut4(HD,a,b,t,bc,bc,bcD,[0,1.48,0.12]);triOut4(HD,b,c,t,bcD,bcD,bcD,[0,1.48,0.12]);
+    triOut4(HD,c,a,t,bcD,bcD,bcD,[0,1.48,0.12]);
+  }
+  else if(beard==="forked"){
+    /* JOHN SMITH'S, from the van de Passe engraving of 1616 */
+    HD.box(0,1.474,0.213,0.236,0.072,0.028,bc);HD.box(0,1.412,0.213,0.196,0.062,0.028,bc);
+    HD.box(-0.050,1.352,0.213,0.076,0.076,0.028,bcD,0.14);HD.box(0.050,1.352,0.213,0.076,0.076,0.028,bcD,-0.14);
+    HD.box(0,1.596,0.217,0.128,0.032,0.028,bc);
+    HD.box(-0.082,1.608,0.217,0.064,0.028,0.028,bc,0.60);HD.box(0.082,1.608,0.217,0.064,0.028,0.028,bc,-0.60);
+  }
+  else if(beard==="moustache")must();
+
+  addFace(HD,ex,exprKey,L,beard!=="none"&&beard!=="stubble");
+
+  /* ---- the hat ---- felt hats take the hat dye, mixed well toward black (h.hatC) */
+  const hb=RGB(h.hatC), hd=RGB(shadeHex(h.hatC,0.68));
+  if(hat==="cap"){
+    /* the Monmouth cap: knitted, a rolled edge, worn back on the head */
+    HD.oct(0,-0.025,1.760,1.815,0.452,0.462,0.455,0.465,0.45,hd,hd);
+    HD.oct(0,-0.025,1.815,1.935,0.432,0.442,0.380,0.390,0.45,hd,hb);
+    HD.oct(0,-0.035,1.935,1.985,0.380,0.390,0.240,0.250,0.50,hb,hb);
+  } else if(hat==="capotain"){
+    HD.oct(0,0,1.838,1.866,0.660,0.680,0.640,0.660,0.45,hd,hb);               /* brim */
+    HD.oct(0,0,1.862,2.170,0.405,0.415,0.335,0.345,0.40,hd,hb);               /* tall crown */
+    HD.oct(0,0,1.880,1.935,0.418,0.428,0.410,0.420,0.40,RGB(0x7a5a2a),RGB(0x7a5a2a));
+    HD.fine(function(){HD.box(0,1.907,0.214,0.060,0.058,0.020,RGB(0xb89a52));});
+  } else if(hat==="feather"||hat==="broad"){
+    const br=hat==="feather"?0.76:0.80;
+    HD.oct(0,0,1.838,1.862,br,0.68,br-0.02,0.66,0.45,hd,hb);
+    HD.oct(0,0,1.858,hat==="feather"?2.045:2.000,0.415,0.415,0.360,0.360,0.45,hd,hb);
+    if(hat==="feather"){
+      HD.oct(0,0,1.872,1.915,0.425,0.425,0.420,0.420,0.45,hd,hd);
+      HD.beam8([0.17,1.95,-0.02],[0.31,2.22,-0.13],0.065,0.022,RGB(0xe6d7b5),RGB(0xf1e8d2));
+    }
+  } else if(hat==="morion"){
+    /* the soldier's steel helmet: a high comb and a brim turned up fore and aft */
+    const st=RGB(0x9aa0a6), sd=RGB(0x5f656c);
+    HD.oct(0,0,1.758,1.985,0.440,0.470,0.200,0.250,0.50,sd,st);
+    HD.oct(0,0,1.752,1.778,0.560,0.760,0.540,0.740,0.62,sd,st);
+    HD.box(0,1.995,0,0.024,0.100,0.380,st);
+    HD.fine(function(){HD.box(0,1.81,0.37,0.30,0.05,0.04,st,0);HD.box(0,1.81,-0.37,0.30,0.05,0.04,st,0);});
+  } else if(hat==="coif"){
+    const LN=RGB(0xece6d6), LD=RGB(0xc9c2b2);
+    HD.oct(0,-0.020,1.790,1.918,0.420,0.425,0.330,0.340,0.40,LD,LN);
+    HD.oct(0,-0.075,1.520,1.810,0.418,0.330,0.420,0.345,0.40,LD,LN,0.92);
+    HD.box(0,1.798,0.178,0.300,0.034,0.040,hc);                              /* hair at the front */
+    HD.fine(function(){for(let s=-1;s<=1;s+=2)HD.box(s*0.205,1.585,0.03,0.026,0.15,0.10,LN);});
+  }
+  if(L.paint&&!covered)HD.box(0,1.866,-0.01,0.34,0.03,0.36,RGB(0x9a3a24));   /* the crown painted red */
+}
+
+/* ========== THE BODY ==========
+   A SPINE, at last. The note on the old rig said so plainly: there was none, the torso was
+   one merged garment mesh, and bending a man at the middle meant splitting every garment.
+   They are split now at the waist (SPINE_Y): below it, in the body mesh, the hips, the
+   skirts of a doublet, slops and gowns; above it, in a CHEST group that pivots at the waist,
+   the chest, the collar, the arms and the head. So a man can bow, haul, or bend over a boat
+   by turning parts.spine, and his arms and head go with his chest instead of tearing off it.
+   Nothing that rotated la/ra/neck before is affected: their pivots are where they were in
+   the figure, only now they are reached through the chest. */
 const RIG={
   NECK_Y:1.460,                        /* base of the skull, where a nod pivots */
+  SPINE_Y:0.980,                       /* the waist, where a bow pivots */
   SHO_Y:1.360, SHO_X:0.170,
-  /* Measured against a man and corrected: the hand came out 5.4 inches long
-     against a real 7.5, and the shoe 7.0 against a real 10. The two bones are
-     right - upper arm 12.1 inches against 12, thigh 17.7 against 17 - so they are
-     left alone rather than churned. */
+  /* Measured against a man and corrected: the hand came out 5.4 inches long against a real
+     7.5, and the shoe 7.0 against a real 10. The two bones are right - upper arm 12.1 inches
+     against 12, thigh 17.7 against 17. */
   UPARM:0.300, FOREARM:0.220, HAND:0.150,
   HIP_Y:0.800, HIP_X:0.110,
-  /* THIGH + SHIN is not free: the ankle has to land where the old rigid leg put the
-     top of its shoe, or the figure stands in the deck. The old shoe spanned figure
-     y 0.000 to 0.065, so ANKLE_Y must be 0.065 and the two bones must come to
-     0.800 - 0.065 = 0.735 between them. Guessed at 0.440 and 0.340 first, which is
-     0.780, and every figure in the game sank an inch and a half into the planking. */
+  /* THIGH + SHIN is not free: the ankle has to land where the old rigid leg put the top of
+     its shoe, or the figure stands in the deck - ANKLE_Y 0.065, so the bones come to 0.735 */
   ANKLE_Y:0.065, FOOT:0.065, SHOE_LEN:0.280,
   THIGH:0.400, SHIN:0.335
 };
-function buildFigureRaw(eq){
-  /* One merged mesh for the body, one for the head, and a chain of small meshes
-     per limb. Twenty-odd draw calls a character where it used to be six - which
-     Chapter I can afford twice over: measured, it runs 191 of a 600 ceiling. */
+function buildFigureRaw(eq,opt){
+  const lod=(opt&&opt.lod)?1:0;
+  const L=lookOf(eq);
   const g=new THREE.Group();
-  const B=new Geo(), HD=new Geo(), extra=[];
-  const SK=RGB(skinOf(eq));
-  /* one dye per garment, each falling back to eq.palette */
-  const palHex=dyeHex(eq,"torso");
-  const brHex=dyeHex(eq,"breech"), stHex=dyeHex(eq,"stock"),
-        clHex=dyeHex(eq,"cloak"),  hdHex=dyeHex(eq,"head");
+  const B=new Geo(), C=new Geo();
+  B.lod=lod;C.lod=lod;
+  const female=L.sex==="f";
+  const BF=FIG_BUILD[L.build]||FIG_BUILD.normal;
+  const bw=BF.w*(female?0.90:1), bd=BF.d*(female?0.95:1), lw=BF.l*(female?0.88:1);
+  const heavy=Math.max(0,BF.d-1);
+  const SKH=L.skin||skinOf(eq), SK=RGB(SKH);
+  const CO=L.colors||{};
+  const pickHex=function(part,dyePart){return (CO[part]!==undefined)?CO[part]:dyeHex(eq,dyePart||part);};
+  const palHex=pickHex("torso"), brHex=pickHex("breech"), stHex=pickHex("stock"),
+        clHex=pickHex("cloak");
   const CLOTH=RGB(palHex);
   const survivor=eq.build==="build_survivor";
-  const T=eq.torso;
-  const thin=survivor?0.075:0.095;
-  const WOOL=RGB(0x272e3d),WOOL2=RGB(0x1f2534),LINEN=RGB(0xf1ede2),PEWTER=RGB(0xbcc0c8),
-        LEATHER=RGB(0x6b4a2a),BUCKLE=RGB(0xc9a24a),STOCK=RGB(0xd2ccb8),SHOE=RGB(0x2a2118),
-        BUFF=RGB(0xb8996a),FINE=RGB(0x2b2636),CANVAS=RGB(0x8d8368),
-        HIDE=RGB(0x6d543a),THONG=RGB(0x7a6242);
+  const DR={torso_doublet:"doublet",torso_buffcoat:"buffcoat",torso_merchant:"merchant",torso_bare:"bare"};
+  let T=L.dress||DR[eq.torso]||"shirt";
+  if(T==="bare"&&female)T="tw";
+  const LINEN=RGB(0xf1ede2),PEWTER=RGB(0xbcc0c8),LEATHER=RGB(0x6b4a2a),BUCKLE=RGB(0xc9a24a),
+        SHOE=RGB(CO.shoe!==undefined?CO.shoe:0x2a2118),BUFF=RGB(0xb8996a),FINE=RGB(0x2b2636),
+        HIDE=RGB(0x6d543a),THONG=RGB(0x7a6242),DEER=RGB(0x9b7a52),DEERD=RGB(0x7a5c3c);
 
-  /* The chosen cloth used to reach ONLY the shirt-and-slops starter: every other
-     garment overwrote sleeveCol and breechCol with a hardcoded colour, so the
-     colour picker looked broken on three of four outfits. Now each garment takes
-     a shade OF the dye. Linen bands and cuffs stay white on purpose. */
-  const STOCKC=0xd2ccb8;                        /* pale wool, before any dye */
-  const WOOL_D=RGB(shadeHex(palHex,0.62));      /* the doublet body */
-  const WOOL_T=RGB(shadeHex(palHex,0.48));      /* its darker trim */
+  /* One dye per garment, each falling back to eq.palette; each garment takes a SHADE of
+     its dye. Linen bands and cuffs stay white on purpose. */
+  const STOCKC=0xd2ccb8;
+  const WOOL_D=RGB(shadeHex(palHex,0.62)), WOOL_T=RGB(shadeHex(palHex,0.48));
   let sleeveCol=CLOTH,cuffCol=null,breechCol=RGB(mixHex(brHex,0x8d8368,0.40)),
-      breechLen=0.38,stockCol=RGB(mixHex(stHex,STOCKC,0.34)),limbW=thin*1.45;
-  let breechIsWool=false;
-  if(T==="torso_doublet"){
-    sleeveCol=RGB(shadeHex(palHex,0.72));cuffCol=LINEN;
-    breechCol=RGB(shadeHex(brHex,0.62));breechIsWool=true;breechLen=0.46;
-  }
-  else if(T==="torso_buffcoat"){
-    /* ox-hide keeps its own colour - a buff coat was not dyed - but the
-       breeches and stockings under it are cloth, and they take the dye */
-    sleeveCol=BUFF;breechCol=RGB(shadeHex(brHex,0.55));breechLen=0.40;
-  }
-  else if(T==="torso_merchant"){
-    /* fine cloth held dye deepest, which is part of why it cost what it did */
-    sleeveCol=RGB(shadeHex(palHex,0.55));cuffCol=LINEN;
-    breechCol=RGB(shadeHex(brHex,0.44));breechLen=0.44;
-  }
-  else if(T==="torso_bare"){
+      stockCol=RGB(mixHex(stHex,STOCKC,0.34)),bareLegs=false,bareArms=false;
+  const gownHex=(CO.gown!==undefined)?CO.gown:mixHex(palHex,0x6e5236,0.55);
+  if(T==="doublet"){sleeveCol=RGB(shadeHex(palHex,0.72));cuffCol=LINEN;breechCol=RGB(shadeHex(brHex,0.62));}
+  else if(T==="buffcoat"){sleeveCol=BUFF;breechCol=RGB(shadeHex(brHex,0.55));}
+  else if(T==="merchant"){sleeveCol=RGB(shadeHex(palHex,0.55));cuffCol=LINEN;breechCol=RGB(shadeHex(brHex,0.44));}
+  else if(T==="bare"||T==="tw"){
     /* ---- BARE, WHICH THE WARDROBE HAD NO WAY TO SAY ----
-       Every torso in this game is a GARMENT. "none_torso" is not nothing - it is Shirt &
-       Slops, a loose linen shirt over canvas slops, which is what an English seaman wore.
-       So the five men on the dune at Cape Henry came out dressed as the party they were
-       shooting at, and I held the whole scene rather than ship that.
-       This is the missing option, and it is a real one rather than something pasted over
-       the shirt: the arms and legs take the skin, the chest is built in skin instead of
-       cloth below, and what remains is a hide clout at the waist on a thong. Percy, at
-       Kecoughtan four days after this: the men wore skins about the middle and little
-       else in warm weather.
-       NOT IN THE WARDROBE TABLE, deliberately - it is not a thing the player can put on,
-       it is a way of building somebody who is not English. */
-    sleeveCol=SK;cuffCol=null;breechCol=HIDE;breechIsWool=false;breechLen=0.16;
-    stockCol=SK;limbW=thin*1.30;
+       Not a garment the player can put on: a way of building somebody who is not English.
+       Percy, at Kecoughtan: skins about the middle and little else in warm weather. */
+    sleeveCol=SK;breechCol=HIDE;stockCol=SK;bareLegs=true;bareArms=true;
   }
-  else if(survivor){
+  else if(T==="gown"){sleeveCol=RGB(gownHex);cuffCol=LINEN;stockCol=RGB(0x4a4038);}
+  if(survivor&&!bareLegs){
     /* faded most of the way back to undyed wool */
     sleeveCol=RGB(mixHex(palHex,0x9a9280,0.66));
-    breechCol=RGB(mixHex(brHex,0x6f6552,0.70));limbW=thin;
+    breechCol=RGB(mixHex(brHex,0x6f6552,0.70));
     stockCol=RGB(mixHex(stHex,0x8b8474,0.66));
   }
+  if(CO.stock!==undefined)stockCol=RGB(CO.stock);
 
-  const fkey=faceKeyOf(eq), fdef=fkey?FACEDEF[fkey]:null;
-  const HEADC=(fdef&&fdef.tint)?RGB(fdef.tint):SK;
+  /* ---- the skeleton ---- */
+  const age=FIG_AGE[L.age]||FIG_AGE.adult;
+  const shoX=RIG.SHO_X+(bw-1)*0.17, hipX=RIG.HIP_X*(1+(bw-1)*0.6);
+  const spine=new THREE.Group(); spine.position.y=RIG.SPINE_Y;
+  const neck=new THREE.Group(); neck.position.y=RIG.NECK_Y-RIG.SPINE_Y;
+  if(age.head!==1)neck.scale.setScalar(age.head);
+  spine.add(neck);
 
-  B.box(0,1.10,0,thin,0.62,thin,SK);
-  /* ---- head, and a neck to carry it ----
-     A 0.40 cube was the single most block-like thing on the figure. It is three
-     stacked octagonal sections now: narrow at the jaw, widest across the
-     temples, drawing in again at the crown. Corners cut, so the silhouette
-     turns instead of stepping.
+  /* ---- torso: the chest, above the waist ---- */
+  const R=function(y,rx,rz,dz,c){return [y,rx*bw,rz*bd,dz||0,c];};
+  const belly=heavy*0.11;
+  let chestCol=CLOTH, chest;
+  if(T==="doublet"||T==="merchant"){
+    chestCol=(T==="merchant")?FINE:WOOL_D;
+    /* waist to chest, and the peascod point pushed forward at the front of the waist */
+    chest=[R(0.955,0.140,0.110,0.014+belly*0.5),R(1.07,0.153,0.122,0.010+belly),R(1.24,0.180,0.134,0.004),
+           R(1.385,0.187,0.128,0),R(1.448,0.128,0.100,-0.004)];
+  } else if(T==="buffcoat"){
+    chestCol=BUFF;
+    chest=[R(0.955,0.150,0.118,0.008+belly*0.5),R(1.07,0.162,0.128,0.008+belly),R(1.24,0.190,0.140,0.004),
+           R(1.385,0.194,0.132,0),R(1.448,0.132,0.104,-0.004)];
+  } else if(T==="bare"||T==="tw"){
+    chestCol=(T==="tw")?DEER:SK;
+    chest=[R(0.955,0.135,0.106,belly*0.5),R(1.10,0.150,0.118,belly),R(1.26,0.178,0.132,0.006),
+           R(1.385,0.190,0.126,0),R(1.448,0.130,0.100,-0.004)];
+    if(female)chest=[R(0.955,0.128,0.102),R(1.10,0.140,0.115,0.004),R(1.23,0.160,0.134,0.012),
+           R(1.37,0.168,0.124,0),R(1.448,0.125,0.100,0)];
+  } else if(T==="gown"){
+    chestCol=RGB(gownHex);
+    chest=[R(0.955,0.124,0.098),R(1.10,0.136,0.112,0.004),R(1.22,0.158,0.134,0.012),
+           R(1.37,0.164,0.122,0),R(1.448,0.125,0.100,0)];
+  } else {
+    /* a seaman's shirt, loose, and a little blousy above the sash */
+    chestCol=survivor?sleeveCol:CLOTH;
+    chest=[R(0.955,0.152,0.120,belly*0.5),R(1.08,0.162,0.128,0.004+belly),R(1.26,0.180,0.134,0.006),
+           R(1.385,0.188,0.128,0),R(1.448,0.135,0.104,-0.004)];
+  }
+  /* occlusion down the front and under the arms, baked into the colours */
+  for(let k=0;k<chest.length;k++)chest[k][4]=shadeRGB(chestCol,k===0?0.86:k===chest.length-1?0.95:1);
+  figLoft(C,0,0,chest,lod?8:10,{sq:2.6,flank:0.80,caps:"both",innerBottom:true});
+  /* the neck, and the skin core the old figure was built round */
+  C.oct(0,0,1.33,1.48,0.135,0.145,0.150,0.155,0.30,shadeRGB(SK,0.80),SK);
+  if(T==="bare"||T==="tw"){
+    /* a little modelling of the chest and shoulders, in shade, since there is no cloth to
+       carry it */
+    C.fine(function(){
+      for(let s=-1;s<=1;s+=2)C.box(s*0.075*bw,1.27,0.126*bd,0.12*bw,0.010,0.012,shadeRGB(SK,0.80),s*0.10);
+    });
+  }
 
-     The DEPTH is held at 0.395 through the whole face band on purpose. addFace
-     draws the eyes, brows and mouth on a flat plane at z=0.203, so the front of
-     the head has to stay where it was or every face in the game would float off
-     it. Width and the vertical profile do the work; the face plate is untouched.
+  /* ---- what is worn on the chest ---- */
+  if(T==="doublet"||T==="merchant"){
+    const band=T==="merchant"?1.12:1.0;
+    /* the falling band: a broad linen collar lying on the shoulders */
+    figLoft(C,0,0.004,[[1.418,0.205*band*bw,0.150*bd,0,LINEN],[1.458,0.215*band*bw,0.158*bd,0,LINEN],
+      [1.475,0.090,0.080,0,LINEN]],8,{sq:2.2,caps:"bottom",innerBottom:true});
+    C.box(0,1.432,0.128*bd,0.26*band,0.052,0.050,LINEN);
+    /* the wings at the shoulder seams */
+    for(let s=-1;s<=1;s+=2)C.oct(s*(shoX+0.02),0,1.355,1.425,0.11,0.26*bd,0.10,0.24*bd,0.40,WOOL_T,WOOL_T);
+    const btn=T==="merchant"?RGB(0xd8b25a):PEWTER;
+    C.fine(function(){for(let i=0;i<8;i++){const y=1.00+i*0.052;
+      const z=0.124*bd+(y<1.10?0.010:0.004)+(y<1.10?belly:0);C.box(0,y,z,0.030,0.030,0.024,btn);}});
+    /* the girdle, and a purse on it */
+    figLoft(C,0,0.012+belly*0.5,[[0.960,0.150*bw,0.120*bd,0,LEATHER],[1.005,0.150*bw,0.120*bd,0,LEATHER]],8,{sq:2.4});
+    C.fine(function(){C.box(0,0.983,0.134*bd+0.012+belly*0.5,0.052,0.050,0.020,BUCKLE);});
+    if(T==="doublet")B.box(-0.205*bw,0.905,0.05,0.10,0.13,0.07,RGB(0x7a5433));
+  } else if(T==="buffcoat"){
+    C.box(0,1.435,0.01,0.40*bw,0.05,0.28*bd,LINEN);
+    for(let s=-1;s<=1;s+=2)C.oct(s*(shoX+0.02),0,1.35,1.425,0.115,0.27*bd,0.105,0.25*bd,0.40,RGB(0xa2814f),RGB(0xa2814f));
+    /* the baldric, shoulder to hip, and the sash */
+    C.box(0.0,1.20,0.140*bd,0.06,0.62,0.03,RGB(0x5a3d26),0.55);
+    C.box(0.0,1.20,-0.138*bd,0.06,0.62,0.03,RGB(0x5a3d26),-0.55);
+    figLoft(C,0,0.008,[[0.955,0.158*bw,0.126*bd,0,RGB(0x6b4a2f)],[1.005,0.160*bw,0.128*bd,0,RGB(0x6b4a2f)]],8,{sq:2.4});
+    C.fine(function(){for(let i=0;i<6;i++)C.box(0,1.04+i*0.06,0.140*bd,0.024,0.040,0.020,RGB(0x5a3d26));});
+  } else if(T==="gown"){
+    /* a kerchief round the neck and crossed at the breast */
+    figLoft(C,0,0.004,[[1.37,0.150*bw,0.116*bd,0,LINEN],[1.45,0.140*bw,0.110*bd,0,LINEN],[1.47,0.085,0.078,0,LINEN]],8,{sq:2.2});
+    C.box(0,1.33,0.128*bd,0.16,0.10,0.03,LINEN,0.785);
+    figLoft(C,0,0,[[0.955,0.128*bw,0.102*bd,0,RGB(shadeHex(gownHex,0.7))],[0.995,0.128*bw,0.102*bd,0,RGB(shadeHex(gownHex,0.7))]],8,{sq:2.4});
+  } else if(T==="tw"){
+    /* the deerskin worn over one shoulder and wrapped, belted at the waist */
+    C.box(0.06,1.36,0.10*bd,0.08,0.20,0.04,DEERD,-0.30);
+  } else if(T==="shirt"){
+    /* the open neck of the shirt, and the sash */
+    C.box(0,1.40,0.122*bd,0.075,0.075,0.030,SK,0.785);
+    figLoft(C,0,0,[[1.43,0.120*bw,0.098*bd,0,LINEN],[1.47,0.090,0.080,0,LINEN]],8,{sq:2.2});
+    const sash=RGB(0x6b4a2a);
+    figLoft(C,0,belly*0.5,[[0.950,0.156*bw,0.124*bd,0,sash],[1.000,0.156*bw,0.124*bd,0,sash]],8,{sq:2.4});
+    if(survivor)figLoft(C,0,0,[[1.10,0.200*bw,0.150*bd,0,RGB(0x7a7264)],[1.30,0.205*bw,0.150*bd,0,RGB(0x7a7264)],
+      [1.43,0.150*bw,0.120*bd,0,RGB(0x6a6256)]],8,{sq:2.4,two:true});
+  }
+  if(L.beads)C.fine(function(){for(let i=0;i<11;i++){const a=-1.3+i*0.26;
+      C.box(Math.sin(a)*0.21*bw,1.40-Math.cos(a)*0.05,Math.cos(a)*0.15*bd,0.035,0.035,0.035,RGB(0xe9e4d6));}});
 
-     And a neck. There was none - the jaw sat straight on the collar, which is
-     most of why the head read as a block balanced on a block. */
-  B.oct(0,0,1.33,1.455,0.135,0.145,0.165,0.175,0.30,shadeRGB(SK,0.80),SK);
-  /* The head goes into its own Geo so it can turn on the neck. It stays authored
-     in FIGURE coordinates - the same numbers as before, and addFace's face plate at
-     z=0.203 is untouched - and the neck group carries a compensating offset. That
-     way nothing about the face has to move to give the head a joint. */
-  HD.oct(0,0,1.44,1.575,0.315,0.395,0.385,0.395,0.34,HEADC,HEADC,0.90);   /* jaw */
-  HD.oct(0,0,1.575,1.715,0.385,0.395,0.385,0.395,0.34,HEADC,HEADC,0.90);  /* temples */
-  HD.oct(0,0,1.715,1.835,0.385,0.395,0.285,0.305,0.34,HEADC,HEADC,0.90);  /* crown */
-  HD.oct(0,-0.01,1.80,1.875,0.395,0.405,0.34,0.35,0.34,RGB(0x4e3a26),RGB(0x42301f));
-  B.box(0,0.80,0,0.22,thin,thin,SK);
-  if(fkey)addFace(HD,extra,fkey);
+  /* ---- below the waist: the body mesh ---- */
+  const P=function(y,rx,rz,dz,c){return [y,rx*bw,rz*bd,dz||0,c];};
+  if(T==="doublet"||T==="merchant"){
+    /* hose: venetians full at the hips (trunk hose fuller still for the merchant) */
+    const f=T==="merchant"?1.10:1.0;
+    figLoft(B,0,0,[P(0.74,0.200*f,0.150*f,0,shadeRGB(breechCol,0.85)),P(0.82,0.215*f,0.165*f,0,breechCol),
+      P(0.93,0.165,0.130,0,breechCol)],lod?8:10,{sq:2.4,flank:0.85,caps:"bottom"});
+    /* the skirts of the doublet, cut into tabs below the girdle */
+    const sk=[P(0.985,0.148,0.118,0.014+belly*0.5,chestCol),P(0.855,0.200,0.160,0.010+belly*0.5,shadeRGB(chestCol,0.88))];
+    figLoft(B,0,0,sk,lod?8:10,{sq:2.4,flank:0.85});
+    B.fine(function(){
+      for(let i=0;i<8;i++){const a=(i/8)*Math.PI*2;
+        B.box(Math.sin(a)*0.185*bw,0.90,Math.cos(a)*0.146*bd+0.012,0.012,0.10,0.012,WOOL_T,0);}
+    });
+  } else if(T==="buffcoat"){
+    figLoft(B,0,0,[P(0.74,0.195,0.148,0,breechCol),P(0.93,0.165,0.130,0,breechCol)],lod?8:10,{sq:2.4,caps:"bottom"});
+    /* the coat's flared skirt, open at the bottom, to the top of the thigh */
+    figLoft(B,0,0,[P(0.700,0.238,0.192,0.006,shadeRGB(BUFF,0.80)),P(0.860,0.208,0.168,0.008,shadeRGB(BUFF,0.92)),
+      P(0.990,0.160,0.128,0.008,BUFF)],lod?8:10,{sq:2.4,flank:0.86,two:true});
+  } else if(T==="bare"){
+    figLoft(B,0,0,[P(0.75,0.150,0.118,0,shadeRGB(SK,0.85)),P(0.84,0.165,0.126,0,SK),P(0.97,0.137,0.108,0,SK)],
+      lod?8:10,{sq:2.4,flank:0.85,caps:"bottom"});
+    /* the clout: a thong at the waist, a flap before and behind */
+    figLoft(B,0,0,[[0.945,0.142*bw,0.112*bd,0,THONG],[0.985,0.140*bw,0.110*bd,0,THONG]],8,{sq:2.4});
+    B.box(0,0.840,0.120*bd+0.012,0.160,0.230,0.022,HIDE);
+    B.box(0,0.850,-0.120*bd-0.012,0.180,0.210,0.022,shadeRGB(HIDE,0.9));
+  } else if(T==="tw"){
+    /* a Powhatan woman's deerskin, from the waist to the knee, fringed */
+    const ap=CO.apron!==undefined?RGB(CO.apron):DEER;
+    figLoft(B,0,0,[P(0.40,0.228,0.180,0,shadeRGB(ap,0.82)),P(0.80,0.198,0.158,0,ap),P(0.985,0.140,0.110,0,ap)],
+      lod?8:10,{sq:2.4,flank:0.85,two:true});
+    B.fine(function(){for(let i=0;i<14;i++){const a=(i/14)*Math.PI*2;
+      B.box(Math.sin(a)*0.222*bw,0.385,Math.cos(a)*0.176*bd,0.018,0.05,0.012,DEERD,0);}});
+    figLoft(B,0,0,[[0.945,0.145*bw,0.114*bd,0,THONG],[0.985,0.143*bw,0.112*bd,0,THONG]],8,{sq:2.4});
+  } else if(T==="gown"){
+    /* the skirt, to the ground: a cone with a curve in its side */
+    const gc=RGB(gownHex);
+    figLoft(B,0,0,[P(0.030,0.290,0.262,0.012,shadeRGB(gc,0.62)),P(0.090,0.288,0.258,0.012,shadeRGB(gc,0.80)),
+      P(0.55,0.252,0.222,0.010,gc),P(0.88,0.198,0.168,0.006,gc),P(0.985,0.140,0.112,0,gc)],
+      lod?8:12,{sq:2.3,flank:0.84});
+    if(L.apron){
+      /* the apron: linen, over the front of the skirt, following it down */
+      const ac=CO.apron!==undefined?RGB(CO.apron):RGB(0xe6dfcc), acD=shadeRGB(ac,0.86);
+      const zf=function(y){return (y>0.88)?0.112+(0.168-0.112)*(0.985-y)/0.105:(y>0.55)?0.168+(0.222-0.168)*(0.88-y)/0.33:0.222+(0.258-0.222)*(0.55-y)/0.46;};
+      const ys=[0.965,0.88,0.55,0.16];
+      for(let i=0;i<3;i++){
+        const y0=ys[i],y1=ys[i+1],w0=0.105+i*0.03,w1=0.135+i*0.03;
+        B.quad4([-w0*bw,y0,zf(y0)*bd+0.016],[-w1*bw,y1,zf(y1)*bd+0.016],[w1*bw,y1,zf(y1)*bd+0.016],[w0*bw,y0,zf(y0)*bd+0.016],
+          ac,acD,acD,ac);
+      }
+    }
+  } else {
+    /* SLOPS: a seaman's wide breeches, full from the waist */
+    figLoft(B,0,0,[P(0.74,0.212,0.158,0,shadeRGB(breechCol,0.84)),P(0.86,0.202,0.152,0,breechCol),
+      P(0.93,0.150,0.118,0,breechCol)],lod?8:10,{sq:2.4,flank:0.85,caps:"bottom"});
+  }
+  if(L.mantle){
+    /* a deerskin mantle over the shoulders, open at the front, to the knee */
+    const mc=CO.mantle!==undefined?RGB(CO.mantle):DEER, mcD=shadeRGB(mc,0.78);
+    figLoft(C,0,-0.01,[[0.42,0.300*bw,0.230*bd,0,mcD],[1.05,0.245*bw,0.190*bd,0,mc],[1.36,0.235*bw,0.168*bd,0,mc],
+      [1.455,0.170*bw,0.130*bd,0,mc]],lod?7:9,{a0:0.95,a1:Math.PI*2-0.95,two:true,flank:0.9});
+  }
 
-  /* Limbs taper. An untapered limb is a plank, and the eye reads a plank as
-     scenery - a forearm is narrower than an upper arm and a calf than a thigh.
-     The pivot stays at y=0, so the animation is untouched. */
-  /* ---- the segments. Each is authored from its own pivot at y=0, downward, so a
-     joint is just a group at the end of the segment above it. ---- */
-  const upperArm=function(L){
-    L.oct(0,0,-RIG.UPARM,0,limbW*0.94,limbW*0.96,limbW*1.06,limbW*1.06,0.34,
-          shadeRGB(sleeveCol,0.94),sleeveCol,0.82);
+  /* the cloak: a shell hung from the shoulders, open at the front, with its hood lying
+     on the back of the neck. Mixed toward weathered grey whatever the dye. */
+  if(eq.cloak==="cloak_weathered"){
+    const cw=(CO.cloak!==undefined)?CO.cloak:mixHex(clHex,0x6b6559,0.34);
+    const cB=RGB(shadeHex(cw,0.80)), cT=RGB(shadeHex(cw,0.66));
+    figLoft(C,0,-0.012,[[0.50,0.290*bw,0.225*bd,0,cT],[1.05,0.255*bw,0.195*bd,0,cB],[1.37,0.240*bw,0.170*bd,0,cB],
+      [1.455,0.160*bw,0.130*bd,0,cT]],lod?7:9,{a0:1.05,a1:Math.PI*2-1.05,two:true,flank:0.9});
+    C.oct(0,-0.17*bd,1.44,1.56,0.30*bw,0.12,0.24*bw,0.10,0.45,cT,cB);
+  }
+  if(eq.accessory==="acc_copper")C.box(0,1.40,0.135*bd,0.24,0.07,0.06,RGB(0xc06a1e));
+  if(eq.accessory==="acc_satchel"){
+    C.box(0,1.16,0.140*bd,0.05,0.56,0.03,RGB(0x5a3d26),-0.55);
+    B.box(0.22*bw,0.90,0.06,0.18,0.16,0.10,RGB(0x6b4a2f));
+  }
+  const extra=[], cExtra=[];
+  if(eq.accessory==="acc_candle"){
+    C.box(0.22,1.02,0.10,0.05,0.14,0.05,RGB(0xe8dcc0));
+    const fl=new THREE.Mesh(boxGeom(0.07,0.10,0.07),new THREE.MeshBasicMaterial({color:lin(0xffd98a)}));
+    fl.position.set(0.22,1.14,0.10);cExtra.push(fl);
+  }
+  /* long hair falls down the back of the CHEST, not the head, so it stays on the back when
+     the head turns; behind the back, or the mantle if there is one */
+  if(L.hair==="loose"&&!(L.hat&&L.hat==="coif")){
+    const zb=-(L.mantle?0.205:0.140)*bd-0.022;
+    C.box(0,1.21,zb,0.30,0.50,0.045,RGB(shadeHex(L.hairColor,0.85)));
+  }
+  /* Newport lost his RIGHT arm in 1590 off Cuba - "strooken off". He commanded this fleet
+     with one arm, and the stump is part of the chest so it bends with it. */
+  if(eq.arm==="no_right"||eq.arm==="no_left"){
+    const s=eq.arm==="no_right"?1:-1;
+    C.box(s*shoX,1.30,0,0.145,0.30,0.145,sleeveCol);
+    C.box(s*shoX,1.13,0,0.165,0.06,0.165,cuffCol||sleeveCol);
+  }
+
+  /* ---- the segments, each authored from its own pivot at y=0 downward ----
+     oy shifts a segment down the chain, which is how the crowd figure folds a hand into its
+     forearm and a foot into its shin: same geometry, one mesh fewer. */
+  const upperArm=function(G){
+    G.capsFine=true;
+    G.oct(0,0,-RIG.UPARM,0,lw*0.122,lw*0.126,lw*0.142,lw*0.142,0.34,shadeRGB(sleeveCol,0.92),sleeveCol,0.82);
+    G.capsFine=false;
     /* the point of the shoulder, so the joint has a form instead of a seam */
-    L.oct(0,0,-0.055,0.045,limbW*1.10,limbW*1.10,limbW*0.98,limbW*1.00,0.34,
-          sleeveCol,shadeRGB(sleeveCol,0.90),0.86);
+    G.oct(0,0,-0.055,0.045,lw*0.158,lw*0.152,lw*0.136,lw*0.138,0.40,sleeveCol,shadeRGB(sleeveCol,0.90),0.86);
   };
-  const foreArm=function(L){
-    L.oct(0,0,-RIG.FOREARM,0,limbW*0.80,limbW*0.82,limbW*0.94,limbW*0.96,0.34,
-          shadeRGB(sleeveCol,0.92),sleeveCol,0.82);
+  const foreArm=function(G){
+    G.capsFine=true;
+    G.oct(0,0.004,-RIG.FOREARM,0,lw*0.094,lw*0.098,lw*0.120,lw*0.124,0.34,shadeRGB(sleeveCol,0.90),sleeveCol,0.82);
+    G.capsFine=false;
+    /* the elbow, filling the joint from behind when it bends */
+    G.fine(function(){G.oct(0,-0.010,-0.040,0.038,lw*0.124,lw*0.124,lw*0.120,lw*0.120,0.40,sleeveCol,sleeveCol,0.86);});
     if(cuffCol!==null)
-      L.oct(0,0,-RIG.FOREARM-0.005,-RIG.FOREARM+0.070,limbW*1.30,limbW*1.30,
-            limbW*1.22,limbW*1.22,0.34,cuffCol,cuffCol);
+      G.oct(0,0.004,-RIG.FOREARM-0.008,-RIG.FOREARM+0.062,lw*0.132,lw*0.136,lw*0.124,lw*0.128,0.40,cuffCol,cuffCol);
+    else if(!bareArms)G.fine(function(){
+      G.oct(0,0.004,-RIG.FOREARM-0.004,-RIG.FOREARM+0.040,lw*0.108,lw*0.112,lw*0.104,lw*0.108,0.40,shadeRGB(sleeveCol,0.86),sleeveCol);});
   };
-  /* A HAND. Seven inches at this scale is about 0.19 of a unit, so it is small -
-     but it is the difference between an arm that ends and an arm that stops. Palm,
-     four fingers taken together as one block because at this size they are, and a
-     thumb set off the inboard edge so the hand has a front and a back. */
-  const hand=function(L,sg){
-    const sk=shadeRGB(SK,0.95);
-    L.oct(0,0,-0.072,0.005,thin*1.12,thin*0.78,thin*1.06,thin*0.80,0.32,sk,SK,0.88);
-    L.oct(0,0.006,-RIG.HAND,-0.068,thin*0.98,thin*0.68,thin*1.10,thin*0.76,0.30,
-          shadeRGB(SK,0.86),sk,0.88);
-    /* the thumb, inboard and forward, angled off the palm */
-    L.box(sg*thin*0.72,-0.036,thin*0.30,thin*0.42,thin*0.70,thin*0.44,sk,sg*0.55);
+  /* A HAND: a palm, the fingers taken together and curled a little forward, and a thumb set
+     off the inboard edge, so a hand has a front and a back and can close round a haft. */
+  const hand=function(G,sg,oy){
+    oy=oy||0;
+    const sk=shadeRGB(SK,0.95), hw=0.96+0.04*lw;
+    if(G.lod){G.oct(0,0.006,oy-RIG.HAND,oy+0.006,0.094*hw,0.058,0.102*hw,0.068,0.40,shadeRGB(SK,0.86),SK,0.88);return;}
+    G.oct(0,0.002,oy-0.082,oy+0.006,0.104*hw,0.066,0.098*hw,0.070,0.36,sk,SK,0.88);
+    G.oct(0,0.010,oy-RIG.HAND,oy-0.078,0.088*hw,0.050,0.100*hw,0.060,0.40,shadeRGB(SK,0.84),sk,0.88);
+    G.fine(function(){G.box(sg*0.058,oy-0.050,0.026,0.032,0.072,0.036,sk,sg*0.42);});
   };
-  const thigh=function(L){
-    L.oct(0,0,-RIG.THIGH,0,thin*1.14,thin*1.16,thin*1.30,thin*1.30,0.34,
-          stockCol,stockCol,0.88);
-    if(breechCol!==null){
-      L.oct(0,0,-breechLen,0,0.196,0.206,0.222,0.232,0.32,breechCol,breechCol,0.86);
-      L.oct(0,0,-breechLen-0.045,-breechLen+0.005,0.180,0.190,0.196,0.206,0.32,
-            breechIsWool?WOOL_T:breechCol,breechIsWool?WOOL_T:breechCol);
+  const thigh=function(G){
+    G.capsFine=true;
+    const cover=(T==="doublet"||T==="merchant"||T==="buffcoat"||T==="shirt");
+    if(!cover)G.oct(0,0,-RIG.THIGH,0,lw*0.112,lw*0.118,lw*0.138,lw*0.142,0.36,stockCol,stockCol,0.88);
+    G.capsFine=false;
+    if(T==="shirt"){
+      /* the slops: wide, open, to just below the knee */
+      G.oct(0,0.006,-0.455,0,0.238*bw,0.226*bd,0.205*bw,0.212*bd,0.36,shadeRGB(breechCol,0.86),breechCol,0.86);
+      G.fine(function(){G.oct(0,0.006,-0.470,-0.440,0.244*bw,0.232*bd,0.240*bw,0.228*bd,0.36,shadeRGB(breechCol,0.72),shadeRGB(breechCol,0.80));});
+    } else if(T==="doublet"||T==="merchant"){
+      const full=T==="merchant"?1.06:1.0;
+      /* venetians: full in the thigh and drawn in below the knee */
+      G.oct(0,0,-0.230,0,0.215*full*bw,0.222*full*bd,0.200*bw,0.210*bd,0.36,breechCol,breechCol,0.86);
+      G.oct(0,0.004,-0.445,-0.228,0.160*bw,0.166*bd,0.215*full*bw,0.222*full*bd,0.36,shadeRGB(breechCol,0.88),breechCol,0.86);
+      G.oct(0,0.004,-0.478,-0.438,0.168*bw,0.172*bd,0.164*bw,0.170*bd,0.36,WOOL_T,WOOL_T);
+      if(T==="doublet")G.fine(function(){G.box(0.085,-0.495,0.03,0.035,0.06,0.03,WOOL_T,0.3);});
+    } else if(T==="buffcoat"){
+      G.oct(0,0,-0.400,0,0.172*bw,0.180*bd,0.200*bw,0.208*bd,0.36,breechCol,breechCol,0.86);
+      G.oct(0,0.004,-0.432,-0.392,0.160*bw,0.166*bd,0.158*bw,0.164*bd,0.36,shadeRGB(breechCol,0.7),shadeRGB(breechCol,0.7));
     }
   };
-  const shin=function(L){
-    L.oct(0,0,-RIG.SHIN,0,thin*0.94,thin*0.98,thin*1.14,thin*1.16,0.34,
-          shadeRGB(stockCol,0.90),stockCol,0.88);
+  const shin=function(G){
+    G.capsFine=true;
+    /* knee to calf, the calf swelling at the back, and down to a narrow ankle */
+    G.oct(0,-0.006,-0.120,0,lw*0.112,lw*0.122,lw*0.108,lw*0.116,0.36,stockCol,stockCol,0.88);
+    G.oct(0,-0.004,-RIG.SHIN,-0.120,lw*0.076,lw*0.084,lw*0.112,lw*0.124,0.36,shadeRGB(stockCol,0.88),stockCol,0.88);
+    G.capsFine=false;
     /* the knee, filling the joint from the front */
-    L.oct(0,0.012,-0.050,0.040,thin*1.12,thin*1.14,thin*1.16,thin*1.18,0.34,
-          stockCol,stockCol,0.90);
+    G.fine(function(){G.oct(0,0.014,-0.050,0.040,lw*0.110,lw*0.116,lw*0.112,lw*0.118,0.40,stockCol,stockCol,0.90);});
   };
-  const foot=function(L){
-    L.oct(0,0.055,-RIG.FOOT,0,0.125,RIG.SHOE_LEN,0.132,RIG.SHOE_LEN*0.93,0.30,
-          shadeRGB(SHOE,0.85),SHOE);
+  const foot=function(G,sg,oy){
+    oy=oy||0;
+    const F=RIG.FOOT;
+    if(L.feet==="bare"){
+      G.oct(0,0.050,oy-F,oy+0.005,0.105,0.25,0.085,0.17,0.40,shadeRGB(SK,0.85),SK);
+      return;
+    }
+    const moc=L.feet==="moccasin";
+    const sc=moc?(CO.shoe!==undefined?RGB(CO.shoe):RGB(0x7d6040)):SHOE;
+    /* the heel and quarters, then the vamp tapering to the toe: 10 inches heel to toe */
+    if(G.lod){G.oct(0,0.040,oy-F,oy+0.012,0.118,0.270,0.100,0.200,0.42,shadeRGB(sc,0.85),sc);return;}
+    G.oct(0,-0.022,oy-F,oy+(moc?0.012:0.018),0.112,0.132,0.100,0.116,0.40,shadeRGB(sc,0.85),sc);
+    G.oct(0,0.088,oy-F,oy-(moc?0.020:0.014),0.122,0.200,0.098,0.168,0.45,shadeRGB(sc,0.85),sc);
+    if(!moc)G.fine(function(){
+      G.box(0,oy-0.012,0.058,0.072,0.018,0.040,RGB(0x4a3a26));              /* the latchet */
+      G.box(0,oy-F+0.012,-0.058,0.094,0.024,0.064,shadeRGB(sc,0.6));         /* the heel */
+    });
   };
-  /* ---- and the chain. joint(parent,y,build) hangs a segment at a pivot. ---- */
-  function joint(parent,y,build,sg){
+  function seg(parent,y,build,sg){
     const j=new THREE.Group();
     j.position.y=y;
-    if(build){
-      const L=new Geo();
-      build(L,sg===undefined?1:sg);
-      j.add(L.mesh(false,false));
-    }
+    if(build){const G=new Geo();G.lod=lod;build(G,sg===undefined?1:sg);j.add(G.mesh(false,false));}
     parent.add(j);
     return j;
   }
@@ -3029,174 +3448,105 @@ function buildFigureRaw(eq){
   for(let k=0;k<2;k++){
     const sg=k?1:-1, tag=k?"R":"L";
     const sh=new THREE.Group();
-    sh.position.set(sg*RIG.SHO_X,RIG.SHO_Y,0);
-    const uaG=new Geo(); upperArm(uaG); sh.add(uaG.mesh(false,false));
-    const el=joint(sh,-RIG.UPARM,foreArm);
-    const wr=joint(el,-RIG.FOREARM,hand,sg);
+    sh.position.set(sg*shoX,RIG.SHO_Y-RIG.SPINE_Y,0);
+    const ua=new Geo();ua.lod=lod;upperArm(ua);sh.add(ua.mesh(false,false));
+    const el=seg(sh,-RIG.UPARM,lod?function(G){foreArm(G);hand(G,sg,-RIG.FOREARM);}:foreArm,sg);
+    const wr=seg(el,-RIG.FOREARM,lod?null:hand,sg);
     arms[tag]={sh:sh,el:el,wr:wr};
     const hp=new THREE.Group();
-    hp.position.set(sg*RIG.HIP_X,RIG.HIP_Y,0);
-    const thG=new Geo(); thigh(thG); hp.add(thG.mesh(false,false));
-    const kn=joint(hp,-RIG.THIGH,shin);
-    const an=joint(kn,-RIG.SHIN,foot);
+    hp.position.set(sg*hipX,RIG.HIP_Y,0);
+    const th=new Geo();th.lod=lod;thigh(th);hp.add(th.mesh(false,false));
+    const kn=seg(hp,-RIG.THIGH,lod?function(G){shin(G);foot(G,1,-RIG.SHIN);}:shin);
+    const an=seg(kn,-RIG.SHIN,lod?null:foot);
     legs[tag]={hp:hp,kn:kn,an:an};
   }
-  /* la/ra/ll/rl stay the names of the shoulder and hip nodes: every existing
-     animation in this file rotates one of these four and must go on working. */
   const la=arms.L.sh, ra=arms.R.sh, ll=legs.L.hp, rl=legs.R.hp;
 
-  if(T==="torso_doublet"){
-    /* waist 0.295 to chest 0.365: a doublet was cut to do exactly this */
-    B.oct(0,0,0.98,1.44,0.295,0.225,0.365,0.265,0.30,shadeRGB(WOOL_D,0.90),WOOL_D,0.78);
-    B.oct(0,0,0.85,0.99,0.395,0.290,0.355,0.265,0.28,WOOL_D,shadeRGB(WOOL_D,0.94));
-    B.box(0,1.445,0.01,0.47,0.05,0.32,LINEN);
-    B.box(0,1.44,0.16,0.26,0.05,0.16,LINEN);
-    for(let i=0;i<13;i++)B.box(0,1.00+i*0.036,0.128,0.032,0.032,0.032,PEWTER);
-    B.box(-0.205,1.395,0,0.10,0.08,0.26,WOOL_T);
-    B.box(0.205,1.395,0,0.10,0.08,0.26,WOOL_T);
-    B.box(0,0.985,0,0.375,0.055,0.275,LEATHER);
-    B.box(0,0.985,0.15,0.065,0.065,0.03,BUCKLE);
-    B.box(-0.215,0.90,0.05,0.115,0.14,0.08,RGB(0x7a5433));
-    B.box(-0.215,0.965,0.05,0.125,0.05,0.09,RGB(0x63431f));
-  } else if(T==="torso_buffcoat"){
-    B.oct(0,0,1.00,1.44,0.315,0.235,0.385,0.275,0.30,shadeRGB(BUFF,0.90),BUFF,0.78);
-    B.box(0,0.94,0,0.44,0.20,0.30,RGB(0xb09062));
-    B.box(0,1.00,0,0.46,0.06,0.31,RGB(0x6b4a2f));
-    B.box(0,1.20,0.15,0.07,0.60,0.03,RGB(0x5a3d26),0.5);
-    B.box(0,1.435,0.01,0.40,0.05,0.28,LINEN);
-    B.box(-0.215,1.395,0,0.11,0.09,0.26,RGB(0xa2814f));
-    B.box(0.215,1.395,0,0.11,0.09,0.26,RGB(0xa2814f));
-  } else if(T==="torso_merchant"){
-    B.oct(0,0,0.98,1.44,0.290,0.220,0.365,0.265,0.30,shadeRGB(FINE,0.88),FINE,0.78);
-    B.oct(0,0,0.865,1.00,0.385,0.280,0.350,0.260,0.28,FINE,shadeRGB(FINE,0.94));
-    B.box(0,1.445,0.01,0.52,0.05,0.34,LINEN);
-    B.box(0,1.44,0.17,0.30,0.05,0.18,LINEN);
-    for(let i=0;i<11;i++)B.box(0,1.02+i*0.04,0.128,0.034,0.034,0.034,RGB(0xd8b25a));
-    B.box(0,0.99,0,0.37,0.05,0.27,RGB(0x53381f));
-  } else if(T==="torso_bare"){
-    /* the same two sections as the shirt, a little narrower and in skin - so the
-       silhouette is a man and not a man in a smock */
-    B.oct(0,0,0.91,1.41,0.258,0.202,0.306,0.234,0.30,shadeRGB(SK,0.90),SK,0.78);
-    B.oct(0,0,1.365,1.435,0.306,0.234,0.318,0.240,0.30,SK,SK);
-    B.box(0,0.905,0,0.335,0.215,0.255,HIDE);        /* the clout */
-    B.box(0,1.015,0,0.345,0.045,0.265,THONG);       /* the thong that holds it */
-  } else {
-    B.oct(0,0,0.91,1.41,0.272,0.212,0.322,0.246,0.30,shadeRGB(CLOTH,0.90),CLOTH,0.78);
-    B.oct(0,0,1.365,1.435,0.322,0.246,0.335,0.252,0.30,CLOTH,CLOTH);
-    B.box(0,1.425,0.05,0.17,0.05,0.13,LINEN);
-    B.box(0,0.94,0,0.32,0.05,0.245,RGB(0x6b4a2a));
-    if(survivor)B.box(0,1.26,0,0.42,0.34,0.28,RGB(0x7a7264));
-  }
-
-  if(eq.cloak==="cloak_weathered"){
-    /* mixed a third of the way toward weathered grey whatever the dye, so it
-       still reads as salt-worn wool rather than a fresh bolt of cloth */
-    const cw=mixHex(clHex,0x6b6559,0.34);
-    const cwBody=RGB(shadeHex(cw,0.80)), cwTrim=RGB(shadeHex(cw,0.66));
-    B.box(0,1.00,-0.17,0.46,0.92,0.07,cwBody);
-    B.box(-0.14,0.52,-0.17,0.10,0.10,0.07,cwTrim);
-    B.box(0.10,0.50,-0.17,0.10,0.10,0.07,cwTrim);
-    B.box(0,1.66,-0.21,0.44,0.30,0.22,cwTrim);
-  }
-  if(eq.accessory==="acc_copper")B.box(0,1.40,0.15,0.24,0.07,0.07,RGB(0xc06a1e));
-  if(eq.accessory==="acc_satchel"){
-    B.box(0,1.16,0.14,0.05,0.50,0.03,RGB(0x5a3d26),-0.55);
-    B.box(0.22,0.90,0.06,0.18,0.16,0.10,RGB(0x6b4a2f));
-  }
-  if(eq.accessory==="acc_candle"){
-    B.box(0.22,1.02,0.10,0.05,0.14,0.05,RGB(0xe8dcc0));
-    const fl=new THREE.Mesh(boxGeom(0.07,0.10,0.07),new THREE.MeshBasicMaterial({color:lin(0xffd98a)}));
-    fl.position.set(0.22,1.14,0.10);extra.push(fl);
-  }
-  /* Felt and knitted wool both took dye, so hats follow the hat dye. They are
-     mixed well down toward black because hat felt was dyed dark and stayed
-     dark - a scarlet capotain would be a costume, not a hat. */
-  const hatC=mixHex(hdHex,0x22201c,0.62);
-  const hatBody=RGB(hatC), hatDark=RGB(shadeHex(hatC,0.68));
-  if(eq.head==="head_cap"){
-    B.box(0,1.875,-0.01,0.45,0.15,0.45,hatBody);
-    B.box(0,1.795,-0.01,0.485,0.06,0.485,hatDark);
-    B.box(0,1.955,-0.02,0.34,0.06,0.34,hatBody);
-  } else if(eq.head==="head_capotain"){
-    B.box(0,1.86,0,0.62,0.05,0.62,hatBody);
-    B.box(0,2.05,0,0.34,0.34,0.34,hatBody);
-    B.box(0,1.92,0,0.36,0.07,0.36,RGB(0x7a5a2a));   /* the buckle band */
-  } else if(eq.head==="head_feather"){
-    B.box(0,1.86,0,0.72,0.05,0.62,hatBody);
-    B.box(0,1.98,0,0.36,0.20,0.36,hatBody);
-    B.box(0.24,2.08,-0.04,0.04,0.34,0.04,RGB(0xe6d7b5),-0.5);  /* plume, undyed */
-  }
-
-  /* Newport lost his RIGHT arm in 1590 off Cuba, boarding a Spanish treasure
-     ship - "strooken off", and he was called Christopher Newport of the one hand
-     ever after. He commanded this fleet with one arm. The statue at his own
-     university gives him two, the sculptor saying we should "not remember our
-     heroes as mutilated" - which is the sanitising this project exists to avoid.
-     The stump has to be added to B BEFORE the mesh is built from it. */
-  if(eq.arm==="no_right"){
-    B.box(0.17,1.30,0,0.145,0.30,0.145,sleeveCol);
-    B.box(0.17,1.13,0,0.165,0.06,0.165,cuffCol||sleeveCol);
-  } else if(eq.arm==="no_left"){
-    B.box(-0.17,1.30,0,0.145,0.30,0.145,sleeveCol);
-    B.box(-0.17,1.13,0,0.165,0.06,0.165,cuffCol||sleeveCol);
-  }
   g.add(B.mesh(false,false));
-  /* the head, on its neck. The geometry is in figure coordinates, so the mesh is
-     pushed down by the pivot height and the group puts it back - which means a nod
-     or a turn costs one rotation and no rebuilt vertices. */
-  const neck=new THREE.Group();
-  neck.position.y=RIG.NECK_Y;
+  const cm=C.mesh(false,false);cm.position.y=-RIG.SPINE_Y;spine.add(cm);
+  for(let i=0;i<cExtra.length;i++){cExtra[i].position.y-=RIG.SPINE_Y;spine.add(cExtra[i]);}
+  g.add(spine);
+  /* ---- the head, on its neck ---- authored in figure coordinates and pushed down by the
+     pivot height, so a nod or a turn costs one rotation and no rebuilt vertices. Whatever
+     addFace adds that is not geometry (a halo, spectacles) hangs in fx, which moves with the
+     head - spectacles used to stay where the face had been when a man looked round. */
+  const hatKey=(L.hat&&L.hat!=="none")?L.hat:(L.hat==="none"?null:(FIG_HATS[eq.head]||null));
+  const hdHex=(CO.hat!==undefined)?CO.hat:mixHex(dyeHex(eq,"head"),0x22201c,0.62);
+  const H={L:L,skin:SKH,lod:lod,hat:hatKey,hatC:hdHex,base:faceKeyOf(eq)||L.expr||"calm"};
+  const HD=new Geo();HD.lod=lod;
+  figHead(HD,extra,H,H.base);
   const hdMesh=HD.mesh(false,false);
   hdMesh.position.y=-RIG.NECK_Y;
   neck.add(hdMesh);
-  g.add(neck);
-  /* anything addFace or an accessory put in `extra` is in figure coordinates too;
-     the flame of a candle belongs to the body, the rest to the head */
-  for(let i=0;i<extra.length;i++)g.add(extra[i]);
+  const fx=new THREE.Group();fx.position.y=-RIG.NECK_Y;neck.add(fx);
+  for(let i=0;i<extra.length;i++)fx.add(extra[i]);
+  H.mesh=hdMesh;H.fx=fx;H.cur=H.base;
+  g.userData.head=H;
   /* only the surviving limb is added, so nothing swings where nothing is */
-  if(eq.arm==="no_right")g.add(la);
-  else if(eq.arm==="no_left")g.add(ra);
-  else {g.add(la);g.add(ra);}
+  if(eq.arm==="no_right")spine.add(la);
+  else if(eq.arm==="no_left")spine.add(ra);
+  else {spine.add(la);spine.add(ra);}
   g.add(ll);g.add(rl);
-  /* Every joint is named. la/ra/ll/rl are the four the old code knows; the rest
-     are what a gesture needs. `look` is the one a chapter will reach for first. */
+  /* an old man stands a little bent; the movement pass reads rest.spine as his upright */
+  if(age.stoop){spine.rotation.x=age.stoop;neck.rotation.x=-age.stoop*0.6;}
+  /* Every joint is named. la/ra/ll/rl are the four the old code knows (the shoulder and hip
+     nodes, so rotating one still swings the whole limb); the rest are what a gesture needs. */
   g.userData.parts={
     la:la, ra:ra, ll:ll, rl:rl,
-    neck:neck, look:neck,
+    neck:neck, look:neck, spine:spine, chest:spine,
     shoulderL:arms.L.sh, elbowL:arms.L.el, wristL:arms.L.wr,
     shoulderR:arms.R.sh, elbowR:arms.R.el, wristR:arms.R.wr,
     hipL:legs.L.hp, kneeL:legs.L.kn, ankleL:legs.L.an,
     hipR:legs.R.hp, kneeR:legs.R.kn, ankleR:legs.R.an,
-    rig:RIG
+    rig:RIG, rest:{spine:spine.rotation.x, neck:neck.rotation.x}
   };
+  g.userData.look=L;
+  g.userData.scale=age.s*(L.height||1)*(female?0.95:1);
   return g;
 }
 
-function buildFigure(eq){
+function buildFigure(eq,opt){
   const wrap=new THREE.Group();
-  const inner=buildFigureRaw(eq);
+  const inner=buildFigureRaw(eq||{},opt);
   /* ---- A SHIP'S BOY SHOULD BE A BOY ----
-     Asked, and he was not: every boy in the game carried build:"build_normal" and stood the
-     full height of a grown man - the Ship's Boy aboard, and Samuell Collier, Nathaniel
-     Peacock and Richard Mutton ashore, all three of whom are real names off the muster roll.
-     Four boys, four adults.
-     DERIVED, not picked. An adult figure's crown sits at 5.49 ft here (FIG_SCALE 2.916,
-     chosen so the eye lands 0.49 below the crown). Ship's boys were roughly twelve to
-     sixteen, and a boy of that age in 1607 - fed on what the hold carries - stands nearer
-     4 ft 8 than a modern child of the same age. 0.86 puts the crown at 4.72 ft and the
-     difference reads instantly when he is standing beside a man, which is the whole point:
-     the muster says a hundred and four MEN AND BOYS, and a player should be able to see
-     which is which without being told.
-     One place, because buildFigure is the only place scale is applied - so the portrait,
-     the world figure and the baked crowd copy all inherit it and cannot drift apart. */
-  inner.scale.setScalar(FIG_SCALE*((eq&&eq.boy)?BOY_SCALE:1));
+     DERIVED, not picked. An adult figure's crown sits at 5.49 ft (FIG_SCALE 2.916). Ship's
+     boys were roughly twelve to sixteen, and a boy of that age in 1607 stands nearer 4 ft 8
+     - BOY_SCALE 0.86 puts the crown at 4.72 ft. The muster says a hundred and four MEN AND
+     BOYS, and a player should see which is which without being told. A child (FIG_AGE) is
+     smaller again with a bigger head; a woman is 0.95 of a man. One place, because this is
+     the only place scale is applied - the portrait, the world figure and the baked crowd
+     copy all inherit it and cannot drift apart. */
+  inner.scale.setScalar(FIG_SCALE*inner.userData.scale);
   wrap.add(inner);
   wrap.userData.parts=inner.userData.parts;
-  /* the wrapper yaws, the inner group tips. Keeping those on two different objects
-     is what lets a man be turned to face his work AND bent over it without the two
-     rotations fighting each other over Euler order. */
+  wrap.userData.head=inner.userData.head;
+  wrap.userData.look=inner.userData.look;
+  /* the wrapper yaws, the inner group tips. Keeping those on two different objects is what
+     lets a man be turned to face his work AND bent over it without the two rotations
+     fighting each other over Euler order. */
   wrap.userData.parts.body=inner;
   return wrap;
+}
+/* ---- EXPRESSIONS A SCENE CAN SWITCH ----
+   setExpression(fig,"worried") - and "calm", "angry", "sick", or any FACEDEF key - rebuilds
+   only the head's geometry: the skull, hair, hat and beard come back the same and the face
+   changes. setExpression(fig) puts back the face he was built with (his own, or the one the
+   player earned and wears). A few hundred triangles once, nothing per frame. A baked figure
+   has no head of its own and is left alone. */
+function setExpression(fig,key){
+  const h=fig&&fig.userData&&fig.userData.head;
+  if(!h||!h.mesh)return false;
+  const k=(key&&FACEDEF[key])?key:h.base;
+  if(h.cur===k)return true;
+  const G=new Geo();G.lod=h.lod;const ex=[];
+  figHead(G,ex,h,k);
+  const m=G.mesh(false,false);
+  h.mesh.geometry.dispose();h.mesh.geometry=m.geometry;m.material.dispose();
+  for(let i=h.fx.children.length-1;i>=0;i--){const o=h.fx.children[i];h.fx.remove(o);
+    if(o.geometry&&!SHARED.has(o.geometry))o.geometry.dispose();}
+  for(let i=0;i<ex.length;i++)h.fx.add(ex[i]);
+  h.cur=k;
+  return true;
 }
 /* ========== ONE POSE FUNCTION ==========
    Chapter II drew its thirty-six men with a separate, cruder routine - tapered beams
@@ -3233,10 +3583,17 @@ function bakeFigure(fig){
        thing that makes it emissive if it were merged into a Lambert mesh */
     if(!o.material||!o.material.vertexColors)return;
     const pa=o.geometry.attributes.position, ca=o.geometry.attributes.color;
-    for(let i=0;i<pa.count;i++){
-      v.fromBufferAttribute(pa,i).applyMatrix4(o.matrixWorld);
-      P.push(v.x,v.y,v.z);
-      if(ca)C.push(ca.getX(i),ca.getY(i),ca.getZ(i)); else C.push(1,1,1);
+    /* the small parts marked fine as they were made are left out: the baked man is the
+       crowd figure, the same one buildFigure(eq,{lod:1}) would have built */
+    const F=o.geometry.userData&&o.geometry.userData.fine;
+    let fi=0;
+    for(let t=0;t<pa.count/3;t++){
+      if(F){while(fi<F.length&&t>=F[fi+1])fi+=2; if(fi<F.length&&t>=F[fi])continue;}
+      for(let i=t*3;i<t*3+3;i++){
+        v.fromBufferAttribute(pa,i).applyMatrix4(o.matrixWorld);
+        P.push(v.x,v.y,v.z);
+        if(ca)C.push(ca.getX(i),ca.getY(i),ca.getZ(i)); else C.push(1,1,1);
+      }
     }
   });
   const g=new THREE.BufferGeometry();
@@ -3732,11 +4089,26 @@ Geo.prototype.oct=function(cx,cz,y0,y1,w0,d0,w1,d1,cham,col0,col1,flank){
     const a=(k===1)?c0:shadeRGB(c0,k), b=(k===1)?c1:shadeRGB(c1,k);
     quadOut4(this,P(A,i,y0),P(A,j,y0),P(B,j,y1),P(B,i,y1),a,a,b,b,mid);
   }
-  /* caps, fanned from vertex 0 */
-  for(let i=1;i<7;i++){
-    triOut4(this,P(B,0,y1),P(B,i,y1),P(B,i+1,y1),c1,c1,c1,mid);
-    triOut4(this,P(A,0,y0),P(A,i,y0),P(A,i+1,y0),c0,c0,c0,mid);
-  }
+  /* caps, fanned from vertex 0. A limb segment's ends are buried in the joint above and
+     below it, so with capsFine set they are fine detail: a bake or a crowd figure drops them */
+  const G=this;
+  const caps=function(){for(let i=1;i<7;i++){
+    triOut4(G,P(B,0,y1),P(B,i,y1),P(B,i+1,y1),c1,c1,c1,mid);
+    triOut4(G,P(A,0,y0),P(A,i,y0),P(A,i+1,y0),c0,c0,c0,mid);
+  }};
+  if(this.capsFine)this.fine(caps);else caps();
+};
+/* ---- FINE DETAIL, MARKED AS IT IS MADE ----
+   Everything emitted inside fn is a small part - a button, a thumb, the buried end of a
+   limb. A Geo with lod set never builds it (the crowd figure); otherwise its triangles are
+   recorded, and mesh() hands the record on as geometry.userData.fine so bakeFigure can leave
+   them out. One figure, two levels of detail, and nobody has to keep two models agreeing. */
+Geo.prototype.fine=function(fn){
+  if(this.lod)return;
+  const a=this.p.length/9;
+  fn();
+  const b=this.p.length/9;
+  if(b>a)(this.F||(this.F=[])).push(a,b);
 };
 /* multiply an RGB triple - darker where a surface is occluded */
 function shadeRGB(c,f){return [c[0]*f,c[1]*f,c[2]*f];}
@@ -3850,6 +4222,13 @@ Geo.prototype.mesh=function(smooth,twoSided){
   g.setAttribute("color",new THREE.Float32BufferAttribute(this.c,3));
   if(smooth)g.setAttribute("normal",new THREE.Float32BufferAttribute(this.smoothNormals(),3));
   else g.computeVertexNormals();
+  if(this.F){
+    /* sorted and merged, because a fine part can be nested inside another */
+    const R=[];for(let i=0;i<this.F.length;i+=2)R.push([this.F[i],this.F[i+1]]);
+    R.sort(function(a,b){return a[0]-b[0];});
+    const M=[];R.forEach(function(r){const l=M[M.length-1];if(l&&r[0]<=l[1])l[1]=Math.max(l[1],r[1]);else M.push(r.slice());});
+    g.userData.fine=[].concat.apply([],M);
+  }
   return new THREE.Mesh(g,new THREE.MeshLambertMaterial({
     vertexColors:true,side:twoSided?THREE.DoubleSide:THREE.FrontSide}));
 };
@@ -7668,10 +8047,11 @@ function paintText(G,text,cx,cy,z,cell,col,flip){
 function crewFigure(kind){
   const heads=["head_cap","none_head","head_cap","head_capotain"];
   const faces=["plain","eager","hearty","shrewd","sly"];
+  /* the crowd figure: half a mile off across the water, nobody needs his buttons */
   return buildFigure({skin:"english",palette:(kind%3===0)?"lostcolony":"ink",
     cloak:"none_cloak",torso:(kind%4===0)?"torso_doublet":"none_torso",
     accessory:"none_acc",head:heads[kind%heads.length],build:"build_normal",
-    face:faces[kind%faces.length]});
+    face:faces[kind%faces.length],look:crowdLook("hand",kind+3)},{lod:1});
 }
 function buildConsort(scale,x,z,yaw,crewCount,variant){
   BG=true;SHIPV=variant||"godspeed";
@@ -18928,21 +19308,51 @@ function crowdFace(kind,i){
   const set=CROWD_FACES[kind]||CROWD_FACES.hand;
   return set[Math.abs(i)%set.length];
 }
+/* THE DEFAULT LOOK PER KIND OF MAN, cycled on i like the faces, on primes that do not divide
+   one another so two neighbours rarely share a whole look. Ordinary variety, not portraits:
+   hair, beards and build as a company of a hundred men would have them. Gentlemen wore their
+   hair longer and their beards trimmed to a point; seamen and labourers cropped or long and
+   bearded as it came; a soldier here and there in a morion. One labourer in seven is an older
+   man - the muster has men in their forties and fifties among the labourers. */
+function crowdLook(kind,i){
+  const hc=[HAIR.brown,HAIR.dark,HAIR.chestnut,HAIR.sandy,HAIR.black,HAIR.auburn,HAIR.fair];
+  const faces=["oval","long","square","round","narrow"];
+  const k=Math.abs(i|0);
+  const L={hairColor:hc[k%7],face:faces[k%5]};
+  if(kind==="gent"){
+    L.hair=["long","short","long"][k%3];
+    L.beard=["pointed","moustache","pointed","short"][k%4];
+  } else if(kind==="soldier"){
+    L.hair=["short","cropped"][k%2];
+    L.beard=["full","short","stubble","moustache","short"][k%5];
+    if(k%3===0)L.hat="morion";
+    L.build=["normal","heavy","normal"][k%3];
+  } else if(kind==="boy"){
+    L.hair=["short","cropped","long"][k%3];
+  } else {
+    L.hair=["short","long","cropped","short","receding"][k%5];
+    L.beard=["stubble","full","none","short","stubble","none"][k%6];
+    L.build=["normal","thin","normal","heavy","thin"][k%5];
+    if(k%7===3)L.age="old";
+  }
+  return L;
+}
 function crowdEq(kind,i){
   if(kind==="gent")return {skin:"english",palette:"company",cloak:(i%2?"cloak_weathered":"none_cloak"),
     torso:"torso_merchant",accessory:"none_acc",head:(i%2?"head_feather":"head_capotain"),
-    build:"build_normal",face:crowdFace("gent",i),dye:{torso:(i%2?"company":"slate"),breech:"slate",stock:"ink",cloak:"lostcolony",head:"ink"}};
+    build:"build_normal",face:crowdFace("gent",i),dye:{torso:(i%2?"company":"slate"),breech:"slate",stock:"ink",cloak:"lostcolony",head:"ink"},
+    look:crowdLook("gent",i)};
   if(kind==="soldier")return {skin:"english",palette:"slate",cloak:"none_cloak",
     torso:"torso_buffcoat",accessory:"none_acc",head:"head_cap",build:"build_normal",
     face:crowdFace("soldier",i),
-    dye:{torso:"slate",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"}};
+    dye:{torso:"slate",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"},look:crowdLook("soldier",i)};
   if(kind==="boy")return {boy:true,skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
     accessory:"none_acc",head:"none_head",build:"build_normal",face:crowdFace("boy",i),
-    dye:{torso:"ink",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"}};
+    dye:{torso:"ink",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"},look:crowdLook("boy",i)};
   return {skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
     accessory:"none_acc",head:(i%2?"head_cap":"none_head"),build:"build_normal",
     face:crowdFace("hand",i),
-    dye:{torso:"ink",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"}};
+    dye:{torso:"ink",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"},look:crowdLook("hand",i)};
 }
 const TASK_POSE={shallop:"stoop",cross:"stoop",stores:"stoop",smith:"stoop",
   surgeon:"stand",guard:"stand",idle:"stand",drum:"stand",boys:"stand"};
@@ -19469,7 +19879,9 @@ function buildShoreParty(root){
          already fed this man's portrait - so what you meet on the beach and what
          you see when he speaks are finally the same person. */
       const eqi=crowdEq(grp.kind,i);
-      const man=buildFigure(eqi);
+      /* the crowd figure (lod 1): the same man as his portrait, the same face, without the
+         buttons and thumbs - and four draw calls fewer, which is what a beach of them costs */
+      const man=buildFigure(eqi,{lod:1});
       if(grp.kind==="boy")man.scale.setScalar(0.78);
       man.position.set(px,gy,pz);
       man.rotation.y=face+(srand(count*5.7)-0.5)*0.5;
@@ -23773,20 +24185,13 @@ function buildNocks(n){
    is ASYMMETRIC, shaved right and knotted left, and that one detail does more to make
    these men look like themselves than anything else available to a low-poly figure.
    Not a wardrobe piece, because it is not a thing the player can put on. */
-function tidewaterFigure(){
+/* The hair is the figure builder's now (look.hair "powhatan", which every tidewater skin
+   takes by default): built into the head, so it turns with it. `look` is optional - a scene
+   can give a man a mantle, an older man his years, or a named man his own look. */
+function tidewaterFigure(look,opt){
   const eq={skin:"tidewater",palette:"ink",cloak:"none_cloak",torso:"torso_bare",
-            accessory:"none_acc",head:"none_head",build:"build_normal",face:"plain"};
-  const f=buildFigure(eq);
-  const p=f.userData.parts;
-  if(p&&p.neck){
-    const hg=new Geo(), HR=RGB(0x241a12), HR2=RGB(0x120d08);
-    hg.box(-0.02,0.30,-0.02,0.30,0.09,0.34,HR);            /* the crown, close */
-    hg.box(-0.15,0.20,-0.03,0.10,0.34,0.30,HR2);           /* long down the LEFT only */
-    hg.box(-0.17,-0.05,-0.10,0.13,0.16,0.14,HR);           /* the knot */
-    const hair=hg.mesh(false,true);
-    p.neck.add(hair);
-  }
-  return f;
+            accessory:"none_acc",head:"none_head",build:"build_normal",face:"plain",look:look||null};
+  return buildFigure(eq,opt);
 }
 function buildBowman(seed){
   /* the rig comes from the house figure builder, so the crawl and the draw can use the
@@ -27144,28 +27549,15 @@ function captCompare(){
    gets a deerskin mantle from shoulder to knee and long hair down her back. A girl is the
    same at a child's height (BOY_SCALE). Pocahontas was about ten or eleven that winter: she
    is drawn as a child, in a child's mantle, and nothing else is made of her. */
-function tidewaterWoman(girl){
+/* 27 Nov: the mantle, hair, paint and beads used to be one mesh hung off the NECK joint, so
+   the whole deerskin swung round whenever she turned her head. They are the figure's own
+   now - the deerskin wrap and knee-length skirt in the body, the hair down the back of the
+   chest, the paint on the crown - and the head turns on its own. */
+function tidewaterWoman(girl,look){
   const eq={skin:"tidewater",palette:"ink",cloak:"none_cloak",torso:"torso_bare",
-            accessory:"none_acc",head:"none_head",build:"build_normal",face:"plain",boy:!!girl};
-  const f=buildFigure(eq);
-  const p=f.userData.parts;
-  if(p&&p.neck){
-    const g=new Geo(), hide=RGB(0x9b7a52), hideD=RGB(0x7a5c3c), hair=RGB(0x33251a), bead=RGB(0xe9e4d6), red=RGB(0x9a3a24);
-    /* the mantle hangs from the neck joint (inner units: a figure is about 1.9 tall) */
-    g.oct(0,0,-0.2,0.02,0.36,0.24,0.24,0.17,0.04,hideD,hide);     /* shoulders */
-    g.oct(0,0,-1.15,-0.2,0.34,0.22,0.36,0.24,0.04,hideD,hide);    /* body to the knee */
-    /* review, 26 Nov: the hair was a near-black panel from 0.17 down at z -0.15 - INSIDE the
-       head, whose back is at -0.213 (measured, neck space: x +-0.198, y -0.02 to 0.415) - so
-       from behind it showed only below the skull, a black patch pinned to the mantle under
-       a bare head (shot ch5rev_girl_back). It hangs behind the head now, from the crown
-       down, in the house hair colour. The red paint sat at 0.33, inside the head as well,
-       so no woman's head was ever red; it is on top of the head now. */
-    g.box(0,0.06,-0.228,0.32,0.72,0.04,hair);                     /* long hair down the back */
-    if(!girl){g.box(0,0.43,-0.01,0.34,0.03,0.36,red);              /* the crown painted red */
-      for(let i=0;i<11;i++){const a=-1.3+i*0.26;g.box(Math.sin(a)*0.21,-0.06-Math.cos(a)*0.05,Math.cos(a)*0.15,0.035,0.035,0.035,bead);}}
-    p.neck.add(g.mesh(false,false));
-  }
-  return f;
+            accessory:"none_acc",head:"none_head",build:"build_normal",face:"plain",boy:!!girl,
+            look:Object.assign({sex:"f",hair:"loose",hairColor:0x33251a,paint:!girl,beads:!girl},look||{})};
+  return buildFigure(eq);
 }
 
 /* ---- THE WORLDS ---- */
@@ -27599,7 +27991,8 @@ function workFigureY(f){const G=WORK.G||WORLD.ground;return G?G(f.position.x,f.p
    opt: target [x,z] he works at, heap {mesh,max} that grows, from/to for a carrier,
    load (WORK_LOAD key), drop(n) called when a load is set down, prop (WORK_PROP key) */
 function workMan(root,eq,x,z,yaw,task,opt){
-  const f=buildFigure(eq);
+  /* a working party is a crowd: the crowd figure, unless the scene asks for the full one */
+  const f=buildFigure(eq,{lod:(opt&&opt.hero)?0:1});
   f.position.set(x,workFigureY({position:{x:x,z:z,y:0}}),z);f.rotation.y=yaw||0;root.add(f);
   return workAdd(f,task,opt||{});
 }
@@ -28518,22 +28911,15 @@ function presPagesSummary(){
 /* ---- NEW THINGS IN THE WORLD ---- */
 /* an Englishwoman of 1608: a long gown to the ground, a bodice, and a linen coif. Neck-joint
    space, as tidewaterWoman: the ground is about 1.59 below the neck, the hip about 0.79 */
-function englishWoman(gentle){
+/* 27 Nov: built by the figure builder as a woman (look.dress "gown") instead of a man with a
+   gown hung off his neck joint - which turned the whole skirt whenever she turned her head. A
+   gentlewoman in dark cloth; a goodwife in brown wool with a linen apron. */
+function englishWoman(gentle,look){
   const eq={skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"none_head",
-            build:"build_normal",face:"plain",dye:{torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"}};
-  const f=buildFigure(eq);
-  const p=f.userData.parts;
-  if(p&&p.neck){
-    const g=new Geo(), cl=RGB(gentle?0x2e2a3a:0x6e5236), clD=RGB(gentle?0x221f2c:0x553e28),
-          lin=RGB(0xece6d6), hair=RGB(gentle?0x4a3424:0x6a4a2c);
-    g.oct(0,0,-0.64,0.04,0.33,0.24,0.38,0.27,0.04,clD,cl);          /* the bodice, over the shirt */
-    g.oct(0,0,-1.58,-0.6,0.46,0.40,0.30,0.22,0.05,clD,cl);          /* the skirt, to the ground */
-    g.box(0,0.02,0.15,0.30,0.06,0.10,lin);                          /* a kerchief at the neck */
-    g.box(0,0.31,-0.03,0.43,0.22,0.46,lin);                         /* the coif */
-    g.box(0,0.20,-0.21,0.36,0.24,0.06,hair);                        /* hair under it, behind */
-    p.neck.add(g.mesh(false,false));
-  }
-  return f;
+            build:"build_normal",face:"plain",dye:{torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"},
+            look:Object.assign({sex:"f",dress:"gown",hat:"coif",apron:!gentle,hair:"bun",
+              hairColor:gentle?0x4a3424:0x6a4a2c,colors:{gown:gentle?0x2e2a3a:0x6e5236}},look||{})};
+  return buildFigure(eq);
 }
 /* Powhatan standing, for the crowning: the tidewater figure, the scarlet cloak (hidden
    until it is put on him) and the crown (hidden until Newport puts it there) */
@@ -35123,7 +35509,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1338";
+const BUILD="20261127-1403";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
