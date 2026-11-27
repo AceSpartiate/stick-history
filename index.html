@@ -33693,6 +33693,13 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"27 November 2026 · latest",
+   head:"A new look",
+   lines:[
+     "<b>Every scene has its own light</b>",
+     "Dawn at sea, a hazy August, a frozen January, a grey London, night on the river: each scene is lit for its date and place, with woods and a far shore on the horizon.",
+     "<b>Houses, ground and water</b>",
+     "Houses have boards, roofs, chimneys, doors and shutters. The ground has paths, grass and shadows, and the water moves. All of it is built to run on a school Chromebook."]},
+  {when:"27 November 2026",
    head:"Chapter X: The Sky Should Sooner Fall",
    lines:[
      "<b>A new chapter: 1621 to 1624</b>",
@@ -35116,7 +35123,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1325";
+const BUILD="20261127-1338";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
