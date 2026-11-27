@@ -49,7 +49,14 @@
       if(!need){await next(act);continue;}
       if(!await step(act,need,w.did))break;}
     D.log.push('ch8 day '+w.day+' closed '+!!w.did.closed);}
-  (async()=>{for(const f of [ch6,ch7,ch8]){try{await f();}catch(e){D.log.push('ERR '+e);}}
+  async function ch9(){if(typeof priceW!=='function')return;const act=actF("price",priceAct);delete S.works.ch9;beginWorld("ch9");await sleep(1500);await cont();const w=priceW();
+    for(let g=0;g<90&&!w.did.closed;g++){const need=priceNeed();
+      if(!need){await next(act);continue;}
+      if(!await step(act,need,w.did))break;}
+    D.log.push('ch9 day '+w.day+' closed '+!!w.did.closed);}
+  const only=window.DRILL_ONLY;   /* e.g. ['ch9'] to play one chapter */
+  const all={ch6,ch7,ch8,ch9};
+  (async()=>{for(const f of (only?only.map(k=>all[k]):[ch6,ch7,ch8,ch9])){try{await f();}catch(e){D.log.push('ERR '+e);}}
     if(bak)localStorage.setItem("stickhistory.save.v1",bak);D.log.push('ALL DONE');})();
   return 'drill started';
 })();
