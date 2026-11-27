@@ -1362,6 +1362,7 @@ function applyBlob(d){
        reached it, though no ending ever offered it to them */
     if(S.works.ch3&&S.works.ch3.done)S.reached["ch4"]=true;
     if(S.works.ch4&&S.works.ch4.done)S.reached["ch5"]=true;
+    if(S.works.ch5&&S.works.ch5.done)S.reached["ch6"]=true;
     if(typeof AMBUSH!=="undefined")AMBUSH.done=!!d.ambushDone;
     SAVED_WORLD=d.world||"ch1";
     return true;
@@ -8537,7 +8538,7 @@ function animate(){
     player.position.y=WORLD.ground(player.position.x,player.position.z)+JUMP.y;
   if(AMBUSH.on||DUSK.on){updateAmbush(dt);updateArrows(dt);}
   else if(FORT.on){updateFort(dt);updateArrows(dt);}
-  updateSick(dt);updateCapt(dt);
+  updateSick(dt);updateCapt(dt);updatePres(dt);
   if(LESSON.on){
     updateFx(dt);updateLesson(dt);updateShadows();
     renderer.render(scene,cam);return;
@@ -8705,6 +8706,7 @@ function animate(){
         :best.action==="fort"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="sick"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="capt"?((best.data&&best.data.verb)||"Go to it")
+        :best.action==="pres"?((best.data&&best.data.verb)||"Go to it")
         /* Named explicitly rather than inherited. A new action with no verb used
            to fall through to "Read the papers", which hid the mistake; now it
            reads "Use" and is obviously unfinished. */
@@ -9292,6 +9294,7 @@ function doInteract(){
   else if(a==="fort"){fortAct(activeSpot.data);}
   else if(a==="sick"){sickAct(activeSpot.data);}
   else if(a==="capt"){captAct(activeSpot.data);}
+  else if(a==="pres"){presAct(activeSpot.data);}
   else if(a==="reck"){
     if(chapterReady())openReckoning();
     else toast("The scrivener will not sit with you yet. Still to ask: "+reckMissing().join("; ")+".");}
@@ -13694,7 +13697,7 @@ function openIntro(worldId){
   $("introDate").textContent=c.d;
   $("introBody").textContent=c.intro?c.intro():"";
   $("introObj").textContent=c.obj?c.obj():"";
-  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":"Into the Boats";
+  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":"Into the Boats";
   show("intro");
 }
 function beginWorld(worldId){
@@ -13873,7 +13876,7 @@ const CONDITIONS={weather:0,fouling:0,supply:0};
    not evidenced: the ship's hold is still air, and every outdoor scene here is an
    open shore in April with wind coming off the water. */
 /* ch4: the summer of 1607 was a drought (Stahle et al. 1998) - the driest air the game has */
-const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30};   /* ch5: a wet winter on the rivers */
+const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10};   /* ch5: a wet winter on the rivers */
 function armState(arm){
   return {
     /* a match above 0.7 takes no penalty at all - good play is rewarded in
@@ -25919,6 +25922,57 @@ function captCanoe(G,x,z,yaw){
   return g;
 }
 
+/* Werowocomoco as Chapter V built it, shared with Chapter VI (26 November 2026): the town, the
+   ditches, the hall and its court. opt.winter bares the hardwoods; opt.solid walls the hall
+   (not while a telling is played inside it); opt.telling "1624" lays the stones and the
+   clubs; opt.noKing leaves the bedstead empty, for a scene that brings him on standing. */
+function buildWerowocomoco(root,opt){
+    const G=captLand(root,"york",{trees:110,winter:!!opt.winter,clear:function(x,z){
+      return (Math.abs(x-CAPT_HALL.x)<70&&Math.abs(z-CAPT_HALL.z)<40)||(z>-110&&z<30&&Math.abs(x)<170);}});
+    /* the town between the water and the hall: houses among fields */
+    const HOUSES=[[20,-20,22,12,10,0],[60,-40,20,12,10,1],[-30,-30,24,13,11,0],[100,-10,20,11,9,1],
+                  [-90,-60,22,12,10,1],[40,-80,26,13,11,0],[-10,-75,20,12,10,1],[120,-60,22,12,10,0]];
+    HOUSES.forEach(function(h){yehakin(root,h[0],G(h[0],h[1]),h[1],h[2],h[3],h[4],h[5]);
+      solid(h[0],h[1],(h[5]?h[3]:h[2])/2,(h[5]?h[2]:h[3])/2,LVL.MAIN,h[4]);});
+    /* the ditches, set back from the water, as the dig found them (shallow, and long) */
+    const D=new Geo(), ditch=RGB(0x4a3f2c);
+    for(let i=0;i<24;i++){const x0=-200+i*16;D.box(x0+8,G(x0+8,-118)-0.25,-118+Math.sin(i*0.4)*4,16.5,0.6,4,ditch);
+      D.box(x0+8,G(x0+8,-128)-0.25,-128+Math.sin(i*0.4)*4,16.5,0.6,4,ditch);}
+    root.add(D.mesh(false,false));
+    /* the hall: long, door toward the town */
+    const H=CAPT_HALL;H.y=G(H.x,H.z);
+    placeModel2(root,"assets/ch2/yehakin.glb","yehakin",H.x,H.y,H.z,0,H.len/24,H.hgt/10,H.wid/12);
+    if(opt.solid)solid(H.x,H.z,H.len/2,H.wid/2,LVL.MAIN,H.hgt);
+    /* the court, inside: Powhatan at the far (west) end, the fire, the ranks */
+    if(!opt.noKing){const pw=powhatanFigure();pw.position.set(H.x-24,H.y,H.z);pw.rotation.y=Math.PI/2;root.add(pw);}
+    const fireG=new Geo();fireG.oct(H.x-10,H.z,H.y,H.y+0.4,2.4,2.4,2.2,2.2,0.2,RGB(0x3a2e24),RGB(0x2a221a));root.add(fireG.mesh(false,false));
+    /* review, 26 Nov: the hearth smoked like the burning fort - a 2.2-foot puff every 0.35s,
+       growing, which filled the hall with grey translucent blocks over Powhatan in every
+       telling shot, and is blended overdraw besides. A hearth fire, no plume. */
+    blazeAt(root,H.x-10,H.y+0.3,H.z,4,2.4).smoke=false;
+    for(let s=-1;s<=1;s+=2)for(let i=0;i<10;i++){
+      const x=H.x-20+i*2.6, zm=H.z+s*6.5, f=tidewaterFigure();
+      f.position.set(x,H.y,zm);f.rotation.y=s>0?Math.PI:0;poseFigure(f,"kneel",i*7+s);root.add(bakeFigure(f));
+      const wz=H.z+s*9.2, wf=tidewaterWoman(false);
+      wf.position.set(x,H.y,wz);wf.rotation.y=s>0?Math.PI:0;poseFigure(wf,"kneel",i*5+s);root.add(bakeFigure(wf));
+    }
+    [[H.x-27.5,H.z,Math.PI/2],[H.x-20.5,H.z+2.6,-Math.PI/2]].forEach(function(a){
+      const wf=tidewaterWoman(false);wf.position.set(a[0],H.y,a[1]);wf.rotation.y=a[2];poseFigure(wf,"kneel",3);root.add(bakeFigure(wf));});
+    if(opt.telling==="1624"){
+      /* the two stones, and the men with clubs */
+      const st=new Geo(), stone=RGB(0x7d7a72);
+      st.oct(H.x-4,H.z-0.6,H.y,H.y+1.1,1.6,1.3,1.2,1.0,0.3,stone,stone);
+      st.oct(H.x-4,H.z+1.4,H.y,H.y+1.0,1.4,1.2,1.1,0.9,0.3,stone,stone);
+      root.add(st.mesh(false,false));
+      /* round the head end, where the stones are, clear of where he will lie */
+      for(let i=0;i<3;i++){const A=[[H.x-7.5,H.z+3.2,Math.PI*0.75],[H.x-1,H.z+3.4,-Math.PI*0.75],[H.x-2.5,H.z-3,0]][i],x=A[0],z=A[1];
+        const f=tidewaterFigure();f.position.set(x,H.y,z);f.rotation.y=A[2];
+        const p=f.userData.parts;if(p){p.ra.rotation.x=-2.6;
+          const cg=new Geo();cg.beam8([0,-0.1,0],[0,-0.75,0.05],0.07,0.11,RGB(0x5a4128),RGB(0x4a3420));p.wristR.add(cg.mesh(false,false));}
+        root.add(f);}
+    }
+    return G;
+}
 registerWorld("ch5",function(root){
   const w=captW(), sd=captDay();
   const where=CAPT.telling?"york":sd.where;
@@ -26021,50 +26075,8 @@ registerWorld("ch5",function(root){
     at=[8,46];
   }
   if(where==="york"){
-    G=captLand(root,"york",{trees:110,winter:true,clear:function(x,z){
-      return (Math.abs(x-CAPT_HALL.x)<70&&Math.abs(z-CAPT_HALL.z)<40)||(z>-110&&z<30&&Math.abs(x)<170);}});
-    /* the town between the water and the hall: houses among fields */
-    const HOUSES=[[20,-20,22,12,10,0],[60,-40,20,12,10,1],[-30,-30,24,13,11,0],[100,-10,20,11,9,1],
-                  [-90,-60,22,12,10,1],[40,-80,26,13,11,0],[-10,-75,20,12,10,1],[120,-60,22,12,10,0]];
-    HOUSES.forEach(function(h){yehakin(root,h[0],G(h[0],h[1]),h[1],h[2],h[3],h[4],h[5]);
-      solid(h[0],h[1],(h[5]?h[3]:h[2])/2,(h[5]?h[2]:h[3])/2,LVL.MAIN,h[4]);});
-    /* the ditches, set back from the water, as the dig found them (shallow, and long) */
-    const D=new Geo(), ditch=RGB(0x4a3f2c);
-    for(let i=0;i<24;i++){const x0=-200+i*16;D.box(x0+8,G(x0+8,-118)-0.25,-118+Math.sin(i*0.4)*4,16.5,0.6,4,ditch);
-      D.box(x0+8,G(x0+8,-128)-0.25,-128+Math.sin(i*0.4)*4,16.5,0.6,4,ditch);}
-    root.add(D.mesh(false,false));
-    /* the hall: long, door toward the town */
-    const H=CAPT_HALL;H.y=G(H.x,H.z);
-    placeModel2(root,"assets/ch2/yehakin.glb","yehakin",H.x,H.y,H.z,0,H.len/24,H.hgt/10,H.wid/12);
-    if(!CAPT.telling)solid(H.x,H.z,H.len/2,H.wid/2,LVL.MAIN,H.hgt);
-    /* the court, inside: Powhatan at the far (west) end, the fire, the ranks */
-    const pw=powhatanFigure();pw.position.set(H.x-24,H.y,H.z);pw.rotation.y=Math.PI/2;root.add(pw);
-    const fireG=new Geo();fireG.oct(H.x-10,H.z,H.y,H.y+0.4,2.4,2.4,2.2,2.2,0.2,RGB(0x3a2e24),RGB(0x2a221a));root.add(fireG.mesh(false,false));
-    /* review, 26 Nov: the hearth smoked like the burning fort - a 2.2-foot puff every 0.35s,
-       growing, which filled the hall with grey translucent blocks over Powhatan in every
-       telling shot, and is blended overdraw besides. A hearth fire, no plume. */
-    blazeAt(root,H.x-10,H.y+0.3,H.z,4,2.4).smoke=false;
-    for(let s=-1;s<=1;s+=2)for(let i=0;i<10;i++){
-      const x=H.x-20+i*2.6, zm=H.z+s*6.5, f=tidewaterFigure();
-      f.position.set(x,H.y,zm);f.rotation.y=s>0?Math.PI:0;poseFigure(f,"kneel",i*7+s);root.add(bakeFigure(f));
-      const wz=H.z+s*9.2, wf=tidewaterWoman(false);
-      wf.position.set(x,H.y,wz);wf.rotation.y=s>0?Math.PI:0;poseFigure(wf,"kneel",i*5+s);root.add(bakeFigure(wf));
-    }
-    [[H.x-27.5,H.z,Math.PI/2],[H.x-20.5,H.z+2.6,-Math.PI/2]].forEach(function(a){
-      const wf=tidewaterWoman(false);wf.position.set(a[0],H.y,a[1]);wf.rotation.y=a[2];poseFigure(wf,"kneel",3);root.add(bakeFigure(wf));});
-    if(CAPT.telling==="1624"){
-      /* the two stones, and the men with clubs */
-      const st=new Geo(), stone=RGB(0x7d7a72);
-      st.oct(H.x-4,H.z-0.6,H.y,H.y+1.1,1.6,1.3,1.2,1.0,0.3,stone,stone);
-      st.oct(H.x-4,H.z+1.4,H.y,H.y+1.0,1.4,1.2,1.1,0.9,0.3,stone,stone);
-      root.add(st.mesh(false,false));
-      /* round the head end, where the stones are, clear of where he will lie */
-      for(let i=0;i<3;i++){const A=[[H.x-7.5,H.z+3.2,Math.PI*0.75],[H.x-1,H.z+3.4,-Math.PI*0.75],[H.x-2.5,H.z-3,0]][i],x=A[0],z=A[1];
-        const f=tidewaterFigure();f.position.set(x,H.y,z);f.rotation.y=A[2];
-        const p=f.userData.parts;if(p){p.ra.rotation.x=-2.6;
-          const cg=new Geo();cg.beam8([0,-0.1,0],[0,-0.75,0.05],0.07,0.11,RGB(0x5a4128),RGB(0x4a3420));p.wristR.add(cg.mesh(false,false));}
-        root.add(f);}
-    }
+    G=buildWerowocomoco(root,{winter:true,solid:!CAPT.telling,telling:CAPT.telling});
+    const H=CAPT_HALL;
     /* review, 26 Nov: "The Two Tellings" and "Copper in the Ground" were labels over bare
        ground (shots ch5rev_spot_compare, ch5rev_spot_copper). The tellings are both about
        this hall, so they are set side by side at its door; and the copper has the thing a
@@ -26226,6 +26238,1018 @@ CONTENT.ch5={
     return (w.day>=CAPT_DAYS.length-1&&w.did.fire)?{ok:true,missing:[]}:{ok:false,missing:["the fire of the seventh of January"]};
   },
   targets:collectInsights(CAPT_NPCS), unlocks:[]
+};
+
+/* ==================== CHAPTER VI: SMITH & THE RECORD ====================
+   February 1608 to early October 1609: the gilded dirt, the Bay and the stingray,
+   Ratcliffe's palace, Smith's presidency, the crowning of Powhatan, the Second Supply,
+   the ice at Werowocomoco and Pamunkey, "he that will not work", the rats, the Third
+   Supply, the burn and Smith's going home. Design: notes docs/CH6-PRESIDENT.md. Every fact
+   is in docs/CH6-RECORD.md, checked against the original-spelling texts on 26 November 2026.
+
+   WHAT THE CHAPTER IS ABOUT. Nearly everything we know of these two years was written by
+   men who served under Smith, and two of them say so: they would not be "partiall being a
+   partie" (Proceedings p. 120). The player is one of that company. At the end of every
+   scene Anas Todkill, whose name is on most of its chapters, asks what to set down - and
+   then shows what the 1612 book printed. The few enemy papers that survive (Archer's
+   letter, Ratcliffe's letter) come in at the end, and the chapter closes on a list of
+   stores written to win an argument, beside an enemy letter of the same day.
+
+   VOICES. Powhatan, Opechancanough and Kemps never get a cast voice: their words reached
+   us as English renderings by Smith's party, so the narrator reads them, and says so.
+   Mistress Forrest and Anne Burras say nothing, because nothing either said is recorded. */
+
+/* ---- THE SCENES ---- */
+const PRES_DAYS=[
+  {where:"fort",date:"February to 10 April 1608",need:["load"],next:"Anas Todkill’s Page",ship:"newport"},
+  {where:"bay",date:"Summer 1608 — the mouth of the Rappahannock; no day was written down",need:["ray","grave"],next:"Anas Todkill’s Page"},
+  {where:"fort",date:"21 July to 10 September 1608",need:["palace","patent"],next:"Anas Todkill’s Page"},
+  {where:"york",date:"Autumn 1608 — Werowocomoco; the day is not recorded",need:["invite","crown"],next:"Anas Todkill’s Page"},
+  {where:"fort",date:"Late 1608 — the Second Supply",need:["oath","letter"],next:"Anas Todkill’s Page"},
+  {where:"york",date:"12 January 1609 — the river frozen",need:["terms","warning","pamunkey"],next:"Anas Todkill’s Page",winter:true,ice:true},
+  {where:"fort",date:"Spring 1609",need:["law","casks","disperse"],next:"Anas Todkill’s Page"},
+  {where:"fort",date:"August to early October 1609",need:["archer","burn","list"],next:"Anas Todkill’s Page",ship:"supply"}];
+const PRES_DUTY={
+  load:"Load the ship for England",ray:"See what has happened to Captain Smith",grave:"Dig the grave he asked for",
+  palace:"Look at the President’s house in the woods",patent:"See who takes the letters patent",
+  invite:"Hear Powhatan’s answer",crown:"See Powhatan crowned",
+  oath:"Fell trees with the two gallants",letter:"Read Smith’s letter to the Company",
+  terms:"Hear Powhatan’s terms",warning:"Hear the warning, told twice",pamunkey:"Hear what happened at Pamunkey",
+  law:"Hear the President’s law",casks:"Search the casked corn",disperse:"Go where you are sent",
+  archer:"Read Master Archer’s letter",burn:"Meet the boat from the falls",list:"Set the list beside the letter"};
+function presW(){
+  S.works=S.works||{};
+  if(!S.works.ch6)S.works.ch6={day:0,did:{},pages:[],marks:[],load:null,disperse:null,done:false};
+  return S.works.ch6;
+}
+function presDay(){return PRES_DAYS[Math.min(presW().day,PRES_DAYS.length-1)];}
+function presNeed(){const w=presW(), sd=presDay();for(const k of sd.need)if(!w.did[k])return k;return null;}
+/* transient: the cutscene props and the ships */
+const PRES={later:[],ship:null,ships:[],rats:[],ray:null,lit:false,winter:false,cloak:null,crown:null,boat:null,t:0};
+
+/* ---- THE PEOPLE ----
+   Ids are shared with the chapters before, so a man keeps his voice. Declared above
+   PRES_SAYS for the voice harvester. */
+const PRES_PEOPLE=[
+  Object.assign({},CAPT_PEOPLE[0],{role:"of the council"}),
+  {id:"scrivener",name:"Master Scrivener",voice:"male",role:"of the council",eq:crowdEq("gent",11)},
+  {id:"todkill",name:"Anas Todkill",voice:"male",role:"one of Smith’s company, who writes",eq:crowdEq("soldier",14)},
+  {id:"russell",name:"Doctor Russell",voice:"male",role:"Walter Russell, doctor of physic",eq:crowdEq("gent",15)},
+  {id:"newport",name:"Captain Newport",voice:"male",role:"master of the fleet",eq:CAPE_PEOPLE.filter(function(m){return m.id==="newport";})[0].eq},
+  Object.assign({},FORT_PEOPLE[0],{name:"Master Wingfield",role:"the deposed President, going home"}),
+  CAPT_PEOPLE[3],
+  Object.assign({},CAPT_PEOPLE[1],{name:"Captain Ratcliffe",role:"of the council"}),
+  CAPT_PEOPLE[2],
+  CAPT_PEOPLE[4],
+  Object.assign({},FORT_PEOPLE.filter(function(m){return m.id==="laxon";})[0],{name:"Ensign Laxon",role:"an ensign now"}),
+  FORT_PEOPLE.filter(function(m){return m.id==="laydon";})[0]];
+function presPerson(id){return PRES_PEOPLE.filter(function(p){return p.id===id;})[0];}
+
+/* One array per scene (0-7); empty means not here. Nobody says a thing the record does not
+   let him know. */
+const PRES_SAYS={
+  "smith":[
+    ["“They would load her with dirt because it glitters. I am not enamoured of their dirty skill, and I have said so.”"],
+    ["“Dig it on the isle, there, and dig it deep. If the Doctor’s oil fails, I will lie on dry ground.”"],
+    ["“I would not take the government in July. I take it now. And every Saturday the whole company drills in the field.”"],
+    [],
+    ["“A can of water down the sleeve for every oath. You will be surprised how quickly a gentleman learns to hold his tongue.”"],
+    ["“He wants our swords and our guns for his corn. He will have neither.”"],
+    ["“He that will not work shall not eat, except by sickness he be disabled. I said it, and I will hold to it.”"],
+    []],
+  "scrivener":[
+    [],                                    /* his dialogue beats, this scene */
+    [],
+    ["“He will not take the presidency yet, so I am to hold it for him while he goes back to the Bay. I hold it for him, mind.”"],
+    [],
+    ["“Seventy more mouths, and not a month’s victual among them. Pitch and glass we shall have. Bread is another matter.”"],
+    [],[],[]],
+  "russell":[[],[],[],[],[],[],[],[]],     /* scene 1: his dialogue beats */
+  "newport":[
+    ["“Fourteen weeks I have waited on these refiners. If the dirt is gold, the Company will forgive me the time.”"],
+    [],[],[],
+    ["“I have orders to find the South Sea, or gold, or one of Sir Walter Raleigh’s lost people. I mean to try for all three.”"],
+    [],[],[]],
+  "wingfield":[
+    ["“I go home to answer for myself, and I have written it all down. They shall read my side before they hear theirs.”"],
+    [],[],[],[],[],[],[]],
+  "archer":[
+    ["“I am for England. There are men here who would have seen me hanged, and Captain Newport would not let them.”"],
+    [],[],[],[],[],[],
+    []],                                   /* scene 7: his dialogue beats */
+  "ratcliffe":[[],[],[],[],[],[],[],
+    ["“The President is to go home and answer for what he has done. I have written so to my Lord Salisbury, this very day.”"]],
+  "martin":[[],[],[],[],[],[],[],
+    ["“They made me President, and I gave it back within three hours. Let them find another.”"]],
+  "percy":[[],[],[],[],[],[],
+    ["“Twenty of us to Point Comfort, to try for fish. Captain Smith thinks a gentleman cannot fish. We have nets enough.”"],
+    ["“If the President goes, somebody must hold this place through the winter. They are asking me.”"]],
+  "laxon":[[],[],[],[],[],[],
+    ["“Sixty of us down the river to the oyster banks. Oysters every day until the corn comes in. There are worse ways to live.”"],
+    []],
+  "laydon":[[],[],[],[],
+    ["“Anne Burras, she is called. Mistress Forrest’s maid. She came on the ship.”"],
+    [],[],[]]};
+
+/* ---- THE THREE WHO ARE ASKED ---- */
+const PRES_NPCS=[
+  {id:"scrivener",name:"Master Scrivener",voice:"male",role:"of the council",at:0,eq:PRES_PEOPLE[1].eq,
+   done:"“The church first, then the store, then the fields. If half the men were not digging sand, we should be done by now.”",
+   beats:[
+    {npc:"“Captain Smith and I have shared out the work between us: the town, the palisade, the church, the store, the fields. And half the men are down by the river, digging sand.”",
+     choices:[
+      {t:"Why are they digging sand?",wise:true,ink:8,
+       reply:"“The refiners swear there is gold in it.” He does not laugh. “There is no talk, no hope, nor work, but dig gold, wash gold, refine gold, load gold. Captain Newport has kept his ship here fourteen weeks for it. She might have gone in fourteen days.”",
+       insight:{g:"known",b:"Gilded Dirt",s:"The First Supply brought a jeweller, two refiners and two goldsmiths. Smith’s friends wrote that in spring 1608 there was “no talke, no hope, nor worke, but dig gold, wash gold, refine gold, load gold”, and that Newport’s ship stayed fourteen weeks to load it. Smith called it “gilded durt”."}},
+      {t:"What did the fire leave standing?",fair:true,ink:3,
+       reply:"“Very little. The store we have covered again. The church must be built new, and the palisade mended where it burned.”"},
+      {t:"Then we shall all be rich by summer.",wise:false,
+       reply:"“So the refiners say. Captain Smith says it is gilded dirt, and he is not often quiet about what he thinks.”"}]}]},
+  {id:"russell",name:"Doctor Russell",voice:"male",role:"Walter Russell, doctor of physic",at:1,eq:PRES_PEOPLE[3].eq,
+   done:"“Keep the oil warm and the Captain’s arm up. That is all the physic there is.”",
+   beats:[
+    {npc:"“A fish, and a sword, and the Captain’s wrist. I have an oil that may serve. If it does not, you will have his grave dug, as he asked.”",
+     choices:[
+      {t:"What kind of fish was it?",wise:true,ink:8,
+       reply:"“Much of the fashion of a thornback, with a longer tail, and on the tail a poisoned sting two or three inches long. She struck it an inch and a half into his wrist.” He holds up his own arm to show you where.",
+       insight:{g:"known",b:"Stingeray Ile",s:"In summer 1608, at the mouth of the Rappahannock, Smith was spearing fish with his sword when a stingray struck him in the wrist. His men dug his grave on an island, as he ordered. By evening Doctor Russell’s oil had eased him, and he ate the fish for supper. They called the place Stingeray Ile. Russell and Todkill, who were there, wrote it down."}},
+      {t:"Will he live?",fair:true,ink:3,
+       reply:"“He has ordered his own grave and his own supper both. I would wager on the supper.”"},
+      {t:"It is a judgement on him.",wise:false,
+       reply:"“It is a fish. Leave judgements to the preachers, and fetch me some fresh water.”"}]}]},
+  {id:"archer",name:"Master Archer",voice:"male",role:"home again with the Third Supply",at:7,eq:CAPT_PEOPLE[3].eq,
+   done:"“Write what you like. I have written what I saw.”",
+   beats:[
+    {npc:"“I have written home already of how we found this place. Men scattered among the savages for an ounce of copper a day, and fourscore living twenty miles off on oysters.”",
+     choices:[
+      {t:"Who will see your letter printed?",wise:true,ink:8,
+       reply:"“A friend in London, I suppose.” He does not know that the man will be Samuel Purchas, who will print the letter with pieces cut out, and a note in its margin blaming the troubles on “the malecontents … enemies to the President”.",
+       insight:{g:"disp",b:"A Letter Cut",s:"Gabriel Archer’s letter of 31 August 1609 is one of the few accounts by Smith’s enemies. It survives only as Samuel Purchas printed it, with notes saying “Some things … are here left out”, and blaming the troubles on Smith’s enemies. The enemy’s letter was edited by a man on Smith’s side."}},
+      {t:"Did the men on the oysters starve?",fair:true,ink:3,
+       reply:"“Ask them whether they chose to go. Smith’s friends will tell you only seven or eight died. Ask who is counting.”"},
+      {t:"Smith is a tyrant. Tell England so.",wise:false,
+       reply:"Archer smiles, very slightly. “I shall tell them what I saw. What you call him is your own affair.”"}]}]}];
+
+function presSpeaker(id){
+  const day=presW().day;
+  for(const n of PRES_NPCS)if(n.id===id&&n.at===day)return n;
+  const set=PRES_SAYS[id], lines=set&&set[day];
+  if(!lines||!lines.length)return null;
+  const m=presPerson(id);
+  const role=(id==="smith"&&day>=2&&!(day===2&&!presW().did.patent))?"President":m.role;
+  return Object.assign({},m,{role:role,lines:lines});
+}
+
+/* ---- THE RECORD THAT OPENS EACH SCENE ---- */
+const PRES_OPEN=[
+  {t:"Gilded dirt",b:"<p>The fort is rebuilt from the ashes, and the First Supply’s men have found something better to do than build it. “There was no talke, no hope, nor worke, but dig gold, wash gold, refine gold, load gold.” <i>— Smith’s friends, 1612</i></p><p>In February Captain Newport and Smith went to Werowocomoco and came home with corn. Now Newport’s ship lies at the fort, waiting to be laden for England.</p>"},
+  {t:"The Bay",b:"<p>“The second of Iune 1608. Smith left the fort, to performe his discoverie”, in an open barge “of two tunnes burden”, with fourteen men. Among them were Walter Russell, doctor of physic, and James Read, the blacksmith from the ladder.</p><p>They are looking for “a glistering mettal”, for furs, for rivers, and for whether the bay is “endlesse”.</p>"},
+  {t:"The palace",b:"<p>“The 21. of Iuly” the barge came home and found the newcomers “al sicke … al vnable to do any thing but complain of the pride and vnreasonable needlesse cruelty of their sillie President”.</p><p>Those are the words of Smith’s friends. They are the only words about it that survive.</p>"},
+  {t:"The crown",b:"<p>Captain Newport is back with the Second Supply, and with orders from the Company: Powhatan is to be crowned, as a king under King James. There are presents for him: a basin and ewer, a bed, clothes, and a crown.</p><p>Smith goes ahead with four men to ask Powhatan to come to Jamestown to receive them.</p>"},
+  {t:"The supply",b:"<p>The Second Supply brought seventy people. Among them were eight Poles and Germans, sent to make pitch, tar and glass, and “the first gentlewoman and woman servant that arrived in our Colony”: Mistress Forrest and her maid, Anne Burras.</p><p>“leaving vs in all 200.” They brought no victuals to feed them.</p>"},
+  {t:"The ice",b:"<p>“The 12 of Ianuarie, we arrived at Werawocomoco, where the river was frozen neare halfe a mile from the shore.” Smith “taught them to march middle deepe, more then a flight shot, through this muddie froyen ooze”.</p><p>Master Scrivener, left in charge of the fort, drowned on the way to Hog Island with ten men a few days ago. Nobody here knows it yet.</p>"},
+  {t:"He that will not work",b:"<p>Smith’s party came home with 279 bushels of corn and found the store “so rotten with the last somers rain, and eaten with rats and wormes as the hogs would scarsely eat it”.</p><p>He has called the company together.</p>"},
+  {t:"The Third Supply",b:"<p>Nine ships and five hundred people sailed from England in May 1609. A storm scattered them on Saint James’s day. Four came in on the eleventh of August, and others after, and in them came Captain Ratcliffe, Captain Martin and Master Archer, who “mortally hated him ere ever they see his face”.</p><p>The flagship, the <i>Sea Venture</i>, with the new governor’s commission aboard, has not come.</p>"}];
+
+/* ---- THINGS TO LOOK AT ----  one array per scene: [id, label, x, z, title, body] */
+const PRES_LOOKS=[
+  [["refiners","The Refiners",-60,58,"Gold in the sand","<p>The First Supply’s roll names “Daniel Stalling, Ieweller. William Dawson, Refiner. Abraham Ransacke, Refiner. William Iohnson, Goldsmith … Robert Alberton, a Perfumer. Richard Belfield, Goldsmith.”</p><p>Smith’s friends wrote that “one mad fellow desired to bee buried in the sandes, least they should by their art make gold of his bones”.</p><p>The Company had sent men to find gold, and they were looking.</p>"],
+   ["beads","Corn from Werowocomoco",-30,6,"The blue beads","<p>In February Newport and Smith went to Werowocomoco. Powhatan would not haggle: “lay me down all your commodities togither, what I like I will take”, and he priced his corn so high “we had not 4. bushels for that we expected 20. hogsheads”.</p><p>Then, the 1612 book says, Smith “glaunced in the eies of Powhatan many Trifles”, and for “a pound or two of blew beads” got “2 or 300 bushels of corne”.</p><p>A boy, Thomas Savage, was left with Powhatan, and Powhatan gave Newport his servant Namontack. Only the English side of this bargain was written down.</p>"]],
+  [["barge","The Barge",14,60,"Two tons","<p>The barge was “of two tunnes burden”: an open boat, rowed or sailed, with fourteen men aboard. When the bread rotted, the gentlemen begged to go home.</p><p>They tried to catch fish “with a frying pan; but we found it a bad instrument to catch fish with.”</p>"]],
+  [["ratcliffe","Captain Ratcliffe, under guard",-36,2,"Nothing in his own words","<p>Captain Ratcliffe is under guard, “a prisoner for muteny”. He was deposed in July, on condition that Smith would govern.</p><p>Whatever he said for himself, about the house in the woods or the store, nobody kept. Not one word of his side of 1608 survives.</p><p>Smith’s friends later wrote that his “right name was Sickelmore”.</p>"],
+   ["sick","The Sick Men",-60,-8,"The Last Supply","<p>The men who came with Captain Nelson’s <i>Phoenix</i> and the First Supply are sick, and they blame the President for the store: he “had riotously consumed the store; and to fulfill his follies, about building him an vnnecessarie pallas in the woodes”.</p>"]],
+  [["presents","The Presents",-10,-10,"By water","<p>Powhatan would not come to Jamestown, so the presents went to him: “by water … neare 100 miles”, while Newport marched twelve miles overland. A basin and ewer, a bed, clothes, a scarlet cloak, and a crown.</p>"]],
+  [["glass","The Glasshouse",-178,-150,"Pitch, tar and glass","<p>The glasshouse stood “in the woods neere a myle from Iames Towne”. The Poles and Germans made pitch, tar, soap-ashes and glass; Newport took home “the tryals of pitch, tarre, glasse, frankincense, and sope ashes, with that clapbord and wainscot”.</p><p>“Dutch” in the English accounts means German.</p>"],
+   ["women","Mistress Forrest and Anne Burras",25,18,"Two names","<p>“Mistresse Forest and Anne Buras her maide”: the first two Englishwomen at Jamestown.</p><p>The record gives their names, the ship they came in, and one wedding. Mistress Forrest’s first name is not written down. Nothing either of them said or did is recorded, so in this game they say nothing.</p>"],
+   ["wedding","The Wedding",-48,-12,"The first marriage","<p>“a marriage betweene Iohn Laydon and Anna Burrowes; being the first marriage we had in Virginia.” It was some time that winter.</p><p>John Laydon was a labourer who came in 1607 with the first men. Anne Burras was about fourteen.</p>"]],
+  [["house","The House for Powhatan",40,-20,"Three Dutchmen","<p>Powhatan had asked for men to build him a house, and Smith sent “3. Dutch-men and 2. English”. The Germans, finding Powhatan’s plenty “and knowing our want”, told him “as much as they knew of our estates and proiects”.</p><p>Later, two of them got fresh arms at the fort on a false message and took them to Powhatan.</p>"]],
+  [["table","The Table",-40,14,"Every man’s deserts","<p>Smith set up “a table as a publike memoriall of every mans deserts”: who had worked, and who had not.</p><p>“there are now no more Councells to protect you”, he told them. The council was down to Smith alone.</p>"],
+   ["kemps","Kemps",-14,-22,"The law, turned around","<p>Kemps and Tassore were Powhatan men held prisoner at the fort. They “taught vs how to order and plant our fields”, and when they were freed they “little desired it”.</p><p>Later, when English runaways came to him, Kemps “made himselfe sport, in shewing his countrymen, by them, how he was vsed; feeding them with this law, who would not worke must not eat, till they were neere starved”. Then he brought them back.</p>"],
+   ["well","The Well",-52,-22,"Sweet water","<p>That spring they “made a well in the forte of excellent sweete water, which till then was wanting”, built some twenty houses, dug and planted thirty or forty acres, and saw three sows become sixty pigs.</p><p>Two years after landing, the fort had its own well at last.</p>"]],
+  [["ships","The Third Supply",-120,60,"Four ships of nine","<p>Ratcliffe, writing home: “Sir Thomas Gates, and Sir George Summers Captaine Newport and 180 persons or ther about, are not yet arrived and we much feare they are lost.”</p><p>Archer’s ship carried “sixe Mares and two Horses” and “twenty women and children”. In the <i>Unity</i>, of seventy landsmen, “she had not ten sound”.</p>"]]];
+
+/* ---- TODKILL'S PAGE ----
+   One per scene. kind: plain (what happened, said plainly), slant (the friends' way), omit
+   or false. `printed` is what the 1612 book set down. Plain earns the ink. */
+const PRES_PAGES=[
+  {q:"Master Wingfield and Master Archer are going home in Captain Newport’s ship. What shall I set down?",
+   o:[["Master Wingfield and Master Archer went home for England with Captain Newport.","plain"],
+      ["They went home to seek better employment, the colony having no use for parliaments, plays, petitions, admirals, recorders, interpreters, chronologers, courts of plea, nor justices of peace.","slant"],
+      ["Nothing. Who goes home is not worth the paper.","omit"]],
+   printed:"<p>The 1612 book printed the second, word for word: Wingfield and Archer went “for England, to seeke some place of better imploiment”, the colony “not having any vse of Parliaments, plaies, petitions, admirals, recorders, interpreters, chronologers, courts of plea, nor Justices of peace”.</p><p>Archer was the Recorder; Wingfield had been President and kept a journal of his own. Every word in that list is aimed at somebody.</p>"},
+  {q:"After twelve days of rotten bread some of the gentlemen begged to turn back, and the Captain refused. How shall I write them?",
+   o:[["Our bread was spoiled, and some of us asked to go home. The Captain would not.","plain"],
+      ["He bade them abandon those childish fears, for worse than is past cannot happen.","slant"],
+      ["Leave them out. They came round in the end.","omit"]],
+   printed:"<p>The 1612 book gave Smith’s speech in full: “abandon those childish feares, for worse then is past cannot happen … returne I wil not … til I haue seene the Massawomekes, found Patawomeck, or the head of this great water you conceit to be endlesse.”</p><p>The men who wanted to go home are not named. The man who would not is. Russell and Todkill, who signed this chapter, were in the barge.</p>"},
+  {q:"How shall I write President Ratcliffe?",
+   o:[["President Ratcliffe began a house in the woods, and the sick men blamed him for the store.","plain"],
+      ["Their silly President had riotously consumed the store, and to fulfil his follies was building him an unnecessary palace in the woods.","slant"],
+      ["Leave him out. He is deposed; let him be forgotten.","omit"]],
+   printed:"<p>The 1612 book printed the second: “their sillie President, that had riotously consumed the store; and to fulfill his follies, about building him an vnnecessarie pallas in the woodes.”</p><p>Nothing Ratcliffe said for himself survives. Every word we have about his “palace” was written by his enemies.</p>"},
+  {q:"How shall I write the crowning?",
+   o:[["Captain Newport crowned Powhatan at Werowocomoco, as the Company ordered, and gave him its presents.","plain"],
+      ["The crown and the presents had been much better spared. We had his favour for a poor piece of copper, till this stately kind of soliciting made him overvalue himself.","slant"],
+      ["Leave it out. It was the Company’s order, not ours to judge.","omit"]],
+   printed:"<p>The 1612 book printed the second: the presents “had bin much better well spared … for we had his favour much better onlie for a poore peece of Copper, till this stately kinde of soliciting made him so much overvalue himselfe, that he respected vs as much as nothing at all.”</p><p>Smith’s friends were not the Company’s friends. Here they blame its orders, and Newport who carried them, for a hard winter of trading.</p>"},
+  {q:"Seventy more people came with Captain Newport, with Poles and Germans to make pitch, tar and glass, and no food for any of them. What shall I set down?",
+   o:[["The supply brought seventy people, Poles and Germans among them to make pitch, tar and glass, and no victuals.","plain"],
+      ["To send them and seventy more without victuals, to work, was not well considered.","slant"],
+      ["The Company has sent us workmen at last, and we want for nothing.","false"]],
+   printed:"<p>The 1612 book said both halves: “the hiring of the Poles and Dutch, to make pitch and tarre, glasse, milles, and sope-ashes; [that] was most necessarie and well. But to send them and seauenty more without victuall, to worke, was not so well considered.”</p><p>Partisans can be fair. This is a fair sentence, written by men who also had a quarrel with the Company.</p>"},
+  {q:"We came to Werowocomoco meaning to seize Powhatan and his corn, as he meant to seize us. Shall I write that?",
+   o:[["The President meant to surprise Powhatan and all his provision, and sent men ahead to build Powhatan a house.","plain"],
+      ["Powhatan sent for us only to cut our throats, and we were fortunate to escape his treachery.","slant"],
+      ["Leave our plan out. Write only his.","omit"]],
+   printed:"<p>The 1612 book printed it, plainly: Smith “resolued with Captaine Waldo … to surprise Powhatan and al his provision”, and sent the house-builders “Knowing there needed no better castel then that house, to surprize Powhatan”.</p><p>It also printed the cost to the towns they took corn from: “such complaints and tears from women and children, as he had bin too cruell to be a Christian that would not haue bin satisfied and moved with compassion.”</p><p>Friends do not always hide what you expect. A bold plan made their captain look bold.</p>"},
+  {q:"At Paspahegh this spring the President’s men killed six or seven of them and burned their houses. How shall I sum up his year?",
+   o:[["He kept the Powhatan quiet by force, and men died at Paspahegh.","plain"],
+      ["He wrestled and overcame, without bloodshed, all that happened.","slant"],
+      ["Leave Paspahegh out of the summing-up.","omit"]],
+   printed:"<p>The 1612 book did both, seven pages apart. First: “6 or 7 Salvages were slaine, [and] as many made prisoners. [He] burnt their houses; tooke their boats with all their fishing weares.” Then, summing up: “how he wrastled and overcame (without bloud shed) all that hapned.”</p><p>A book can contradict itself. Read all of it before you believe its summing-up.</p>"},
+  {q:"The President has gone home burned, and they say he was sent home to answer for misdeeds. What shall I set down of why he went?",
+   o:[["He was badly burned and there was no surgeon in the fort, so he went home in the ships. His enemies say he was sent home to answer charges.","plain"],
+      ["There was neither surgeon nor surgery in the fort to cure his hurt, so he went presently aboard. Thus we lost him who would send no man where he would not lead himself.","slant"],
+      ["Write only that he went.","omit"]],
+   printed:"<p>The 1612 book printed the second: “neither chirurgeon nor chirurgery in the fort to cure his hurt”, and a farewell: “thus we lost him that, in all his proceedings, made Iustice his first guid[e] … that vpon no danger, would send them where he would not lead them himselfe.”</p><p>The same day Ratcliffe wrote to England that Smith “is sent home to answere some misdeameanors”. Both men were there. Both had a side.</p>"}];
+
+/* ---- WHAT THE LIST CAN PROVE ----
+   The friends' list of what Smith left (Proceedings p. 167), row by row, against what the
+   other papers say. v: 0 agrees, 1 disagrees, 2 nothing to check it by. */
+const PRES_ROWS=[
+  {t:"“10 weekes provision in the store”",v:1,why:"Ratcliffe, the same day: victuals “wherof wee haue exceedinge much need”."},
+  {t:"“the harvest newly gathered”",v:1,why:"Ratcliffe: the country people “set no more then sufficeth each familye a yeare”."},
+  {t:"“490 and odde persons”",v:0,why:"About two hundred before, and over three hundred in the Third Supply."},
+  {t:"“6 mares and a horse”",v:0,why:"Archer’s ship loaded “sixe Mares and two Horses”: near enough."},
+  {t:"“5 or 600 swine”",v:2,why:"Three sows made sixty pigs that spring. Nobody says whether the new ships brought more."},
+  {t:"“100 well trained and expert souldiers”",v:1,why:"The same writers, that spring: “the labours of 30 or 40 honest and industrious men”."},
+  {t:"“24 peeces of ordinances”",v:2,why:"No other paper counts the guns."}];
+const PRES_V=["Agrees","Disagrees","Nothing to check it by"];
+
+function presSheet(kick,title,body,opts){sickSheet(kick,title,body,opts);}
+function presDone(id){
+  const w=presW();
+  if(!w.did[id]){w.did[id]=true;S.ink+=6;updateInk();checkpoint("ch6-"+id);}
+  for(let i=interactables.length-1;i>=0;i--){
+    const it=interactables[i];
+    if(it.action==="pres"&&it.data&&it.data.kind===id){if(it.el)it.el.style.display="none";interactables.splice(i,1);}
+  }
+  if(PRES.later)for(let i=PRES.later.length-1;i>=0;i--)if(PRES.later[i].data.after===id){
+    /* enterWorld makes every spot's label when the world is built; one laid down later needs its own */
+    const it=PRES.later[i], el=document.createElement("div");el.className="lbl";
+    el.innerHTML="<b>"+it.label+"</b><i></i>";$("labels").appendChild(el);it.el=el;
+    interactables.push(it);PRES.later.splice(i,1);}
+  const nx=interactables.filter(function(it){return it.id==="next";})[0];
+  if(nx)nx.data.verb=presNeed()?"Not yet":"Give him your page";
+  updateGuide();
+}
+function presQuiz(kick,title,body,opts,id,after){
+  /* a sheet whose first option is the record's; every option says what the record says */
+  presSheet(kick,title,body,opts.map(function(o){return {t:o[0],fn:function(){
+    presDone(id);fortResult(o[1],o[2],["+6 Ink"],after||null);}};}));
+}
+
+function presAct(d){
+  const w=presW(), sd=presDay();
+  if(d.kind==="next"){presNext();return;}
+  if(d.kind==="record"){if(w.done)showEnding("ch6");else openReckoning();return;}
+  if(d.kind==="look"){
+    const L=(PRES_LOOKS[w.day]||[]).filter(function(a){return a[0]===d.id;})[0];
+    if(L){w.did["look_"+L[0]]=true;saveGame();fortResult(L[4],L[5],[]);}
+    return;
+  }
+  /* 0 · the ship for England */
+  if(d.kind==="load"){
+    const go=function(k,title,body){return function(){w.load=k;presDone("load");
+      fortResult(title,body,["+6 Ink"],function(){presNewportSails();});};};
+    presSheet("The fort · Captain Newport’s ship","Load the ship",
+      "<p>Captain Newport’s ship has lain at the fort fourteen weeks. The refiners have a heap of yellow-flecked dirt by the river and swear it is gold. Captain Smith wants her laden with cedar, which England will certainly buy.</p>",
+      [{t:"Load the refiners’ dirt",fn:go("dirt","Gilded dirt","<p>Into the hold it goes, cask after cask.</p><p><b>The record:</b> so it did. Smith’s friends called it “such a drunken ship with so much gilded durt”. No gold ever came of it.</p>")},
+       {t:"Load cedar, as Captain Smith wants",fn:go("cedar","Cedar","<p>You side with Captain Smith.</p><p><b>The record:</b> he lost that argument in April. Newport took the dirt. The cedar went home in June in Captain Nelson’s <i>Phoenix</i>, because “Captaine Smith rather desired to relade her with Cedar”.</p>")}]);
+    return;
+  }
+  /* 1 · the stingray */
+  if(d.kind==="ray"){
+    playCutscene({skippable:true,steps:PRES_RAY()},function(){presDone("ray");enterWorld("ch6");
+      fortResult("Within four hours","<p>His hand, arm and shoulder swell. Nobody aboard thinks he will live, and he has given his orders: a grave on the isle, dug by his own men, “as himselfe appointed”.</p>",["+6 Ink"]);});
+    return;
+  }
+  if(d.kind==="grave"){
+    presDone("grave");
+    fortResult("Stingeray Ile","<p>You dig it in the sand among the scrub, long enough for a man and deep enough to keep him.</p><p>It is not needed. By evening, through “a precious oile, Doctour Russel applyed”, the swelling goes down, and the Captain “eate the fish to his supper”.</p><p>“which then wee called Stingeray Ile.” <i>— Russell and Todkill, 1612</i>. The point there is still called Stingray Point.</p>",["+6 Ink"],function(){enterWorld("ch6");});
+    return;
+  }
+  /* 2 · the palace, and the presidency */
+  if(d.kind==="palace"){
+    presQuiz("The woods · the President’s house","An unnecessary palace?",
+      "<p>A frame of hewn posts stands in a clearing in the woods, beams up, roof unfinished. Clapboard is stacked beside it. Smith’s friends call it “an vnnecessarie pallas in the woodes”, built while the store ran out.</p><p>What would you need, to judge whether they are right?</p>",
+      [["Ratcliffe’s reasons, and what it cost the store","Two sides","<p>That is what a historian would need, and it is exactly what is missing. Ratcliffe’s side does not survive.</p><p>A President in 1608 might well want a house fit to receive Powhatan, or the Company’s men. Or he might not. We cannot know, because only his enemies wrote about it.</p>"],
+       ["Nothing more: the sick men saw it with their own eyes","Seeing is not knowing","<p>They saw a frame in the woods. They did not see why it was built, and they were angry about the store. Their words come to us through Smith’s friends, who had a quarrel of their own with Ratcliffe.</p>"],
+       ["Only whether it was ever finished","Finished or not","<p>It was not finished. Smith stopped it: “the building of Ratcliffes pallas staide, as a thing needlesse”. But that tells you what Smith thought of it, not whether it was needless.</p>"]],"palace");
+    return;
+  }
+  if(d.kind==="patent"){
+    presDone("patent");
+    fortResult("The tenth of September","<p>“by the election of the Councel, and request of the company, Captaine Smith received the letters patents, and tooke vpon him the place of President, which till then, by no meanes he would accept.”</p><p>The palace is stopped, “as a thing needlesse”. The church is repaired, the store covered again, the watch renewed, “the whole company every Satturday exercised in a fielde”.</p><p>Notice what his friends stress: that he refused it first.</p>",["+6 Ink"]);
+    return;
+  }
+  /* 3 · the crown */
+  if(d.kind==="invite"){
+    presQuiz("Werowocomoco · Smith’s invitation","“I also am a king”",
+      "<p>Smith asks Powhatan to come to Jamestown to receive King James’s presents. Smith’s party wrote down his answer, in English:</p><p>“If your king haue sent me presents, I also am a king, and this [is] my land. 8 daies I will stay to receaue them. Your father is to come to me, not I to him; nor yet to your fort: neither will I bite at such a baite.”</p><p>What is Powhatan saying?</p>",
+      [["He is Newport’s equal, and the English must come to him","His land","<p>He will not go to the fort like a man summoned. Newport, whom he calls Smith’s “father”, must come to him. Then, Smith’s friends say, he “began to draw plots vpon the ground … of all those regions”: he knew the country, and showed it.</p><p>These are his words only as Smith’s party wrote them down in English. They are still the closest thing we have to his voice.</p>"],
+       ["He accepts King James as his lord","Not a subject","<p>Nothing in his answer accepts anyone as his lord. “I also am a king, and this [is] my land.” He will receive presents, in his own town, on his own terms.</p>"],
+       ["He refuses to trade with the English at all","Not a refusal","<p>He does not refuse. He sets the place and the terms: eight days, at Werowocomoco, and Newport must come to him.</p>"]],"invite");
+    return;
+  }
+  if(d.kind==="crown"){
+    playCutscene({skippable:true,steps:PRES_CROWN()},function(){enterWorld("ch6");setTimeout(function(){
+      presQuiz("Werowocomoco · after the crowning","What did the crown mean?",
+        "<p>The Company meant the crown to make Powhatan a king under King James. Which of these does the record actually support?</p>",
+        [["The English meant one thing by it, and nobody wrote down what Powhatan meant","What we cannot know","<p>The English accounts show a man who would not kneel and who jumped at the guns: “neither knowing the maiestie nor meaning of a Crowne, nor bending of the knee”. That is the English reading of his face.</p><p>No Powhatan account of the crowning was written down. What a crown meant to him, nobody recorded. Some historians think he took the presents as a tribute, from people he meant to treat as his own subjects.</p>"],
+         ["Powhatan accepted that he was now King James’s subject","Not in the record","<p>He would not bend the knee until Newport leaned on his shoulders, and the next spring he wanted English swords and guns, not English orders. Nothing in the record has him accepting anyone as his lord.</p>"],
+         ["Powhatan asked to be crowned","The Company’s idea","<p>The crowning was the Company’s order, carried by Newport. Powhatan would not even come to the fort to receive it.</p>"]],"crown");},400);});
+    return;
+  }
+  /* 4 · the supply */
+  if(d.kind==="oath"){
+    presQuiz("The woods · felling trees","The two gallants",
+      "<p>Gabriel Beadle and John Russell, “the only two gallants of this last supply”, are learning to fell trees. Every third blow brings “a lowd oath”. Smith means to cure them. How?</p>",
+      [["A can of water poured down his sleeve for every oath","Water down the sleeve","<p>“for every oath to haue a can of water povvred downe his sleeve.” In a winter wood, that is a cure.</p><p>Smith’s friends tell it as a joke on the gentlemen. They tell a great many stories about gentlemen who would not work.</p>"],
+       ["A day’s ration stopped for every oath","Not that","<p>Food was too short to stop anyone’s ration over an oath. The record’s answer was colder: “a can of water povvred downe his sleeue” for every oath.</p>"],
+       ["Nothing. They are gentlemen, and may swear","Not with Smith","<p>Not under Smith. Every oath bought “a can of water povvred downe his sleeue”.</p>"]],"oath");
+    return;
+  }
+  if(d.kind==="letter"){
+    presQuiz("The storehouse · a letter for England","Smith’s “Rude Answer”",
+      "<p>The Company wrote complaining of faction and idle ideas. Smith answered: “I humbly intreat your Pardons if I offend you with my rude Answer.” In it is his most famous request: “When you send againe I intreat you rather send but thirty Carpenters, husbandmen, gardiners, fisher men, blacksmiths, masons … then a thousand of such as we haue.”</p><p>When was this letter first printed?</p>",
+      [["In 1624, in Smith’s own Generall Historie","Printed sixteen years later","<p>It is not in the 1612 book. It appears only in Smith’s <i>Generall Historie</i> of 1624, with no date, and no word of how it was sent. No copy written in 1608 is known.</p><p>It may be just what he wrote. But a man printing his own letter sixteen years on could improve it, and nobody could check.</p>"],
+       ["In 1608, as soon as it reached London","Not then","<p>Nothing of it was printed in 1608, or in his friends’ 1612 book. It first appears in Smith’s <i>Generall Historie</i> of 1624.</p>"],
+       ["In 1612, in his friends’ book","Not there","<p>The 1612 book does not have it. It first appears in Smith’s <i>Generall Historie</i> of 1624, printed by Smith himself.</p>"]],"letter");
+    return;
+  }
+  /* 5 · the ice */
+  if(d.kind==="terms"){
+    presQuiz("Werowocomoco · the hall","Powhatan’s terms",
+      "<p>Powhatan says he never sent for them. For forty swords he will find forty bushels. He values “a basket of corne more pretious then a basket of copper, saying he could eate his corne, but not his copper”.</p><p>Then, as Smith’s party wrote it down: “What will it availe you to take that perforce, you may quietly haue with loue, or to destroy them that provide you food? … if a twig but breake, everie one crie, there comes Captaine Smith.” He asks them to lay down their arms.</p><p>What did Smith answer?</p>",
+      [["“I liue not here as your subiect, but as your friend”, and he kept his arms","His answer","<p>“as I haue but one God, I honour but one king: and I liue not here as your subiect, but as your friend.” He kept the arms.</p><p>It was the last time Smith saw Powhatan.</p>"],
+       ["He laid down his arms, as Powhatan asked","He did not","<p>He did not. “as I haue but one God, I honour but one king: and I liue not here as your subiect, but as your friend.”</p>"],
+       ["He offered forty swords for forty bushels","No swords","<p>No swords. Powhatan wanted English weapons above all, and Smith would not give them. “I liue not here as your subiect, but as your friend.”</p>"]],"terms",
+      function(){playCutscene({skippable:true,steps:PRES_BESET()},function(){enterWorld("ch6");});});
+    return;
+  }
+  if(d.kind==="warning"){
+    presSheet("Werowocomoco · that night","The warning, told twice",
+      "<p><b>1612.</b> Smith’s friends tell the January visit over six pages, and do not mention Pocahontas. She appears once, years out of place, in a sentence answering a rumour that he meant to marry her: “when her father intended to haue surprized him, shee by stealth in the darke night came through the wild woods and told him of it.” No date, no place.</p><p><b>1624.</b> Smith tells it again, in his own book, as a scene. Watch it as he told it.</p>",
+      [{t:"Watch the 1624 telling",fn:function(){presTelling();}}]);
+    return;
+  }
+  if(d.kind==="pamunkey"){
+    presQuiz("Pamunkey · Opechancanough’s house","By the arm, or by the hair?",
+      "<p>At Pamunkey, Opechancanough’s house was surrounded by “6. or 700.” men. Smith offered to fight him alone on an island, “the conqueror take all”. Then:</p><p><b>1612:</b> he “snatched the king by his vambrace in the midst of his men, with his pistoll ready bent against his brest”. A vambrace is a guard worn on the forearm.</p><p><b>1624:</b> he “snatched the King by his long locke in the middest of his men”.</p><p>What does the change do?</p>",
+      [["It makes the deed more humiliating, years later","By the hair","<p>Seizing a man by the arm-guard is a fight. Dragging a king by his hair in front of his people is a humiliation. Smith printed the second in 1624, two years after Opechancanough’s warriors killed about a third of the English in Virginia in one morning.</p><p>Then the cost, which his friends wrote down themselves: at the towns they took corn from, “complaints and tears from women and children”. They carried home 279 bushels.</p>"],
+       ["It corrects a mistake in the 1612 book","Not a correction","<p>Nothing says 1612 was wrong. The later telling simply grew, as his captivity did. The hair makes the scene harder and the king smaller.</p>"],
+       ["It shows there were two separate seizures","One seizure","<p>It is one event, told twice. In 1612 the arm; in 1624 the hair. As in Chapter V, the danger and the drama grew in the retelling.</p>"]],"pamunkey");
+    return;
+  }
+  /* 6 · he that will not work */
+  if(d.kind==="law"){
+    presQuiz("The fort · the assembly","The law",
+      "<p>Smith speaks to the whole company: “you must obay this for a law, that he that will not worke, shall not eate, except by sicknesse he be disabled. For the labours of 30 or 40 honest and industrious men shall not bee consumed to maintaine 150 idle varlets.”</p><p>Who is excused?</p>",
+      [["Only the sick","Except by sickness","<p>Only the sick. Not gentlemen, not councillors: “there are now no more Councells to protect you.” The rule echoes the Bible, Saint Paul to the Thessalonians, which every man there would have known.</p>"],
+       ["Gentlemen, who were not bred to labour","Not gentlemen","<p>Not gentlemen. That was the point. “there are now no more Councells to protect you.” Only the sick were excused.</p>"],
+       ["Nobody at all","The sick","<p>The sick were excused: “except by sicknesse he be disabled.” Everyone else worked or did not eat.</p>"]],"law");
+    return;
+  }
+  if(d.kind==="cask"){
+    w.casks=w.casks||[];
+    if(w.casks.indexOf(d.c)<0)w.casks.push(d.c);
+    presRats(d.x,d.z);
+    for(let i=interactables.length-1;i>=0;i--){const it=interactables[i];
+      if(it.action==="pres"&&it.data&&it.data.kind==="cask"&&it.data.c===d.c){if(it.el)it.el.style.display="none";interactables.splice(i,1);}}
+    if(w.casks.length>=3){presDone("casks");
+      fortResult("Many thousand rats","<p>“In searching our casked corne, wee found it halfe rotten; and the rest so consumed with the many thousand rats, increased first from the ships, that we knewe not how to keepe that little wee had.”</p><p>The 279 bushels from Pamunkey, and everything else, is going to rats. The company will have to live off the country.</p>",["+6 Ink"]);}
+    else toast(w.casks.length===1?"The lid comes up, and they pour out over your hands.":"Half rotten. And more of them.");
+    updateGuide();return;
+  }
+  if(d.kind==="disperse"){
+    const go=function(k,title,body){return function(){w.disperse=k;presDone("disperse");
+      fortResult(title,body+"<p>Smith’s order to those who stayed: “every one that gathereth not every day as much as I doe, the next daie, shall be set beyond the river, and for ever bee banished from the fort.” “This order, many murmured, was very cruell”, but “of 200 men … there died not past 7 or 8.” Those are his friends’ numbers.</p>",["+6 Ink"]);};};
+    presSheet("The fort · the gate","Where are you sent?",
+      "<p>There is not food enough in the fort to keep the company together. Smith sends them out to live off the country.</p>",
+      [{t:"Down the river to the oyster banks, with Ensign Laxon",fn:go("oysters","The oyster banks","<p>“60 or 80 with Ensigne Laxon were sent downe the river to liue vpon oysters.” Archer, who arrived that August, wrote that “fourescore liued twenty miles from the Fort and fed vpon nothing but Oysters eight weekes space”.</p>")},
+       {t:"To Point Comfort with Master Percy, to fish",fn:go("fish","Point Comfort","<p>“20 with leiftenant Percie to trie for fishing at point Comfort: but in 6 weekes, they would not agree once to cast out their net.”</p><p>That is how Smith’s friends tell it. Percy, who later wrote his own bitter account of Smith, does not tell it that way.</p>")},
+       {t:"Up to the falls, with Master West",fn:go("falls","The falls","<p>“Master West, with as many, went vp to the falles”, and found little. They lived on sturgeon from the river and on roots they pounded into bread.</p>")},
+       {t:"To live in a Powhatan town",fn:go("town","Billeted","<p>“Many were billitted among the Salvages”, the friends wrote, and were well used. For sixteen days the country brought “100 a daie of squirrils, Turkies, Deare”.</p><p>The people who fed them wrote nothing down. We do not know what they thought of English guests who could not feed themselves.</p>")}]);
+    return;
+  }
+  /* 7 · the record */
+  if(d.kind==="archer"){
+    presQuiz("The fort · a letter","Master Archer’s letter",
+      "<p>Archer writes home on 31 August 1609. He says the men were “dispersed in the Sauages townes, liuing vpon their almes for an ounce of Copper a day”, that the President “gaue not any due respect to many worthy Gentlemen”, and that the newcomers chose Master West to govern instead. “Perhaps you shall haue it blazoned a mutenie by such as retaine old malice.”</p><p>The letter survives only as Samuel Purchas printed it, years later. Beside it, Purchas printed: “Some things, partly false rumours, partly factious suggestions, are here left out.”</p><p>Why does that matter?</p>",
+      [["An enemy’s letter was cut by an editor on Smith’s side","Cut","<p>Purchas also printed, in the margin, that the troubles came “from the malecontents which had beene in Virginia before (enemies to the President)”. So the one long account by Smith’s enemies reached us trimmed by a man who took Smith’s part.</p><p>We cannot read what was cut. We can only know that something was.</p>"],
+       ["It means Archer’s letter must be false","Not false","<p>Being cut does not make it false. It means we have less of it, chosen by someone else. What is left still disagrees with Smith’s friends, and that is worth having.</p>"],
+       ["It does not matter: an editor always cuts","It matters","<p>It matters who cut it. Purchas’s own note blames the troubles on Smith’s “enemies”. An editor with a side chose what we may read of the other side.</p>"]],"archer");
+    return;
+  }
+  if(d.kind==="burn"){
+    playCutscene({skippable:true,steps:PRES_BURN()},function(){presDone("burn");enterWorld("ch6");
+      fortResult("Blown up with powder","<p>“Sleeping in his boat … accidentallie one fired his powder bag; which tore his flesh from his bodie and thighes 9. or 10. inches square, in a most pittifull manner: but to quench the tormenting fire, frying him in his cloath[e]s, he leaped over board into the deepe river, where ere they could recover him, he was neere drown[e]d.” <i>— Pots and Phettiplace, 1612</i></p><p>He came “neare 100. miles” like that, with no surgeon. No source says who fired the bag, or suggests it was done on purpose.</p><p>His friends also say that Ratcliffe, Archer and Martin plotted to murder him in his bed, but “his h[e]art did faile him, that should haue given fire to that mercilesse pistol”. The man is not named.</p>",["+6 Ink"]);});
+    return;
+  }
+  if(d.kind==="list"){presList();return;}
+}
+
+function presNext(){
+  const w=presW(), sd=presDay(), need=presNeed();
+  if(need){toast("Not yet: "+PRES_DUTY[need].charAt(0).toLowerCase()+PRES_DUTY[need].slice(1)+".");return;}
+  if(w.pages[w.day]==null){presPage();return;}
+  if(w.day>=PRES_DAYS.length-1){
+    if(!w.did.sailed)presSails();
+    return;
+  }
+  w.day++;
+  checkpoint("ch6-day"+w.day);
+  const o=PRES_OPEN[w.day];
+  fortResult(o.t,"<p class=\"sickDate\">"+PRES_DAYS[w.day].date+"</p>"+o.b,[],function(){enterWorld("ch6");});
+}
+function presPage(){
+  const w=presW(), P=PRES_PAGES[w.day];
+  presSheet("Anas Todkill · his papers","What shall I set down?",
+    "<p>Todkill has a board on his knee and a pen that wants mending. “"+P.q.replace(/^“|”$/g,"")+"”</p>",
+    P.o.map(function(o){return {t:o[0],fn:function(){
+      w.pages[w.day]=o[1];
+      if(o[1]==="plain"){S.ink+=6;updateInk();}
+      checkpoint("ch6-page"+w.day);
+      const said={plain:"You gave him the plain account.",slant:"You gave him the party’s account.",omit:"You told him to leave it out.",
+                  false:"You gave him something that was not so."}[o[1]];
+      fortResult("What the book printed","<p><i>"+said+"</i></p>"+P.printed,o[1]==="plain"?["+6 Ink"]:[],function(){presNext();});
+    }};}));
+}
+
+/* ---- THE CUTSCENES ---- */
+function presNewportSails(){
+  playCutscene({skippable:true,steps:[
+    {cam:{to:[-40,16,64],look:[-160,6,100],cut:true},t:4,do:function(){if(PRES.ship)PRES.ship.go=true;},
+     narrate:"Captain Newport set sail for England the tenth of April, with the gilded dirt in his hold."},
+    {t:4.5,narrate:"Master Wingfield and Master Archer went with him. Wingfield’s own account of Virginia stops here."},
+    {t:4,narrate:"Ten days later, Captain Nelson’s Phoenix came in at last, given up for lost since January."}]},function(){
+      presW().did.sailed0=true;saveGame();});
+}
+function PRES_RAY(){
+  return [
+    {fade:"in",cam:{to:[-8,8,48],look:[-34,0,70],cut:true},t:4,
+     narrate:"At the mouth of the Rappahannock, in the shallows, Captain Smith is “nailing them to the ground with his sword”: fish, in the shallow water."},
+    {do:function(){const m=presFigure("smith");if(m&&m.userData.parts){m.userData.parts.ra.rotation.x=-2.4;}}},
+    {cam:{to:[-24,5,60],look:[-33,0,71]},t:4.5,
+     do:function(){setTimeout(function(){const m=presFigure("smith");if(m&&m.userData.parts)m.userData.parts.ra.rotation.x=-0.3;if(PRES.ray)PRES.ray.visible=true;},1600);},
+     narrate:"One of them was “much of the fashion of a Thornebacke with a longer taile whereon is a most poysoned sting of 2. or 3. inches long”,"},
+    {sfx:"splash",t:4.5,
+     narrate:"“which shee strooke an inch and [a] halfe into the wrist of his arme.” So Doctor Russell and Anas Todkill wrote it. They were there."},
+    {cam:{to:[-8,8,48],look:[-34,0,70]},t:4,narrate:"They carried him ashore."},
+    {fade:"out",t:1}];
+}
+function PRES_CROWN(){
+  const H=CAPT_HALL;
+  return [
+    {fade:"in",cam:{to:[H.x+21,6,H.z+2],look:[H.x-12,3,H.z],cut:true},t:4,
+     narrate:"Werowocomoco, autumn 1608. Captain Newport has brought the Company’s presents, and the Company’s crown. This is how Smith’s friends told it in 1612."},
+    {spawn:{id:"newportC",eq:presPerson("newport").eq,at:[H.x-2,H.y,H.z+2],face:-Math.PI/2}},
+    {spawn:{id:"smithC",eq:PRES_PEOPLE[0].eq,at:[H.x+1,H.y,H.z-2.5],face:-Math.PI/2}},
+    {spawn:{id:"powC",make:function(){return presPowhatanStanding();},at:[H.x-8,H.y,H.z],face:Math.PI/2}},
+    {cam:{to:[H.x+6,6.5,H.z+5],look:[H.x-9,4,H.z]},t:5.5,
+     do:function(){const p=csActor("powC");if(p&&p.userData.cloak)p.userData.cloak.visible=true;},
+     narrate:"“his scarlet cloake and apparel (with much adoe) put on him, (being perswaded by Namontacke they would doe him no hurt).”"},
+    {t:5,narrate:"“But a fowle trouble there was to make him kneele to receaue his crowne.”"},
+    {cam:{to:[H.x-1,6,H.z+6],look:[H.x-8,4.5,H.z]},t:5.5,
+     narrate:"“He, neither knowing the maiestie nor meaning of a Crowne, nor bending of the knee, indured so many perswasions …”"},
+    {move:{id:"newportC",to:[H.x-6.4,H.y,H.z+0.6],face:-Math.PI/2},t:3,
+     narrate:"“At last, by leaning hard on his shoulders, he a little stooped,”"},
+    {do:function(){const p=csActor("powC");if(p){p.userData.parts.body.rotation.x=0.22;if(p.userData.crown)p.userData.crown.visible=true;}},t:3.5,
+     narrate:"“and Newport put the Crowne on his head;”"},
+    {sfx:"crack",shake:0.5,cam:{to:[H.x+4,7,H.z-4],look:[H.x-8,4,H.z]},
+     do:function(){setTimeout(function(){playSfx("crack");},180);setTimeout(function(){playSfx("crack");},420);
+       const p=csActor("powC");if(p){p.userData.parts.body.rotation.x=-0.08;p.position.x-=1.2;}},t:5,
+     narrate:"“when, by the warning of a pistoll, the boates were prepared with such a volly of shot, that the king start[ed] vp in a horrible feare.”"},
+    {shake:0,t:5.5,narrate:"In return, “he gaue his old shoes and his mantle to Captain Newport”, and a heap of wheat ears, perhaps seven or eight bushels."},
+    {cam:{to:[H.x+21,6,H.z+2],look:[H.x-12,3,H.z]},t:5.5,
+     narrate:"No Powhatan account of the crowning was ever written down. What a crown meant to him, nobody recorded."},
+    {fade:"out",t:1}];
+}
+function PRES_BESET(){
+  const H=CAPT_HALL, hx=40, hz=-20;
+  return [
+    {fade:"in",cam:{to:[hx+26,8,hz+22],look:[hx,3,hz],cut:true},t:4.5,
+     narrate:"While the ice was breaking, Powhatan’s “luggage, women and children fledde”, leaving “2 or 3 of his women talking with the Captaine;"},
+    {t:4.5,narrate:"whilst he secretly fled, and his men as secretlie beset the house.” So Smith’s friends wrote it."},
+    {spawn:{id:"smithB",eq:PRES_PEOPLE[0].eq,at:[hx+6,G6(hx+6,hz+7),hz+7],face:0}},
+    {move:{id:"smithB",to:[hx+12,G6(hx+12,hz+16),hz+16],face:0.4},t:3,sfx:"crack",
+     narrate:"Smith broke out, they say, “with his Pistol, Sword and Target”, and the crowd fell back."},
+    {t:5.5,narrate:"An old orator came to say the men were only there to guard the corn, and asked again that the English lay down their arms, “which so affrighteth this people”."},
+    {t:4,narrate:"The English kept their arms, and went on up the river to Pamunkey."},
+    {fade:"out",t:1}];
+}
+function G6(x,z){return WORLD.ground?WORLD.ground(x,z):0;}
+function presTelling(){
+  const hx=40, hz=-20;
+  PRES.night=true;enterWorld("ch6");
+  setTimeout(function(){
+    playCutscene({skippable:true,steps:[
+      {fade:"in",cam:{to:[hx+24,7,hz+20],look:[hx-10,3,hz-12],cut:true},t:4,
+       narrate:"London, 1624. Smith tells it again, in his own book. His words, the spelling made modern."},
+      {spawn:{id:"smithW",eq:PRES_PEOPLE[0].eq,at:[hx+8,G6(hx+8,hz+9),hz+9],face:Math.PI*0.8}},
+      {spawn:{id:"girlW",make:function(){return tidewaterWoman(true);},at:[hx-50,G6(hx-50,hz-46),hz-46],face:0.7}},
+      {move:{id:"girlW",to:[hx+4,G6(hx+4,hz+5),hz+5],face:0.6},t:6,cam:{to:[hx+20,6,hz+16],look:[hx-14,2.5,hz-14]},
+       narrate:"“Pocahontas his dearest jewel and daughter, in that dark night came through the irksome woods, and told our Captain great cheer should be sent us by and by:"},
+      {cam:{to:[hx+17,6.5,hz+13],look:[hx+5,3.4,hz+4]},t:6.5,
+       narrate:"but Powhatan and all the power he could make, would after come kill us all, if they that brought it could not kill us with our own weapons when we were at supper."},
+      {t:6,narrate:"Therefore if we would live she wished us presently to be gone … with the tears running down her cheeks, she said she durst not be seen to have any:"},
+      {move:{id:"girlW",to:[hx-50,G6(hx-50,hz-46),hz-46],face:-2.4},t:4.5,
+       narrate:"for if Powhatan should know it, she were but dead, and so she ran away by herself as she came.”"},
+      {cam:{to:[hx+24,7,hz+20],look:[hx-10,3,hz-12]},t:5.5,
+       narrate:"Then, the 1624 book says, eight or ten men brought platters of food, and Smith made them taste every dish. That is the 1624 telling."},
+      {fade:"out",t:1}]},function(){
+        PRES.night=false;presDone("warning");enterWorld("ch6");
+        fortResult("One sentence, or a scene","<p><b>1612:</b> one sentence, in a parenthesis, with no date: she “came through the wild woods and told him of it”. Smith’s friends’ six pages on that January do not mention her.</p>"+
+          "<p><b>1624:</b> a dark night, her tears, her fear of her father, the platters, and the tasting of every dish.</p>"+
+          "<p>The warning is in both. Everything that makes it a scene is only in the book Smith printed himself, after she had died in England, famous. That does not prove the scene false. It tells you where to be careful.</p>"+
+          "<p>The 1612 book says she was then “at most not past 13 or 14 yeares of age”. Nobody wrote down why she came, if she came.</p>",["+6 Ink"]);
+      });
+  },500);
+}
+function PRES_BURN(){
+  return [
+    {fade:"in",cam:{to:[-10,12,70],look:[-60,2,110],cut:true},t:4,do:function(){if(PRES.boat)PRES.boat.go=true;},
+     narrate:"A boat comes down the river from the falls, nearly a hundred miles, with the President lying in the bottom of it."},
+    {spawn:{id:"smithBurn",eq:PRES_PEOPLE[0].eq,at:[-34,G6(-34,62),62],face:Math.PI}},
+    {do:function(){const m=csActor("smithBurn");if(m){m.rotation.set(-Math.PI/2,0,0);m.position.y=G6(-34,62)+1.4;}}},
+    {cam:{to:[-24,7,52],look:[-34,1.5,62]},t:5,
+     narrate:"Sleeping in the boat, someone fired his powder bag. To put out the fire he leapt into the river, and nearly drowned before they pulled him out."},
+    {t:4.5,narrate:"There is no surgeon in the fort. There is no surgeon anywhere in Virginia."},
+    {fade:"out",t:1}];
+}
+function presSails(){
+  const w=presW();
+  playCutscene({skippable:true,steps:[
+    {cam:{to:[-40,16,64],look:[-180,6,104],cut:true},t:4,do:function(){PRES.ships.forEach(function(s){s.go=true;});},
+     narrate:"In early October 1609 the ships went home to England, and Captain Smith in one of them. No source gives the day."},
+    {t:5,narrate:"Master Percy, who stayed, became President “within lesse then an howre”. Ratcliffe wrote the same day that the colony stood in “exceedinge much need”."},
+    {t:4.5,narrate:"Smith lived another twenty-two years. He never came back to Virginia."}]},function(){
+      w.did.sailed=true;checkpoint("ch6-sailed");enterWorld("ch6");updateGuide();
+      toast("Todkill’s pages are ready. Close the record when you are.");
+    });
+}
+
+/* ---- THE LIST ---- */
+function presList(){
+  const w=presW();
+  let h="<p>Smith’s friends printed what he left behind him. For each, does another paper of 1609 agree, disagree, or is there nothing to check it by?</p>";
+  PRES_ROWS.forEach(function(r,i){
+    h+="<div class=\"captRow\"><span>"+r.t+"</span> <div class=\"captBtns\">"+PRES_V.map(function(v,k){
+      return "<button class=\"btn small\" data-pr=\""+i+"\" data-v=\""+k+"\">"+v+"</button>";}).join(" ")+" <b class=\"captMark\" id=\"pm"+i+"\"></b></div></div>";
+  });
+  presSheet("The list and the letter","4 October 1609",h,[{t:"Done",fn:function(){
+    if(w.marks.filter(function(m){return m!=null;}).length<PRES_ROWS.length){toast("Mark every row first.");setTimeout(presList,50);return;}
+    const right=w.marks.filter(function(m,i){return m===PRES_ROWS[i].v;}).length;
+    presDone("list");
+    fortResult("What the list is for","<p>You placed "+right+" of "+PRES_ROWS.length+" as the papers do.</p><ul>"+
+      PRES_ROWS.map(function(r){return "<li>"+r.t+": <b>"+PRES_V[r.v]+".</b> "+r.why+"</li>";}).join("")+"</ul>"+
+      "<p>The friends printed the list in 1612, after most of those 490 people had died in the winter that followed. Its next words are: “But they regarded nothing but from hand to mouth.” The list makes their case: Smith left plenty, so whoever came after is to blame.</p>"+
+      "<p>On the same day Ratcliffe asked England for “a sufficient supply of victualls for one yeare”. Both papers are real. Each was written to win an argument.</p>",["+6 Ink"]);
+  }}]);
+  w.marks=w.marks.length===PRES_ROWS.length?w.marks:PRES_ROWS.map(function(){return null;});
+  PRES_ROWS.forEach(function(r,i){if(w.marks[i]!=null)$("pm"+i).textContent=PRES_V[w.marks[i]];});
+  document.querySelectorAll("#sickBody [data-pr]").forEach(function(b){
+    b.onclick=function(){const i=+b.dataset.pr;w.marks[i]=+b.dataset.v;$("pm"+i).textContent=PRES_V[w.marks[i]];saveGame();};
+  });
+}
+function presPagesSummary(){
+  const w=presW();
+  const n=w.pages.filter(function(k){return k==="plain";}).length;
+  return "<p><b>Your pages:</b> "+n+" of "+PRES_PAGES.length+" told plainly. The 1612 book took the party’s side in "+
+    PRES_PAGES.filter(function(P){return P.o.some(function(o){return o[1]==="slant";})&&P.printed.indexOf("second")>=0;}).length+
+    " of those eight places, and in two it printed more than a careful friend might have: its captain’s plan to seize Powhatan, and the tears at Youghtanund.</p>";
+}
+
+/* ---- NEW THINGS IN THE WORLD ---- */
+/* an Englishwoman of 1608: a long gown to the ground, a bodice, and a linen coif. Neck-joint
+   space, as tidewaterWoman: the ground is about 1.59 below the neck, the hip about 0.79 */
+function englishWoman(gentle){
+  const eq={skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"none_head",
+            build:"build_normal",face:"plain",dye:{torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"}};
+  const f=buildFigure(eq);
+  const p=f.userData.parts;
+  if(p&&p.neck){
+    const g=new Geo(), cl=RGB(gentle?0x2e2a3a:0x6e5236), clD=RGB(gentle?0x221f2c:0x553e28),
+          lin=RGB(0xece6d6), hair=RGB(gentle?0x4a3424:0x6a4a2c);
+    g.oct(0,0,-0.64,0.04,0.33,0.24,0.38,0.27,0.04,clD,cl);          /* the bodice, over the shirt */
+    g.oct(0,0,-1.58,-0.6,0.46,0.40,0.30,0.22,0.05,clD,cl);          /* the skirt, to the ground */
+    g.box(0,0.02,0.15,0.30,0.06,0.10,lin);                          /* a kerchief at the neck */
+    g.box(0,0.31,-0.03,0.43,0.22,0.46,lin);                         /* the coif */
+    g.box(0,0.20,-0.21,0.36,0.24,0.06,hair);                        /* hair under it, behind */
+    p.neck.add(g.mesh(false,false));
+  }
+  return f;
+}
+/* Powhatan standing, for the crowning: the tidewater figure, the scarlet cloak (hidden
+   until it is put on him) and the crown (hidden until Newport puts it there) */
+function presPowhatanStanding(){
+  const f=tidewaterFigure();
+  const p=f.userData.parts;
+  if(p&&p.neck){
+    const c=new Geo(), red=RGB(0x9c1f1c), redD=RGB(0x6e1412);
+    c.oct(0,0,-0.2,0.03,0.38,0.26,0.26,0.18,0.04,redD,red);
+    c.oct(0,0,-1.25,-0.2,0.40,0.30,0.38,0.26,0.04,redD,red);
+    const cm=c.mesh(false,false);cm.visible=false;p.neck.add(cm);f.userData.cloak=cm;
+    const k=new Geo(), gold=RGB(0xd4a83a);
+    for(let i=0;i<8;i++){const a=i*Math.PI/4;k.box(Math.sin(a)*0.17,0.43,Math.cos(a)*0.17,0.09,0.08,0.09,gold);
+      k.box(Math.sin(a)*0.17,0.51,Math.cos(a)*0.17,0.04,0.09,0.04,gold);}
+    const km=k.mesh(false,false);km.visible=false;p.neck.add(km);f.userData.crown=km;
+    const pl=new Geo(), pearl=RGB(0xeee8da);
+    for(let i=0;i<11;i++){const a=-1.3+i*0.26;pl.box(Math.sin(a)*0.22,-0.08-Math.cos(a)*0.06,Math.cos(a)*0.16,0.045,0.045,0.045,pearl);}
+    p.neck.add(pl.mesh(false,false));
+  }
+  return f;
+}
+function presPalace(root,G,x,z){
+  /* Ratcliffe's house: a two-storey frame of hewn posts, plates and joists, half its rafters
+     up, clapboard stacked by it. The record says only "an vnnecessarie pallas in the
+     woodes"; its size is not given, so it is drawn as a large English frame house. */
+  const g=new Geo(), wood=RGB(0x8a6c48), woodD=RGB(0x6b5236), clap=RGB(0xa88a62);
+  const gy=G(x,z), L=30, W=18, H1=11, H2=20;
+  for(const a of [-1,-1/3,1/3,1])for(const b of [-1,1])g.beam8([x+a*L/2,gy-0.5,z+b*W/2],[x+a*L/2,gy+H2,z+b*W/2],0.9,0.9,woodD,wood);
+  for(const b of [-1,1]){g.beam8([x-L/2,gy+H1,z+b*W/2],[x+L/2,gy+H1,z+b*W/2],0.8,0.8,woodD,wood);
+    g.beam8([x-L/2,gy+H2,z+b*W/2],[x+L/2,gy+H2,z+b*W/2],0.8,0.8,woodD,wood);}
+  for(const a of [-1,-1/3,1/3,1]){g.beam8([x+a*L/2,gy+H1,z-W/2],[x+a*L/2,gy+H1,z+W/2],0.7,0.7,woodD,wood);
+    g.beam8([x+a*L/2,gy+H2,z-W/2],[x+a*L/2,gy+H2,z+W/2],0.7,0.7,woodD,wood);}
+  /* half the rafters: the east end only */
+  for(let i=0;i<4;i++){const xx=x+L/2-i*3.2;
+    g.beam8([xx,gy+H2,z-W/2],[xx,gy+H2+7,z],0.5,0.5,woodD,wood);g.beam8([xx,gy+H2,z+W/2],[xx,gy+H2+7,z],0.5,0.5,woodD,wood);}
+  for(let i=0;i<6;i++)g.box(x-L/2-6,gy+0.3+i*0.5,z+4,9,0.45,3.2,i%2?clap:woodD);
+  root.add(g.mesh(false,false));solid(x,z,L/2,W/2,LVL.MAIN,0);
+}
+function presGlasshouse(root,G,x,z){
+  /* a glasshouse in the woods: a beehive furnace of stone with its fire, a shed roof over a
+     working floor, and a pile of cullet */
+  const g=new Geo(), stone=RGB(0x857a6c), stoneD=RGB(0x5e564c), wood=RGB(0x6b5236), thatch=RGB(0x8e7a52);
+  const gy=G(x,z);
+  g.oct(x,z,gy,gy+5,5.2,5.2,4.4,4.4,0.6,stoneD,stone);
+  g.oct(x,z,gy+5,gy+8,4.4,4.4,1.8,1.8,0.4,stoneD,stone);
+  for(const c of [[-12,-9],[12,-9],[-12,9],[12,9]])g.beam8([x+c[0],gy-0.4,z+c[1]],[x+c[0],gy+12,z+c[1]],0.6,0.6,wood,wood);
+  g.quad([x-13,gy+12,z-10],[x-13,gy+12,z+10],[x+13,gy+12,z+10],[x+13,gy+12,z-10],thatch);
+  g.quad([x+13,gy+12,z-10],[x+13,gy+12,z+10],[x-13,gy+12,z+10],[x-13,gy+12,z-10],thatch);
+  for(let i=0;i<9;i++)g.box(x+8+srand(i*3.3)*3,gy+0.2,z-6+srand(i*1.7)*3,0.5,0.35,0.5,RGB(i%2?0x5f8a6e:0x7aa38c));
+  root.add(g.mesh(false,false));solid(x,z,6,6,LVL.MAIN,0);
+  blazeAt(root,x,gy+1.2,z+5.0,2.4,1.6).smoke=false;
+  const men=[[x-6,z+8,0.6],[x+5,z+9,-0.5],[x-9,z-2,1.4]];
+  men.forEach(function(a,i){const f=buildFigure(crowdEq("hand",30+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];
+    poseFigure(f,"stoop",i*3+1);root.add(bakeFigure(f));});
+}
+function presStingray(){
+  /* "much of the fashion of a Thornebacke with a longer taile": a flat diamond, a long tail */
+  const g=new Geo(), top=RGB(0x6a5a44), dark=RGB(0x4a3e30);
+  g.quad([0,0.15,1.1],[1.0,0.05,0],[0,0.12,-0.9],[-1.0,0.05,0],top);
+  g.quad([-1.0,0.03,0],[0,0.1,-0.9],[1.0,0.03,0],[0,0.13,1.1],dark);
+  g.beam8([0,0.1,-0.9],[0,0.06,-3.0],0.12,0.04,dark,top);
+  return g.mesh(false,false);
+}
+function presRats(x,z){
+  /* the rats out of a cask: small grey shapes running out across the floor, then gone */
+  const scn=FORT.root||scene;
+  for(let i=0;i<9;i++){
+    const g=new Geo(), fur=RGB(i%2?0x4f4a44:0x3d3934);
+    g.box(0,0.18,0,0.32,0.28,0.62,fur);g.box(0,0.22,0.38,0.2,0.2,0.2,fur);g.beam8([0,0.15,-0.31],[0,0.08,-0.95],0.06,0.03,fur,fur);
+    const m=g.mesh(false,false), a=srand(i*7.7+PRES.t)*Math.PI*2;
+    m.position.set(x,G6(x,z),z);m.rotation.y=a;scn.add(m);
+    PRES.rats.push({m:m,a:a,v:9+srand(i*3.1)*6,t:0});
+  }
+  playSfx("click",0.25);
+}
+
+/* ---- THE TERRAIN OF THE BAY: a sandy isle at a river's mouth ---- */
+SITE_TERRAIN.bay={sea:64,shore:-6,flat:-70,deep:-1.6,fall:0.02,rise:1.6,inland:1.3,roll:0.6,
+  sky:0xa9c8d8,fog:0xbcd2dc,water:0x3f6a72,near:0xcdbb8e,far:0xa9a072,back:0x6f7350,wet:0xa99a72,
+  trees:0,treeZ:-60,treeH:40,seed:97};
+
+registerWorld("ch6",function(root){
+  const w=presW(), sd=presDay();
+  const where=sd.where;
+  PRES.ship=null;PRES.ships=[];PRES.ray=null;PRES.boat=null;PRES.lit=false;PRES.winter=!!sd.winter;
+  PRES.rats.length=0;BLAZE.fires.length=0;PRES.figs={};
+  let G, spots={}, at=[0,20], face=Math.PI, nextAt=null;
+  /* a spot that waits on another duty (data.after) is held back and laid down by presDone
+     the moment that duty is done: the crowning used to appear only after a reload */
+  PRES.later=[];
+  const duty=function(id,label,x,z,data){
+    if(data.kind&&PRES_DUTY[data.kind]&&w.did[data.kind])return;
+    const it={id:id,label:label,x:x,z:z,y:G(x,z),lvl:LVL.MAIN,r:8,action:"pres",data:data};
+    if(data.after&&!w.did[data.after]){PRES.later.push(it);return;}
+    interactables.push(it);};
+
+  if(where==="fort"){
+    const view=Object.assign({},fortW(),{epi:true,stretch:4,attack:null});
+    buildFortWorld(root,view,{ships:["discovery"],people:false,record:false,winter:!!sd.winter});
+    G=fortGround;
+    nextAt=[-30,26];
+    if(w.day===0){
+      spots={smith:[6,10,3.2],scrivener:[-30,0,2.6],newport:[-96,40,1.4],wingfield:[-104,46,1.0],archer:[-88,46,2.2]};
+      /* Newport's ship, moored below the fort until she sails */
+      const s=placeShip(root,"susan",1,-150,100,Math.PI/2+0.03);
+      PRES.ship={m:s,go:false,to:-760,v:-14};
+      if(w.did.sailed0){s.visible=false;}
+      /* the refiners at the water: a yellow-flecked heap, and men stooped over pans */
+      const R=new Geo(), dirt=RGB(0x8f7a4c), gilt=RGB(0xc9a744);
+      R.oct(-60,52,G(-60,52)-0.2,G(-60,52)+2.6,4.5,3.5,1.2,0.9,0.3,dirt,dirt);
+      for(let i=0;i<24;i++)R.box(-60+(srand(i*2.1)-0.5)*5,G(-60,52)+0.5+srand(i*1.3)*1.8,52+(srand(i*3.7)-0.5)*3.6,0.14,0.14,0.14,gilt);
+      root.add(R.mesh(false,false));solid(-60,52,4,3,LVL.MAIN,0);
+      [[-66,58,0.4],[-54,57,-0.6],[-61,63,0]].forEach(function(a,i){const f=buildFigure(crowdEq("hand",40+i));
+        f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];poseFigure(f,"stoop",i*5+2);root.add(bakeFigure(f));});
+      duty("load","Captain Newport’s Ship",-110,52,{kind:"load",verb:"Load her for England"});
+    }
+    if(w.day===2){
+      spots={smith:[6,10,3.2],scrivener:[-12,-14,2.6]};
+      presPalace(root,G,70,-150);
+      duty("palace","The President’s House",70,-132,{kind:"palace",verb:"Look at it"});
+      duty("patent","The Letters Patent",-70,16,{kind:"patent",verb:"See who takes them"});
+      /* Ratcliffe, under guard: no voice, because none of his survives */
+      const rf=buildFigure(presPerson("ratcliffe").eq);rf.position.set(-36,G(-36,-2),-2);rf.rotation.y=2.6;root.add(rf);solid(-36,-2,1,1,LVL.MAIN,0);
+      const gd=buildFigure(crowdEq("soldier",22));gd.position.set(-32,G(-32,-5),-5);gd.rotation.y=2.2;root.add(bakeFigure(gd));
+    }
+    if(w.day===4){
+      spots={smith:[6,10,3.2],scrivener:[-30,0,2.6],newport:[-60,14,3.0],laydon:[-44,-10,2.0]};
+      presGlasshouse(root,G,-178,-160);
+      const fo=englishWoman(true);fo.position.set(24,G(24,12),12);fo.rotation.y=0.25;root.add(fo);solid(24,12,1,1,LVL.MAIN,0);
+      const ab=englishWoman(false);ab.position.set(27.5,G(27.5,13.5),13.5);ab.rotation.y=-0.2;root.add(ab);solid(27.5,13.5,1,1,LVL.MAIN,0);
+      /* the two gallants at the edge of the wood, with axes, and a felled trunk */
+      const T=new Geo(), bark=RGB(0x5a4836);T.beam8([118,G(118,-124)+0.9,-124],[138,G(138,-131)+0.9,-131],1.8,1.6,bark,bark);root.add(T.mesh(false,false));
+      [[122,-116,2.6],[132,-118,3.4]].forEach(function(a,i){const f=buildFigure(crowdEq("gent",50+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];
+        poseFigure(f,"stoop",i+9);root.add(bakeFigure(f));});
+      duty("oath","The Two Gallants",126,-110,{kind:"oath",verb:"Work beside them"});
+      duty("letter","Smith’s Letter",-70,16,{kind:"letter",verb:"Read it"});
+    }
+    if(w.day===6){
+      spots={smith:[0,54,Math.PI],percy:[-108,-42,1.2],laxon:[18,22,3.4]};
+      /* the company, called together on the strand before the gate, facing him */
+      for(let i=0;i<14;i++){const x=-15+(i%7)*5+(srand(i*2.7)-0.5)*1.6, z=42-Math.floor(i/7)*4+(srand(i*1.9)-0.5)*1.4;
+        const f=buildFigure(crowdEq(i%4?"hand":"gent",60+i));f.position.set(x,G(x,z),z);f.rotation.y=(srand(i)-0.5)*0.4;root.add(bakeFigure(f));
+        solid(x,z,0.8,0.8,LVL.MAIN,0);}
+      if(!w.did.law)duty("law","The Assembly",12,48,{kind:"law",verb:"Hear the President"});
+      if(!w.did.casks){
+        /* the CC0 Poly Haven barrels the strand at Cape Henry uses, three feet as baked */
+        [[-84,18],[-77,20],[-70,18],[-80.5,15],[-73.5,15.5]].forEach(function(a,i){
+          const v=i%2?"barrel_b":"barrel";
+          placeModel(root,"assets/props/"+v+".glb",v,a[0],G(a[0],a[1]),a[1],i*1.7,1.15/1.2,3.2/3,1.15/1.2);
+          solid(a[0],a[1],1.6,1.6,LVL.MAIN);
+          if(i<3&&!(w.casks||[]).includes(i))duty("cask"+i,"A Cask of Corn",a[0],a[1]+3,{kind:"cask",c:i,x:a[0],z:a[1]+2,verb:"Open it"});});
+      }
+      duty("disperse","The Gate",0,30,{kind:"disperse",verb:"Go where you are sent"});
+    }
+    if(w.day===7){
+      spots={ratcliffe:[-30,0,2.6],martin:[-44,-4,2.2],archer:[-22,10,2.4],percy:[-108,-42,1.2]};
+      [[-150,100],[-230,112],[-310,104]].forEach(function(a,i){
+        const s=placeShip(root,i?"discovery":"susan",i?0.9:1,a[0],a[1],Math.PI/2+0.03*i);
+        PRES.ships.push({m:s,go:false,to:a[0]-640,v:-12-i*2});
+        if(w.did.sailed)s.visible=false;});
+      duty("archer","Master Archer’s Letter",-46,6,{kind:"archer",verb:"Read it"});
+      if(!w.did.burn){
+        const B=new Geo();buildShallop(B,40,-0.3,150,Math.PI/2,0.02);PRES.boat={m:B.mesh(false,false),go:false,to:-34};
+        root.add(PRES.boat.m);
+        duty("burn","The Boat from the Falls",-30,56,{kind:"burn",verb:"Meet it"});
+      }
+      duty("list","The List of Stores",-92,-30,{kind:"list",verb:"Set it beside the letter"});
+    }
+    at=[0,20];
+  }
+  if(where==="bay"){
+    G=captLand(root,"bay",{trees:70,winter:false,clear:function(x,z){return z>-24||Math.abs(x)<30&&z>-60;}});
+    captBarge(root,G,14,72,0.3);
+    /* the isle: reeds along the water, scrub and low pine behind the beach */
+    const V=new Geo(), reed=RGB(0x8a8a52), reedD=RGB(0x6a6c40), scrub=RGB(0x4d5a32), scrubD=RGB(0x3a4426);
+    for(let i=0;i<70;i++){const x=-200+i*6+srand(i*1.9)*4, z=56+srand(i*2.3)*9, gy=G(x,z);
+      if(Math.abs(x+30)<9&&z>60)continue;
+      for(let k=0;k<5;k++){const dx=(srand(i*3.1+k)-0.5)*1.6,dz=(srand(i*5.3+k)-0.5)*1.6,h=2+srand(i+k*7)*2.4;
+        V.beam8([x+dx,gy-0.2,z+dz],[x+dx*1.4,gy+h,z+dz*1.4],0.12,0.05,reedD,reed);}}
+    for(let i=0;i<46;i++){const x=(srand(i*4.7)*2-1)*220, z=-30+srand(i*3.9)*62, gy=G(x,z);
+      if(Math.hypot(x-2,z-26)<16||Math.hypot(x-24,z+18)<10)continue;
+      const r0=1.6+srand(i*2.2)*2.2;V.oct(x,z,gy-0.2,gy+r0*0.9,r0,r0*0.8,r0*0.5,r0*0.4,0.3,scrubD,scrub);}
+    root.add(V.mesh(false,false));
+    if(!w.did.ray){
+      /* knee-deep: the ground falls to -1.7 here and the water stands at -0.35 */
+      const f=buildFigure(PRES_PEOPLE[0].eq);f.position.set(-34,G(-34,70),70);f.rotation.y=-0.6;root.add(f);
+      PRES.figs.smith=f;
+      const r=presStingray();r.scale.setScalar(1.7);r.position.set(-31,-0.3,72);r.rotation.y=0.9;r.visible=false;root.add(r);PRES.ray=r;
+      duty("ray","Captain Smith, in the Shallows",-28,54,{kind:"ray",verb:"Go to him"});
+    } else {
+      /* ashore: the Captain laid by the fire, and the grave on the isle */
+      const f=buildFigure(PRES_PEOPLE[0].eq);f.position.set(-6,G(-6,26)+0.9,26);f.rotation.set(-Math.PI/2,0.4,0);root.add(f);
+      const F=new Geo();F.oct(0,22,G(0,22),G(0,22)+0.3,1.6,1.6,1.4,1.4,0.1,RGB(0x3a2e24),RGB(0x2a221a));root.add(F.mesh(false,false));
+      blazeAt(root,0,G(0,22)+0.2,22,2.6,1.6).smoke=false;
+      const P=new Geo(), pit=RGB(0x3a3022), sand=RGB(0xb9a676);
+      const gx=24, gz=-18, gy=G(gx,gz);
+      if(w.did.grave){P.box(gx,gy-0.6,gz,3.2,0.2,7.2,pit);P.oct(gx+3.6,gz,gy,gy+1.2,1.8,3.8,1.2,3.0,0.2,sand,sand);}
+      else P.box(gx,gy+0.02,gz,3.2,0.05,7.2,RGB(0xa89668));
+      P.beam8([gx-2.6,gy,gz+4.6],[gx-2.4,gy+4.6,gz+4.4],0.18,0.18,RGB(0x6a543a),RGB(0x6a543a));
+      root.add(P.mesh(false,false));
+      spots={russell:[6,30,3.6]};
+      duty("grave","The Grave on the Isle",gx-3,gz+5,{kind:"grave",verb:"Dig"});
+    }
+    PRES_LOOKS[1].forEach(function(L){});
+    at=w.did.ray?[10,36]:[2,30];
+    nextAt=[at[0]+12,at[1]+4];
+  }
+  if(where==="york"){
+    G=buildWerowocomoco(root,{winter:!!sd.winter,solid:true,telling:null,noKing:w.day===3});
+    if(sd.ice){
+      /* the river frozen "neare halfe a mile from the shore": a white shelf over the water */
+      const I=new THREE.Mesh(new THREE.PlaneGeometry(1600,180),new THREE.MeshLambertMaterial({color:lin(0xdfe6e8)}));
+      I.rotation.x=-Math.PI/2;I.position.set(0,-0.28,SITE_TERRAIN.york.sea+80);root.add(I);
+      const F=new Geo(), ice=RGB(0xe8eef0), iceD=RGB(0xb9c6cb);
+      for(let i=0;i<60;i++){const x=-300+i*10+srand(i*3.3)*6, z=SITE_TERRAIN.york.sea+166+srand(i*1.7)*22, r=2+srand(i*2.9)*4;
+        F.oct(x,z,-0.36,-0.12,r,r*0.7,r*0.9,r*0.6,0.1,iceD,ice);}
+      for(let i=0;i<30;i++){const x=-220+i*15+srand(i*4.1)*8, z=SITE_TERRAIN.york.sea+6+srand(i*2.2)*40;
+        F.box(x,-0.26,z,0.25,0.02,6+srand(i)*10,iceD);}
+      root.add(F.mesh(false,false));
+    }
+    if(PRES.night){scene.background=new THREE.Color(0x1c2230);if(scene.fog){scene.fog.color=new THREE.Color(0x1c2230);scene.fog.near=60;scene.fog.far=320;}}
+    const H=CAPT_HALL;
+    if(w.day===3){
+      duty("invite","Powhatan’s House",H.x+H.len/2+8,H.z,{kind:"invite",verb:"Hear his answer"});
+      duty("crown","The Crowning",H.x+H.len/2+8,H.z+4,{kind:"crown",after:"invite",verb:"Go in"});
+      /* the presents, come by water: a bed, a basin and ewer */
+      const Pp=new Geo(), wood=RGB(0x6a4a2c), brass=RGB(0xc69a46);
+      Pp.box(-10,G(-10,-10)+0.9,-10,6,1.8,4,wood);Pp.box(-10,G(-10,-10)+2.0,-10,5.6,0.4,3.6,RGB(0xb8a888));
+      Pp.oct(-4,-8,G(-4,-8),G(-4,-8)+0.4,1.2,1.2,1.0,1.0,0.1,brass,brass);
+      Pp.oct(-4,-8,G(-4,-8)+0.4,G(-4,-8)+1.6,0.4,0.4,0.25,0.25,0.1,brass,brass);
+      root.add(Pp.mesh(false,false));solid(-10,-10,3,2,LVL.MAIN,0);
+      spots={};
+      at=[10,60];
+    }
+    if(w.day===5){
+      duty("terms","Powhatan’s House",H.x+H.len/2+8,H.z,{kind:"terms",verb:"Hear his terms"});
+      duty("warning","That Night",44,-6,{kind:"warning",after:"terms",verb:"Hear it told"});
+      duty("pamunkey","Up the River to Pamunkey",-30,70,{kind:"pamunkey",after:"warning",verb:"Go on"});
+      spots={smith:[30,10,2.6]};
+      at=[10,86];
+    }
+    nextAt=[at[0]+12,at[1]-4];
+  }
+
+  /* ---- THINGS TO LOOK AT ---- */
+  (PRES_LOOKS[w.day]||[]).forEach(function(L){
+    if(where==="bay"&&L[0]==="barge")return duty("look_barge",L[1],L[2],L[3],{kind:"look",id:L[0],verb:"Look"});
+    duty("look_"+L[0],L[1],L[2],L[3],{kind:"look",id:L[0],verb:"Look"});
+  });
+
+  /* ---- THE PEOPLE OF THIS DATE ---- */
+  for(const id in spots){
+    const d=presSpeaker(id);
+    if(!d)continue;
+    const a=spots[id], x=a[0], z=a[1], gy=G(x,z);
+    const f=buildFigure(d.eq);f.position.set(x,gy,z);f.rotation.y=a[2];root.add(f);
+    npcMeshes.push({npc:d,mesh:f});solid(x,z,1,1,LVL.MAIN,0);
+    interactables.push({id:id,label:d.name,x:x,z:z+3,y:gy,lvl:LVL.MAIN,r:7,action:"talk",data:d});
+  }
+  /* Todkill, at his page; once Smith has sailed, the record instead */
+  if(nextAt&&!w.did.sailed){
+    const tf=buildFigure(PRES_PEOPLE[2].eq);tf.position.set(nextAt[0]-3,G(nextAt[0]-3,nextAt[1]-2),nextAt[1]-2);tf.rotation.y=0.6;
+    poseFigure(tf,"kneel",4);root.add(tf);solid(nextAt[0]-3,nextAt[1]-2,1,1,LVL.MAIN,0);
+    duty("next",sd.next,nextAt[0],nextAt[1],{kind:"next",verb:presNeed()?"Not yet":(w.pages[w.day]==null?"Give him your page":"Go on")});
+  }
+  if(w.did.sailed)duty("record","Close the Record",-99,-36,{kind:"record",verb:"Close the chapter’s record"});
+
+  if(w.day===0&&!w.did.open0){
+    w.did.open0=true;
+    setTimeout(function(){if(CURRENT_WORLD==="ch6")
+      fortResult(PRES_OPEN[0].t,"<p class=\"sickDate\">"+PRES_DAYS[0].date+"</p>"+PRES_OPEN[0].b,[]);},500);
+  }
+  if(where!=="fort"){player=buildFigure(S.equip);root.add(player);playerParts=player.userData.parts;dressCarried(player);}
+  player.position.set(at[0],G(at[0],at[1]),at[1]);player.rotation.y=face;
+  camYaw=0;camPitch=0.30;
+});
+function presFigure(id){return PRES.figs&&PRES.figs[id];}
+
+function updatePres(dt){
+  if(CURRENT_WORLD!=="ch6")return;
+  PRES.t+=dt;
+  if(!PRES.lit&&(PRES.winter||PRES.night)){
+    if(PRES.night){scene.background=new THREE.Color(0x1c2230);if(hemiLight)hemiLight.intensity*=0.35;if(sunLight)sunLight.intensity*=0.25;}
+    else{
+      scene.background=new THREE.Color(0xb3babd);
+      if(scene.fog){scene.fog.color=new THREE.Color(0xb9bfc1);scene.fog.near=180;scene.fog.far=760;}
+      if(hemiLight)hemiLight.intensity*=0.85;if(sunLight)sunLight.intensity*=0.7;
+    }
+    if(skyDome){
+      const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
+      for(let i=0;i<pp.count;i++){
+        const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=PRES.night?lerpHex(0x2a3244,0x0e121c,Math.pow(t,0.6)):lerpHex(0xb9c0c3,0x8e989e,Math.pow(t,0.6));
+        cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
+      }
+      cc.needsUpdate=true;
+    }
+    PRES.lit=true;
+  }
+  const sail=function(s){if(s&&s.go&&s.m.position.x>s.to)s.m.position.x=Math.max(s.to,s.m.position.x+dt*s.v*4);};
+  sail(PRES.ship);PRES.ships.forEach(sail);
+  if(PRES.boat&&PRES.boat.go){const b=PRES.boat.m;if(b.position.x>-74)b.position.x-=dt*22;if(b.position.z>-88)b.position.z-=dt*18;}
+  for(let i=PRES.rats.length-1;i>=0;i--){
+    const r=PRES.rats[i];r.t+=dt;
+    r.m.position.x+=Math.sin(r.a)*r.v*dt;r.m.position.z+=Math.cos(r.a)*r.v*dt;r.a+=(srand(i+r.t)-0.5)*dt*3;r.m.rotation.y=r.a;
+    r.m.position.y=G6(r.m.position.x,r.m.position.z);
+    if(r.t>2.6){if(r.m.parent)r.m.parent.remove(r.m);r.m.geometry.dispose();PRES.rats.splice(i,1);}
+  }
+  updateBlaze(dt);
+}
+
+/* ---- CHAPTER VI'S CONTENT, AND ITS MUSTER ----
+   Sat at "Close the Record" after Smith has sailed, so everyone who sits it has seen all
+   eight scenes: every item is ungated, and every stimulus carries the words it needs.
+   Written off docs/CH6-RECORD.md §Teaching hooks. The sitter is Anas Todkill, whose name is
+   on most of the 1612 book, and who admits in it that he was "a partie". */
+CONTENT.ch6={
+  people:PRES_PEOPLE,
+  npcs:PRES_NPCS,
+  charter:{insight:{b:"Smith & the Record"}},
+  reck:{seal:"records",kick:"Anas Todkill’s Pages",title:"Set Down the President’s Years",
+    frame:"Todkill has his pages tied with string. “These go to Master Pots and Master Simmonds, to be made into a book. I was a partie, and so were you. Before they print a word, tell me how a reader ought to take a book like ours. Six questions; I’ll bear two wrong — no more.”",
+    lockLine:"Not yet. Todkill’s pages are closed when the President has sailed.",
+    pass:{title:"The Pages Hold",body:"Todkill ties the string again. “Then let them print it. A reader who knows who wrote it can weigh it. It is the reader who does not ask that we deceive.”"},
+    fail:{title:"The Pages Do Not Hold",body:"“You would have them read our book as if nobody wrote it,” says Todkill. “Somebody always writes it. Go round again, and ask who.”"},
+    onPass:function(){presW().done=true;},
+    q:[
+      {stim:"The 1612 Proceedings: “the writings of Thomas Studley … Anas Todkill, Walter Russell Doctor of Phisicke, Nathaniell Powell, William Phettyplace, Richard Wyffin, Thomas Abbay, Tho: Hope, Rich: Pots”. Its preface: it is “not to disgrace any, accuse any, excuse any, nor flatter any”.",
+       q:"Who wrote most of what we know about 1608–09?",
+       o:["Men who served under Smith","Smith’s enemies on the council","Powhatan’s own interpreters","The Virginia Company’s clerks"],a:0},
+      {stim:"Powell and Todkill, on the second Bay voyage: they leave its worth to the reader, rather than be “tedious, or partiall being a partie”.",
+       q:"What are these writers admitting?",
+       o:["That they were on one side","That they were not there","That they forgot the details","That Smith wrote it for them"],a:0},
+      {stim:"Thomas Studley died on 28 August 1607. His name is signed to the 1612 chapter about the spring of 1608.",
+       q:"What does this show about the signatures?",
+       o:["A name on a page may not be its writer","Studley must have lived on into 1608","The whole 1612 book must be forged","The printer chose names at random"],a:0},
+      {stim:"Smith’s friends: “no talke, no hope, nor worke, but dig gold, wash gold, refine gold, load gold.” The First Supply’s roll: a jeweller, two refiners, two goldsmiths and a perfumer.",
+       q:"What does the roll add to the writers’ complaint?",
+       o:["Evidence the Company expected gold","Proof that gold was found that spring","Proof the writers were refiners","Evidence the colony was well fed"],a:0},
+      {stim:"Smith “glaunced in the eies of Powhatan many Trifles”, and for “a pound or two of blew beads” got “2 or 300 bushels of corne”. Told by Smith’s friends.",
+       q:"What should a reader keep in mind?",
+       o:["Only the English side of it was written","Powhatan wrote that he was cheated","Blue beads were worth more than corn","Powhatan’s men told the story first"],a:0},
+      {stim:"On the second voyage the barge put sick men’s hats on sticks “to make vs seeme many”.",
+       q:"Why might the writers admit to a trick like this?",
+       o:["It showed how clever they had been","Smith’s enemies made them admit it","They did not think it was a trick","The Powhatan had written about it"],a:0},
+      {stim:"Ratcliffe’s “vnnecessarie pallas in the woodes”: the words of the sick men and of Smith’s friends. Nothing Ratcliffe said about it survives.",
+       q:"What would a historian need to judge the palace?",
+       o:["Ratcliffe’s reasons, and what it cost","Nothing more; the sick men saw it","Only whether it was ever finished","A drawing of the house by Smith"],a:0},
+      {stim:"July 1608: the men asked Smith to govern; he put Scrivener in and went back to the Bay. 10 September: he took the presidency, “which till then, by no meanes he would accept”.",
+       q:"Why might his friends stress that he refused it first?",
+       o:["It shows him unwilling, not ambitious","It proves Scrivener was the better man","It shows that the council forced him","It means he was never President"],a:0},
+      {stim:"The crowning, 1612: “a fowle trouble there was to make him kneele”; at the volley “the king start[ed] vp in a horrible feare”.",
+       q:"What does the scene suggest?",
+       o:["The two sides meant different things by it","Powhatan was glad to be James’s subject","Powhatan had asked to be crowned that day","The English were afraid of the crown"],a:0},
+      {stim:"“If your king haue sent me presents, I also am a king, and this [is] my land.” — Powhatan, as Smith’s party wrote it down.",
+       q:"How did these words reach us?",
+       o:["In English, written down by Smith’s party","In Powhatan’s own hand and language","From a Powhatan interpreter’s diary","From the Company’s papers in London"],a:0},
+      {stim:"Smith’s friends on the crown and presents: “much better well spared … we had his favour much better onlie for a poore peece of Copper”.",
+       q:"What does this show about “Smith’s friends”?",
+       o:["They could criticise the Company too","They admired Captain Newport above all","They wanted Powhatan made a king","They had no view of the Company at all"],a:0},
+      {stim:"1612: “Mistresse Forest and Anne Buras her maide”. Later: “a marriage betweene Iohn Laydon and Anna Burrowes”.",
+       q:"What does the record tell us about the two women?",
+       o:["Their names, their arrival and a wedding","What each of them thought of Virginia","Mistress Forrest’s first name and age","That both kept journals of the voyage"],a:0},
+      {stim:"“send but thirty Carpenters, husbandmen, gardiners, fisher men, blacksmiths, masons … then a thousand of such as we haue” — Smith’s letter, known only as he printed it in 1624.",
+       q:"Why does the date of printing matter?",
+       o:["He may have polished it long after","It proves the letter was never sent","Printed letters are always true copies","It shows the Company printed it first"],a:0},
+      {stim:"Powhatan, January 1609, as Smith’s party wrote it: corn is worth more than copper, “saying he could eate his corne, but not his copper”.",
+       q:"What does this tell us about trade that winter?",
+       o:["Corn was scarce, so it held the power","Copper was worth more than ever before","The Powhatan had no use for any trade","The English had corn enough to spare"],a:0},
+      {stim:"Smith’s own friends: he “resolued … to surprise Powhatan and al his provision”, sending men to build Powhatan a house, “Knowing there needed no better castel”.",
+       q:"Why does it matter that his friends wrote this?",
+       o:["Even friends admit he planned a seizure","It proves Powhatan began the quarrel","It shows they wanted Smith blamed","It shows the house was never built"],a:0},
+      {stim:"1612: Pocahontas’s warning is one sentence, undated, in a reply to a rumour. 1624: a dark night, tears, platters of food, and Smith making the men “taste euery dish”.",
+       q:"Which details appear only in 1624?",
+       o:["The tears and the tasted dishes","The warning itself, given at night","That she came through the woods","That her father planned a surprise"],a:0},
+      {stim:"1612: Smith seized Opechancanough “by his vambrace”, an arm-guard. 1624: “by his long locke”.",
+       q:"What does the change do?",
+       o:["It makes the deed more humiliating","It corrects the earlier book’s error","It shows a second, later seizure","It makes Smith seem more gentle"],a:0},
+      {stim:"Smith’s law: “he that will not worke, shall not eate”. Later Kemps fed English runaways “with this law, who would not worke must not eat, till they were neere starved”.",
+       q:"What was Kemps doing?",
+       o:["Turning the English law on the English","Obeying an order from Smith himself","Teaching the runaways to plant corn","Showing that the law was a fair one"],a:0},
+      {stim:"1612, page 152: “6 or 7 Salvages were slaine … burnt their houses”. Page 159, the same book: “he wrastled and overcame (without bloud shed) all that hapned”.",
+       q:"What should a reader conclude?",
+       o:["Its own pages contradict the summing-up","Nobody was killed at Paspahegh at all","The two pages are about different years","Only the second page can be trusted"],a:0},
+      {stim:"Archer’s letter of 1609 survives only as Purchas printed it, with a note that “Some things … are here left out”, and the troubles blamed on “enemies to the President”.",
+       q:"Why does this matter?",
+       o:["Smith’s side cut an enemy’s letter","Archer himself asked for the cuts","Purchas was Archer’s closest friend","The cuts make it more reliable"],a:0},
+      {stim:"Ratcliffe, 4 October 1609: Smith “is sent home to answere some misdeameanors”. Smith’s friends: there was “neither chirurgeon nor chirurgery in the fort to cure his hurt”.",
+       q:"How could a historian test the two?",
+       o:["Look for charges or a trial in England","Believe whichever account is longer","Believe the friends; they were closer","Believe Ratcliffe; he wrote it first"],a:0},
+      {stim:"The friends’ list: “10 weekes provision in the store … 490 and odde persons”. Ratcliffe, the same day: victuals “wherof wee haue exceedinge much need”.",
+       q:"Can both be true?",
+       o:["Perhaps: ten weeks for 490 is little","No: one of the two must be lying","Yes: they describe different forts","No: Ratcliffe was not at the fort"],a:0},
+      {stim:"The list was printed in 1612, after most of the 490 had died in the winter of 1609–10. Its next words: “But they regarded nothing but from hand to mouth.”",
+       q:"What is the list trying to prove?",
+       o:["Smith left plenty; others are to blame","The colony was prospering in 1612","Ratcliffe was a careful President","The stores were all eaten by rats"],a:0}]},
+  ready:function(){
+    const w=presW();
+    return (w.day>=PRES_DAYS.length-1&&w.did.sailed)?{ok:true,missing:[]}:{ok:false,missing:["Smith’s going home, in October 1609"]};
+  },
+  targets:collectInsights(PRES_NPCS), unlocks:[]
 };
 
 const CHAPTERS=[
@@ -26542,12 +27566,38 @@ const CHAPTERS=[
      const o=findSpot(function(it){return it.id==="next"||it.id==="record";});
      if(o)return {it:o,why:w.did.fire?"the chapter ends here":"the next date"};
      return null; },
-   end:{head:"Smith’s Relation — Complete",yr:"Chapter V · 7 January 1608",nextWorld:null,
+   end:{head:"Smith’s Relation — Complete",yr:"Chapter V · 7 January 1608",nextWorld:"ch6",nextLabel:"Smith & the Record — Chapter VI",
      /* review, 26 Nov: "the First Supply's hundred men" - the near hundred sailed in two
         ships, and the Phoenix was still at sea (Proceedings p. 99) */
      body:"<p>The fort is ash, and the First Supply’s newcomers are sleeping in the frost with the thirty-eight who were left. Smith is on the council again. Powhatan sends deer and bread to the fort once or twice a week, “halfe alwayes for my father”, Captain Newport, whom he wants to meet.</p>"+
-       "<p>In February Newport and Smith go to Werowocomoco together. That is the next chapter, and it is still to come.</p>"}},
-  {n:"VI",yr:"1608–09",t:"Smith & the Record",d:"The fort and the woods, 1608-09",ready:false},
+       "<p>In February Newport and Smith go to Werowocomoco together and come home with corn. Chapter VI begins in the spring, with the fort rebuilt and the river sand full of gold, or so the refiners say.</p>"}},
+  {n:"VI",yr:"1608–09",t:"Smith & the Record",d:"The fort, the Bay and Werowocomoco — February 1608 to October 1609",
+   ready:true,world:"ch6",pace:2.5,near:9,
+   intro:function(){ return "Two years of John Smith: the gilded dirt, the Bay and the stingray, the presidency, the crowning of Powhatan, the ice at Werowocomoco, the rats in the corn, and the burn that sent him home. Nearly every page about these years was written by men who served under him, and two of them admit they were \u201ca partie\u201d. You are one of that company. What will you set down?"; },
+   obj:function(){ return "Live eight scenes from February 1608 to October 1609. In each, do what the day asks, then give Anas Todkill your page and see what the 1612 book printed. At the end, set the friends\u2019 list of stores beside an enemy\u2019s letter of the same day. When Smith has sailed, close Todkill\u2019s pages."; },
+   goals:function(){
+     const w=presW(), need=presNeed();
+     return [
+       {t:"Live the two years ("+(w.day+1)+" of "+PRES_DAYS.length+")",done:w.day>=PRES_DAYS.length-1&&!!w.did.sailed},
+       {t:need?PRES_DUTY[need]:(w.pages[w.day]==null?"Give Anas Todkill your page":"Go on"),done:!need&&w.pages[w.day]!=null},
+       {t:"Ask Master Scrivener, Doctor Russell and Master Archer what they know",done:PRES_NPCS.every(function(n){return npcDone(n.id);}),opt:true},
+       {t:"Close Todkill\u2019s pages, after Smith has sailed",done:!!w.done,goal:true,locked:!(w.day>=PRES_DAYS.length-1&&w.did.sailed)}
+     ]; },
+   status:function(){ const w=presW(), sd=presDay(), need=presNeed();
+     if(w.done)return "Chapter complete";
+     if(w.did.sailed)return "October 1609 · Todkill\u2019s pages are waiting";
+     return sd.date.split(" — ")[0]+" · "+(need?PRES_DUTY[need].charAt(0).toLowerCase()+PRES_DUTY[need].slice(1):"Todkill is waiting for your page"); },
+   next:function(){ const w=presW(), need=presNeed();
+     if(need){
+       const c=findSpot(function(it){return it.action==="pres"&&it.data&&(it.data.kind===need||(need==="casks"&&it.data.kind==="cask"));});
+       if(c)return {it:c,why:"what the day asks"};
+     }
+     const o=findSpot(function(it){return it.id==="next"||it.id==="record";});
+     if(o)return {it:o,why:w.did.sailed?"the chapter ends here":"Todkill\u2019s page"};
+     return null; },
+   end:{head:"Smith & the Record — Complete",yr:"Chapter VI · October 1609",nextWorld:null,
+     body:"<p>John Smith has gone home burned, and never comes back to Virginia. George Percy is President of about five hundred people, with ten weeks of food by one account and \u201cexceedinge much need\u201d by another. The ship carrying the new governor has not come.</p>"+
+       "<p>Todkill\u2019s pages, and his friends\u2019, go to London and are printed in 1612. The winter ahead is the next chapter, and it is still to come.</p>"}},
   {n:"VII",yr:"1609–10",t:"The Starving Time",d:"The besieged fort, winter 1609-10",ready:false},
   {n:"VIII",yr:"1610–16",t:"The Golden Leaf",d:"The tobacco fields, 1610-16",ready:false}
 ];
@@ -27334,7 +28384,7 @@ const CHAPTER_PLACE={
   "III":{la:37.21,lo:-76.78,d:1400,chart:"james",w:"the fort on the island, built in the spring"},
   "IV": {la:37.21,lo:-76.78,d:1400,chart:"james",w:"the same fort, the summer half of them died"},
   "V":  {la:37.41,lo:-76.68,d:1450,chart:"powhatan",w:"the rivers, and Werowocomoco on the York"},
-  "VI": {la:37.21,lo:-76.78,d:1400,chart:"james",w:"the fort on the island, and the woods behind it"},
+  "VI": {la:37.21,lo:-76.78,d:1400,chart:"james",w:"the fort, the Bay, and Werowocomoco again"},
   "VII":{la:37.21,lo:-76.78,d:1400,chart:"james",w:"the same fort, the winter it nearly ended"},
   "VIII":{la:37.4,lo:-77.2,d:1450,chart:"tobacco",w:"the tobacco ground up the river"}
 };
@@ -27996,7 +29046,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0008";
+const BUILD="20261127-0047";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
