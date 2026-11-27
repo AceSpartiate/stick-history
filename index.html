@@ -26319,7 +26319,8 @@ const PRES_SAYS={
   "smith":[
     ["“They would load her with dirt because it glitters. I am not enamoured of their dirty skill, and I have said so.”"],
     ["“Dig it on the isle, there, and dig it deep. If the Doctor’s oil fails, I will lie on dry ground.”"],
-    ["“I would not take the government in July. I take it now. And every Saturday the whole company drills in the field.”"],
+    /* play-test, 27 Nov: "I take it now" was said before the letters patent were taken */
+    ["“They asked me to take the government in July, and I would not. Master Scrivener held it while I was on the Bay. Let the council say what it wants of me now.”"],
     [],
     ["“A can of water down the sleeve for every oath. You will be surprised how quickly a gentleman learns to hold his tongue.”"],
     ["“He wants our swords and our guns for his corn. He will have neither.”"],
@@ -26328,7 +26329,7 @@ const PRES_SAYS={
   "scrivener":[
     [],                                    /* his dialogue beats, this scene */
     [],
-    ["“He will not take the presidency yet, so I am to hold it for him while he goes back to the Bay. I hold it for him, mind.”"],
+    ["“I have held the presidency for him while he was on the Bay. Whether he will take it now is for the council, and for him.”"],
     [],
     ["“Seventy more mouths, and not a month’s victual among them. Pitch and glass we shall have. Bread is another matter.”"],
     [],[],[]],
@@ -26866,7 +26867,14 @@ function presSails(){
 /* ---- THE LIST ---- */
 function presList(){
   const w=presW();
-  let h="<p>Smith’s friends printed what he left behind him. For each, does another paper of 1609 agree, disagree, or is there nothing to check it by?</p>";
+  /* play-test, 27 Nov: the sheet asked students to check the list against papers it never
+     showed them. The other papers are on the sheet now, in their own words. */
+  let h="<p>Smith’s friends printed what he left behind him. Beside it, the other papers of 1609:</p>"+
+    "<p><b>Ratcliffe, to Lord Salisbury, 4 October 1609:</b> victuals “wherof wee haue exceedinge much need”, for the country people “set no more then sufficeth each familye a yeare”.<br>"+
+    "<b>Archer, of his own ship:</b> she carried “sixe Mares and two Horses”.<br>"+
+    "<b>Smith’s friends, that spring:</b> “the labours of 30 or 40 honest and industrious men”; three sows made sixty pigs.<br>"+
+    "<b>The ships:</b> about two hundred were at the fort before the Third Supply, and over three hundred came in it.</p>"+
+    "<p>For each line of the list, does another paper agree, disagree, or is there nothing to check it by?</p>";
   PRES_ROWS.forEach(function(r,i){
     h+="<div class=\"captRow\"><span>"+r.t+"</span> <div class=\"captBtns\">"+PRES_V.map(function(v,k){
       return "<button class=\"btn small\" data-pr=\""+i+"\" data-v=\""+k+"\">"+v+"</button>";}).join(" ")+" <b class=\"captMark\" id=\"pm"+i+"\"></b></div></div>";
@@ -29227,7 +29235,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0115";
+const BUILD="20261127-0116";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
