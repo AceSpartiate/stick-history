@@ -11031,7 +11031,10 @@ function csNext(){
     if(s.spawn.face!==undefined)m.rotation.y=s.spawn.face;
     scene.add(m);CS.actors.push({id:s.spawn.id,mesh:m});
   }
-  if(s.move){const tg=csActor(s.move.id);CS.moveFrom=tg?tg.position.clone():null;}
+  /* play-test, 27 Nov: a walker whose move has ended stood frozen mid-stride for the rest of the scene
+     (the bride at the wedding); the last walker's limbs come to rest as the next step begins */
+  if(CS.walker){const pr=CS.walker.userData.parts;if(pr){pr.la.rotation.x=pr.ra.rotation.x=pr.ll.rotation.x=pr.rl.rotation.x=0;}CS.walker=null;}
+  if(s.move){const tg=csActor(s.move.id);CS.moveFrom=tg?tg.position.clone():null;CS.walker=tg||null;}
   if(s.shot){
     const fr=csShot(s.shot);
     s._cam={to:fr.to,look:fr.look};
@@ -31899,7 +31902,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0516";
+const BUILD="20261127-0518";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
