@@ -722,6 +722,8 @@
   .starveCard{border:1px solid rgba(90,58,26,.35);border-radius:6px;padding:.5em .7em;margin:.5em 0;background:rgba(255,250,236,.55);font-size:.93em}
   .starveCard p{margin:.35em 0}
   .starveCard details summary{cursor:pointer;color:#6b4a24;font-size:.9em}
+  /* Chapter VIII: where her own account would be. It stays empty, on purpose */
+  .leafBlank{border-style:dashed;background:rgba(255,255,255,.25);color:#5a4a3a}
   .captMark{min-width:3em;color:#5a3a1a}
   .sickDate{font-variant:small-caps;letter-spacing:.06em;opacity:.8;margin-top:0}
   .fortWho{color:#3f5c4f}
@@ -1368,6 +1370,7 @@ function applyBlob(d){
     if(S.works.ch4&&S.works.ch4.done)S.reached["ch5"]=true;
     if(S.works.ch5&&S.works.ch5.done)S.reached["ch6"]=true;
     if(S.works.ch6&&S.works.ch6.done)S.reached["ch7"]=true;
+    if(S.works.ch7&&S.works.ch7.done)S.reached["ch8"]=true;
     if(typeof AMBUSH!=="undefined")AMBUSH.done=!!d.ambushDone;
     SAVED_WORLD=d.world||"ch1";
     return true;
@@ -8532,7 +8535,7 @@ function animate(){
   /* play-test, 27 Nov: Chapter VI's ships, the boat from the falls, the rats and its night sky
      are driven by updatePres, which this branch never called - so "Captain Newport set sail"
      played over a ship riding at anchor, and the boat from the falls never came in */
-  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateWork(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}
+  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updateWork(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}
   if(CAMLOCK.on){
     updateFx(dt);updateFlog(dt);updateShadows();
     cam.position.lerp(CAMLOCK.pos,Math.min(1,dt*3.5));
@@ -8550,7 +8553,7 @@ function animate(){
     player.position.y=WORLD.ground(player.position.x,player.position.z)+JUMP.y;
   if(AMBUSH.on||DUSK.on){updateAmbush(dt);updateArrows(dt);}
   else if(FORT.on){updateFort(dt);updateArrows(dt);}
-  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateWork(dt);
+  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updateWork(dt);
   if(LESSON.on){
     updateFx(dt);updateLesson(dt);updateShadows();
     renderer.render(scene,cam);return;
@@ -8720,6 +8723,7 @@ function animate(){
         :best.action==="capt"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="pres"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="starve"?((best.data&&best.data.verb)||"Go to it")
+        :best.action==="leaf"?((best.data&&best.data.verb)||"Go to it")
         /* Named explicitly rather than inherited. A new action with no verb used
            to fall through to "Read the papers", which hid the mistake; now it
            reads "Use" and is obviously unfinished. */
@@ -9309,6 +9313,7 @@ function doInteract(){
   else if(a==="capt"){captAct(activeSpot.data);}
   else if(a==="pres"){presAct(activeSpot.data);}
   else if(a==="starve"){starveAct(activeSpot.data);}
+  else if(a==="leaf"){leafAct(activeSpot.data);}
   else if(a==="reck"){
     if(chapterReady())openReckoning();
     else toast("The scrivener will not sit with you yet. Still to ask: "+reckMissing().join("; ")+".");}
@@ -13711,7 +13716,7 @@ function openIntro(worldId){
   $("introDate").textContent=c.d;
   $("introBody").textContent=c.intro?c.intro():"";
   $("introObj").textContent=c.obj?c.obj():"";
-  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":"Into the Boats";
+  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":(worldId==="ch8")?"To the Fort":"Into the Boats";
   show("intro");
 }
 function beginWorld(worldId){
@@ -13892,7 +13897,7 @@ const CONDITIONS={weather:0,fouling:0,supply:0};
    not evidenced: the ship's hold is still air, and every outdoor scene here is an
    open shore in April with wind coming off the water. */
 /* ch4: the summer of 1607 was a drought (Stahle et al. 1998) - the driest air the game has */
-const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22};   /* ch5: a wet winter on the rivers */
+const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22, ch8:0.10};   /* ch5: a wet winter on the rivers */
 function armState(arm){
   return {
     /* a match above 0.7 takes no penalty at all - good play is rewarded in
@@ -25978,8 +25983,9 @@ function buildWerowocomoco(root,opt){
                   [-90,-60,22,12,10,1],[40,-80,26,13,11,0],[-10,-75,20,12,10,1],[120,-60,22,12,10,0]];
     HOUSES.forEach(function(h){yehakin(root,h[0],G(h[0],h[1]),h[1],h[2],h[3],h[4],h[5]);
       solid(h[0],h[1],(h[5]?h[3]:h[2])/2,(h[5]?h[2]:h[3])/2,LVL.MAIN,h[4]);});
-    /* the ditches, set back from the water, as the dig found them (shallow, and long) */
-    const D=new Geo(), ditch=RGB(0x4a3f2c);
+    /* the ditches, set back from the water, as the dig found them (shallow, and long);
+       not at Matchot (Chapter VIII), which is a different town */
+    const D=new Geo(), ditch=RGB(0x4a3f2c);if(!opt.noDitches)
     for(let i=0;i<24;i++){const x0=-200+i*16;D.box(x0+8,G(x0+8,-118)-0.25,-118+Math.sin(i*0.4)*4,16.5,0.6,4,ditch);
       D.box(x0+8,G(x0+8,-128)-0.25,-128+Math.sin(i*0.4)*4,16.5,0.6,4,ditch);}
     root.add(D.mesh(false,false));
@@ -26445,6 +26451,20 @@ function workPose(e,t){
     const ph=(t*0.9+sd/6.28)%1, v=Math.sin(ph*Math.PI);
     if(p.body)p.body.rotation.x=0.5;
     S("shoulderR",-0.9-v*0.7);S("shoulderL",-0.9-v*0.6);S("elbowR",-0.4);S("elbowL",-0.4);
+  } else if(task==="bowl"){
+    /* bowls on a Sunday: an underhand swing, and the bowl runs out along the street to the jack */
+    const ph=(t*0.32+sd/6.28)%1;
+    const sw=ph<0.25?ph/0.25:0;
+    if(p.body)p.body.rotation.x=0.15+sw*0.35;
+    S("shoulderR",0.9-sw*1.6);S("elbowR",-0.1);S("shoulderL",-0.3);S("kneeL",-0.4*sw);
+    if(!e.ball){const g=new Geo(), wood=RGB(0x4a3424);g.oct(0,0,-0.45,0.45,0.45,0.45,0.45,0.45,0.15,wood,wood);
+      e.ball=g.mesh(false,false);(worldRoot||scene).add(e.ball);
+      const j=new Geo();j.box(0,0.2,0,0.4,0.4,0.4,RGB(0xe8e0c8));e.jack=j.mesh(false,false);
+      e.jack.position.set(e.opt.to[0],workFigureY({position:{x:e.opt.to[0],z:e.opt.to[1]}}),e.opt.to[1]);(worldRoot||scene).add(e.jack);}
+    const f=e.f, r=ph<0.25?0:Math.min(1,(ph-0.25)/0.55);
+    const x0=f.position.x+Math.sin(f.rotation.y)*1.5, z0=f.position.z+Math.cos(f.rotation.y)*1.5;
+    const bx=x0+(e.opt.to[0]-x0)*(1-(1-r)*(1-r)), bz=z0+(e.opt.to[1]-z0)*(1-(1-r)*(1-r));
+    e.ball.position.set(bx,workFigureY({position:{x:bx,z:bz}})+0.45,bz);e.ball.rotation.x+=0.12*(r<1?1:0);
   } else if(task==="lift"){
     /* stoop to it, take it up, hold it at the chest */
     const v=Math.min(1,t/1.4);
@@ -28796,6 +28816,788 @@ CONTENT.ch7={
   targets:collectInsights(STARVE_NPCS), unlocks:[]
 };
 
+/* ==================== CHAPTER VIII: THE GOLDEN LEAF ====================
+   Sunday 10 June 1610 to Pocahontas's burial at Gravesend, 21 March 1617, with a closing card
+   from May 1617: De La Warr's "sword of Justice", the Paspahegh raid, Dale's Lawes, Henrico and
+   Rolfe's first tobacco, the capture of Pocahontas, her marriage, Hamor at Matchot, England.
+   Design: notes docs/CH8-LEAF.md. Every fact is in docs/CH8-RECORD.md, checked on 26 November.
+
+   WHAT THE CHAPTER IS ABOUT. Pocahontas is in nearly every source for these years and wrote
+   none of them; so is the Paspahegh queen, and so, very nearly, is Powhatan. In each scene the
+   player sorts what the writers say about them into what a writer SAW, what he WAS TOLD, and
+   what he CLAIMS someone FELT - and each scene closes on a blank card where her own account
+   would be. It stays blank. The one account from her side, the Mattaponi oral history of 2007,
+   comes in the muster, to be weighed as what it is.
+
+   CONTENT. The record's recommendations, kept. Paspahegh is text only, in Percy's words, with
+   the children's deaths stated plainly and the method behind "Read the source in full". The
+   Lawes are shown as printed articles, not as punishments. For 1613-14 the words are captured,
+   held, hostage. Pocahontas is never voiced, never narrated as herself, never given a line;
+   her reported words appear only with the reporter's name on them. */
+
+/* ---- THE SCENES ---- */
+const LEAF_DAYS=[
+  {where:"fort",date:"Sunday 10 June to July 1610",need:["sermon","workday"],next:"Go On"},
+  {where:"river",date:"9 and 10 August 1610 — the river by Paspahegh, at night",need:["tabor","raid","queen"],next:"Whose Words?",night:true},
+  {where:"fort",date:"May and June 1611 — a Sunday",need:["bowls","lawes","assembly"],next:"Go On"},
+  {where:"henrico",date:"Henrico, 1611 to 1613",need:["plant","molina","counterblaste"],next:"Go On"},
+  {where:"potomac",date:"April 1613 — Passapatanzy, on the Potomac",need:["capture","ransom"],next:"Whose Words?"},
+  {where:"fort",date:"March and April 1614",need:["swords","letter","wedding"],next:"Whose Words?"},
+  {where:"york",date:"Matchot, spring 1614",need:["daughter"],next:"Whose Words?"},
+  {where:"gravesend",date:"Gravesend, on the Thames, March 1617",need:["brentford","stick","register"],next:"Whose Words?"}];
+const LEAF_DUTY={
+  sermon:"Hear the Lord Governor",workday:"Work the morning",
+  tabor:"Hear what happened at Kecoughtan",raid:"Read Percy’s account of the raid",queen:"Read what is written of the queen",
+  bowls:"See what Dale found",lawes:"Read the Lawes",assembly:"Set the defence beside the complaint",
+  plant:"Plant Master Rolfe’s seed",molina:"Read the letter in the shoe",counterblaste:"Hear what the King thought",
+  capture:"Hear the capture, told twice",ransom:"Hear Powhatan’s answer",
+  swords:"Hear what she said on the Pamunkey",letter:"Read Master Rolfe’s letter",wedding:"See the wedding",
+  daughter:"Hear Powhatan at Matchot",
+  brentford:"Read Smith’s account of Brentford",stick:"See Uttamatomakkin’s stick",register:"Read the burial register"};
+function leafW(){
+  S.works=S.works||{};
+  if(!S.works.ch8)S.works.ch8={day:0,did:{},words:{},marks:{},done:false};
+  return S.works.ch8;
+}
+function leafDay(){return LEAF_DAYS[Math.min(leafW().day,LEAF_DAYS.length-1)];}
+function leafNeed(){const w=leafW(), sd=leafDay();for(const k of sd.need)if(!w.did[k])return k;return null;}
+const LEAF={later:[],lit:false,night:false,plants:[],ship:null,t:0};
+
+/* ---- THE PEOPLE ---- */
+const LEAF_PEOPLE=[
+  {id:"delawarr",name:"Lord De La Warr",voice:"male",role:"Lord Governor and Captain General",eq:crowdEq("gent",23)},
+  Object.assign({},CAPT_PEOPLE[4],{name:"Master Percy",role:"commands the raid"}),
+  {id:"hamor",name:"Master Hamor",voice:"male",role:"Secretary of the colony",eq:crowdEq("gent",25)},
+  {id:"dale",name:"Sir Thomas Dale",voice:"male",role:"Marshal, and Deputy Governor",eq:crowdEq("soldier",26)},
+  {id:"rolfe",name:"Master Rolfe",voice:"male",role:"a gentleman, who grows tobacco",eq:crowdEq("gent",27)},
+  {id:"argall",name:"Captain Argall",voice:"male",role:"captain of the Treasurer",eq:crowdEq("soldier",28)},
+  Object.assign({},CAPT_PEOPLE[0],{role:"in London, 1616"})];
+function leafPerson(id){return LEAF_PEOPLE.filter(function(p){return p.id===id;})[0];}
+
+const LEAF_SAYS={
+  "delawarr":[
+    ["“I am come to do you good. But I will not suffer idleness, nor these vanities. Mark it: I will draw the sword of justice if I must.”"],
+    [],[],[],[],[],[],[]],
+  "percy":[
+    ["“The Lord Governor has brought food and a fleet. He has also brought a temper.”"],
+    [],                                   /* his dialogue beats, this scene */
+    [],[],[],[],[],[]],
+  "hamor":[[],[],
+    [],                                   /* his dialogue beats, this scene */
+    ["“Three streets of framed houses, a church, and watch-houses at every corner. Write that in London, and they will send more men.”"],
+    [],[],
+    ["“Savage will speak for us. Powhatan knows him; he was his boy.”"],
+    []],
+  "dale":[[],[],
+    ["“Bowling, on a Sunday, and the corn not in the ground. The Lawes will be read in church, and kept.”"],
+    ["“Henrico. In honour of the Prince. It will be the chief town, when it is finished.”"],
+    [],
+    ["“I have written to London that she was carefully instructed, and is baptised, and is married. That is three things done.”"],
+    [],[]],
+  "rolfe":[[],[],[],
+    ["“The seed of the country is bitter. This is from the West Indies. If it takes here, Virginia will have something England wants to buy.”"],
+    [],
+    [],                                   /* his dialogue beats, this scene */
+    [],[]],
+  "argall":[[],[],[],[],
+    ["“Powhatan has English prisoners, and English guns. If I hold something he values, he will have to trade.”"],
+    [],[],[]],
+  "smith":[[],[],[],[],[],[],[],
+    ["“I have written to the Queen about her. Someone must tell them what she did for us.”"]]};
+
+/* ---- THE THREE WHO ARE ASKED ---- */
+const LEAF_NPCS=[
+  {id:"percy",name:"Master Percy",voice:"male",role:"commands the raid",at:1,eq:CAPT_PEOPLE[4].eq,
+   done:"“I have written down what was done. I have also written down what I would not do.”",
+   beats:[
+    {npc:"“The Lord Governor gave me seventy men and Paspahegh to punish. It is done, and it is written down. Ask, if you must.”",
+     choices:[
+      {t:"Who decided what happened to the children?",wise:true,ink:8,
+       reply:"“The soldiers began to murmur that the queen and her children were spared. A council was called.” He does not say who sat on it. His own account puts the children’s deaths on the council, and the queen’s on Captain Davis — “yett I ame perswaded to the Contrary” that the Lord Governor ordered it.",
+       insight:{g:"disp",b:"A Council Was Called",s:"George Percy led the raid on Paspahegh in August 1610 and wrote the only eyewitness account, about fifteen years later. He says a council decided to kill the werowance's children, and Captain Davis killed the queen, claiming De La Warr's order. Percy refused only to burn her. The Paspahegh queen's own name and words appear in no source."}},
+      {t:"Did any of them fight back?",fair:true,ink:3,
+       reply:"“Most of them ran. We put fifteen or sixteen to the sword, and burned the town, and cut the corn.”"},
+      {t:"They deserved it.",wise:false,
+       reply:"Percy looks at you for a long moment. “I did not say that. I wrote down what was done.”"}]}]},
+  {id:"hamor",name:"Master Hamor",voice:"male",role:"Secretary of the colony",at:2,eq:LEAF_PEOPLE[2].eq,
+   done:"“Read the Lawes, and then read what came of them, and judge.”",
+   beats:[
+    {npc:"“Sir Thomas Dale’s Lawes are hard, I grant you. Ask me whether they were needed.”",
+     choices:[
+      {t:"Were they needed?",wise:true,ink:8,
+       reply:"“If his Lawes had not been so strictly executed, I see not how the utter subversion of the Colonie should have been prevented.” He will print that in London in 1615, in a book meant to bring in money and men. In 1624 the colony’s own Assembly will call them “most severe and Crewell lawes … as mercylessly executed, often times without tryall or Judgment.”",
+       insight:{g:"disp",b:"Severe and Cruel",s:"Ralph Hamor, the colony's secretary, defended Dale's Lawes in a 1615 book written to raise money: without them the colony would have fallen. The Virginia Assembly in 1624 called them “most severe and Crewell lawes … as mercylessly executed, often times without tryall or Judgment.” The Assembly blamed the Company in London for them, not Dale."}},
+      {t:"What happens to a man who runs to Powhatan?",fair:true,ink:3,
+       reply:"“The Lawes say death. The savages are paid to hunt them home.” He says it as if it were a reason, not a fact."},
+      {t:"Without the Lawes they would all be idle.",wise:false,
+       reply:"“That is what I shall write. You might ask the men who were whipped what they would write.”"}]}]},
+  {id:"rolfe",name:"Master Rolfe",voice:"male",role:"a gentleman, who grows tobacco",at:5,eq:LEAF_PEOPLE[4].eq,
+   done:"“I have written to Sir Thomas. The rest is God’s, and his.”",
+   beats:[
+    {npc:"“I have asked Sir Thomas Dale’s leave to marry Powhatan’s daughter. People will say things. Ask me, then.”",
+     choices:[
+      {t:"Why do you want to marry her?",wise:true,ink:8,
+       reply:"“For the good of this plantation, for the honour of our countrie, for the glory of God, for my owne salvation, and for the converting” of her, he wrote to Dale. “No way led … with the unbridled desire of carnall affection.” It is a letter to the governor who holds her, asking his leave. What she wanted, it does not say.",
+       insight:{g:"disp",b:"For the Good of This Plantation",s:"John Rolfe's letter asking Dale's leave to marry Pocahontas (1614) gives his reasons as the good of the colony, England's honour, God's glory, his own salvation and her conversion. He describes her “apparance of love” and “desire to be taught”. The letter does not give her age, her consent in her own words, or the fact that she was being held as a hostage."}},
+      {t:"Does she want to marry you?",fair:true,ink:3,
+       reply:"“I have written of her great appearance of love to me.” He says it carefully, as if it were the answer."},
+      {t:"It will make the peace.",wise:false,
+       reply:"“God willing. But I did not write that it was why.”"}]}]}];
+
+function leafSpeaker(id){
+  const day=leafW().day;
+  for(const n of LEAF_NPCS)if(n.id===id&&n.at===day)return n;
+  const set=LEAF_SAYS[id], lines=set&&set[day];
+  if(!lines||!lines.length)return null;
+  return Object.assign({},leafPerson(id),{lines:lines});
+}
+
+/* ---- THE RECORD THAT OPENS EACH SCENE ---- */
+const LEAF_OPEN=[
+  {t:"The sword of Justice",b:"<p class=\"note\">This chapter includes war, the killing of prisoners, harsh punishments, and a young woman held captive. All of it is in the words of the people who wrote about it, and none of it is shown.</p><p>Sunday the tenth of June 1610. Lord De La Warr has come ashore at Jamestown, heard a sermon, and had his commission read. Now he speaks to the colony.</p>"},
+  {t:"Paspahegh",b:"<p>Percy: “the 9th of August 1610” he left James Town with “seaventie men”, to punish Paspahegh.</p><p>Everything we know of that night comes from Percy, who led it, and wrote about it some fifteen years later. Nobody from Paspahegh wrote anything at all.</p>"},
+  {t:"The Lawes",b:"<p>Lord De La Warr went home sick in March 1611. Sir Thomas Dale came in May, and found the colony, Hamor wrote, “bowling in the streets”.</p><p>Gates had made laws in May 1610. Dale added his in June 1611. They were printed in London in 1612 as the <i>Lawes Divine, Morall and Martiall</i>.</p>"},
+  {t:"Henrico",b:"<p>“In the beginning of September, 1611”, Dale took men up the river and built a new town on a bluff, “in honour of our noble Prince Henry”.</p><p>And at about the same time, a gentleman named John Rolfe began to grow tobacco.</p>"},
+  {t:"Passapatanzy",b:"<p>April 1613. The war with Powhatan has gone on for nearly three years. Powhatan holds English prisoners, guns and tools.</p><p>Captain Samuel Argall is trading for corn on the Potomac. He learns that Powhatan’s daughter, Pocahontas, is there. She is about seventeen.</p>"},
+  {t:"Old swords",b:"<p>Pocahontas has been held for nearly a year. Powhatan returned seven men and seven useless muskets, and the English kept her.</p><p>March 1614: Dale takes a hundred and fifty men up the Pamunkey, with her, to make Powhatan pay the rest.</p>"},
+  {t:"Matchot",b:"<p>The marriage made a peace. In the spring of 1614 Dale sent Ralph Hamor and the interpreter Thomas Savage to Powhatan, at his new seat of Matchot, with a request.</p><p>This is Powhatan’s longest recorded speech of these years. It reached us in Hamor’s English.</p>"},
+  {t:"England",b:"<p>In 1616 Dale sailed home with Rolfe, their son Thomas, and Pocahontas, baptised Rebecca. The Company paid for her; she met the King and Queen, and watched a masque at court.</p><p>In March 1617 the ship for Virginia went down the Thames. At Gravesend she was taken ill.</p>"}];
+
+/* ---- THINGS TO LOOK AT ---- [id, label, x, z, title, body] per scene */
+const LEAF_LOOKS=[
+  [["sick","The Lord Governor",-24,-6,"A sicknesse of slothfulnesse","<p>De La Warr soon fell sick: “a hote and violent Ague”, then “the Flux”, “the Crampe”, “the Gout”, and “the Scurvy; which though in others it be a sicknesse of slothfulnesse, yet was in me an effect of weaknesse”.</p><p>In others, laziness. In him, weakness. He was cured in the Azores by “Orenges and Lemonds”.</p>"]],
+  [],
+  [["bell","The Church Bell",-30,12,"Twice a day","<p>Article 6: “Everie man and woman duly twice a day upon the first towling of the Bell” to church, “vpon pain of losing his or her dayes allowance for the first omission, for the second to be whipt, and for the third to be condemned to the Gallies for six Moneths.”</p>"]],
+  [["mount","Mount Malado",40,-60,"A guest house for the sick","<p>Across the river from Henrico: “Mount Malado (a guest house for sicke people)”. Hamor called the air at Jamestown, “formerly scandaled for an unhealthfull aire”, as healthful as anywhere.</p><p>The Spanish prisoner Molina wrote, the same year, that there was not a year when half did not die.</p>"]],
+  [],
+  [["farm","The Three Acres",60,-40,"A farm of your own","<p>Hamor: on the common store, a man was “glad … he could slip from his labour”; “wee reaped not so much Corne from the labours of thirtie, as now three or foure doe provide for themselves”.</p><p>Dale gave some men “three Acres of cleare ground, in the nature of Farmes”. The first was William Spence, who had been there since 1607.</p>"]],
+  [["table","The Table-Book",-38,-148,"Written down","<p>Powhatan had Hamor write the list of goods he wanted “in a table-booke he had”, and would not give it back: “it did him much good in shewing to strangers”.</p><p>He kept the English writing, though he could not read it.</p>"]],
+  [["ship","The Ship for Virginia",-40,80,"Homeward","<p>“she is vpon her return (though sore against her will) yf the wind wold come about to send them away.” <i>— John Chamberlain, a London letter-writer, 18 January 1617</i></p><p>That is the nearest any source comes to saying what she wanted. It is a gossip’s report.</p>"]]];
+
+/* ---- WHOSE WORDS? ----  per scene; k: 0 saw or heard it himself, 1 was told it, 2 says what someone felt */
+const LEAF_K=["Saw or heard it himself","Was told it","Says what someone felt"];
+const LEAF_WORDS={
+  1:[{t:"Percy: “putt some fiftene or sixtene to the Sworde”",k:0},
+     {t:"Percy: “my sowldiers did begin to murmur becawse the queen and her Children weare spared”",k:0},
+     {t:"Percy: Davis said “itt was my Lords pleasure thatt we sholde see her dispatched”",k:1},
+     {t:"Smith, 1624: they “tooke the Queene and her children prisoners, whom not long after they slew”",k:1}],
+  4:[{t:"Argall: “I was told by certaine Indians, my friends, that the Great Powhatans Daughter Pokahuntis was with the great King Patowomeck”",k:1},
+     {t:"Argall: the King of Patowomeck “called his Counsell together” and decided to hand her over",k:1},
+     {t:"Hamor: Japazaws’ wife begged to see the ship “till she wept”",k:1},
+     {t:"Hamor: she “began to be exceeding pensiue, and discontented”",k:2},
+     {t:"Smith, 1624: “by degrees pacifying her selfe”",k:2}],
+  5:[{t:"Dale: she “would not talke to any of them”",k:1},
+     {t:"Rolfe: “her great apparance of love to me”",k:2},
+     {t:"Dale: “her Uncle gave her to him in the Church”",k:0},
+     {t:"Smith, 1624: “shee never had desire to goe to her father”",k:2}],
+  6:[{t:"Hamor: Powhatan “laughed”",k:0},
+     {t:"Hamor, to Powhatan: “his daughter so contented, she would not live againe with him”",k:2},
+     {t:"Hamor: Powhatan said, through Savage, “I am now old, and would gladly end my daies in peace”",k:0}],
+  7:[{t:"Smith: “without any word, she turned about, obscured her face”",k:0},
+     {t:"Smith: “as not seeming well contented”",k:2},
+     {t:"Smith: “your Countriemen will lie much”",k:0},
+     {t:"Chamberlain: “sore against her will”",k:1},
+     {t:"Smith: she made “so religious and godly an end”",k:1}]};
+const LEAF_BLANK={
+  1:"The Paspahegh queen’s own account: none survives. Her name is not written down. Her children’s names and number are not written down.",
+  4:"Her own account of the capture: none survives.",
+  5:"Her own account of her captivity, her baptism, or her marriage: none survives.",
+  6:"Her own words about her father, her husband, or her son: none survive. Hamor answered for her.",
+  7:"Her own account of England: none survives. There is no letter, no mark, no statement in her own hand."};
+
+/* ---- THE TWO TELLINGS OF THE CAPTURE ---- each row: in Argall's (0), Hamor's (1) */
+const LEAF_CAPTURE=[
+  {t:"Argall threatened the Patowomeck: no longer “brothers nor friends” unless they gave her up",v:0},
+  {t:"A copper kettle as the price",v:1},
+  {t:"A council deliberated for “some few houres”",v:0},
+  {t:"Japazaws’ wife pretended to weep to see the ship",v:1},
+  {t:"Feasting in the cabin, and treading on the captain’s foot",v:1},
+  {t:"Argall’s aim: ransom for “so many Englishmen as were prisoners with Powhatan”",v:0}];
+
+/* ---- THE LAWES, SORTED ---- c: 0 God, 1 food and stores, 2 running away and order */
+const LEAF_LAWS_K=["God","Food and stores","Running away"];
+const LEAF_LAWS=[
+  {t:"Article 6: everyone to church “twice a day upon the first towling of the Bell”",c:0},
+  {t:"Article 29: no man or woman “shall runne away from the Colonie, to Powhathan”, upon pain of death",c:2},
+  {t:"Article 31: anyone who should “steale any eares of the corne growing” … “shall be punished with death”",c:1},
+  {t:"Article 33: a man who will not give the minister an account of his faith, “to be whipt”",c:0},
+  {t:"Article 21: killing “any Bull, Cow, Calfe, Mare” without leave, upon pain of death",c:1},
+  {t:"Article 17: a storekeeper who cheats the store, “vpon paine of death”",c:1}];
+
+function leafSheet(kick,title,body,opts){sickSheet(kick,title,body,opts);}
+function leafDone(id){
+  const w=leafW();
+  if(!w.did[id]){w.did[id]=true;S.ink+=6;updateInk();checkpoint("ch8-"+id);}
+  for(let i=interactables.length-1;i>=0;i--){
+    const it=interactables[i];
+    if(it.action==="leaf"&&it.data&&it.data.kind===id){if(it.el)it.el.style.display="none";interactables.splice(i,1);}
+  }
+  for(let i=LEAF.later.length-1;i>=0;i--)if(LEAF.later[i].data.after===id){
+    const it=LEAF.later[i], el=document.createElement("div");el.className="lbl";
+    el.innerHTML="<b>"+it.label+"</b><i></i>";$("labels").appendChild(el);it.el=el;
+    interactables.push(it);LEAF.later.splice(i,1);}
+  const nx=interactables.filter(function(it){return it.id==="next";})[0];
+  if(nx)nx.data.verb=leafNeed()?"Not yet":"Go on";
+  updateGuide();
+}
+function leafQuiz(kick,title,body,opts,id,after){
+  leafSheet(kick,title,body,shuffle(opts.map(function(o){return {t:o[0],fn:function(){
+    leafDone(id);
+    if(o===opts[0])fortResult(o[1],o[2],["+6 Ink"],after||null);
+    else{result(false,o[1],"",["+6 Ink"],after||null);$("resBody").innerHTML=o[2];}}};})));
+}
+/* a document card: plain words; the source in full behind a fold */
+function leafCard(who,when,plain,full){
+  return "<div class=\"starveCard\"><b>"+who+"</b> <i>— "+when+"</i><p>"+plain+"</p>"+
+    (full?"<details><summary>Read the source in full <small>(teachers: graphic)</small></summary><p>"+full+"</p></details>":"")+"</div>";
+}
+function leafBlank(t){return "<div class=\"starveCard leafBlank\"><b>Her own account</b><p>"+t+"</p></div>";}
+/* a sheet of rows, each marked with one of `keys`; marks kept in w.marks[id] */
+function leafRows(kick,title,intro,rows,keys,id,done){
+  const w=leafW();
+  w.marks[id]=(w.marks[id]&&w.marks[id].length===rows.length)?w.marks[id]:rows.map(function(){return null;});
+  let h=intro;
+  rows.forEach(function(r,i){
+    h+="<div class=\"captRow\"><span>"+r.t+"</span> <div class=\"captBtns\">"+keys.map(function(v,k){
+      return "<button class=\"btn small\" data-lr=\""+i+"\" data-v=\""+k+"\">"+v+"</button>";}).join(" ")+" <b class=\"captMark\" id=\"lr"+i+"\"></b></div></div>";});
+  leafSheet(kick,title,h,[{t:"Done",fn:function(){
+    const m=w.marks[id];
+    if(m.some(function(x){return x==null;})){toast("Mark every row first.");setTimeout(function(){leafRows(kick,title,intro,rows,keys,id,done);},50);return;}
+    done(m.filter(function(x,i){return x===(rows[i].v!=null?rows[i].v:rows[i].k!=null?rows[i].k:rows[i].c);}).length);}}]);
+  rows.forEach(function(r,i){if(w.marks[id][i]!=null)$("lr"+i).textContent=keys[w.marks[id][i]];});
+  document.querySelectorAll("#sickBody [data-lr]").forEach(function(b){
+    b.onclick=function(){const i=+b.dataset.lr;w.marks[id][i]=+b.dataset.v;$("lr"+i).textContent=keys[w.marks[id][i]];saveGame();};});
+}
+
+function leafAct(d){
+  const w=leafW(), sd=leafDay();
+  if(d.kind==="next"){leafNext();return;}
+  if(d.kind==="record"){if(w.done)showEnding("ch8");else openReckoning();return;}
+  if(d.kind==="look"){
+    const L=(LEAF_LOOKS[w.day]||[]).filter(function(a){return a[0]===d.id;})[0];
+    if(L){w.did["look_"+L[0]]=true;saveGame();fortResult(L[4],L[5],[]);}
+    return;
+  }
+  /* 0 · the sword of Justice */
+  if(d.kind==="sermon"){
+    leafQuiz("The church · Sunday 10 June 1610","The Lord Governor",
+      "<p>De La Warr laid “just blame upon them, for their haughtie vanities and sluggish idlenesse”, and warned them “lest hee should be compelled to draw the sword of Justice and to cut off such delinquents”.</p><p>Those words come from the Company’s own book of 1610, which Smith copied in 1624. What is the Lord Governor promising?</p>",
+      [["Order, by force if he must","The sword of Justice","<p>Order, kept by force. The Company’s pamphlet printed it as the cure for the winter they blamed on “idlenesse” — the same pamphlet you met in Chapter VII.</p><p>Two months later the sword was drawn, and not on the colonists.</p>"],
+       ["More food for everyone, at once","Not what he said","<p>He brought food, but that is not what this speech promises. It promises “the sword of Justice”, to “cut off such delinquents”.</p>"],
+       ["To take them all home to England","Not that","<p>He came to stop them going home. The speech is a warning: “the sword of Justice”.</p>"]],"sermon");
+    return;
+  }
+  if(d.kind==="workday"&&!d.worked){
+    d.worked=true;
+    playerDoes("dig",4,"From six of the clock in the morning until ten.",{heap:workHeap(worldRoot||scene,player.position.x+Math.sin(player.rotation.y)*2.6,player.position.z+Math.cos(player.rotation.y)*2.6,0x5e4a32,12)},function(){leafAct(d);});
+    return;
+  }
+  if(d.kind==="workday"){
+    leafDone("workday");
+    fortResult("Six till ten, two till four","<p>The Company’s book of 1610 described the new order: work “from six of the clocke in the morning, untill ten, and from two in the afternoone, till foure”, church first, and then “their proportion of food”.</p><p>That is the Company’s picture, printed in London to show the cure working. The man who wrote the colony’s next history, eight years later, did not see it that way.</p>",["+6 Ink"]);
+    return;
+  }
+  /* 1 · Paspahegh */
+  if(d.kind==="tabor"){
+    leafQuiz("Kecoughtan · July 1610","The tabor",
+      "<p>Percy: “Sir Thomas Gates beinge desyreous for to be Revendged upon the Indyans att Kekowhatan” had “a Taborer” play and dance to draw them out, and then “putt fyve to the sworde”.</p><p>Kecoughtan was the town that had feasted the English in 1607. What does Percy’s account show?</p>",
+      [["A trick, used to kill people who came out to watch","A tabor","<p>A drummer to draw them out, and then the sword. Percy tells it plainly, as revenge.</p><p>Modern historians put the dead at twelve to fourteen; Percy says five. The Kecoughtan left no account at all.</p>"],
+       ["A feast to make peace with Kecoughtan","No feast","<p>No. The tabor was a lure. Then “fyve to the sworde”, Percy wrote.</p>"],
+       ["A trade for corn that went wrong","Not trade","<p>No trade is mentioned. Percy calls it revenge: a drummer to draw them out, then the sword.</p>"]],"tabor");
+    return;
+  }
+  if(d.kind==="raid"){
+    leafQuiz("The river · the night of 9 August","Percy’s account",
+      leafCard("Percy","written in the 1620s; he led the raid",
+        "They killed fifteen or sixteen people, burned the houses and cut down the corn. A lieutenant brought back the queen, her children and another prisoner; Percy had the man beheaded. On the boats his soldiers grumbled that the queen and children had been spared. “a Cowncell beinge called itt was agreed upon to putt the children to deathe”, and they were killed.",
+        "“Throweinge them overboard and shoteinge owtt their Braynes in the water.” Percy gives neither the number nor the ages of the children.")+
+      "<p>In Percy’s account, who decided the children should die?</p>",
+      [["“a Cowncell” — and Percy names nobody on it","A council","<p>A council, unnamed. Percy was the commander, writing his own record fifteen years later: the decision belongs to the soldiers’ grumbling and a council. Smith, in 1624, wrote only “they slew”.</p>"],
+       ["Percy, alone, by his own order","Not as he tells it","<p>That is not how he tells it. He puts it on “a Cowncell”, and names nobody. He was the commander. Notice what his telling does for him.</p>"],
+       ["Lord De La Warr, in writing","Not the children","<p>Percy says De La Warr’s order was claimed only for the queen, by Captain Davis — and Percy doubts even that. The children he puts on a council.</p>"]],"raid");
+    return;
+  }
+  if(d.kind==="queen"){
+    leafQuiz("The ships · that night","The queen",
+      "<p>Back at the ships, Captain Davis told Percy “itt was my Lords pleasure thatt we sholde see her dispatched The way he thowghte beste to Burne her”. Percy refused: “for to Burne her I did nott howlde itt fitteinge”. Davis took her ashore with two soldiers “and in the woods putt her to the Sworde”.</p>"+leafBlank(LEAF_BLANK[1])+"<p>What line is Percy drawing?</p>",
+      [["He would not burn her; he did not stop her being killed","The line","<p>He objected to burning, “haveinge seene so mutche Blood shedd thatt day”. He did not object to her death, and he does not say he tried to stop it. And he wrote it all down himself.</p><p>Of the queen we know only what was done to her.</p>"],
+       ["He saved her life","He did not","<p>He did not. Davis killed her in the woods. Percy objected only to burning her.</p>"],
+       ["He ordered her death","Not by his account","<p>Not by his account: he says Davis did it, claiming De La Warr’s wish, and that he himself refused to have her burned. It is his account.</p>"]],"queen");
+    return;
+  }
+  /* 2 · the Lawes */
+  if(d.kind==="bowls"){
+    leafQuiz("The fort · May 1611","Bowling in the streets",
+      "<p>Hamor: Dale found the colony “growing againe to their former estate of penurie, being so improvident as not to put Corne in the ground”, and at Jamestown “most of the companie were at their daily and usuall works, bowling in the streets”.</p><p>The historian Tyler noted in 1907 that it was a Sunday, and bowling was a normal Sunday pastime in England. Does that change the story?</p>",
+      [["Yes: men bowling on a Sunday are not proof of laziness","A Sunday","<p>It changes it. Hamor’s sentence makes them idle; Tyler’s note makes them Englishmen on their day off. Hamor was writing a book that praised Dale’s government, and Dale’s Lawes needed idle men to cure.</p>"],
+       ["No: bowling was forbidden on Sundays","It was not","<p>It was not forbidden in England; it was one of the usual Sunday pastimes. That is why Tyler’s note matters.</p>"],
+       ["No: they should have been planting corn on Sunday","A sabbath","<p>In 1611 working on a Sunday would itself have been an offence. Tyler’s point is that the bowling proves nothing about laziness.</p>"]],"bowls");
+    return;
+  }
+  if(d.kind==="lawes"){
+    leafRows("The church · the Lawes read aloud","What is each law for?",
+      "<p>The Lawes were read in church. Sort each article: is it about God, about food and stores, or about keeping people from running away?</p>",
+      LEAF_LAWS,LEAF_LAWS_K,"lawes",function(right){
+        leafDone("lawes");
+        fortResult("Keeping two hundred people alive","<p>You sorted "+right+" of "+LEAF_LAWS.length+".</p><p>Many of the Lawes are about church. Many are about food: stealing an ear of corn or killing a cow was punished by death, in a colony that had starved the winter before. One is about running to Powhatan, which shows how many tried.</p><p>Some laws are about keeping people alive in a small fort. That is a fair point to make. It is not an excuse for how they were enforced.</p>",["+6 Ink"]);});
+    return;
+  }
+  if(d.kind==="assembly"){
+    leafQuiz("The fort · two accounts of the Lawes","Defence and complaint",
+      leafCard("Hamor","1615, a book written to raise money and men","The Lawes were hard but needed: “if his Lawes had not beene so strictly executed, I see not how the utter subversion of the Colonie should have beene prevented.”",null)+
+      leafCard("The Virginia Assembly","1624, “many of us having beene eye witnesses and patients of those tymes”",
+        "“most severe and Crewell lawes … as mercylessly executed, often times without tryall or Judgment.” Runaways caught were put to death in several ways. A man who stole two or three pints of oatmeal was chained to a tree until he starved. Those who could not work from sickness got no food.",
+        "Runaways “putt to sundry deaths as by hanginge, shooting and breakinge uppon the wheele”; “one for steelinge of 2 or 3 pints of oatemeale had a bodkinge thrust through his tounge and was tyed wth a chaine to a tree untill he starved”.")+
+      "<p>Whom did the Assembly blame for the Lawes?</p>",
+      [["The Company in London, under Sir Thomas Smythe","London","<p>Not Dale. The Assembly blamed “Sr Tho : Smith his goverment” — the Company’s treasurer in London — and even wrote “Wee cannott for this our scarsitie blame our Comanders heere”. In 1624 they were fighting the old Company in a quarrel at home. Every source here has a side.</p>"],
+       ["Sir Thomas Dale, by name","Not by name","<p>They never name Dale. They blame “Sr Tho : Smith his goverment”, the Company in London.</p>"],
+       ["The King","Not the King","<p>They asked the King for help. They blamed “Sr Tho : Smith his goverment”, the Company in London.</p>"]],"assembly");
+    return;
+  }
+  /* 3 · Henrico and the leaf */
+  if(d.kind==="plant"&&!d.planted){
+    d.planted=true;
+    playerDoes("dig",4.5,"Rolfe’s seed, from the West Indies, set out in hills.",{prop:"bar"},function(){
+      LEAF.plants.forEach(function(p,i){setTimeout(function(){p.visible=true;},i*60);});leafAct(d);});
+    return;
+  }
+  if(d.kind==="plant"){
+    leafDone("plant");
+    fortResult("Anno Domini 1612","<p>Hamor: “I may not forget the gentleman worthie of much commendations, which first tooke the pains to make triall thereof, his name Mr. John Rolfe, Anno Domini 1612, partly for the love he hath a long time borne unto it, and partly to raise commodity to the adventurers.”</p><p>The tobacco the Powhatan grew was harsh to English taste. Rolfe’s seed came from the West Indies. How he got it is not recorded. The first samples reached England in July 1613.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="molina"){
+    leafQuiz("Henrico · a prisoner’s letter","Sewn into a shoe",
+      "<p>Don Diego de Molina, a Spanish officer held prisoner in the colony, wrote secretly to Spain’s ambassador in 1613, his letter “sewed between the soles of a shoe”:</p><p>“Last year there were seven hundred people and not three hundred and fifty remain, because little food and much labor on public works kills them and, more than all, the discontent in which they live seeing themselves treated as slaves with cruelty.”</p><p>What should a reader keep in mind?</p>",
+      [["He wanted Spain to attack, so he wanted the colony to look weak","An enemy’s letter","<p>He was a prisoner who wanted a Spanish fleet sent. A weak, miserable colony was what he wanted Spain to see. Tyler called the letter “a strong confirmation” of the colonists’ complaints — and also wrote that “Probably the wish was father to the thought”.</p><p>Both can be true. An enemy sees things a friend will not print.</p>"],
+       ["As a Spaniard he could not understand English ways","Not the point","<p>He understood well enough. The point is what he wanted: a Spanish fleet. A weak colony was what he wanted Spain to see.</p>"],
+       ["That his numbers must be exact, since he was there","Not necessarily","<p>Being there helps. Wanting a Spanish fleet sent does not. Tyler: “Probably the wish was father to the thought.”</p>"]],"molina");
+    return;
+  }
+  if(d.kind==="counterblaste"){
+    leafQuiz("Henrico · the King’s opinion","A Counterblaste",
+      "<p>King James, <i>A Counterblaste to Tobacco</i> (1604): “A custome lothsome to the eye, hatefull to the Nose, harmefull to the braine, dangerous to the Lungs”.</p><p>His own colony was about to live by it. Who will win: the King, or the market?</p>",
+      [["The market: the colony grows what England will pay for","The market","<p>The market. By 1617 Jamestown’s market-place and streets were “planted with Tobacco”, and the best sold at three shillings a pound.</p><p>The King’s opinion did not change what Londoners would buy, or what Virginians would grow to sell them.</p>"],
+       ["The King: the colony stops growing it","It did not","<p>It did not. By 1617 even Jamestown’s streets were “planted with Tobacco”.</p>"],
+       ["Neither: tobacco never sold in England","It sold","<p>It sold, at up to three shillings a pound by 1618.</p>"]],"counterblaste");
+    return;
+  }
+  /* 4 · the capture */
+  if(d.kind==="capture"){
+    leafRows("Passapatanzy · two tellings","The capture, told twice",
+      "<p>Two Englishmen told the capture: <b>Argall</b>, who did it, in a letter of June 1613; and <b>Hamor</b>, the Company’s secretary, in a book of 1615, which Smith copied in 1624. Which telling has each detail?</p>",
+      LEAF_CAPTURE,["Argall","Hamor"],"capture",function(right){
+        leafDone("capture");
+        fortResult("A threat, or a kettle","<p>You placed "+right+" of "+LEAF_CAPTURE.length+".</p><p><b>Argall</b>, the man who did it, tells of a threat — no longer “brothers nor friends” — and a council that decided to hand her over “rather … then lose my friendship”. He wanted her “by any stratagem that I could use”, to ransom English prisoners.</p><p><b>Hamor</b>, the Company’s book, tells of a copper kettle, a weeping wife, a feast and a tread on the foot. It makes the Patowomeck greedy and the English clever, and it is the version Smith copied.</p>"+leafBlank(LEAF_BLANK[4]),["+6 Ink"]);});
+    return;
+  }
+  if(d.kind==="ransom"){
+    leafQuiz("The ship · April to July 1613","Powhatan’s answer",
+      "<p>Argall sent word to Powhatan to “send home the Englishmen (whom he deteined in slaverie, with such armes and tooles, as the Indians had gotten, and stolne) and also a great quantitie of Corne”.</p><p>Powhatan’s first answer: “That he desired me to use his Daughter well, and bring my ship into his River, and there he would give mee my demands.” Then three months’ silence. Then he “returned seven of our men, with each of them an unserviceable Musket”, and offered corn. The English kept her.</p><p>What does the record show of Powhatan’s side?</p>",
+      [["Only what the English wrote down of his messages and his deeds","Only the English","<p>Every word of Powhatan’s here is in an English captain’s letter. Why he waited three months, and why he sent useless muskets, nobody on his side wrote down.</p>"],
+       ["That he did not care what happened to her","We cannot know","<p>His first message asked that she be used well. Beyond that the record is silent on what he felt; reading indifference into the three months is a guess.</p>"],
+       ["That he paid everything that was asked","He did not","<p>He did not: seven men, seven useless muskets, and corn. The English kept her for nearly a year.</p>"]],"ransom");
+    return;
+  }
+  /* 5 · old swords, the letter, the wedding */
+  if(d.kind==="swords"){
+    leafQuiz("The Pamunkey · March 1614","Old swords",
+      "<p>At Matchot, Dale wrote, “The Kings daughter went ashoare, but would not talke to any of them, scarce to them of the best sort, and to them onely, that if her father had loved her, he would not value her lesse then old Swords, Peeces, or Axes: wherefore shee should still dwell with the English men, who loved her.”</p><p>These are the only words of hers recorded in a year of captivity. Whose words are they?</p>",
+      [["Dale’s report of what she said, in a letter about his success","Reported","<p>They are Dale’s report, in his letter home about his own success. He does not say whether he heard them himself. She was a captive speaking in front of her captors, and the words are exactly what Dale would want London to read.</p><p>That does not prove she did not say them. It tells you what you are holding.</p>"],
+       ["Hers, written in her own hand","Not in her hand","<p>Nothing in her hand survives. These are Dale’s words for what she said.</p>"],
+       ["Her father’s message to the English","Not his","<p>They are reported as hers, about her father, in Dale’s letter.</p>"]],"swords");
+    return;
+  }
+  if(d.kind==="letter"){
+    leafQuiz("Jamestown · a letter to the governor","Master Rolfe’s letter",
+      "<p>Rolfe asked Dale’s leave to marry her. His reasons: “the good of this plantation, for the honour of our countrie, for the glory of God, for my owne salvation, and for the converting … an unbeleeving creature, namely Pokahuntas”. His doubts: she was “one whose education hath bin rude, her manners barbarous, her generation accursed”. Of her, he writes “her great apparance of love to me, her desire to be taught”.</p><p>What is not in the letter?</p>",
+      [["Her age, her own words, and that she was a hostage","Not in it","<p>Not her age (about eighteen). Not a word of hers. Not the fact that she was being held to make her father pay. Every word about her feelings is Rolfe’s reading, written to win the governor’s leave.</p>"],
+       ["Any reason for the marriage","Many reasons","<p>He gives many — plantation, country, God, his salvation, her conversion. What is missing is her: her age, her words, her position as a hostage.</p>"],
+       ["Any doubt on his part","He doubts","<p>He has doubts, and writes them in the language of his time. What is missing is her: her age, her own words, her position as a hostage.</p>"]],"letter");
+    return;
+  }
+  if(d.kind==="wedding"){
+    playCutscene({skippable:true,steps:LEAF_WEDDING()},function(){leafDone("wedding");enterWorld("ch8");
+      fortResult("About the fifth of April, 1614","<p>Powhatan gave his “sudden consent”: “within ten daies he sent Opachisco, an old Uncle of hers, and two of his sons, to see the manner of the mariage”. Dale: “Her Father and friends gave approbation to it, and her Uncle gave her to him in the Church.”</p><p>“ever since wee have had friendly trade and commerce, as well with Powhatan himselfe, as all his subjects.”</p>"+leafBlank(LEAF_BLANK[5])+"<p>Could a young woman held for a year by the people she was marrying have said no — and if she had, would any of these writers have told us?</p>",["+6 Ink"]);});
+    return;
+  }
+  /* 6 · Matchot */
+  if(d.kind==="daughter"){
+    leafQuiz("Matchot · Powhatan’s house","“My countrie is large enough”",
+      "<p>Dale wanted Powhatan’s youngest daughter too, “because being now one people … there could not be a truer assurance of peace”. Hamor told Powhatan she was “but twelve yeeres old”. (Dale had a wife living in England.)</p><p>Powhatan, as Hamor wrote it: “I have sold her within this few daies to a great Werowance, for two bushels of Rawrenoke”. And: “I hold it not a brotherly part to desire to bereave me of my two children at once.” And: “I am now old, and would gladly end my daies in peace; if you offer me injurie, my countrie is large enough to goe from you.”</p><p>Is the last line a threat, a plea, or a plan?</p>",
+      [["Any of the three: and it reaches us only in Hamor’s English","Hamor’s English","<p>It could be any of them. And every word is Hamor’s English, through the interpreter Thomas Savage. “Sold” is Hamor’s word for a marriage arranged with a gift of shell beads.</p><p>It is still the closest we come to Powhatan’s own voice in these years: an old man refusing to give up a second daughter.</p>"],
+       ["A threat of war","Only one reading","<p>It could be read that way — but he says he would “gladly end my daies in peace”. It could be a plea, or a plan to move away. And it is Hamor’s English.</p>"],
+       ["A promise to leave Virginia","Only one reading","<p>Moving away is one reading. It could also be a warning, or a plea. And every word is Hamor’s English, through an interpreter.</p>"]],"daughter");
+    return;
+  }
+  /* 7 · England */
+  if(d.kind==="brentford"){
+    leafQuiz("Brentford · as Smith printed it in 1624","“Your Countriemen will lie much”",
+      "<p>Smith visited her at Brentford. “After a modest salutation, without any word, she turned about, obscured her face, as not seeming well contented.” Hours later she spoke, as Smith printed it eight years after:</p><p>“You did promise Powhatan what was yours should bee his, and he the like to you; you called him father being in his land a stranger, and by the same reason so must I doe you … They did tell us alwaies you were dead, and I knew no other till I came to Plimoth; yet Powhatan did command Uttamatomakkin to seeke you, and know the truth, because your Countriemen will lie much.”</p><p>Why would Smith print a rebuke of himself?</p>",
+      [["It shows how much she mattered to him — and so how much he mattered","It serves him","<p>Her anger at him is proof, in his book, that he was the Englishman she knew. In 1616 he had written to the Queen asking notice for her, and for himself.</p><p>It is still the longest speech of hers on record — written by the man she was rebuking, in a book he was selling.</p>"],
+       ["Because he had to: she wrote it down herself","She did not","<p>Nothing in her hand survives. Smith printed it, eight years later, in his own book.</p>"],
+       ["To prove she never spoke English","She did","<p>The point of the scene is that she spoke, in English, at length. Smith printed it because it served him.</p>"]],"brentford");
+    return;
+  }
+  if(d.kind==="stick"){
+    leafQuiz("London · Uttamatomakkin","A notched stick",
+      "<p>Powhatan sent his counsellor Uttamatomakkin to England “to number the people here”. He “got a long sticke, whereon by notches hee did thinke to have kept the number”, “but he was quickly wearie of that taske”.</p><p>To Smith, about the King: “You gave Powhatan a white Dog, which Powhatan fed as himselfe; but your King gave me nothing, and I am better than your white Dog.”</p><p>What was Powhatan trying to find out?</p>",
+      [["How many English there were, and whether Smith was alive","Counting","<p>How many English there were — and, his daughter said, whether Smith was alive, “because your Countriemen will lie much”. Powhatan sent someone to see for himself.</p><p>Purchas met Uttamatomakkin and called him “a blasphemer of what he knew not, and preferring his God to ours”.</p>"],
+       ["Where the King kept his gold","Not gold","<p>He was sent “to number the people”. Counting people was his task.</p>"],
+       ["How to build English ships","Not ships","<p>He was sent “to number the people”. Powhatan wanted to know how many English there were.</p>"]],"stick");
+    return;
+  }
+  if(d.kind==="register"){
+    leafQuiz("St George’s, Gravesend · the register","Rebecca Wrolfe",
+      "<p>The parish register, March 1616/17: “21 Rebecca Wrolfe, wyffe of Thomas Wrolf gent, A Virginian Lady borne, was buried in the Channcell.”</p><p>Her husband was John, not Thomas. No source names the illness she died of. Where in the chancel she lies is no longer known.</p><p>What does the clerk’s line tell us, and what does it leave out?</p>",
+      [["Her English name and her burial; not Pocahontas, not her people","Rebecca","<p>It gives the English name she was baptised with, a husband’s name the clerk got wrong, and “A Virginian Lady borne”. It does not say Pocahontas, or Matoaka, or Powhatan’s daughter. It is the last document about her, and it is an Englishman’s, like all the others.</p>"+leafBlank(LEAF_BLANK[7])],
+       ["Everything we need to know about her death","Not the cause","<p>It does not say what she died of; no source does. And it gives her only her English name.</p>"],
+       ["That she was buried in Virginia","Gravesend","<p>She was buried at Gravesend, in England, in the chancel of St George’s.</p>"]],"register");
+    return;
+  }
+}
+
+/* the Whose Words? sheet: the way out of a scene that has one */
+function leafNext(fromWords){
+  const w=leafW(), sd=leafDay(), need=leafNeed();
+  if(need){toast("Not yet: "+LEAF_DUTY[need].charAt(0).toLowerCase()+LEAF_DUTY[need].slice(1)+".");return;}
+  const rows=LEAF_WORDS[w.day];
+  if(rows&&!fromWords&&w.words[w.day]==null){
+    leafRows("Whose words?","What did each writer know?",
+      "<p>For each line: did the writer see or hear it himself, was he told it, or is he saying what someone felt?</p>",
+      rows,LEAF_K,"words"+w.day,function(right){
+        w.words[w.day]=right;checkpoint("ch8-words"+w.day);
+        fortResult("Whose words","<p>You marked "+right+" of "+rows.length+" as the sources show.</p><ul>"+rows.map(function(r){return "<li>"+r.t+" — <b>"+LEAF_K[r.k]+"</b></li>";}).join("")+"</ul>"+
+          leafBlank(LEAF_BLANK[w.day]),[],function(){leafNext(true);});});
+    return;
+  }
+  if(w.day>=LEAF_DAYS.length-1){w.did.closed=true;checkpoint("ch8-closed");enterWorld("ch8");return;}
+  w.day++;
+  checkpoint("ch8-day"+w.day);
+  const o=LEAF_OPEN[w.day];
+  fortResult(o.t,"<p class=\"sickDate\">"+LEAF_DAYS[w.day].date+"</p>"+o.b,[],function(){enterWorld("ch8");});
+}
+
+/* ---- THE WEDDING ---- */
+function LEAF_WEDDING(){
+  const cx=LEAF.church?LEAF.church[0]:30, cz=LEAF.church?LEAF.church[1]:-12;
+  return [
+    {fade:"in",cam:{to:[cx+14,7,cz+18],look:[cx,3,cz],cut:true},t:4,
+     narrate:"About the fifth of April, 1614, in the church at Jamestown."},
+    {spawn:{id:"rolfeW",eq:LEAF_PEOPLE[4].eq,at:[cx+2,G8(cx+2,cz+7),cz+7],face:Math.PI}},
+    {spawn:{id:"bride",make:function(){return tidewaterWoman(false);},at:[cx+6,G8(cx+6,cz+16),cz+16],face:Math.PI}},
+    {spawn:{id:"uncle",make:function(){return tidewaterFigure();},at:[cx+8,G8(cx+8,cz+17),cz+17],face:Math.PI}},
+    {move:{id:"bride",to:[cx+4,G8(cx+4,cz+8),cz+8],face:Math.PI},t:4.5,
+     narrate:"Her uncle Opachisco, sent by Powhatan with two of his sons, “to see the manner of the mariage”."},
+    {move:{id:"uncle",to:[cx+6.5,G8(cx+6.5,cz+9),cz+9],face:Math.PI},t:4,
+     narrate:"“her Uncle gave her to him in the Church.” So Sir Thomas Dale wrote."},
+    {cam:{to:[cx+12,6,cz+14],look:[cx+3,3,cz+7]},t:5,
+     narrate:"She had been baptised Rebecca. Of what she said that day, nothing was written down."},
+    {fade:"out",t:1}];
+}
+function G8(x,z){return WORLD.ground?WORLD.ground(x,z):0;}
+
+/* ---- NEW THINGS IN THE WORLD ---- */
+function leafChurch(root,G,x,z,yaw,stone){
+  /* a plain church: a long nave with a pitched roof and, at Gravesend, a stone tower */
+  const g=new Geo(), wall=RGB(stone?0x8a8478:0x8a6c48), wallD=RGB(stone?0x6a655c:0x6b5236), roof=RGB(stone?0x5a4a3e:0x7a6a4c);
+  const gy=G(x,z), L=26, W=12, H=11;
+  const c=Math.cos(yaw), s=Math.sin(yaw), P=function(a,b,y){return [x+a*c+b*s,gy+y,z-a*s+b*c];};
+  const Q=function(a,b,c2,d,col){g.quad(a,b,c2,d,col);g.quad(d,c2,b,a,col);};
+  Q(P(-L/2,-W/2,-0.5),P(L/2,-W/2,-0.5),P(L/2,-W/2,H),P(-L/2,-W/2,H),wallD);
+  Q(P(-L/2,W/2,-0.5),P(L/2,W/2,-0.5),P(L/2,W/2,H),P(-L/2,W/2,H),wall);
+  Q(P(-L/2,-W/2,-0.5),P(-L/2,W/2,-0.5),P(-L/2,W/2,H),P(-L/2,-W/2,H),wall);
+  Q(P(L/2,-W/2,-0.5),P(L/2,W/2,-0.5),P(L/2,W/2,H),P(L/2,-W/2,H),wall);
+  Q(P(-L/2,-W/2-0.8,H),P(L/2,-W/2-0.8,H),P(L/2,0,H+6),P(-L/2,0,H+6),roof);
+  Q(P(-L/2,W/2+0.8,H),P(L/2,W/2+0.8,H),P(L/2,0,H+6),P(-L/2,0,H+6),roof);
+  g.quad(P(-L/2,-W/2,H),P(-L/2,W/2,H),P(-L/2,0,H+6),P(-L/2,0,H+6),wall);g.quad(P(-L/2,0,H+6),P(-L/2,0,H+6),P(-L/2,W/2,H),P(-L/2,-W/2,H),wall);
+  g.quad(P(L/2,-W/2,H),P(L/2,0,H+6),P(L/2,0,H+6),P(L/2,W/2,H),wall);g.quad(P(L/2,W/2,H),P(L/2,0,H+6),P(L/2,0,H+6),P(L/2,-W/2,H),wall);
+  /* the door, on the long side */
+  Q(P(-2,W/2+0.05,0),P(2,W/2+0.05,0),P(2,W/2+0.05,7),P(-2,W/2+0.05,7),RGB(0x3a2c20));
+  if(stone){
+    /* a square tower at the west end */
+    const tx=-L/2-4;
+    for(const f of [[-4,-4,4,-4],[4,-4,4,4],[4,4,-4,4],[-4,4,-4,-4]])
+      Q(P(tx+f[0],f[1],-0.5),P(tx+f[2],f[3],-0.5),P(tx+f[2],f[3],H+12),P(tx+f[0],f[1],H+12),wallD);
+    Q(P(tx-4,-4,H+12),P(tx+4,-4,H+12),P(tx+4,4,H+12),P(tx-4,4,H+12),roof);
+  }
+  root.add(g.mesh(false,false));solid(x,z,L/2+(stone?8:0),W/2,LVL.MAIN,0);
+}
+function leafHouse(root,G,x,z,yaw){
+  /* a framed English house of the new towns: weatherboarded, two storeys */
+  const g=new Geo(), board=RGB(0x9a7a52), boardD=RGB(0x7a5c3c), roof=RGB(0x6a5a44);
+  const gy=G(x,z), L=14, W=9, H=12;
+  const c=Math.cos(yaw), s=Math.sin(yaw), P=function(a,b,y){return [x+a*c+b*s,gy+y,z-a*s+b*c];};
+  const Q=function(a,b,c2,d,col){g.quad(a,b,c2,d,col);g.quad(d,c2,b,a,col);};
+  Q(P(-L/2,-W/2,-0.5),P(L/2,-W/2,-0.5),P(L/2,-W/2,H),P(-L/2,-W/2,H),boardD);
+  Q(P(-L/2,W/2,-0.5),P(L/2,W/2,-0.5),P(L/2,W/2,H),P(-L/2,W/2,H),board);
+  Q(P(-L/2,-W/2,-0.5),P(-L/2,W/2,-0.5),P(-L/2,W/2,H),P(-L/2,-W/2,H),board);
+  Q(P(L/2,-W/2,-0.5),P(L/2,W/2,-0.5),P(L/2,W/2,H),P(L/2,-W/2,H),board);
+  Q(P(-L/2,-W/2-0.6,H),P(L/2,-W/2-0.6,H),P(L/2,0,H+5),P(-L/2,0,H+5),roof);
+  Q(P(-L/2,W/2+0.6,H),P(L/2,W/2+0.6,H),P(L/2,0,H+5),P(-L/2,0,H+5),roof);
+  Q(P(-1.2,W/2+0.05,0),P(1.2,W/2+0.05,0),P(1.2,W/2+0.05,6),P(-1.2,W/2+0.05,6),RGB(0x3a2c20));
+  root.add(g.mesh(false,false));solid(x,z,Math.max(L,W)/2,Math.max(L,W)/2,LVL.MAIN,0);
+}
+function leafPlot(root,G,x,z){
+  /* Rolfe's tobacco: hills in rows, each plant a few broad leaves, hidden until planted */
+  LEAF.plants.length=0;
+  const planted=leafW().did.plant;
+  for(let r=0;r<4;r++)for(let k=0;k<6;k++){
+    const px=x+k*3.4, pz=z+r*3.4, gy=G(px,pz), g=new Geo(), leaf=RGB(0x5d7a2e), leafD=RGB(0x45602a), hill=RGB(0x6a5538);
+    g.oct(0,0,-0.2,0.5,0.9,0.9,0.5,0.5,0.1,hill,hill);
+    for(let l=0;l<5;l++){const a=l*1.26+srand(r*7+k)*0.5;
+      g.quad([0,0.5,0],[Math.cos(a)*0.4,1.6+l*0.25,Math.sin(a)*0.4],[Math.cos(a)*1.3,1.2+l*0.2,Math.sin(a)*1.3],[Math.cos(a+0.4)*0.6,0.7,Math.sin(a+0.4)*0.6],l%2?leaf:leafD);
+      g.quad([Math.cos(a+0.4)*0.6,0.7,Math.sin(a+0.4)*0.6],[Math.cos(a)*1.3,1.2+l*0.2,Math.sin(a)*1.3],[Math.cos(a)*0.4,1.6+l*0.25,Math.sin(a)*0.4],[0,0.5,0],l%2?leaf:leafD);}
+    const m=g.mesh(false,false);m.position.set(px,gy,pz);m.visible=!!planted;root.add(m);LEAF.plants.push(m);
+  }
+}
+
+/* ---- THE TERRAIN ---- */
+SITE_TERRAIN.henrico={sea:70,shore:44,flat:-10,deep:-2.6,fall:0.04,rise:7.5,inland:8.0,roll:1.2,
+  sky:0xa9c4d4,fog:0xbccfda,water:0x3e5e5a,near:0x7f8a4c,far:0x6a7640,back:0x4f5a34,wet:0x6a6a48,
+  trees:0,treeZ:-60,treeH:50,seed:131};
+SITE_TERRAIN.potomac={sea:62,shore:24,flat:-30,deep:-2.0,fall:0.03,rise:1.8,inland:1.6,roll:0.9,
+  sky:0xa8c4d6,fog:0xbdd1dc,water:0x3c6066,near:0xb5a678,far:0x7d8a52,back:0x56603a,wet:0x8f8a62,
+  trees:0,treeZ:-30,treeH:48,seed:149};
+SITE_TERRAIN.thames={sea:70,shore:36,flat:-20,deep:-2.4,fall:0.03,rise:1.6,inland:1.4,roll:0.6,
+  sky:0xa2abb2,fog:0xadb5ba,water:0x46585c,near:0x7c8458,far:0x6a7248,back:0x555c3c,wet:0x6f6c58,
+  trees:0,treeZ:-60,treeH:44,seed:163};
+
+registerWorld("ch8",function(root){
+  const w=leafW(), sd=leafDay(), where=sd.where;
+  LEAF.lit=false;LEAF.night=!!sd.night;LEAF.later=[];LEAF.church=null;LEAF.ship=null;BLAZE.fires.length=0;
+  let G, spots={}, at=[0,20], face=Math.PI, nextAt=null;
+  const duty=function(id,label,x,z,data){
+    if(data.kind&&LEAF_DUTY[data.kind]&&w.did[data.kind])return;
+    const it={id:id,label:label,x:x,z:z,y:G(x,z),lvl:LVL.MAIN,r:8,action:"leaf",data:data};
+    if(data.after&&!w.did[data.after]){LEAF.later.push(it);return;}
+    interactables.push(it);};
+
+  if(where==="fort"){
+    const view=Object.assign({},fortW(),{epi:true,stretch:4,attack:null});
+    buildFortWorld(root,view,{ships:["discovery"],people:false,record:false,winter:false});
+    G=fortGround;nextAt=[-30,26];
+    if(w.day===0){
+      spots={delawarr:[-20,-2,2.6],percy:[-36,-2,2.4]};
+      /* the morning's work: six till ten */
+      workMan(root,crowdEq("hand",200),20,-20,0.4,"dig",{heap:workHeap(root,22,-17,0x5e4a32,26)});
+      workMan(root,crowdEq("hand",201),34,-26,-0.6,"dig",{heap:workHeap(root,32,-23,0x5e4a32,26)});
+      workMan(root,crowdEq("hand",202),-70,24,0,"carry",{from:[-104,66],to:[-78,22],load:"cask",speed:3});
+      workMan(root,crowdEq("hand",203),40,-30,2.4,"chop",{target:[37,-33]});
+      duty("sermon","The Lord Governor",-20,4,{kind:"sermon",verb:"Hear him"});
+      duty("workday","The Corn Ground",28,-14,{kind:"workday",after:"sermon",verb:"Work the morning"});
+    }
+    if(w.day===2){
+      spots={dale:[-12,-14,2.6],hamor:[-36,-2,2.4]};
+      /* bowling in the street, on a Sunday */
+      workMan(root,crowdEq("hand",210),8,-6,-1.57,"bowl",{to:[-10,-6]});
+      workMan(root,crowdEq("gent",211),8,-2,-1.57,"bowl",{to:[-10,-3]});
+      [[-14,-8,1.2],[-14,-1,1.9]].forEach(function(a,i){const f=buildFigure(crowdEq("hand",212+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(f);});
+      duty("bowls","The Street",0,0,{kind:"bowls",verb:"Watch them"});
+      duty("lawes","The Lawes",-30,8,{kind:"lawes",verb:"Read them"});
+      duty("assembly","Two Accounts",-46,6,{kind:"assembly",after:"lawes",verb:"Read them"});
+      presTable(root,G,-30,4);
+    }
+    if(w.day===5){
+      spots={dale:[-12,-14,2.6],rolfe:[-36,-2,2.4]};
+      LEAF.church=[32,-24];leafChurch(root,G,32,-24,0,false);
+      duty("swords","Sir Thomas Dale’s Letter",-24,10,{kind:"swords",verb:"Read it"});
+      duty("letter","Master Rolfe’s Letter",-44,6,{kind:"letter",verb:"Read it"});
+      duty("wedding","The Church",32,-14,{kind:"wedding",after:"letter",verb:"Go"});
+      presTable(root,G,-24,6);
+    }
+  }
+  if(where==="river"){
+    G=captLand(root,"chick",{trees:120,winter:false,clear:function(x,z){return Math.hypot(x,z-30)<50;}});
+    /* Paspahegh burning, down the shore, at a distance: the limit of what is drawn */
+    [[-260,-20],[-240,-40],[-280,-50],[-225,-10]].forEach(function(a,i){
+      yehakin(root,a[0],G(a[0],a[1]),a[1],18,10,9,i%2);blazeAt(root,a[0],G(a[0],a[1])+6,a[1],14,10);});
+    [[20,80],[60,90]].forEach(function(a){captBarge(root,G,a[0],a[1],0.2);});
+    spots={percy:[6,40,-1.6]};
+    duty("tabor","Kecoughtan",-12,44,{kind:"tabor",verb:"Hear it"});
+    duty("raid","Percy’s Account",-4,34,{kind:"raid",after:"tabor",verb:"Read it"});
+    duty("queen","The Ships",26,62,{kind:"queen",after:"raid",verb:"Read it"});
+    at=[8,52];nextAt=[22,46];
+  }
+  if(where==="henrico"){
+    G=captLand(root,"henrico",{trees:90,winter:false,clear:function(x,z){return Math.abs(x)<120&&z>-120;}});
+    /* three streets of framed houses, a church, a pale */
+    for(let r=0;r<3;r++)for(let k=0;k<4;k++)leafHouse(root,G,-70+k*24,-60+r*24,0);
+    leafChurch(root,G,40,-90,Math.PI/2,false);
+    const P=new Geo(), stake=RGB(0x6a543a);
+    for(let i=0;i<70;i++){const x=-110+i*3.2;P.beam8([x,G(x,-110)-0.3,-110],[x,G(x,-110)+9,-110],0.4,0.3,stake,stake);}
+    root.add(P.mesh(false,false));
+    leafPlot(root,G,10,-10);
+    spots={rolfe:[4,-16,2.4],dale:[-20,-14,2.0],hamor:[-30,-6,2.6]};
+    workMan(root,crowdEq("hand",220),30,-30,1.0,"hammer");
+    workMan(root,crowdEq("hand",221),-10,10,0,"carry",{from:[-10,12],to:[20,-28],load:"board",speed:2.8});
+    duty("plant","Master Rolfe’s Ground",18,-2,{kind:"plant",verb:"Plant it"});
+    duty("molina","A Prisoner’s Shoe",-40,0,{kind:"molina",verb:"Read it"});
+    duty("counterblaste","The King’s Book",-24,-2,{kind:"counterblaste",after:"plant",verb:"Read it"});
+    at=[0,20];nextAt=[12,22];
+  }
+  if(where==="potomac"){
+    G=captLand(root,"potomac",{trees:80,winter:false,clear:function(x,z){return Math.hypot(x,z-10)<80;}});
+    [[-40,-20,20,11,9,0],[10,-40,22,12,10,1],[50,-10,20,11,9,0]].forEach(function(h){
+      yehakin(root,h[0],G(h[0],h[1]),h[1],h[2],h[3],h[4],h[5]);solid(h[0],h[1],(h[5]?h[3]:h[2])/2,(h[5]?h[2]:h[3])/2,LVL.MAIN,h[4]);});
+    LEAF.ship=placeShip(root,"discovery",0.8,30,110,Math.PI/2);
+    if(!w.did.capture){
+      /* she is here before the capture; nothing is made of her but a figure at the town */
+      const pf=tidewaterWoman(false);pf.position.set(-12,G(-12,0),0);pf.rotation.y=0.6;root.add(pf);solid(-12,0,1,1,LVL.MAIN,0);
+    }
+    [[-20,10,0.2],[20,4,-0.4],[0,-14,0.9]].forEach(function(a){const f=tidewaterFigure();f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(f);});
+    spots={argall:[18,40,2.8]};
+    duty("capture","Captain Argall’s Letter",8,44,{kind:"capture",verb:"Read it"});
+    duty("ransom","The Ship",24,54,{kind:"ransom",after:"capture",verb:"Go aboard"});
+    at=[0,50];nextAt=[-10,46];
+  }
+  if(where==="york"){
+    G=buildWerowocomoco(root,{winter:false,solid:true,telling:null,noDitches:true});
+    spots={hamor:[20,10,2.6]};
+    const sv=buildFigure(crowdEq("boy",19));sv.position.set(26,G(26,12),12);sv.rotation.y=2.8;root.add(sv);solid(26,12,1,1,LVL.MAIN,0);
+    duty("daughter","Powhatan’s House",CAPT_HALL.x+CAPT_HALL.len/2+8,CAPT_HALL.z,{kind:"daughter",verb:"Go in"});
+    at=[10,60];nextAt=[22,56];
+  }
+  if(where==="gravesend"){
+    G=captLand(root,"thames",{trees:50,winter:true,clear:function(x,z){return Math.hypot(x,z)<120;}});
+    leafChurch(root,G,-10,-30,0,true);
+    LEAF.ship=placeShip(root,"susan",1,-40,110,Math.PI/2);
+    [[30,-10],[50,-30],[-60,-10]].forEach(function(a,i){leafHouse(root,G,a[0],a[1],i*0.4);});
+    /* Smith was in London, not at Gravesend: his book is here, not the man */
+    spots={};
+    duty("brentford","Smith’s Book",4,16,{kind:"brentford",verb:"Read it"});
+    duty("stick","A Notched Stick",22,20,{kind:"stick",verb:"Look"});
+    duty("register","The Register",-10,-20,{kind:"register",after:"brentford",verb:"Read it"});
+    at=[0,40];nextAt=[-20,36];
+    if(w.did.closed){nextAt=null;duty("record","Master Purchas’s Pilgrimes",-22,30,{kind:"record",verb:"Close the chapter’s record"});}
+  }
+
+  (LEAF_LOOKS[w.day]||[]).forEach(function(L){duty("look_"+L[0],L[1],L[2],L[3],{kind:"look",id:L[0],verb:"Look"});});
+  for(const id in spots){
+    const d=leafSpeaker(id);
+    if(!d)continue;
+    const a=spots[id], x=a[0], z=a[1], gy=G(x,z);
+    const f=buildFigure(d.eq);f.position.set(x,gy,z);f.rotation.y=a[2];root.add(f);
+    npcMeshes.push({npc:d,mesh:f});solid(x,z,1,1,LVL.MAIN,0);
+    interactables.push({id:id,label:d.name,x:x,z:z+3,y:gy,lvl:LVL.MAIN,r:7,action:"talk",data:d});
+  }
+  if(nextAt&&sd.next)duty("next",sd.next,nextAt[0],nextAt[1],{kind:"next",verb:leafNeed()?"Not yet":"Go on"});
+
+  if(w.day===0&&!w.did.open0){
+    w.did.open0=true;
+    setTimeout(function(){if(CURRENT_WORLD==="ch8")
+      fortResult(LEAF_OPEN[0].t,"<p class=\"sickDate\">"+LEAF_DAYS[0].date+"</p>"+LEAF_OPEN[0].b,[]);},500);
+  }
+  if(where!=="fort"){player=buildFigure(S.equip);root.add(player);playerParts=player.userData.parts;dressCarried(player);}
+  player.position.set(at[0],G(at[0],at[1]),at[1]);player.rotation.y=face;
+  camYaw=0;camPitch=0.30;
+});
+
+function updateLeaf(dt){
+  if(CURRENT_WORLD!=="ch8")return;
+  LEAF.t+=dt;
+  if(!LEAF.lit){
+    const sd=leafDay();
+    if(LEAF.night){scene.background=new THREE.Color(0x1a2030);if(scene.fog){scene.fog.color=new THREE.Color(0x1a2030);scene.fog.near=80;scene.fog.far=520;}
+      if(hemiLight)hemiLight.intensity*=0.35;if(sunLight)sunLight.intensity*=0.25;}
+    else if(sd.where==="gravesend"){scene.background=new THREE.Color(0xa2abb2);if(hemiLight)hemiLight.intensity*=0.85;if(sunLight)sunLight.intensity*=0.7;}
+    if(skyDome&&(LEAF.night||sd.where==="gravesend")){
+      const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
+      for(let i=0;i<pp.count;i++){
+        const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=LEAF.night?lerpHex(0x2a3244,0x0e121c,Math.pow(t,0.6)):lerpHex(0xb0b7ba,0x8a949a,Math.pow(t,0.6));
+        cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
+      }
+      cc.needsUpdate=true;
+    }
+    LEAF.lit=true;
+  }
+  updateBlaze(dt);
+}
+
+/* ---- CHAPTER VIII'S CONTENT, AND ITS MUSTER ----
+   Sat with Samuel Purchas, the London clergyman who gathered and printed the accounts, after
+   the register at Gravesend. Every item is ungated. Written off CH8-RECORD.md §Teaching hooks. */
+CONTENT.ch8={
+  people:LEAF_PEOPLE,
+  npcs:LEAF_NPCS,
+  charter:{insight:{b:"The Golden Leaf"}},
+  reck:{seal:"records",kick:"Master Purchas’s Pilgrimes",title:"Whose Voice Is Missing?",
+    frame:"Samuel Purchas has a stack of letters and books, Argall’s, Dale’s, Hamor’s, Smith’s, and means to print them all together. “I met her once, at the Bishop of London’s. I have every Englishman’s account of her, and not one word of hers. Tell me how to read them. Six questions; I’ll bear two wrong — no more.”",
+    lockLine:"Not yet. Master Purchas will sit with you after Gravesend.",
+    pass:{title:"The Pilgrimes Hold",body:"Purchas ties up his papers. “Then I shall print them, and a careful reader will know whose they are.” He printed them in 1625. He did not print anything of hers, because there was nothing of hers to print."},
+    fail:{title:"The Pilgrimes Do Not Hold",body:"“You are reading what they wrote about her as if she had written it,” says Purchas. “Look again at who holds the pen.”"},
+    onPass:function(){leafW().done=true;},
+    q:[
+      {stim:"De La Warr, 1610: he would “draw the sword of Justice”. Two months later, Percy’s soldiers killed the Paspahegh werowance’s children after “a Cowncell beinge called”.",
+       q:"In Percy’s account, who decided the children should die?",
+       o:["An unnamed council","De La Warr himself","The children’s own town","A court in London"],a:0},
+      {stim:"Percy refused to have the Paspahegh queen burned: “for to Burne her I did nott howlde itt fitteinge”. Captain Davis then killed her in the woods.",
+       q:"What line is Percy drawing?",
+       o:["Against burning, not against her death","Against killing any prisoner at all","Against De La Warr’s whole command","Against the raid from the very start"],a:0},
+      {stim:"No source gives the Paspahegh queen’s name, or her words, or her children’s names.",
+       q:"What would we need to know her side?",
+       o:["An account from Paspahegh","A second English account","Percy’s other letters","The ship’s log that night"],a:0},
+      {stim:"De La Warr on his own scurvy: “which though in others it be a sicknesse of slothfulnesse, yet was in me an effect of weaknesse”.",
+       q:"What does this show about how colonists were judged?",
+       o:["The same illness was called laziness in others","Scurvy was understood well by doctors then","De La Warr was the laziest man in Virginia","Only gentlemen could catch scurvy at all"],a:0},
+      {stim:"Hamor: Dale found the men “bowling in the streets”. Tyler (1907): it was a Sunday, and bowling was a normal Sunday pastime.",
+       q:"What does Tyler’s note do to Hamor’s sentence?",
+       o:["It shows bowling is no proof of laziness","It proves the men really were all idle","It shows Hamor was not in Virginia","It shows bowling was against the law"],a:0},
+      {stim:"Hamor defended Dale’s Lawes in a 1615 book written to raise money. The Assembly in 1624 called them “most severe and Crewell”, and blamed the Company in London.",
+       q:"Why might the two accounts disagree?",
+       o:["Each was written to serve a purpose","One of them was not in Virginia","The Lawes changed every single week","They describe two different colonies"],a:0},
+      {stim:"Molina, a Spanish prisoner, 1613: the colonists are “treated as slaves with cruelty”. He wrote secretly, hoping Spain would attack.",
+       q:"What should a reader keep in mind?",
+       o:["He wanted the colony to look weak","He could not have seen the colony","He wrote this in the year 1700","He was a friend of Captain Smith"],a:0},
+      {stim:"Hamor credits Rolfe’s tobacco “partly for the love he hath a long time borne unto it, and partly to raise commodity to the adventurers”.",
+       q:"Which reason would investors care about?",
+       o:["Raising commodity: profit","His love of tobacco","His faith in God","His wish to marry"],a:0},
+      {stim:"King James called tobacco “lothsome to the eye, hatefull to the Nose”. By 1617 Jamestown’s streets were “planted with Tobacco”.",
+       q:"What does this show?",
+       o:["The market mattered more than the King’s taste","The King ordered the streets to be planted","Tobacco was grown only for the King’s use","The colony stopped growing it after 1617"],a:0},
+      {stim:"Hamor: “thirtie” on the common store produced less than “three or foure” on their own land. He was writing to attract settlers.",
+       q:"Why be careful with this comparison?",
+       o:["It was written to sell the colony","Nobody farmed at all in those years","Common stores always produce more","Hamor had never seen the farms"],a:0},
+      {stim:"Argall (who did it): a threat and a council. Hamor (the Company’s book): a copper kettle and a weeping wife.",
+       q:"Why might the Company’s book prefer the kettle?",
+       o:["It makes the English look clever, not threatening","It is the only version that has any details","Argall was not on the Potomac at the time","The kettle was the more expensive price"],a:0},
+      {stim:"Dale: she would not talk to them, “that if her father had loved her, he would not value her lesse then old Swords, Peeces, or Axes”.",
+       q:"Whose words are these?",
+       o:["Dale’s report of hers, in his letter","Hers, in a letter of her own","Powhatan’s, sent by a messenger","Rolfe’s, from his letter to Dale"],a:0},
+      {stim:"Rolfe’s letter to Dale describes her “apparance of love” and “desire to be taught”. It does not give her age, or a word of hers.",
+       q:"Whose eyes are we seeing through?",
+       o:["Rolfe’s, asking the governor’s leave","Her own, in her own words","Powhatan’s, through a messenger","A neutral observer’s, at the church"],a:0},
+      {stim:"Powhatan, as Hamor wrote it: “if you offer me injurie, my countrie is large enough to goe from you”.",
+       q:"How did these words reach us?",
+       o:["In Hamor’s English, through an interpreter","In Powhatan’s own hand","In a Powhatan account of 1614","In Pocahontas’s letters home"],a:0},
+      {stim:"Uttamatomakkin was sent to England “to number the people”, with a notched stick, and to find out if Smith was alive.",
+       q:"What was Powhatan trying to learn?",
+       o:["How many English there were, and the truth","Where the King kept his treasure","How the English built their ships","When the next fleet would sail"],a:0},
+      {stim:"Smith printed, in 1624, her rebuke of him: “your Countriemen will lie much”.",
+       q:"Why would Smith print a rebuke of himself?",
+       o:["It proved he was the Englishman she knew","She had made him promise to print it","He was ordered to by the King himself","He did not understand what it meant"],a:0},
+      {stim:"Chamberlain, a London letter-writer, 1617: she was going home “sore against her will”.",
+       q:"Is this good evidence of what she wanted?",
+       o:["Some: third-hand gossip, but the only clue","Yes: he heard it from her directly","No: he never wrote any letters","Yes: she signed his letter herself"],a:0},
+      {stim:"The register: “Rebecca Wrolfe, wyffe of Thomas Wrolf gent, A Virginian Lady borne”. Her husband was John.",
+       q:"What does the clerk’s line leave out?",
+       o:["Her own names and her people","The place where she was buried","That she was married at all","That she came from Virginia"],a:0},
+      {stim:"The Mattaponi oral history (2007) says, among other things, that Kocoum was killed and that she was poisoned in England. The English letters say none of this.",
+       q:"How should a historian treat the oral history?",
+       o:["As a community’s account, weighed like any source","As proof the English letters are all false","As worthless, because it was printed in 2007","As older and surer than any English letter"],a:0},
+      {stim:"Many people know Pocahontas from a 1995 film, in love with John Smith. The record has her about twelve when she met him, and married to Rolfe while a hostage.",
+       q:"What does the gap between the film and the record show?",
+       o:["Stories about her keep being retold to suit the teller","The film used sources that historians have lost","The record must be wrong, since the film is popular","Nobody before 1995 ever wrote about her at all"],a:0},
+      {stim:"The Chickahominy swore in 1614 to be “new Englishmen”. In 1616 they refused the tribute: “he was but Sir Thomas Dales man, and they had payed his Master”.",
+       q:"What does 1616 suggest about the 1614 treaty?",
+       o:["It meant less to them than the English wrote","They had never agreed to anything at all","They wanted to become English subjects","Dale had written down their exact words"],a:0}]},
+  ready:function(){
+    const w=leafW();
+    return (w.day>=LEAF_DAYS.length-1&&w.did.closed)?{ok:true,missing:[]}:{ok:false,missing:["Gravesend, in March 1617"]};
+  },
+  targets:collectInsights(LEAF_NPCS), unlocks:[]
+};
+
 const CHAPTERS=[
   /* Percy: "The six and twentieth day of Aprill, about foure a clocke in the
      morning, wee descried the Land of Virginia." The ships stand into the bay at
@@ -29169,10 +29971,33 @@ const CHAPTERS=[
      const o=findSpot(function(it){return it.id==="next"||it.id==="record";});
      if(o)return {it:R(o),why:w.did.helm?"the chapter ends here":"the next date"};
      return null; },
-   end:{head:"The Starving Time — Complete",yr:"Chapter VII · 10 June 1610",nextWorld:null,
+   end:{head:"The Starving Time — Complete",yr:"Chapter VII · 10 June 1610",nextWorld:"ch8",nextLabel:"The Golden Leaf — Chapter VIII",
      body:"<p>Lord De La Warr has landed with three ships, a sermon has been preached, and a commission read. The colony that sailed away on the seventh is back on the tenth.</p>"+
        "<p>Gates will sail for England that summer with the Company\u2019s case, which becomes A True Declaration: God\u2019s providence, quarrels, idleness, deserters \u2014 anything but the land, or the Company. What comes next \u2014 a new governor, a war with the Paspahegh, and a leaf called tobacco \u2014 is the next chapter, and it is still to come.</p>"}},
-  {n:"VIII",yr:"1610–16",t:"The Golden Leaf",d:"The tobacco fields, 1610-16",ready:false}
+  {n:"VIII",yr:"1610–17",t:"The Golden Leaf",d:"The fort, the rivers, Henrico and Gravesend — June 1610 to March 1617",
+   ready:true,world:"ch8",pace:2.5,near:9,
+   intro:function(){ return "Seven years: a new governor’s sword of justice, a raid, Dale’s Lawes, Henrico and John Rolfe’s first tobacco, the capture of Pocahontas, her marriage, and England. She appears in nearly every source for these years, and wrote none of them. This chapter includes war, the killing of prisoners, harsh punishments and a young woman held captive, all in the sources’ words and none of it shown."; },
+   obj:function(){ return "Live eight scenes from 1610 to 1617. In each, do what the day asks; then sort what the writers say into what they saw, what they were told, and what they claim someone felt. Where her own account would be, the card is blank. After Gravesend, sit with Master Purchas."; },
+   goals:function(){
+     const w=leafW(), need=leafNeed();
+     return [
+       {t:"Live the seven years ("+(w.day+1)+" of "+LEAF_DAYS.length+")",done:w.day>=LEAF_DAYS.length-1&&!!w.did.closed},
+       {t:need?LEAF_DUTY[need]:"Go on",done:!need},
+       {t:"Ask Master Percy, Master Hamor and Master Rolfe what they know",done:LEAF_NPCS.every(function(n){return npcDone(n.id);}),opt:true},
+       {t:"Sit with Master Purchas",done:!!w.done,goal:true,locked:!(w.day>=LEAF_DAYS.length-1&&w.did.closed)}
+     ]; },
+   status:function(){ const w=leafW(), sd=leafDay(), need=leafNeed();
+     if(w.done)return "Chapter complete";
+     if(w.did.closed)return "March 1617 · Master Purchas is waiting";
+     return sd.date.split(" — ")[0]+" · "+(need?LEAF_DUTY[need].charAt(0).toLowerCase()+LEAF_DUTY[need].slice(1):"go on when you are ready"); },
+   next:function(){ const w=leafW(), need=leafNeed();
+     if(need){const c=findSpot(function(it){return it.action==="leaf"&&it.data&&it.data.kind===need;});if(c)return {it:c,why:"what the day asks"};}
+     const o=findSpot(function(it){return it.id==="next"||it.id==="record";});
+     if(o)return {it:o,why:w.did.closed?"the chapter ends here":"the next date"};
+     return null; },
+   end:{head:"The Golden Leaf — Complete",yr:"Chapter VIII · 21 March 1617",nextWorld:null,
+     body:"<p>In May 1617 Captain Argall came to Jamestown and found “but five or six houses, the Church downe, the Palizado’s broken, the Bridge in pieces, the Well of fresh water spoiled; the Store-house they used for the Church; the market-place, and streets, and all other spare places planted with Tobacco”.</p>"+
+       "<p>Their son, Thomas Rolfe, was left in England. Powhatan died the next year. The colony had found the thing England would buy, and it needed land, and hands to work it. That is the next chapter, and it is still to come.</p>"}},
 ];
 /* The title screen is shown before any world begins, so it needs painting once here.
    Safe at this point and not one line earlier: CHAPTERS is closed above. */
@@ -30643,7 +31468,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0231";
+const BUILD="20261127-0456";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
