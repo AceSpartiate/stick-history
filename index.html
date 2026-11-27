@@ -26825,7 +26825,10 @@ function presQuiz(kick,title,body,opts,id,after){
      play-test, 27 Nov: and it was shown first every time, so the first button was always
      right - a class learns that by the second scene. Shuffled */
   presSheet(kick,title,body,shuffle(opts.map(function(o){return {t:o[0],fn:function(){
-    presDone(id);fortResult(o[1],o[2],["+6 Ink"],after||null);}};})));
+    presDone(id);
+    /* play-test, 27 Nov: every answer got the green seal; the first option is the record's */
+    if(o===opts[0])fortResult(o[1],o[2],["+6 Ink"],after||null);
+    else{result(false,o[1],"",["+6 Ink"],after||null);$("resBody").innerHTML=o[2];}}};})));
 }
 
 function presAct(d){
@@ -27826,10 +27829,10 @@ function starveThin(eq){return Object.assign({},eq,{build:"build_survivor"});}
 const STARVE_PEOPLE=[
   {id:"percy",name:"President Percy",voice:"male",role:"President, and sick",eq:CAPT_PEOPLE[4].eq},
   {id:"spelman",name:"Henry Spelman",voice:"male",role:"a boy of the Third Supply",eq:crowdEq("boy",3)},
-  {id:"davis",name:"Captain Davis",voice:"male",role:"commands at Algernon Fort",eq:crowdEq("soldier",8)},
+  {id:"davis",name:"Captain Davis",voice:"male",role:"a captain, come in a pinnace with sixteen men",eq:crowdEq("soldier",8)},
   /* play-test, 27 Nov: he was "President Ratcliffe, President of the council" in October 1609,
      with Percy President - Chapter V's entry, kept whole. Captain now; his words are unchanged */
-  Object.assign({},CAPT_PEOPLE[1],{name:"Captain Ratcliffe",role:"a captain of the council"}),
+  Object.assign({},CAPT_PEOPLE[1],{name:"Captain Ratcliffe",role:"a captain, sent to Point Comfort"}),
   {id:"strachey",name:"Master Strachey",voice:"male",role:"Secretary to Sir Thomas Gates",eq:crowdEq("gent",17)},
   {id:"gates",name:"Sir Thomas Gates",voice:"male",role:"Lieutenant Governor, from Bermuda",eq:crowdEq("gent",19)},
   {id:"digger",name:"An Archaeologist",voice:"male",role:"James Fort, 2012",
@@ -27996,7 +27999,10 @@ function starveDone(id){
 }
 function starveQuiz(kick,title,body,opts,id,after){
   starveSheet(kick,title,body,shuffle(opts.map(function(o){return {t:o[0],fn:function(){
-    starveDone(id);fortResult(o[1],o[2],["+6 Ink"],after||null);}};})));
+    starveDone(id);
+    /* play-test, 27 Nov: every answer got the green seal; the first option is the record's */
+    if(o===opts[0])fortResult(o[1],o[2],["+6 Ink"],after||null);
+    else{result(false,o[1],"",["+6 Ink"],after||null);$("resBody").innerHTML=o[2];}}};})));
 }
 /* a document card: the plain words, and the source in full behind a button */
 function starveCard(c){
@@ -28467,12 +28473,20 @@ registerWorld("ch7",function(root){
       V.box(8,vy+0.5,42.9,0.5,0.5,0.9,deer);V.beam8([7.6,vy+0.3,40.2],[6.4,vy+0.2,39.4],0.15,0.1,deerD,deerD);
       V.beam8([8.4,vy+0.3,40.2],[9.6,vy+0.2,39.4],0.15,0.1,deerD,deerD);root.add(V.mesh(false,false));
       presTable(root,G,-30,2.5);   /* play-test, 27 Nov: "Smith's List" was a label over bare ground */
+      /* work, 27 Nov: Ratcliffe's company carrying their stores down to the pinnace, "to inhabit
+         Point comfort" */
+      [[-80,24],[-90,40]].forEach(function(a,i){workMan(root,crowdEq(i?"soldier":"hand",130+i),a[0],a[1],0,"carry",
+        {from:[-78,22],to:[-104,64],load:i?"basket":"cask",drop:i?null:workStack(root,-108,66,"cask",6).drop});});
       duty("store","The Storehouse",-70,16,{kind:"store",verb:"Count what is left"});
       duty("venison","The Gate",2,34,{kind:"venison",verb:"Meet them"});
     }
     if(w.day===2){
       spots={percy:[-36,-2,2.6]};
-      thinCrowd([[-20,10,0.4,"stoop"],[-14,-14,2.2],[10,-6,-1.2,"stoop"],[24,8,3.0]]);
+      thinCrowd([[-14,-14,2.2],[24,8,3.0]]);
+      /* work, 27 Nov: "emptie houses … rent up and burnt": a thin man breaking up a dead
+         man's house with an axe, and another carrying the wood off to a fire */
+      workMan(root,starveThin(crowdEq("hand",150)),-46,-14,-2.2,"chop",{target:[-50,-18]});
+      workMan(root,starveThin(crowdEq("hand",151)),-44,-10,0,"carry",{from:[-46,-12],to:[-20,10],load:"wood",speed:1.6});
       duty("hogs","The Empty Sties",48,-30,{kind:"hogs",verb:"Ask where they went"});
       /* an empty pen of hurdles */
       const P=new Geo(), wood=RGB(0x6a543a);
@@ -28501,6 +28515,10 @@ registerWorld("ch7",function(root){
       thinCrowd([[-28,14,3.0],[-34,16,2.8,"stoop"],[-22,18,3.3],[-40,10,2.6]]);
       starveBell(root,G,-30,8.5);
       const s=placeShip(root,"discovery",0.8,-150,100,Math.PI/2);STARVE.ships.push({m:s,go:false,to:-150,v:0});
+      /* work, 27 Nov: Gates's men, fed on Bermuda, carry the pinnaces' stores up into the store:
+         food for "one hundred and fiftie for a Sea Voyage", now for everyone */
+      {const st=workStack(root,-88,25,"cask",6);
+        [[-100,62],[-96,46]].forEach(function(a,i){workMan(root,crowdEq("soldier",160+i),a[0],a[1],0,"carry",{from:[-104,66],to:[-90,28],load:"cask",drop:st.drop});});}
       /* play-test, 27 Nov: "The Palisade" stood 45 feet from it, behind the storehouse, and "The
          Houses" under the awning; they are at the torn west curtain and a burnt frame now */
       duty("v_wall","The Palisade",-141,-31,{kind:"view",v:"wall",verb:"Look"});
@@ -28522,7 +28540,10 @@ registerWorld("ch7",function(root){
       "clearing_1","clearing_2","clearing_3","cornfield_1","cornfield_2"];
     starveDig(root,G);
     spots={digger:[6,-2,2.4]};
-    const d2=buildFigure(STARVE_PEOPLE[6].eq);d2.position.set(-3,G(-3,-14),-14);poseFigure(d2,"kneel",3);root.add(bakeFigure(d2));
+    /* work, 27 Nov: one trowels in the cellar, one shakes the screen, buckets go between them */
+    workMan(root,STARVE_PEOPLE[6].eq,-3,-14,0.3,"trowel");
+    workMan(root,Object.assign({},STARVE_PEOPLE[6].eq,{dye:{torso:"lostcolony",breech:"slate",stock:"ink",cloak:"ink",head:"ink"}}),10,-3.6,Math.PI,"sift");
+    workMan(root,Object.assign({},STARVE_PEOPLE[6].eq,{head:"none_head"}),2,-8,0,"carry",{from:[1,-10],to:[8.5,-4.5],load:"basket",speed:2.2});
     presTable(root,G,-14,-4);   /* play-test, 27 Nov: the report lay on nothing, at the tarp's corner */
     duty("jane","The Bone Report",-14,-0.5,{kind:"jane",verb:"Read it"});
   }
@@ -28558,7 +28579,10 @@ registerWorld("ch7",function(root){
     [[8,0,0.4],[12,6,2.0],[-6,-2,1.1],[2,18,-0.8]].forEach(function(a){starveHog(root,G,a[0],a[1],a[2]);});
     /* play-test, 27 Nov: Percy stood against the inside of the bank, his name on its slope */
     spots={davis:[-6,16,2.4],percy:[5,22,-2.6]};
-    [[-12,8,0.8],[6,-6,2.4],[16,14,-1.6]].forEach(function(a,i){const f=buildFigure(crowdEq("soldier",90+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));solid(a[0],a[1],0.8,0.8,LVL.MAIN,0);});
+    [[-12,8,0.8],[6,-6,2.4]].forEach(function(a,i){const f=buildFigure(crowdEq("soldier",90+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));solid(a[0],a[1],0.8,0.8,LVL.MAIN,0);});
+    /* work, 27 Nov: Davis's men at the crab pots, and the catch carried up to the hogs */
+    workMan(root,crowdEq("soldier",92),27,44,0.2,"haul");
+    workMan(root,crowdEq("hand",93),18,44,0,"carry",{from:[20,44],to:[9,4],load:"basket",speed:3.0});
     /* play-test, 27 Nov: they came in stern first (yaw PI is bow to the sea), and once they had
        come in they were gone at the next load; they lie in the bay now, where they stopped */
     [[-40,260],[-10,290]].forEach(function(a,i){
@@ -28589,7 +28613,12 @@ registerWorld("ch7",function(root){
         const gf=buildFigure(STARVE_PEOPLE[5].eq);gf.position.set(-10,G(-10,44),44);gf.rotation.y=0.6;root.add(gf);solid(-10,44,1,1,LVL.MAIN,0);
         spots={strachey:[6,46,-0.6]};
       } else spots={gates:[-10,44,0.6],strachey:[6,46,-0.6]};
-      thinCrowd([[16,52,2.2],[19,55,2.6],[-18,52,0.6],[24,50,2.0]]);
+      thinCrowd([[-18,52,0.6],[24,50,2.0]]);
+      /* work, 27 Nov: the ordnance buried "before the Fort gate", and the last stores carried
+         down to the ship's boat */
+      workMan(root,crowdEq("soldier",170),8,43,0.3,"dig",{heap:workHeap(root,13,45,0x5a4630,20)});
+      workMan(root,crowdEq("soldier",171),18,42,-0.3,"dig",{heap:workHeap(root,13,45.5,0x5a4630,20)});
+      workMan(root,starveThin(crowdEq("hand",172)),16,52,0,"carry",{from:[0,34],to:[38,70],load:"cask",speed:2.0});
     } else {
       thinCrowd([[-22,48,0.6],[-26,52,0.4],[18,50,-0.6]]);
       [[4,54,3.0],[9,56,2.8],[30,48,-2.6],[-2,58,3.2]].forEach(function(a,i){
@@ -30612,7 +30641,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0223";
+const BUILD="20261127-0224";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
