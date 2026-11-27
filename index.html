@@ -28965,12 +28965,12 @@ const LEAF_OPEN=[
 
 /* ---- THINGS TO LOOK AT ---- [id, label, x, z, title, body] per scene */
 const LEAF_LOOKS=[
-  [["sick","The Lord Governor",-24,-6,"A sicknesse of slothfulnesse","<p>De La Warr soon fell sick: “a hote and violent Ague”, then “the Flux”, “the Crampe”, “the Gout”, and “the Scurvy; which though in others it be a sicknesse of slothfulnesse, yet was in me an effect of weaknesse”.</p><p>In others, laziness. In him, weakness. He was cured in the Azores by “Orenges and Lemonds”.</p>"]],
+  [["sick","The Lord Governor",-30,8,"A sicknesse of slothfulnesse","<p>De La Warr soon fell sick: “a hote and violent Ague”, then “the Flux”, “the Crampe”, “the Gout”, and “the Scurvy; which though in others it be a sicknesse of slothfulnesse, yet was in me an effect of weaknesse”.</p><p>In others, laziness. In him, weakness. He was cured in the Azores by “Orenges and Lemonds”.</p>"]],
   [],
-  [["bell","The Church Bell",-30,12,"Twice a day","<p>Article 6: “Everie man and woman duly twice a day upon the first towling of the Bell” to church, “vpon pain of losing his or her dayes allowance for the first omission, for the second to be whipt, and for the third to be condemned to the Gallies for six Moneths.”</p>"]],
+  [["bell","The Church Bell",-24,22.5,"Twice a day","<p>Article 6: “Everie man and woman duly twice a day upon the first towling of the Bell” to church, “vpon pain of losing his or her dayes allowance for the first omission, for the second to be whipt, and for the third to be condemned to the Gallies for six Moneths.”</p>"]],
   [["mount","Mount Malado",40,-60,"A guest house for the sick","<p>Across the river from Henrico: “Mount Malado (a guest house for sicke people)”. Hamor called the air at Jamestown, “formerly scandaled for an unhealthfull aire”, as healthful as anywhere.</p><p>The Spanish prisoner Molina wrote, the same year, that there was not a year when half did not die.</p>"]],
   [],
-  [["farm","The Three Acres",60,-40,"A farm of your own","<p>Hamor: on the common store, a man was “glad … he could slip from his labour”; “wee reaped not so much Corne from the labours of thirtie, as now three or foure doe provide for themselves”.</p><p>Dale gave some men “three Acres of cleare ground, in the nature of Farmes”. The first was William Spence, who had been there since 1607.</p>"]],
+  [["farm","The Three Acres",127,-4,"A farm of your own","<p>Hamor: on the common store, a man was “glad … he could slip from his labour”; “wee reaped not so much Corne from the labours of thirtie, as now three or foure doe provide for themselves”.</p><p>Dale gave some men “three Acres of cleare ground, in the nature of Farmes”. The first was William Spence, who had been there since 1607.</p>"]],
   [["table","The Table-Book",-38,-148,"Written down","<p>Powhatan had Hamor write the list of goods he wanted “in a table-booke he had”, and would not give it back: “it did him much good in shewing to strangers”.</p><p>He kept the English writing, though he could not read it.</p>"]],
   [["ship","The Ship for Virginia",-40,80,"Homeward","<p>“she is vpon her return (though sore against her will) yf the wind wold come about to send them away.” <i>— John Chamberlain, a London letter-writer, 18 January 1617</i></p><p>That is the nearest any source comes to saying what she wanted. It is a gossip’s report.</p>"]]];
 
@@ -29280,18 +29280,27 @@ function leafNext(fromWords){
 
 /* ---- THE WEDDING ---- */
 function LEAF_WEDDING(){
-  const cx=LEAF.church?LEAF.church[0]:30, cz=LEAF.church?LEAF.church[1]:-12;
+  /* play-test, 27 Nov: every shot was the church's side wall, with the three walking away from
+     the camera into the doorway, Rolfe hidden behind the bride and the uncle. They stand at the
+     door now, Rolfe and she facing each other, and the camera is in front of them; two of
+     Powhatan's sons, sent with Opachisco, and some of the colony look on */
+  const cx=LEAF.church?LEAF.church[0]:45, cz=(LEAF.church?LEAF.church[1]:4)+6, gy=G8(cx,cz+4);
   return [
-    {fade:"in",cam:{to:[cx+14,7,cz+18],look:[cx,3,cz],cut:true},t:4,
+    {fade:"in",cam:{to:[cx+18,gy+9,cz+15],look:[cx,gy+4,cz-3],cut:true},t:4,
      narrate:"About the fifth of April, 1614, in the church at Jamestown."},
-    {spawn:{id:"rolfeW",eq:LEAF_PEOPLE[4].eq,at:[cx+2,G8(cx+2,cz+7),cz+7],face:Math.PI}},
+    {spawn:{id:"rolfeW",eq:LEAF_PEOPLE[4].eq,at:[cx-2,G8(cx-2,cz+3.5),cz+3.5],face:Math.PI/2}},
+    {spawn:{id:"son1",make:function(){return tidewaterFigure();},at:[cx+7,G8(cx+7,cz+7),cz+7],face:-2.2}},
+    {spawn:{id:"son2",make:function(){return tidewaterFigure();},at:[cx+8.5,G8(cx+8.5,cz+5),cz+5],face:-1.9}},
+    {spawn:{id:"eng1",eq:crowdEq("gent",31),at:[cx-7,G8(cx-7,cz+6.5),cz+6.5],face:2.2}},
+    {spawn:{id:"eng2",eq:crowdEq("hand",32),at:[cx-8,G8(cx-8,cz+4),cz+4],face:1.9}},
     {spawn:{id:"bride",make:function(){return tidewaterWoman(false);},at:[cx+6,G8(cx+6,cz+16),cz+16],face:Math.PI}},
     {spawn:{id:"uncle",make:function(){return tidewaterFigure();},at:[cx+8,G8(cx+8,cz+17),cz+17],face:Math.PI}},
-    {move:{id:"bride",to:[cx+4,G8(cx+4,cz+8),cz+8],face:Math.PI},t:4.5,
+    {move:{id:"bride",to:[cx+1.5,G8(cx+1.5,cz+3.5),cz+3.5],face:-Math.PI/2},t:4.5,
+     cam:{to:[cx+3,gy+5,cz+19],look:[cx+2,gy+3,cz+6]},
      narrate:"Her uncle Opachisco, sent by Powhatan with two of his sons, “to see the manner of the mariage”."},
-    {move:{id:"uncle",to:[cx+6.5,G8(cx+6.5,cz+9),cz+9],face:Math.PI},t:4,
+    {move:{id:"uncle",to:[cx+3.5,G8(cx+3.5,cz+5),cz+5],face:-Math.PI/2},t:4,
      narrate:"“her Uncle gave her to him in the Church.” So Sir Thomas Dale wrote."},
-    {cam:{to:[cx+12,6,cz+14],look:[cx+3,3,cz+7]},t:5,
+    {cam:{to:[cx+1.5,gy+4.2,cz+16],look:[cx+1,gy+2.8,cz+4]},t:5,
      narrate:"She had been baptised Rebecca. Of what she said that day, nothing was written down."},
     {fade:"out",t:1}];
 }
@@ -29321,7 +29330,10 @@ function leafChurch(root,G,x,z,yaw,stone){
       Q(P(tx+f[0],f[1],-0.5),P(tx+f[2],f[3],-0.5),P(tx+f[2],f[3],H+12),P(tx+f[0],f[1],H+12),wallD);
     Q(P(tx-4,-4,H+12),P(tx+4,-4,H+12),P(tx+4,4,H+12),P(tx-4,4,H+12),roof);
   }
-  root.add(g.mesh(false,false));solid(x,z,L/2+(stone?8:0),W/2,LVL.MAIN,0);
+  /* play-test, 27 Nov: the collider ignored the yaw (Henrico's church is turned) and ran the
+     tower's eight feet out of both ends */
+  root.add(g.mesh(false,false));
+  {const a0=stone?-4:0;leafSolid(x+a0*c,z-a0*s,L/2+(stone?4:0),W/2,yaw);}
 }
 function leafHouse(root,G,x,z,yaw){
   /* a framed English house of the new towns: weatherboarded, two storeys */
@@ -29335,8 +29347,27 @@ function leafHouse(root,G,x,z,yaw){
   Q(P(L/2,-W/2,-0.5),P(L/2,W/2,-0.5),P(L/2,W/2,H),P(L/2,-W/2,H),board);
   Q(P(-L/2,-W/2-0.6,H),P(L/2,-W/2-0.6,H),P(L/2,0,H+5),P(-L/2,0,H+5),roof);
   Q(P(-L/2,W/2+0.6,H),P(L/2,W/2+0.6,H),P(L/2,0,H+5),P(-L/2,0,H+5),roof);
+  /* play-test, 27 Nov: the gable ends were open - two black triangles on every house */
+  Q(P(-L/2,-W/2,H),P(-L/2,W/2,H),P(-L/2,0,H+5),P(-L/2,0,H+5),boardD);
+  Q(P(L/2,-W/2,H),P(L/2,W/2,H),P(L/2,0,H+5),P(L/2,0,H+5),boardD);
   Q(P(-1.2,W/2+0.05,0),P(1.2,W/2+0.05,0),P(1.2,W/2+0.05,6),P(-1.2,W/2+0.05,6),RGB(0x3a2c20));
-  root.add(g.mesh(false,false));solid(x,z,Math.max(L,W)/2,Math.max(L,W)/2,LVL.MAIN,0);
+  /* play-test, 27 Nov: a 14 by 14 square collider on a 14 by 9 house was an invisible wall
+     two and a half feet in front of the door, and Rolfe and Dale stood inside two of them */
+  root.add(g.mesh(false,false));leafSolid(x,z,L/2,W/2,yaw);
+}
+/* the box round a turned rectangle, for solid() */
+function leafSolid(x,z,hl,hw,yaw){const c=Math.abs(Math.cos(yaw)),s=Math.abs(Math.sin(yaw));solid(x,z,hl*c+hw*s,hl*s+hw*c,LVL.MAIN,0);}
+/* play-test, 27 Nov: corn hills, for "The Corn Ground" and "The Three Acres", which were
+   labels over bare sand */
+function leafCorn(root,G,x,z,cols,rows){
+  const g=new Geo(), hill=RGB(0x6a5538), stalk=RGB(0x6f8a3a), stalkD=RGB(0x55702c);
+  for(let r=0;r<rows;r++)for(let k=0;k<cols;k++){
+    const px=x+k*3, pz=z+r*3, gy=G(px,pz);
+    g.oct(px,pz,gy-0.2,gy+0.5,0.9,0.9,0.5,0.5,0.1,hill,hill);
+    for(let i=0;i<3;i++){const a=i*2.1+srand(r*5+k)*0.6, sx=px+Math.cos(a)*0.3, sz=pz+Math.sin(a)*0.3;
+      g.beam8([sx,gy+0.3,sz],[sx+Math.cos(a)*0.3,gy+3.0+srand(k*3+r+i)*0.8,sz+Math.sin(a)*0.3],0.14,0.07,stalkD,stalk);}
+  }
+  root.add(g.mesh(false,false));
 }
 function leafPlot(root,G,x,z){
   /* Rolfe's tobacco: hills in rows, each plant a few broad leaves, hidden until planted */
@@ -29376,7 +29407,10 @@ registerWorld("ch8",function(root){
   if(where==="fort"){
     const view=Object.assign({},fortW(),{epi:true,stretch:4,attack:null});
     buildFortWorld(root,view,{ships:["discovery"],people:false,record:false,winter:false});
-    G=fortGround;nextAt=[-30,26];
+    /* play-test, 27 Nov: from (0,20) the camera trailed outside the river wall and looked back
+       over it, and "Go On" was a label against the inside of that wall over bare sand; the
+       start and the table are Chapter VII's */
+    G=fortGround;nextAt=[-44,23];at=[0,-2];presTable(root,G,-44,19.5);
     if(w.day===0){
       spots={delawarr:[-20,-2,2.6],percy:[-36,-2,2.4]};
       /* the morning's work: six till ten */
@@ -29386,24 +29420,37 @@ registerWorld("ch8",function(root){
       workMan(root,crowdEq("hand",203),40,-30,2.4,"chop",{target:[37,-33]});
       duty("sermon","The Lord Governor",-20,4,{kind:"sermon",verb:"Hear him"});
       duty("workday","The Corn Ground",28,-14,{kind:"workday",after:"sermon",verb:"Work the morning"});
+      leafCorn(root,G,24,-14,4,3);
+      starveChest(root,G,-30,4.5);   /* play-test, 27 Nov: under his letter about his sickness */
     }
     if(w.day===2){
       spots={dale:[-12,-14,2.6],hamor:[-36,-2,2.4]};
       /* bowling in the street, on a Sunday */
-      workMan(root,crowdEq("hand",210),8,-6,-1.57,"bowl",{to:[-10,-6]});
-      workMan(root,crowdEq("gent",211),8,-2,-1.57,"bowl",{to:[-10,-3]});
-      [[-14,-8,1.2],[-14,-1,1.9]].forEach(function(a,i){const f=buildFigure(crowdEq("hand",212+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(f);});
-      duty("bowls","The Street",0,0,{kind:"bowls",verb:"Watch them"});
+      /* play-test, 27 Nov: the bowls ran from (8,-6) through a tent and its pole to the jack; the
+         street inside the gate is clear */
+      workMan(root,crowdEq("hand",210),28,9,-1.57,"bowl",{to:[8,9]});
+      workMan(root,crowdEq("gent",211),28,14,-1.57,"bowl",{to:[8,14]});
+      [[18,5,0.2],[19,18.5,2.9]].forEach(function(a,i){const f=buildFigure(crowdEq("hand",212+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(f);});
+      duty("bowls","The Street",14,11.5,{kind:"bowls",verb:"Watch them"});
       duty("lawes","The Lawes",-30,8,{kind:"lawes",verb:"Read them"});
-      duty("assembly","Two Accounts",-46,6,{kind:"assembly",after:"lawes",verb:"Read them"});
+      duty("assembly","Two Accounts",-48,8.5,{kind:"assembly",after:"lawes",verb:"Read them"});
       presTable(root,G,-30,4);
+      /* play-test, 27 Nov: "Two Accounts" and "The Church Bell" were labels over bare sand, the
+         bell four feet from "The Lawes" */
+      starveChest(root,G,-48,5);starveBell(root,G,-24,19);
     }
     if(w.day===5){
       spots={dale:[-12,-14,2.6],rolfe:[-36,-2,2.4]};
-      LEAF.church=[32,-24];leafChurch(root,G,32,-24,0,false);
+      /* play-test, 27 Nov: at (32,-24) the church stood over a tent, and the cook fire's tripod
+         stood out of its front wall; the ground east of the street is clear */
+      LEAF.church=[45,4];leafChurch(root,G,45,4,0,false);
       duty("swords","Sir Thomas Dale’s Letter",-24,10,{kind:"swords",verb:"Read it"});
       duty("letter","Master Rolfe’s Letter",-44,6,{kind:"letter",verb:"Read it"});
-      duty("wedding","The Church",32,-14,{kind:"wedding",after:"letter",verb:"Go"});
+      starveChest(root,G,-44,2.5);   /* play-test, 27 Nov: the letter was a label over bare sand */
+      duty("wedding","The Church",45,13,{kind:"wedding",after:"letter",verb:"Go"});
+      /* play-test, 27 Nov: "The Three Acres" was a label among the tents; a man's own corn, on
+         the grass at the east side of the fort */
+      leafCorn(root,G,121,-17,5,4);
       presTable(root,G,-24,6);
     }
   }
@@ -29472,14 +29519,20 @@ registerWorld("ch8",function(root){
     if(w.did.closed){nextAt=null;duty("record","Master Purchas’s Pilgrimes",-22,30,{kind:"record",verb:"Close the chapter’s record"});}
   }
 
-  (LEAF_LOOKS[w.day]||[]).forEach(function(L){duty("look_"+L[0],L[1],L[2],L[3],{kind:"look",id:L[0],verb:"Look"});});
+  /* play-test, 27 Nov: "The Lord Governor" (his sickness), "The Lord Governor" (the sermon) and
+     "Lord De La Warr" were three labels in a knot over one man; his sickness and his talk wait
+     on the sermon now */
+  const LOOK_AFTER={sick:"sermon",table:"daughter"};
+  (LEAF_LOOKS[w.day]||[]).forEach(function(L){duty("look_"+L[0],L[1],L[2],L[3],{kind:"look",id:L[0],verb:"Look",after:LOOK_AFTER[L[0]]||null});});
   for(const id in spots){
     const d=leafSpeaker(id);
     if(!d)continue;
     const a=spots[id], x=a[0], z=a[1], gy=G(x,z);
     const f=buildFigure(d.eq);f.position.set(x,gy,z);f.rotation.y=a[2];root.add(f);
     npcMeshes.push({npc:d,mesh:f});solid(x,z,1,1,LVL.MAIN,0);
-    interactables.push({id:id,label:d.name,x:x,z:z+3,y:gy,lvl:LVL.MAIN,r:7,action:"talk",data:d});
+    const it={id:id,label:d.name,x:x,z:z+3,y:gy,lvl:LVL.MAIN,r:7,action:"talk",data:d};
+    if(w.day===0&&id==="delawarr"&&!w.did.sermon){d.after="sermon";LEAF.later.push(it);}
+    else interactables.push(it);
   }
   if(nextAt&&sd.next)duty("next",sd.next,nextAt[0],nextAt[1],{kind:"next",verb:leafNeed()?"Not yet":"Go on"});
 
@@ -29991,9 +30044,11 @@ const CHAPTERS=[
      if(w.did.closed)return "March 1617 · Master Purchas is waiting";
      return sd.date.split(" — ")[0]+" · "+(need?LEAF_DUTY[need].charAt(0).toLowerCase()+LEAF_DUTY[need].slice(1):"go on when you are ready"); },
    next:function(){ const w=leafW(), need=leafNeed();
-     if(need){const c=findSpot(function(it){return it.action==="leaf"&&it.data&&it.data.kind===need;});if(c)return {it:c,why:"what the day asks"};}
+     /* play-test, 27 Nov: in the fort the arrow routes by the gate, as Chapters VI and VII do */
+     const fort=leafDay().where==="fort", R=function(it){return fort?presRoute(it,true):it;};
+     if(need){const c=findSpot(function(it){return it.action==="leaf"&&it.data&&it.data.kind===need;});if(c)return {it:R(c),why:"what the day asks"};}
      const o=findSpot(function(it){return it.id==="next"||it.id==="record";});
-     if(o)return {it:o,why:w.did.closed?"the chapter ends here":"the next date"};
+     if(o)return {it:R(o),why:w.did.closed?"the chapter ends here":"the next date"};
      return null; },
    end:{head:"The Golden Leaf — Complete",yr:"Chapter VIII · 21 March 1617",nextWorld:null,
      body:"<p>In May 1617 Captain Argall came to Jamestown and found “but five or six houses, the Church downe, the Palizado’s broken, the Bridge in pieces, the Well of fresh water spoiled; the Store-house they used for the Church; the market-place, and streets, and all other spare places planted with Tobacco”.</p>"+
@@ -31468,7 +31523,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0456";
+const BUILD="20261127-0511";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
