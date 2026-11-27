@@ -7442,58 +7442,18 @@ function buildRiver(root){
      leaves the player looking at, so the chapter opens in the water it ended on.
      It also has to be distinguishable from the shore, and green water against a
      green wood was part of why the two would not separate. */
-  const water=new THREE.Mesh(new THREE.ShapeGeometry(shape),mat(0x3a5560));
+  /* amp 0, no vertex swell: the hull's hole is cut to the waterline, and the triangulation
+     is too coarse to carry one; the ripple and glint are per pixel and still apply */
+  const water=liveWater(new THREE.Mesh(new THREE.ShapeGeometry(shape),waterMat(0x3a5560,{amp:0,sky:0xa9b9bf})));
   water.rotation.x=-Math.PI/2;water.position.y=0;root.add(water);
 
-  const swell=new Geo(), landG=new Geo(), woodG=new Geo();
-  const cA=RGB(0x46656e),cB=RGB(0x35525c);
-  /* ---- FORTY-FOUR BOXES, SCATTERED AT RANDOM, ALL EXACTLY THE SAME HEIGHT ----
-     Two faults, and the second one made the first impossible to pin down.
-
-     Math.random() GAVE THE SEA A DIFFERENT SHAPE ON EVERY LOAD. Everything else in
-     this project draws its jitter from srand() for exactly this reason: a world that
-     is not reproducible cannot be measured twice, and a fault that moves cannot be
-     confirmed fixed. This was the one place that opted out.
-
-     AND EVERY TOP FACE SAT AT y=0.8. Forty-four squares 16 to 38 ft across, dropped at
-     random over an annulus three hundred feet deep, overlap constantly - and where two
-     overlap, their top faces are COPLANAR. Measured: 3,758 square feet of depth tie
-     across 50 pairs, the largest single patch 222 square feet. That was the biggest
-     z-fight left anywhere in the chapter, and it is on open water where it reads as a
-     crawling stain rather than as a seam.
-
-     Fixed by CONSTRUCTION, on a jittered polar grid. I tried rejection sampling first -
-     draw a position, drop it if it touches one already placed - and it seated seven of
-     the forty-four, because retrying with srand(i*2.71 + k*0.37) barely moves the
-     position: consecutive hashes of nearly equal inputs are not independent draws. A
-     grid needs no retries and cannot fail.
-
-     Four rings 75 ft apart, eleven swells to a ring, and the jitter is DERIVED rather
-     than guessed - I wrote +/-0.20 rad first and it was wrong, because 0.20 rad at the
-     inner ring is 24 ft of arc, not the 14 I had in mind.
-
-       tightest spacing  = 2*pi*120/11 = 68.5 ft, at the inner ring
-       widest swell      = 38 ft, so centres must stay 38 ft apart
-       slack to share    = 68.5 - 38 = 30.5 ft, i.e. 15 ft each
-       so angular jitter = 15/120 = 0.127 rad maximum
-
-     Held at +/-0.09 rad, which closes 21.6 ft and leaves 46.9 ft between centres
-     against the 38 ft needed. Radially: 75 ft apart, +/-14 ft each, so 47 ft against
-     38. Disjoint footprints cannot be coplanar, so this does not come back if someone
-     retunes the numbers - and the check below proves it rather than trusting it.
-
-     Each swell also carries its own height, which is free now that overlap is
-     impossible, and is simply truer: a sea of identically tall swells is not a sea. */
-  const SW_RING=11, SW_ROWS=4;
-  for(let i=0;i<SW_RING*SW_ROWS;i++){
-    const ring=Math.floor(i/SW_RING), slot=i%SW_RING;
-    const r=120+ring*75+(srand(i*5.13)-0.5)*28;
-    const a=(slot/SW_RING)*Math.PI*2+(srand(i*2.71)-0.5)*0.18;
-    const w=16+srand(i*7.77)*22;
-    const h=0.62+srand(i*11.31)*0.78;
-    swell.box(Math.cos(a)*r,h*0.5-0.1,Math.sin(a)*r,w,h,w,(srand(i*3.19)<0.5)?cA:cB);
-  }
-  root.add(swell.mesh(false,false));
+  const landG=new Geo(), woodG=new Geo();
+  /* ---- THE SWELL MOVED INTO THE WATER ITSELF (27 Nov 2026) ----
+     Forty-four flat slabs on a jittered polar grid stood in for a swell here, placed by
+     construction so no two could z-fight (git history has the derivation). waterMat draws
+     the ripple, the angle tint and the glint on the sea now, and against a sea that
+     lightens toward the horizon the slabs read as dark rafts - which the landing
+     cutscene's note below already found from eleven feet up. */
 
   /* ---- CAPE HENRY, CLOSE TO STARBOARD, AS THEY CAME IN ----
      Swept in bearing, so consecutive steps SHARE AN EDGE. That is the whole fix: a
@@ -7936,7 +7896,9 @@ function enterWorld(id){
   WORLD.hull=true;                        /* a deck for a ground means a ship around it */
   WORLD.sea=-9999;                        /* no open water inside a hull */
   WORLD.blocked=function(x,z){return blocked(x,z);};
+  liveReset();LIVE.root=worldRoot;        /* the ground paint is per world */
   WORLDS[id](worldRoot);
+  liveSoon(30);                           /* after the builder's own microtasks: cached models land first */
   labelHost=$("labels");
   for(let i=0;i<interactables.length;i++){
     const it=interactables[i];
@@ -7992,6 +7954,7 @@ function setTier(t){
   if(!GFX_TIERS[t]||GFX.tier===t)return false;
   GFX.tier=t;GFX.res=GFX_TIERS[t].res;GFX.fx=GFX_TIERS[t].fx;
   if(renderer)resize();
+  liveTier();
   console.log("graphics tier -> "+t+" (res x"+GFX.res+", effects x"+GFX.fx+")");
   return true;
 }
@@ -12025,7 +11988,8 @@ function landingCutscene(){
      t:5.6,
      narrate:"About thirty men went in her."},
 
-    /* HIGHER THAN IT WANTS TO BE. The swell is drawn as low flat slabs, which is right
+    /* HIGHER THAN IT WANTS TO BE. (The slabs were retired on 27 Nov - see buildRiver - so
+       this height is no longer forced.) The swell was drawn as low flat slabs, which is right
        at a distance and reads as floating plate glass when the camera sits at 11 units
        and one of them passes between the eye and the boat. From 26 they foreshorten
        back into a running sea. */
@@ -19662,6 +19626,660 @@ function detailGround(mesh,a){
   mesh.geometry.setAttribute("dUv",new THREE.BufferAttribute(uv,2));
   if(mesh.material&&!SHARED.has(mesh.material))mesh.material.dispose();
   mesh.material=groundMat(a||"earth","grass");
+  LIVE.ground.push(mesh);          /* liveRun paints it once the world is built */
+  return mesh;
+}
+/* ========== GROUND THAT LOOKS LIVED ON (scenery pass, 27 Nov 2026) ==========
+   The ground was one flat colour per 16-foot cell: a fort that twelve hundred people had
+   walked over for fifteen years read as a fresh-raked tennis court, and the band edges were
+   staircases of squares. This paints it AFTER the world is built, when everything that
+   decides what ground looks like is known - colliders, interactables, the built meshes,
+   the water - so it is one pass in one place and no world builder had to change.
+
+   1. MORE VERTICES WHERE YOU WALK. Every ground triangle in the play region (the
+      interactables and the spawn, padded) is cut into ~3 ft pieces that lie exactly on the
+      old plane, so the shape, the collision and every planted figure are untouched. Its
+      neighbours outside are fanned to meet the new edge points, so there is no T-junction
+      and no crack. Flat-coloured cells are re-coloured from their neighbours' centres, which
+      turns the staircases into gradients. ~20k triangles; triangles are the cheap budget.
+   2. PAINT, as vertex colour, so it costs nothing per frame: seeded noise at two scales;
+      worn paths found by A* between the interactables, the spawn and the landing, so they
+      go round buildings and through gates by themselves; damp earth near water with a
+      lighter wet band at the waterline, and mud at the landing; darker earth at the foot of
+      every wall; winter desaturation.
+   3. PAINTED SHADOWS. Every static triangle bigger than a man is projected along the real
+      sun direction onto a 1 ft grid, blurred, and baked in as darker earth: houses, the
+      palisade, trees, the church. No shadow map, no extra mesh, no transparency.
+   4. TUFTS, WEEDS AND STONES: three opaque InstancedMeshes, three draw calls in all.
+      Denser along walls and fences, none on paths, under roofs, in colliders, in water or
+      where anyone stands. The low tier draws 40% of them (liveTier).
+   Models that arrive later (the fort's GLBs) cast too: loadGLB asks for a repaint.
+   ceiling: the region is one rectangle up to 340 ft a side; a chapter played over a wider
+   ground gets plain (still noised) earth past it. */
+const LIVE={ground:[],water:[],winter:false,inst:[],timer:0,gen:0,root:null,R:null,ms:0,nodes:null};
+function liveReset(){
+  clearTimeout(LIVE.timer);LIVE.gen++;
+  for(const m of LIVE.inst){if(m.dispose)m.dispose();}
+  LIVE.ground.length=0;LIVE.water.length=0;LIVE.inst.length=0;
+  LIVE.winter=false;LIVE.root=null;LIVE.R=null;LIVE.nodes=null;
+}
+/* Debounced, and then a few FRAMES more: the chapters' update functions hide and cut fort
+   parts on their first frames (the 1607 tents in Chapter VI's spring), and a shadow painted
+   before that is the shadow of a tent that is not there. */
+function liveSoon(ms){
+  if(!LIVE.root)return;
+  clearTimeout(LIVE.timer);
+  const gen=++LIVE.gen;
+  LIVE.timer=setTimeout(function(){
+    let n=4,done=false;
+    const go=function(){
+      if(done||gen!==LIVE.gen)return;
+      done=true;
+      try{liveRun();}catch(e){console.warn("liveRun",e);}
+    };
+    const tick=function(){if(--n>0&&!done)requestAnimationFrame(tick);else go();};
+    requestAnimationFrame(tick);
+    setTimeout(go,1500);     /* a hidden tab draws no frames; paint anyway */
+  },ms===undefined?250:ms);
+}
+function liveHash(i,j){return srand(i*157.31+j*311.73);}
+function liveNoise(x,z){
+  const i=Math.floor(x),j=Math.floor(z),fx=x-i,fz=z-j,u=fx*fx*(3-2*fx),v=fz*fz*(3-2*fz);
+  const a=liveHash(i,j),b=liveHash(i+1,j),c=liveHash(i,j+1),d=liveHash(i+1,j+1);
+  return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;
+}
+/* a scalar field over the region, `s` feet a cell */
+function LGrid(R,s){
+  this.x0=R.x0;this.z0=R.z0;this.s=s;
+  this.w=Math.ceil((R.x1-R.x0)/s)+1;this.h=Math.ceil((R.z1-R.z0)/s)+1;
+  this.a=new Float32Array(this.w*this.h);
+}
+LGrid.prototype.at=function(x,z){
+  let u=(x-this.x0)/this.s-0.5,v=(z-this.z0)/this.s-0.5;
+  if(u<0||v<0||u>this.w-1||v>this.h-1)return 0;
+  const i=Math.min(this.w-2,Math.floor(u)),j=Math.min(this.h-2,Math.floor(v)),fu=u-i,fv=v-j,a=this.a,w=this.w;
+  if(i<0||j<0)return 0;
+  const p=j*w+i;
+  return (a[p]*(1-fu)+a[p+1]*fu)*(1-fv)+(a[p+w]*(1-fu)+a[p+w+1]*fu)*fv;
+};
+/* separable box blur, `r` cells each way */
+LGrid.prototype.blur=function(r){
+  const w=this.w,h=this.h,a=this.a,t=new Float32Array(w*h),k=1/(2*r+1);
+  for(let j=0;j<h;j++){let s=0;const o=j*w;
+    for(let i=-r;i<=r;i++)s+=a[o+Math.max(0,Math.min(w-1,i))];
+    for(let i=0;i<w;i++){t[o+i]=s*k;s+=a[o+Math.min(w-1,i+r+1)]-a[o+Math.max(0,i-r)];}}
+  for(let i=0;i<w;i++){let s=0;
+    for(let j=-r;j<=r;j++)s+=t[Math.max(0,Math.min(h-1,j))*w+i];
+    for(let j=0;j<h;j++){a[j*w+i]=s*k;s+=t[Math.min(h-1,j+r+1)*w+i]-t[Math.max(0,j-r)*w+i];}}
+  return this;
+};
+LGrid.prototype.box=function(x0,z0,x1,z1,v){
+  const s=this.s,i0=Math.max(0,Math.floor((x0-this.x0)/s)),i1=Math.min(this.w-1,Math.floor((x1-this.x0)/s)),
+        j0=Math.max(0,Math.floor((z0-this.z0)/s)),j1=Math.min(this.h-1,Math.floor((z1-this.z0)/s));
+  for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const p=j*this.w+i;if(this.a[p]<v)this.a[p]=v;}
+};
+/* fill a triangle given in ground (x,z); its three corners always count, so a post
+   thinner than a cell still leaves its mark */
+LGrid.prototype.tri=function(ax,az,bx,bz,cx,cz){
+  const s=this.s,w=this.w,h=this.h,a=this.a;
+  const u0=(ax-this.x0)/s,v0=(az-this.z0)/s,u1=(bx-this.x0)/s,v1=(bz-this.z0)/s,u2=(cx-this.x0)/s,v2=(cz-this.z0)/s;
+  const i0=Math.max(0,Math.floor(Math.min(u0,u1,u2))),i1=Math.min(w-1,Math.floor(Math.max(u0,u1,u2)));
+  const j0=Math.max(0,Math.floor(Math.min(v0,v1,v2))),j1=Math.min(h-1,Math.floor(Math.max(v0,v1,v2)));
+  if(i0>i1||j0>j1)return;
+  const d=(u1-u0)*(v2-v0)-(u2-u0)*(v1-v0);
+  if(Math.abs(d)>1e-6){
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){
+      const pu=i+0.5,pv=j+0.5;
+      const l1=((pu-u0)*(v2-v0)-(u2-u0)*(pv-v0))/d,l2=((u1-u0)*(pv-v0)-(pu-u0)*(v1-v0))/d;
+      if(l1>=0&&l2>=0&&l1+l2<=1)a[j*w+i]=1;
+    }
+  }
+  const mark=function(u,v){const i=Math.floor(u),j=Math.floor(v);if(i>=0&&j>=0&&i<w&&j<h)a[j*w+i]=1;};
+  mark(u0,v0);mark(u1,v1);mark(u2,v2);
+};
+/* the play region: every interactable on the ground and the spawn, padded */
+function liveRegion(){
+  const pts=[];
+  for(const it of interactables)if(it.lvl===undefined||it.lvl===LVL.MAIN)pts.push([it.x,it.z]);
+  if(player)pts.push([player.position.x,player.position.z]);
+  if(!pts.length)pts.push([0,0]);
+  let x0=1e9,z0=1e9,x1=-1e9,z1=-1e9;
+  for(const p of pts){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[1]);z1=Math.max(z1,p[1]);}
+  const MAX=340,MIN=200,PAD=60;
+  const fit=function(a,b,c){
+    a-=PAD;b+=PAD;
+    if(b-a<MIN){const m=(a+b)/2;a=m-MIN/2;b=m+MIN/2;}
+    if(b-a>MAX){a=Math.max(a,c-MAX/2);b=a+MAX;}
+    return [Math.floor(a),Math.ceil(b)];
+  };
+  const sx=player?player.position.x:0,sz=player?player.position.z:0;
+  const X=fit(x0,x1,sx),Z=fit(z0,z1,sz);
+  return {x0:X[0],x1:X[1],z0:Z[0],z1:Z[1]};
+}
+/* Cut the region's ground triangles into n x n pieces on their own plane, fan the
+   neighbours onto the new edge points, and keep a base colour to paint from. Once per world. */
+function liveSubdivide(R){
+  const q=function(v){return Math.round(v*64);};
+  const vkey=function(x,z){return q(x)+","+q(z);};
+  const ekey=function(ax,az,bx,bz){const a=vkey(ax,az),b=vkey(bx,bz);return a<b?a+"|"+b:b+"|"+a;};
+  const inR=function(x,z){return x>R.x0&&x<R.x1&&z>R.z0&&z<R.z1;};
+  /* which edges are being cut, and into how many */
+  const cut=new Map();
+  const info=[];
+  for(const mesh of LIVE.ground){
+    const P=mesh.geometry.attributes.position.array,C=mesh.geometry.attributes.color.array,nt=P.length/9;
+    let st=0;
+    for(let k=0;k<3&&k<nt*3;k++){const o=k*3,o2=((k+1)%3)*3;st=Math.max(st,Math.abs(P[o]-P[o2]),Math.abs(P[o+2]-P[o2+2]));}
+    /* flat-coloured cells (every builder but the cape's) get their colour from the cell
+       centres around each vertex, so a band edge is a gradient rather than a staircase */
+    let flat=true;
+    for(let t=0;t<Math.min(nt,60)&&flat;t++){const o=t*9;
+      for(let k=1;k<3;k++)if(Math.abs(C[o]-C[o+k*3])>1e-5||Math.abs(C[o+1]-C[o+k*3+1])>1e-5)flat=false;}
+    const n=(st>40)?1:Math.max(1,Math.round(st/3));
+    info.push({mesh:mesh,st:st,n:n,flat:flat});
+    if(n<2)continue;
+    for(let t=0;t<nt;t++){
+      const o=t*9,cx=(P[o]+P[o+3]+P[o+6])/3,cz=(P[o+2]+P[o+5]+P[o+8])/3;
+      if(!inR(cx,cz))continue;
+      for(let k=0;k<3;k++){const a=o+k*3,b=o+((k+1)%3)*3;cut.set(ekey(P[a],P[a+2],P[b],P[b+2]),n);}
+    }
+  }
+  /* cell-centre colours, for the flat meshes */
+  const cells=new Map();
+  for(const f of info){
+    if(!f.flat||f.st>40)continue;
+    const P=f.mesh.geometry.attributes.position.array,C=f.mesh.geometry.attributes.color.array,nt=P.length/9;
+    for(let t=0;t<nt;t++){
+      const o=t*9,cx=(P[o]+P[o+3]+P[o+6])/3,cz=(P[o+2]+P[o+5]+P[o+8])/3;
+      const key=Math.floor(cx/f.st)+","+Math.floor(cz/f.st);
+      const e=cells.get(key);
+      if(e){e[0]+=C[o];e[1]+=C[o+1];e[2]+=C[o+2];e[3]++;}else cells.set(key,[C[o],C[o+1],C[o+2],1]);
+    }
+  }
+  const cellCol=function(st,x,z,fb,out){
+    const u=x/st-0.5,v=z/st-0.5,i=Math.floor(u),j=Math.floor(v),fu=u-i,fv=v-j;
+    let r=0,g=0,b=0,w=0;
+    const add=function(ii,jj,k){if(k<=0)return;const e=cells.get(ii+","+jj);if(!e)return;r+=e[0]/e[3]*k;g+=e[1]/e[3]*k;b+=e[2]/e[3]*k;w+=k;};
+    add(i,j,(1-fu)*(1-fv));add(i+1,j,fu*(1-fv));add(i,j+1,(1-fu)*fv);add(i+1,j+1,fu*fv);
+    if(w<1e-6){out[0]=fb[0];out[1]=fb[1];out[2]=fb[2];return;}
+    out[0]=r/w;out[1]=g/w;out[2]=b/w;
+  };
+  const tmp=[0,0,0];
+  for(const f of info){
+    const geo=f.mesh.geometry,P=geo.attributes.position.array,C=geo.attributes.color.array,nt=P.length/9;
+    const np=[],nc=[];
+    /* a point on an edge is computed from the edge's canonical end, so both triangles that
+       share the edge produce bit-identical coordinates */
+    const edgePt=function(ax,ay,az,bx,by,bz,i,n){
+      if(vkey(bx,bz)<vkey(ax,az)){let t=ax;ax=bx;bx=t;t=ay;ay=by;by=t;t=az;az=bz;bz=t;i=n-i;}
+      const k=i/n;return [ax+(bx-ax)*k,ay+(by-ay)*k,az+(bz-az)*k];
+    };
+    const emitV=function(p,c){np.push(p[0],p[1],p[2]);nc.push(c[0],c[1],c[2]);};
+    for(let t=0;t<nt;t++){
+      const o=t*9;
+      const A=[P[o],P[o+1],P[o+2]],B=[P[o+3],P[o+4],P[o+5]],Cc=[P[o+6],P[o+7],P[o+8]];
+      const cA=[C[o],C[o+1],C[o+2]],cB=[C[o+3],C[o+4],C[o+5]],cC=[C[o+6],C[o+7],C[o+8]];
+      const cx=(A[0]+B[0]+Cc[0])/3,cz=(A[2]+B[2]+Cc[2])/3;
+      const colAt=function(p,l0,l1,l2){
+        return [cA[0]*l0+cB[0]*l1+cC[0]*l2,cA[1]*l0+cB[1]*l1+cC[1]*l2,cA[2]*l0+cB[2]*l1+cC[2]*l2];};
+      const n=f.n;
+      if(n>=2&&inR(cx,cz)){
+        /* P(i,j) = A + (B-A) i/n + (C-A) j/n */
+        const pt=function(i,j){
+          if(j===0)return edgePt(A[0],A[1],A[2],B[0],B[1],B[2],i,n);
+          if(i===0)return edgePt(A[0],A[1],A[2],Cc[0],Cc[1],Cc[2],j,n);
+          if(i+j===n)return edgePt(B[0],B[1],B[2],Cc[0],Cc[1],Cc[2],j,n);
+          const a=i/n,b=j/n;
+          return [A[0]+(B[0]-A[0])*a+(Cc[0]-A[0])*b,A[1]+(B[1]-A[1])*a+(Cc[1]-A[1])*b,A[2]+(B[2]-A[2])*a+(Cc[2]-A[2])*b];
+        };
+        const cl=function(i,j){return colAt(null,1-(i+j)/n,i/n,j/n);};
+        for(let i=0;i<n;i++)for(let j=0;i+j<n;j++){
+          emitV(pt(i,j),cl(i,j));emitV(pt(i+1,j),cl(i+1,j));emitV(pt(i,j+1),cl(i,j+1));
+          if(i+j<n-1){emitV(pt(i+1,j),cl(i+1,j));emitV(pt(i+1,j+1),cl(i+1,j+1));emitV(pt(i,j+1),cl(i,j+1));}
+        }
+        continue;
+      }
+      /* outside: does any edge of mine border a cut triangle? then fan from my centroid */
+      const V=[A,B,Cc],VC=[cA,cB,cC];
+      let any=false;const ring=[],rc=[];
+      for(let k=0;k<3;k++){
+        const a=V[k],b=V[(k+1)%3],m=cut.get(ekey(a[0],a[2],b[0],b[2]));
+        ring.push(a);rc.push(VC[k]);
+        if(m){any=true;
+          for(let i=1;i<m;i++){
+            ring.push(edgePt(a[0],a[1],a[2],b[0],b[1],b[2],i,m));
+            const k2=i/m,ca=VC[k],cb=VC[(k+1)%3];
+            rc.push([ca[0]+(cb[0]-ca[0])*k2,ca[1]+(cb[1]-ca[1])*k2,ca[2]+(cb[2]-ca[2])*k2]);
+          }}
+      }
+      if(!any){for(let k=0;k<3;k++)emitV(V[k],VC[k]);continue;}
+      const G0=[cx,(A[1]+B[1]+Cc[1])/3,cz],gc=colAt(null,1/3,1/3,1/3);
+      for(let k=0;k<ring.length;k++){emitV(G0,gc);emitV(ring[k],rc[k]);emitV(ring[(k+1)%ring.length],rc[(k+1)%ring.length]);}
+    }
+    /* base colour: the cell blend for flat meshes, the builder's own for the cape */
+    if(f.flat&&f.st<=40){
+      for(let v=0;v<np.length/3;v++){
+        cellCol(f.st,np[v*3],np[v*3+2],[nc[v*3],nc[v*3+1],nc[v*3+2]],tmp);
+        nc[v*3]=tmp[0];nc[v*3+1]=tmp[1];nc[v*3+2]=tmp[2];
+      }
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute("position",new THREE.Float32BufferAttribute(np,3));
+    g.setAttribute("color",new THREE.Float32BufferAttribute(nc.slice(),3));
+    g.computeVertexNormals();
+    const uv=new Float32Array(np.length/3*2);
+    for(let v=0;v<np.length/3;v++){uv[v*2]=np[v*3]/DETAIL_TILE;uv[v*2+1]=np[v*3+2]/DETAIL_TILE;}
+    g.setAttribute("dUv",new THREE.BufferAttribute(uv,2));
+    g.userData.base=new Float32Array(nc);
+    g.computeBoundingSphere();
+    geo.dispose();f.mesh.geometry=g;
+  }
+}
+/* A* over a coarse grid; cost[] per cell, returns the cells walked */
+function liveAstar(nx,nz,cost,s,e){
+  const N=nx*nz,gS=new Float32Array(N).fill(1e30),NONE=0xFFFFFFFF,from=new Uint32Array(N).fill(NONE),shut=new Uint8Array(N);
+  const hp=[],hf=[];
+  const push=function(i,f){hp.push(i);hf.push(f);let c=hp.length-1;
+    while(c>0){const p=(c-1)>>1;if(hf[p]<=hf[c])break;
+      let t=hp[p];hp[p]=hp[c];hp[c]=t;t=hf[p];hf[p]=hf[c];hf[c]=t;c=p;}};
+  const pop=function(){const top=hp[0],li=hp.pop(),lf=hf.pop();
+    if(hp.length){hp[0]=li;hf[0]=lf;let c=0;
+      for(;;){const l=c*2+1,r=l+1;let m=c;
+        if(l<hp.length&&hf[l]<hf[m])m=l;if(r<hp.length&&hf[r]<hf[m])m=r;if(m===c)break;
+        let t=hp[m];hp[m]=hp[c];hp[c]=t;t=hf[m];hf[m]=hf[c];hf[c]=t;c=m;}}
+    return top;};
+  const ex=e%nx,ez=(e/nx)|0;
+  const H=function(i){const dx=Math.abs(i%nx-ex),dz=Math.abs(((i/nx)|0)-ez);return Math.max(dx,dz)+0.414*Math.min(dx,dz);};
+  gS[s]=0;push(s,H(s));
+  let guard=0;
+  while(hp.length&&guard++<N*4){
+    const c=pop();if(shut[c])continue;shut[c]=1;
+    if(c===e)break;
+    const cx=c%nx,cz=(c/nx)|0;
+    for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
+      if(!dx&&!dz)continue;const x=cx+dx,z=cz+dz;
+      if(x<0||z<0||x>=nx||z>=nz)continue;
+      const i=z*nx+x;if(shut[i])continue;
+      const g=gS[c]+(dx&&dz?1.414:1)*(cost[c]+cost[i])*0.5;
+      if(g<gS[i]){gS[i]=g;from[i]=c;push(i,g+H(i));}
+    }
+  }
+  const out=[];
+  if(from[e]===NONE&&s!==e)return out;
+  for(let c=e,k=0;c!==NONE&&k<N;c=from[c],k++){out.push(c);if(c===s)break;}
+  return out;
+}
+/* the meshes that may throw a painted shadow: static, opaque, bigger than a man */
+function liveCasters(){
+  const out=[],skip=new Set(LIVE.ground.concat(LIVE.water,LIVE.inst));
+  /* things that move leave no shadow where they stood: animals, deer */
+  for(const a of ANIMALS)if(a.g)skip.add(a.g);
+  for(const d of DEER)if(d.g)skip.add(d.g);
+  const box=new THREE.Box3();
+  const walk=function(o){
+    if(!o.visible||skip.has(o))return;
+    if(o.userData&&o.userData.parts)return;            /* a figure: it has its blob */
+    if(o===player)return;
+    if(o.isMesh&&!o.isInstancedMesh&&!skip.has(o)&&o!==skyDome&&o!==shadowMesh&&o.geometry&&o.geometry.attributes.position){
+      const m=o.material;
+      if(m&&!Array.isArray(m)&&!m.transparent&&!m.isMeshBasicMaterial){
+        if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
+        box.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+        const sx=box.max.x-box.min.x,sy=box.max.y-box.min.y,sz=box.max.z-box.min.z;
+        /* a cask or a chest is too small to bother with, and a standing man (a baked crowd
+           figure is one mesh) already has his blob */
+        const man=sy>3.5&&sy<7&&Math.max(sx,sz)<3.2;
+        if(Math.max(sx,sy,sz)>=3.5&&!man&&sx<3000&&sz<3000)out.push(o);
+      }
+    }
+    for(const c of o.children)walk(c);
+  };
+  walk(worldRoot);
+  return out;
+}
+function liveRun(){
+  if(!worldRoot||LIVE.root!==worldRoot)return;
+  const t0=performance.now();
+  worldRoot.updateMatrixWorld(true);
+  const G=WORLD.ground;
+  let waterY=null;
+  for(const w of LIVE.water){const y=w.getWorldPosition(new THREE.Vector3()).y;waterY=(waterY===null)?y:Math.max(waterY,y);}
+  if(!LIVE.ground.length){LIVE.ms=performance.now()-t0;return;}
+  if(!LIVE.R){LIVE.R=liveRegion();liveSubdivide(LIVE.R);}
+  /* the paint reaches 90 ft past the cut region and fades out over its last 30, so a wall
+     that runs out of the region does not drop its shadow along a straight line */
+  const R0=LIVE.R,R={x0:R0.x0-90,x1:R0.x1+90,z0:R0.z0-90,z1:R0.z1+90};
+  /* ---- the grids ---- */
+  const occ=new LGrid(R,1), occAll=new LGrid(R,1), shade=new LGrid(R,1), cover=new LGrid(R,1), path=new LGrid(R,1);
+  /* where something stands ON the ground - a wall, a post, a trunk - whether or not it has a collider */
+  const foot=new LGrid(R,1);
+  for(const c of colliders){
+    if(c.lvl!==LVL.MAIN)continue;
+    occAll.box(c.x-c.hw,c.z-c.hd,c.x+c.hw,c.z+c.hd,1);
+    if(c.hw<=1.05&&c.hd<=1.05)continue;                   /* a man, not a wall */
+    occ.box(c.x-c.hw,c.z-c.hd,c.x+c.hw,c.z+c.hd,1);
+  }
+  /* sun-projected shadows and what stands overhead */
+  const L=(typeof sunLight!=="undefined"&&sunLight)?sunLight.position.clone().normalize():new THREE.Vector3(0.36,0.9,0.24);
+  const kx=L.x/Math.max(0.2,L.y),kz=L.z/Math.max(0.2,L.y);
+  const v=new THREE.Vector3(),pr=[0,0,0,0,0,0],vp=[0,0,0,0,0,0];
+  for(const o of liveCasters()){
+    const geo=o.geometry,P=geo.attributes.position,idx=geo.index,nt=idx?idx.count/3:P.count/3,M=o.matrixWorld;
+    for(let t=0;t<nt;t++){
+      let lo=1e9,hi=-1e9;
+      for(let k=0;k<3;k++){
+        const vi=idx?idx.getX(t*3+k):t*3+k;
+        v.fromBufferAttribute(P,vi).applyMatrix4(M);
+        const h=v.y-G(v.x,v.z);lo=Math.min(lo,h);hi=Math.max(hi,h);
+        pr[k*2]=v.x-kx*Math.max(0,h);pr[k*2+1]=v.z-kz*Math.max(0,h);
+        vp[k*2]=v.x;vp[k*2+1]=v.z;
+      }
+      if(hi<0.4||lo>80)continue;                  /* lying on the ground, or the sky */
+      if(Math.max(pr[0],pr[2],pr[4])<R.x0||Math.min(pr[0],pr[2],pr[4])>R.x1||
+         Math.max(pr[1],pr[3],pr[5])<R.z0||Math.min(pr[1],pr[3],pr[5])>R.z1)continue;
+      shade.tri(pr[0],pr[1],pr[2],pr[3],pr[4],pr[5]);
+      if(lo>0.15)cover.tri(vp[0],vp[1],vp[2],vp[3],vp[4],vp[5]);
+      else if(lo<0.5&&hi>1.2)foot.tri(vp[0],vp[1],vp[2],vp[3],vp[4],vp[5]);
+    }
+  }
+  /* a palisade with no collider still walls off paths and shelters grass */
+  for(let i=0;i<occAll.a.length;i++){if(foot.a[i]>occAll.a[i])occAll.a[i]=foot.a[i];if(foot.a[i]>occ.a[i])occ.a[i]=foot.a[i];}
+  const tR=performance.now();
+  shade.blur(2).blur(1);
+  /* occlusion: at the foot of every wall and under anything overhead (a roof, a tent, a
+     canopy, a table), whether or not it has a collider */
+  const ao=new LGrid(R,1);
+  for(let i=0;i<ao.a.length;i++)ao.a[i]=Math.max(occ.a[i],cover.a[i]);
+  ao.blur(2).blur(2);
+  /* ---- worn paths: interactables, the spawn and the landing, joined by a spanning tree,
+     each edge walked by A* so it goes round what is solid ---- */
+  const tB=performance.now();
+  const nodes=[];
+  const addNode=function(x,z){if(x<R.x0+2||x>R.x1-2||z<R.z0+2||z>R.z1-2)return;
+    for(const n of nodes)if(Math.hypot(n[0]-x,n[1]-z)<5)return;nodes.push([x,z]);};
+  if(player)addNode(player.position.x,player.position.z);
+  for(const it of interactables)if(it.lvl===undefined||it.lvl===LVL.MAIN)addNode(it.x,it.z);
+  const S2=2,pg=new LGrid(R,S2),nx=pg.w,nz=pg.h,cost=new Float32Array(nx*nz);
+  let land=null;
+  for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){
+    const x=R.x0+(i+0.5)*S2,z=R.z0+(j+0.5)*S2,y=G(x,z);
+    let c=1+occ.at(x,z)*60+occ.at(x+1,z+1)*20+ao.at(x,z)*4;
+    if(waterY!==null){
+      if(y<waterY+0.15)c+=80;
+      else if(y<waterY+0.6&&player){const d=Math.hypot(x-player.position.x,z-player.position.z);if(!land||d<land[2])land=[x,z,d];}
+    }
+    cost[j*nx+i]=c;
+  }
+  if(land&&land[2]<220)addNode(land[0],land[1]);else land=null;
+  LIVE.nodes=nodes.slice();
+  const cellOf=function(p){return Math.max(0,Math.min(nz-1,Math.floor((p[1]-R.z0)/S2)))*nx+Math.max(0,Math.min(nx-1,Math.floor((p[0]-R.x0)/S2)));};
+  if(nodes.length>1){
+    const inT=[0],rest=nodes.map(function(_,i){return i;}).slice(1);
+    while(rest.length){
+      let best=null;
+      for(const a of inT)for(let r=0;r<rest.length;r++){const b=rest[r],d=Math.hypot(nodes[a][0]-nodes[b][0],nodes[a][1]-nodes[b][1]);
+        if(!best||d<best[2])best=[a,r,d];}
+      const b=rest.splice(best[1],1)[0];inT.push(b);
+      const cells=liveAstar(nx,nz,cost,cellOf(nodes[best[0]]),cellOf(nodes[b]));
+      for(const c of cells){const x=R.x0+((c%nx)+0.5)*S2,z=R.z0+(((c/nx)|0)+0.5)*S2;path.box(x-1.4,z-1.4,x+1.4,z+1.4,1);}
+    }
+  }
+  /* a trodden patch where each person and duty stands */
+  for(const n of nodes)path.box(n[0]-2.5,n[1]-2.5,n[0]+2.5,n[1]+2.5,0.8);
+  path.blur(1).blur(1);
+  const tA=performance.now();
+  /* ---- paint ---- */
+  const MUD=RGB(0x5e4a33);
+  const edgeK=function(x,z){return Math.max(0,Math.min(1,Math.min(x-R.x0,R.x1-x,z-R.z0,R.z1-z)/30));};
+  for(const mesh of LIVE.ground){
+    const geo=mesh.geometry,P=geo.attributes.position.array,C=geo.attributes.color.array;
+    if(!geo.userData.base)geo.userData.base=new Float32Array(C);
+    const B=geo.userData.base;
+    /* two scales of seeded noise: patches a few rods across, and grain underfoot. A pure
+       function of position, so it is worked out once per vertex and kept for repaints */
+    let NZ=geo.userData.nz;
+    if(!NZ){NZ=geo.userData.nz=new Float32Array(P.length);
+      for(let i=0;i<P.length;i+=3){const x=P[i],z=P[i+2];
+        NZ[i]=liveNoise(x*0.028+17.3,z*0.028-4.1);NZ[i+1]=liveNoise(x*0.012-9.2,z*0.012+3.3);NZ[i+2]=liveNoise(x*0.31,z*0.31);}}
+    for(let i=0;i<P.length;i+=3){
+      const x=P[i],y=P[i+1],z=P[i+2];
+      let r=B[i],g=B[i+1],b=B[i+2];
+      const n1=NZ[i],n2=NZ[i+1],n3=NZ[i+2];
+      const dry=(n2-0.5)*2;
+      r*=1+0.08*dry;g*=1-0.02*dry;b*=1-0.08*dry;
+      let k=1+0.20*(n1-0.5);
+      const ek=edgeK(x,z);
+      const p=ek>0?Math.min(1,path.at(x,z)*1.3)*ek:0;
+      k*=1+0.12*(n3-0.5)*(1-0.7*p);
+      r*=k;g*=k;b*=k;
+      if(p>0){const t=0.8*p;r+=(r*0.80-r)*t;g+=(g*0.70-g)*t;b+=(b*0.60-b)*t;}
+      if(waterY!==null){
+        const hw=y-waterY;
+        const damp=Math.max(0,Math.min(1,(1.8-hw)/1.5));
+        r*=1-0.26*damp;g*=1-0.24*damp;b*=1-0.20*damp;
+        const band=Math.max(0,1-Math.abs(hw-0.08)/0.32);
+        if(band>0){const t=0.5*band;r+=(r*1.5+0.02-r)*t;g+=(g*1.5+0.025-g)*t;b+=(b*1.5+0.03-b)*t;}
+        if(land){const dl=Math.hypot(x-land[0],z-land[1]),m=Math.max(0,Math.min(1,(8-dl)/5))*(0.55+0.45*n3);
+          if(m>0){const t=0.6*m;r+=(MUD[0]-r)*t;g+=(MUD[1]-g)*t;b+=(MUD[2]-b)*t;}}
+      }
+      if(ek>0){
+        const a=ao.at(x,z)*ek,s=Math.min(1,shade.at(x,z))*ek;
+        const dk=(1-0.36*a)*(1-0.42*s);
+        r*=dk;g*=dk;b*=dk;
+      }
+      if(LIVE.winter){const l=0.3*r+0.59*g+0.11*b;r+=(l*1.03-r)*0.25;g+=(l-g)*0.25;b+=(l*0.98-b)*0.25;}
+      C[i]=Math.max(0,r);C[i+1]=Math.max(0,g);C[i+2]=Math.max(0,b);
+    }
+    geo.attributes.color.needsUpdate=true;
+  }
+  const tP=performance.now();
+  liveScatter(R0,R,G,waterY,occAll,occ,cover,path,shade,land);
+  const tS=performance.now();
+  LIVE.ms=tS-t0;
+  /* where the time went, for ?diag and for anyone measuring a slow machine */
+  LIVE.prof={raster:tR-t0,blur:tB-tR,paths:tA-tB,paint:tP-tA,scatter:tS-tP};
+}
+/* ---- the three instanced meshes: built once, shared by every world ---- */
+let LIVE_GEO=null;
+function liveGeos(){
+  if(LIVE_GEO)return LIVE_GEO;
+  const up=function(g){const n=g.attributes.position.count,a=new Float32Array(n*3);for(let i=0;i<n;i++)a[i*3+1]=1;
+    g.setAttribute("normal",new THREE.BufferAttribute(a,3));return g;};
+  const both=function(p,c){const P=[],C=[];
+    for(let i=0;i<p.length;i+=9){P.push.apply(P,p.slice(i,i+9));P.push(p[i+6],p[i+7],p[i+8],p[i+3],p[i+4],p[i+5],p[i],p[i+1],p[i+2]);
+      const j=i;C.push.apply(C,c.slice(j,j+9));C.push(c[j+6],c[j+7],c[j+8],c[j+3],c[j+4],c[j+5],c[j],c[j+1],c[j+2]);}
+    const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.Float32BufferAttribute(P,3));
+    g.setAttribute("color",new THREE.Float32BufferAttribute(C,3));return g;};
+  /* a tuft: five blades leaning out from a common root, dark at the root and light at the
+     tip; every normal points up, so it is lit as the ground it grows from is */
+  let p=[],c=[];
+  for(let i=0;i<5;i++){
+    const a=i/5*Math.PI*2+srand(i*3.1)*0.7,h=0.55+srand(i*1.7)*0.5,lean=0.18+srand(i*5.3)*0.22,w=0.08;
+    const ca=Math.cos(a),sa=Math.sin(a),px=-sa,pz=ca;
+    const bx=ca*0.05,bz=sa*0.05;
+    p.push(bx-px*w,0,bz-pz*w, bx+px*w,0,bz+pz*w, ca*lean,h,sa*lean);
+    c.push(0.45,0.45,0.45, 0.45,0.45,0.45, 1.05,1.05,1.05);
+  }
+  const tuft=up(both(p,c));
+  /* a weed: five broad leaves in a rosette and a stalk */
+  p=[];c=[];
+  for(let i=0;i<5;i++){
+    const a=i/5*Math.PI*2+0.3,ca=Math.cos(a),sa=Math.sin(a),px=-sa,pz=ca;
+    const m=[ca*0.28,0.16,sa*0.28],tip=[ca*0.55,0.26,sa*0.55];
+    p.push(0,0.02,0, m[0]+px*0.13,m[1],m[2]+pz*0.13, tip[0],tip[1],tip[2]);
+    p.push(0,0.02,0, tip[0],tip[1],tip[2], m[0]-px*0.13,m[1],m[2]-pz*0.13);
+    c.push(0.55,0.55,0.55, 0.9,0.9,0.9, 1,1,1, 0.55,0.55,0.55, 1,1,1, 0.9,0.9,0.9);
+  }
+  p.push(-0.03,0,0, 0.03,0,0, 0.02,0.85,0.01);c.push(0.6,0.6,0.6, 0.6,0.6,0.6, 1.1,1.1,1.1);
+  const weed=up(both(p,c));
+  /* a stone: a faceted, low six-sided lump sunk in the earth */
+  p=[];c=[];
+  const ring=function(r,y,j){const o=[];for(let i=0;i<6;i++){const a=i/6*Math.PI*2+j;o.push([Math.cos(a)*r*(0.85+srand(i*7.7)*0.3),y,Math.sin(a)*r*(0.85+srand(i*2.9)*0.3)]);}return o;};
+  const r0=ring(1,-0.15,0),r1=ring(0.72,0.38,0.4),top=[0.05,0.55,-0.03];
+  for(let i=0;i<6;i++){const j=(i+1)%6;
+    p.push(...r0[i],...r1[i],...r0[j], ...r0[j],...r1[i],...r1[j], ...r1[i],...top,...r1[j]);
+    c.push(0.8,0.8,0.8, 1,1,1, 0.8,0.8,0.8, 0.8,0.8,0.8, 1,1,1, 1,1,1, 1,1,1, 1.08,1.08,1.08, 1,1,1);}
+  const stone=new THREE.BufferGeometry();
+  stone.setAttribute("position",new THREE.Float32BufferAttribute(p,3));
+  stone.setAttribute("color",new THREE.Float32BufferAttribute(c,3));
+  stone.computeVertexNormals();
+  const mt=new THREE.MeshLambertMaterial({vertexColors:true});
+  [tuft,weed,stone,mt].forEach(function(x){SHARED.add(x);});
+  return LIVE_GEO={tuft:tuft,weed:weed,stone:stone,mat:mt};
+}
+const LIVE_CAP={tuft:3600,weed:700,stone:800};
+function liveScatter(R,RP,G,waterY,occAll,occ,cover,path,shade,land){
+  const LG=liveGeos();
+  if(!LIVE.inst.length){
+    for(const k of ["tuft","weed","stone"]){
+      const m=new THREE.InstancedMesh(LG[k],LG.mat,LIVE_CAP[k]);
+      /* the colour buffer made here: setColorAt would size it by count, which is still 0 */
+      m.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(LIVE_CAP[k]*3),3);
+      m.frustumCulled=false;m.userData.kind=k;m.count=0;
+      worldRoot.add(m);LIVE.inst.push(m);
+    }
+  }
+  const edge=new LGrid(RP,1);edge.a.set(occ.a);edge.blur(3);
+  const stand=[];
+  for(const it of interactables)stand.push([it.x,it.z]);
+  if(player)stand.push([player.position.x,player.position.z]);
+  const got={tuft:[],weed:[],stone:[]};
+  const ST=1.5;
+  const grass=LIVE.winter?[RGB(0x7d7155),RGB(0x8e8262),RGB(0x6a6450)]:[RGB(0x5f7236),RGB(0x76843f),RGB(0x8a8a4c)];
+  let n=0;
+  for(let z=R.z0+1;z<R.z1-1;z+=ST)for(let x=R.x0+1;x<R.x1-1;x+=ST){
+    n++;
+    const px=x+(srand(n*1.37)-0.5)*ST,pz=z+(srand(n*2.11)-0.5)*ST;
+    const y=G(px,pz);
+    if(waterY!==null&&y<waterY+0.45)continue;
+    if(occAll.at(px,pz)>0.02||occAll.at(px+0.7,pz+0.7)>0.02||occAll.at(px-0.7,pz-0.7)>0.02)continue;
+    if(cover.at(px,pz)>0.02)continue;
+    const p=path.at(px,pz);if(p>0.35)continue;
+    if(land&&Math.hypot(px-land[0],pz-land[1])<11)continue;
+    let near=false;for(const s of stand)if(Math.abs(s[0]-px)<3.5&&Math.abs(s[1]-pz)<3.5){near=true;break;}
+    if(near)continue;
+    /* how green the ground is decides how much grows; walls and fences shelter more */
+    const gc=liveGroundCol(px,pz);
+    const green=Math.max(0,Math.min(1,(gc[1]-gc[0])*14+0.45));
+    const e=edge.at(px,pz);
+    let d=0.05+0.30*green+Math.min(0.9,e*2.2)*(1-p*2);
+    d*=(1-p*2.2);
+    if(LIVE.winter)d*=0.7;
+    const r=srand(n*3.71);
+    if(r>d*0.55)continue;
+    const kind=srand(n*5.93),yaw=srand(n*7.07)*Math.PI*2,sc=0.7+srand(n*8.3)*0.7;
+    if(kind<0.13||(p>0.12&&kind<0.5)){got.stone.push([px,y,pz,yaw,0.25+srand(n*9.1)*0.45,0.6+srand(n*4.4)*0.5]);continue;}
+    const cc=grass[Math.floor(srand(n*6.1)*3)],mix=0.3;
+    const col=[cc[0]+(gc[0]*1.2-cc[0])*mix,cc[1]+(gc[1]*1.2-cc[1])*mix,cc[2]+(gc[2]*1.2-cc[2])*mix];
+    if(kind<0.26)got.weed.push([px,y,pz,yaw,sc*1.2,1,col[0]*0.75,col[1]*0.85,col[2]*0.7]);
+    else got.tuft.push([px,y,pz,yaw,sc,0.8+srand(n*2.6)*0.6,col[0],col[1],col[2]]);
+  }
+  const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),Y=new THREE.Vector3(0,1,0),Pv=new THREE.Vector3(),Sv=new THREE.Vector3(),Cc=new THREE.Color();
+  const STONE=[RGB(0x8a8478),RGB(0x77705f),RGB(0x9b9486)];
+  for(const m of LIVE.inst){
+    const list=got[m.userData.kind];
+    /* shuffled, so a lower tier's shorter count thins evenly instead of cutting a corner off */
+    for(let i=list.length-1;i>0;i--){const j=Math.floor(srand(i*4.17+list.length)*(i+1));const t=list[i];list[i]=list[j];list[j]=t;}
+    const N=Math.min(list.length,LIVE_CAP[m.userData.kind]);
+    for(let i=0;i<N;i++){
+      const a=list[i];
+      Q.setFromAxisAngle(Y,a[3]);
+      if(m.userData.kind==="stone"){Pv.set(a[0],a[1]-0.04,a[2]);Sv.set(a[4],a[4]*a[5],a[4]*(0.7+srand(i*1.9)*0.5));
+        const s=STONE[i%3];Cc.setRGB(s[0],s[1],s[2]);}
+      else{Pv.set(a[0],a[1]-0.05,a[2]);Sv.set(a[4],a[4]*a[5],a[4]);Cc.setRGB(a[6],a[7],a[8]);}
+      M.compose(Pv,Q,Sv);m.setMatrixAt(i,M);m.setColorAt(i,Cc);
+    }
+    m.userData.n=N;
+    m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;
+  }
+  liveTier();
+}
+/* the ground's painted colour at a point, from the nearest vertex of the mesh under it */
+function liveGroundCol(x,z){
+  for(const mesh of LIVE.ground){
+    const s=mesh.geometry.boundingSphere;
+    if(s&&Math.hypot(x-s.center.x,z-s.center.z)>s.radius)continue;
+    const g=mesh.geometry;
+    if(!g.userData.grid){
+      /* a coarse bucket of vertex indices, so the lookup is not a scan */
+      const P=g.attributes.position.array,b=new Map();
+      for(let i=0;i<P.length/3;i++){const k=Math.floor(P[i*3]/6)+","+Math.floor(P[i*3+2]/6);let e=b.get(k);if(!e)b.set(k,e=[]);e.push(i);}
+      g.userData.grid=b;
+    }
+    const e=g.userData.grid.get(Math.floor(x/6)+","+Math.floor(z/6));
+    if(!e)continue;
+    const P=g.attributes.position.array,C=g.attributes.color.array;
+    let best=-1,bd=1e9;
+    for(const i of e){const d=(P[i*3]-x)*(P[i*3]-x)+(P[i*3+2]-z)*(P[i*3+2]-z);if(d<bd){bd=d;best=i;}}
+    return [C[best*3],C[best*3+1],C[best*3+2]];
+  }
+  return [0.3,0.3,0.2];
+}
+/* one owner for what the tier changes here: how many tufts are drawn, and the water's ripples */
+function liveTier(){
+  const k=GFX.tier==="low"?0.4:GFX.tier==="medium"?0.7:1;
+  for(const m of LIVE.inst)m.count=Math.floor((m.userData.n||0)*k);
+  for(const w of LIVE.water){const u=w.material&&w.material.userData.u;if(u)u.uQ.value=GFX.tier==="low"?0:1;}
+}
+/* ========== WATER THAT READS AS WATER ==========
+   Opaque, like every other surface: a slow swell in the vertex shader (so the waterline
+   laps up and down the bank), and in the fragment three cheap terms on a rippled normal -
+   darker looking straight down, lighter toward the sky at a grazing angle, and a glint
+   where the ripple turns the sun into the eye. The low tier keeps the swell and the angle
+   tint on a flat normal and drops the ripple and the glint (uQ). One material per world;
+   disposeWorld frees it. */
+function waterMat(hex,opt){
+  opt=opt||{};
+  const m=new THREE.MeshLambertMaterial({color:lin(hex)});
+  const u={uT:{value:0},uQ:{value:GFX.tier==="low"?0:1},uAmp:{value:opt.amp===undefined?0.14:opt.amp},
+    uSun:{value:new THREE.Vector3(0.36,0.9,0.24)},uSunC:{value:new THREE.Color(1,0.9,0.75)},
+    uSky:{value:lin(opt.sky||0xb9ccd3)},uCam:{value:new THREE.Vector3()}};
+  m.userData.u=u;
+  m.onBeforeCompile=function(sh){
+    Object.assign(sh.uniforms,u);
+    sh.vertexShader=sh.vertexShader
+      .replace("#include <common>","#include <common>\nuniform float uT;\nuniform float uAmp;\nvarying vec3 vWP;")
+      .replace("#include <begin_vertex>","#include <begin_vertex>\n"+
+        "vec3 wq=(modelMatrix*vec4(transformed,1.0)).xyz;\n"+
+        "transformed+=normal*uAmp*(0.6*sin(dot(wq.xz,vec2(0.071,0.043))+uT*0.8)+0.4*sin(dot(wq.xz,vec2(-0.033,0.089))+uT*1.15));")
+      .replace("#include <project_vertex>","#include <project_vertex>\nvWP=(modelMatrix*vec4(transformed,1.0)).xyz;");
+    sh.fragmentShader=sh.fragmentShader
+      .replace("#include <common>","#include <common>\nuniform float uT;\nuniform float uQ;\nuniform vec3 uSun;\nuniform vec3 uSunC;\nuniform vec3 uSky;\nuniform vec3 uCam;\nvarying vec3 vWP;")
+      .replace("gl_FragColor = vec4( outgoingLight, diffuseColor.a );",
+        "vec2 wg=vec2(0.0);\n"+
+        "if(uQ>0.5){\n"+
+        "  vec2 p=vWP.xz;\n"+
+        "  wg+=0.10*vec2(0.8,0.6)*cos(dot(p,vec2(0.8,0.6))*0.55+uT*1.4);\n"+
+        "  wg+=0.08*vec2(-0.45,0.89)*cos(dot(p,vec2(-0.45,0.89))*0.93+uT*1.9);\n"+
+        "  wg+=0.06*vec2(0.96,-0.28)*cos(dot(p,vec2(0.96,-0.28))*1.7+uT*2.6);\n"+
+        "}\n"+
+        "vec3 wn=normalize(vec3(-wg.x,1.0,-wg.y));\n"+
+        "vec3 wv=normalize(uCam-vWP);\n"+
+        "float ndv=clamp(dot(wn,wv),0.0,1.0);\n"+
+        "float fr=1.0-ndv; fr*=fr; fr*=fr;\n"+
+        "outgoingLight*=mix(0.78,1.04,1.0-ndv);\n"+
+        "outgoingLight=mix(outgoingLight,uSky*0.85,fr*0.32);\n"+
+        "if(uQ>0.5){float gl=pow(max(dot(reflect(-uSun,wn),wv),0.0),70.0);outgoingLight+=uSunC*gl*0.85;}\n"+
+        "gl_FragColor = vec4( outgoingLight, diffuseColor.a );");
+  };
+  return m;
+}
+/* a water mesh: registered so the ground knows where the waterline is and the tier can
+   reach its material; the clock and the light it reflects are read as it is drawn */
+function liveWater(mesh){
+  const u=mesh.material.userData.u, sky0=u.uSky.value.clone();
+  mesh.onBeforeRender=function(r,s,camera){
+    /* three sets cameraPosition only for Phong, Standard and shader materials, never Lambert */
+    u.uCam.value.setFromMatrixPosition(camera.matrixWorld);
+    u.uT.value=(performance.now()*0.001)%3600;
+    if(typeof sunLight!=="undefined"&&sunLight){
+      u.uSun.value.copy(sunLight.position).normalize();
+      u.uSunC.value.copy(sunLight.color).multiplyScalar(sunLight.intensity);
+    }
+    /* the sky it reflects dims with the sky's own light: night scenes turn it down */
+    if(typeof hemiLight!=="undefined"&&hemiLight)u.uSky.value.copy(sky0).multiplyScalar(hemiLight.intensity/0.58);
+  };
+  LIVE.water.push(mesh);
   return mesh;
 }
 function buildThinSite(root,key){
@@ -19698,8 +20316,7 @@ function buildThinSite(root,key){
   }
   buildSkyDome(root);
   if(T.dress)T.dress(root,G);
-  const sea=new THREE.Mesh(new THREE.PlaneGeometry(1600,900),
-    new THREE.MeshLambertMaterial({color:lin(T.water)}));
+  const sea=liveWater(new THREE.Mesh(new THREE.PlaneGeometry(1600,900,80,45),waterMat(T.water,{sky:T.sky})));
   sea.rotation.x=-Math.PI/2;sea.position.set(0,-0.35,T.sea+450);root.add(sea);
   /* trees behind, merged into one mesh */
   const TR=new Geo();
@@ -23219,7 +23836,7 @@ registerWorld("ch2",function(root){
   })();
 
   /* ---- the sea, and the surf breaking on the strand ---- */
-  const sea=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),mat(0x3f6472));
+  const sea=liveWater(new THREE.Mesh(new THREE.PlaneGeometry(2400,2400,96,96),waterMat(0x3f6472,{sky:0x9dbccb})));
   sea.rotation.x=-Math.PI/2;sea.position.set(0,0,0);root.add(sea);
   /* ---- AND THE SHIPS THAT BROUGHT YOU ----
      The intro says it - "the ships are anchored inside the capes and the boats are down" -
@@ -23228,15 +23845,13 @@ registerWorld("ch2",function(root){
   placeShip(root,"susan",1,-120,330,Math.PI/2+0.35);
   placeShip(root,"godspeed",0.76,60,390,Math.PI/2+0.28);
   placeShip(root,"discovery",0.43,210,300,Math.PI/2+0.42);
-  const W=new Geo(),foam=RGB(0xd7e2df),swellA=RGB(0x486e7a),swellB=RGB(0x3a5c68);
+  const W=new Geo(),foam=RGB(0xd7e2df);
   for(let x=-SPAN/2;x<SPAN/2;x+=26){
     const w=22+Math.random()*12;
     W.box(x+13,0.35,CAPE.SEA+2+Math.sin(x*0.05)*3,w,0.7,7,foam);
   }
-  for(let i=0;i<70;i++){
-    const x=-1100+Math.random()*2200, z=CAPE.SEA+30+Math.random()*760;
-    W.box(x,0.4,z,26+Math.random()*30,0.9,20+Math.random()*24,(i%2)?swellA:swellB);
-  }
+  /* seventy flat slabs stood in for a swell here; waterMat moves the sea itself now, and
+     against a sea that lightens toward the horizon the slabs read as dark rafts */
   root.add(W.mesh(false,false));
 
   /* ---- THE PINE WOODS THE ARROWS COME OUT OF, AND THIS TIME A WOOD ----
@@ -24056,7 +24671,7 @@ function loadGLB(url){
   if(GLB_CACHE[url])return GLB_CACHE[url];
   return GLB_CACHE[url]=fetch(url).then(function(r){
     if(!r.ok)throw new Error(url+": "+r.status);return r.arrayBuffer();
-  }).then(function(buf){return parseGLB(buf,url);});
+  }).then(function(buf){const g=parseGLB(buf,url);liveSoon();return g;});   /* a model that arrives casts a shadow */
 }
 function parseGLB(buf,url){
   const dv=new DataView(buf);
@@ -24360,6 +24975,7 @@ function buildFortWorld(root,w,opt){
   WORLD.ground=G; WORLD.hull=false; WORLD.sea=0;
   WORLD.blocked=function(x,z){return Math.hypot(x,z)>430||G(x,z)<-0.6||inCollider(x,z,1.0);};
   FORT.on=false;FORT.t=0;FORT.bowmen=[];FORT.wounded=[];FORT.root=root;FORT.parts={};
+  LIVE.winter=!!opt.winter;
   /* ground, chunked as at the survey sites; trodden earth inside the work */
   const SPAN=900,N=4,CH_=SPAN/N,DIV=14;
   /* in winter (Chapter V) the grass is dead and the hardwoods bare */
@@ -24377,7 +24993,7 @@ function buildFortWorld(root,w,opt){
     root.add(detailGround(g.mesh(false,false),CURRENT_WORLD==="ch2"?"sand":"earth"));
   }
   buildSkyDome(root);
-  const sea=new THREE.Mesh(new THREE.PlaneGeometry(1600,900),new THREE.MeshLambertMaterial({color:lin(T.water)}));
+  const sea=liveWater(new THREE.Mesh(new THREE.PlaneGeometry(1600,900,80,45),waterMat(T.water,{sky:T.sky})));
   sea.rotation.x=-Math.PI/2;sea.position.set(0,-0.35,T.sea+450);root.add(sea);
 
   /* ---- THE WOODS, and what the felling has taken out of them ----
@@ -26215,6 +26831,7 @@ function captGround(key){return function(x,z){return siteGround(key,x,z);};}
 function captLand(root,key,opt){
   /* buildThinSite's ground and sky, without its survey spots or its boat */
   const T=SITE_TERRAIN[key], G=captGround(key);
+  LIVE.winter=!!opt.winter;
   scene.background=new THREE.Color(T.sky);scene.fog=new THREE.Fog(T.fog,220,820);
   WORLD.ground=G; WORLD.hull=false; WORLD.sea=0;
   WORLD.blocked=function(x,z){return Math.hypot(x,z)>430||G(x,z)<-0.6||inCollider(x,z,1.0);};
@@ -26230,7 +26847,7 @@ function captLand(root,key,opt){
     root.add(detailGround(g.mesh(false,false),"earth"));
   }
   buildSkyDome(root);
-  const sea=new THREE.Mesh(new THREE.PlaneGeometry(1600,900),new THREE.MeshLambertMaterial({color:lin(T.water)}));
+  const sea=liveWater(new THREE.Mesh(new THREE.PlaneGeometry(1600,900,80,45),waterMat(T.water,{sky:T.sky})));
   sea.rotation.x=-Math.PI/2;sea.position.set(0,-0.35,T.sea+450);root.add(sea);
   /* the woods: pine and bare hardwood mixed, in winter; all pine before it */
   const TR=new Geo(), clear=opt.clear||function(){return false;};
@@ -33974,7 +34591,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1243";
+const BUILD="20261127-1324";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
