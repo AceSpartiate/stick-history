@@ -29552,76 +29552,91 @@ CONTENT.ch8={
   people:LEAF_PEOPLE,
   npcs:LEAF_NPCS,
   charter:{insight:{b:"The Golden Leaf"}},
+  /* review, 27 Nov: frame was "I met her once, at the Bishop of London's"; Purchas: "I was present, when my Honorable & Reverend Patron, the L. Bishop of London, Doctor King entertained her" (19:118 [web]). Pass was "He did not print anything of hers"; he printed words reported as hers (Dale's letter), but nothing in her hand */
   reck:{seal:"records",kick:"Master Purchas’s Pilgrimes",title:"Whose Voice Is Missing?",
-    frame:"Samuel Purchas has a stack of letters and books, Argall’s, Dale’s, Hamor’s, Smith’s, and means to print them all together. “I met her once, at the Bishop of London’s. I have every Englishman’s account of her, and not one word of hers. Tell me how to read them. Six questions; I’ll bear two wrong — no more.”",
+    frame:"Samuel Purchas has a stack of letters and books, Argall’s, Dale’s, Hamor’s, Smith’s, and means to print them all together. “I saw her once, when my patron the Bishop of London entertained her. I have every Englishman’s account of her, and not one word of hers. Tell me how to read them. Six questions; I’ll bear two wrong — no more.”",
     lockLine:"Not yet. Master Purchas will sit with you after Gravesend.",
-    pass:{title:"The Pilgrimes Hold",body:"Purchas ties up his papers. “Then I shall print them, and a careful reader will know whose they are.” He printed them in 1625. He did not print anything of hers, because there was nothing of hers to print."},
+    pass:{title:"The Pilgrimes Hold",body:"Purchas ties up his papers. “Then I shall print them, and a careful reader will know whose they are.” He printed them in 1625. He printed nothing in her own hand, because there was nothing in her own hand to print."},
     fail:{title:"The Pilgrimes Do Not Hold",body:"“You are reading what they wrote about her as if she had written it,” says Purchas. “Look again at who holds the pen.”"},
     onPass:function(){leafW().done=true;},
     q:[
-      {stim:"De La Warr, 1610: he would “draw the sword of Justice”. Two months later, Percy’s soldiers killed the Paspahegh werowance’s children after “a Cowncell beinge called”.",
+      /* review, 27 Nov: stimulus did not say what the council decided; now Percy's full clause (via EV [web]) */
+      {stim:"De La Warr, 1610: he would “draw the sword of Justice”. Two months later, Percy wrote of the Paspahegh werowance’s children: “a Cowncell beinge called itt was agreed upon to putt the children to deathe”.",
        q:"In Percy’s account, who decided the children should die?",
        o:["An unnamed council","De La Warr himself","The children’s own town","A court in London"],a:0},
       {stim:"Percy refused to have the Paspahegh queen burned: “for to Burne her I did nott howlde itt fitteinge”. Captain Davis then killed her in the woods.",
        q:"What line is Percy drawing?",
-       o:["Against burning, not against her death","Against killing any prisoner at all","Against De La Warr’s whole command","Against the raid from the very start"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["Against burning, not her death","Against killing any prisoner at all","Against De La Warr’s whole command","Against the raid from the very start"],a:0},
       {stim:"No source gives the Paspahegh queen’s name, or her words, or her children’s names.",
        q:"What would we need to know her side?",
-       o:["An account from Paspahegh","A second English account","Percy’s other letters","The ship’s log that night"],a:0},
+       /* review, 27 Nov: keyed option was the longest; tied longest; a distractor lengthened */
+      o:["An account from Paspahegh","A second Englishman’s account","Percy’s other letters","The ship’s log that night"],a:0},
       {stim:"De La Warr on his own scurvy: “which though in others it be a sicknesse of slothfulnesse, yet was in me an effect of weaknesse”.",
        q:"What does this show about how colonists were judged?",
-       o:["The same illness was called laziness in others","Scurvy was understood well by doctors then","De La Warr was the laziest man in Virginia","Only gentlemen could catch scurvy at all"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["Others were blamed for the same illness","Scurvy was understood well by doctors then","De La Warr was the laziest man in Virginia","Only gentlemen could catch scurvy at all"],a:0},
       {stim:"Hamor: Dale found the men “bowling in the streets”. Tyler (1907): it was a Sunday, and bowling was a normal Sunday pastime.",
        q:"What does Tyler’s note do to Hamor’s sentence?",
-       o:["It shows bowling is no proof of laziness","It proves the men really were all idle","It shows Hamor was not in Virginia","It shows bowling was against the law"],a:0},
+       o:["It shows bowling is no proof of laziness","It proves that the men really were all idle" /* review, 27 Nov: keyed option was the longest; a distractor lengthened */,"It shows Hamor was not in Virginia","It shows bowling was against the law"],a:0},
       {stim:"Hamor defended Dale’s Lawes in a 1615 book written to raise money. The Assembly in 1624 called them “most severe and Crewell”, and blamed the Company in London.",
        q:"Why might the two accounts disagree?",
        o:["Each was written to serve a purpose","One of them was not in Virginia","The Lawes changed every single week","They describe two different colonies"],a:0},
       {stim:"Molina, a Spanish prisoner, 1613: the colonists are “treated as slaves with cruelty”. He wrote secretly, hoping Spain would attack.",
        q:"What should a reader keep in mind?",
-       o:["He wanted the colony to look weak","He could not have seen the colony","He wrote this in the year 1700","He was a friend of Captain Smith"],a:0},
+       o:["He wanted the colony to look weak","He could not have seen the colony himself" /* review, 27 Nov: keyed option tied longest; a distractor lengthened */,"He wrote this in the year 1700","He was a friend of Captain Smith"],a:0},
       {stim:"Hamor credits Rolfe’s tobacco “partly for the love he hath a long time borne unto it, and partly to raise commodity to the adventurers”.",
        q:"Which reason would investors care about?",
-       o:["Raising commodity: profit","His love of tobacco","His faith in God","His wish to marry"],a:0},
+       o:["Raising commodity: profit","His own long love of tobacco" /* review, 27 Nov: keyed option was the longest; a distractor lengthened */,"His faith in God","His wish to marry"],a:0},
       {stim:"King James called tobacco “lothsome to the eye, hatefull to the Nose”. By 1617 Jamestown’s streets were “planted with Tobacco”.",
        q:"What does this show?",
-       o:["The market mattered more than the King’s taste","The King ordered the streets to be planted","Tobacco was grown only for the King’s use","The colony stopped growing it after 1617"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["The market beat the King’s taste","The King ordered the streets to be planted","Tobacco was grown only for the King’s use","The colony stopped growing it after 1617"],a:0},
       {stim:"Hamor: “thirtie” on the common store produced less than “three or foure” on their own land. He was writing to attract settlers.",
        q:"Why be careful with this comparison?",
        o:["It was written to sell the colony","Nobody farmed at all in those years","Common stores always produce more","Hamor had never seen the farms"],a:0},
       {stim:"Argall (who did it): a threat and a council. Hamor (the Company’s book): a copper kettle and a weeping wife.",
        q:"Why might the Company’s book prefer the kettle?",
-       o:["It makes the English look clever, not threatening","It is the only version that has any details","Argall was not on the Potomac at the time","The kettle was the more expensive price"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["The English look clever, not menacing","It is the only version that has any details","Argall was not on the Potomac at the time","The kettle was the more expensive price"],a:0},
       {stim:"Dale: she would not talk to them, “that if her father had loved her, he would not value her lesse then old Swords, Peeces, or Axes”.",
        q:"Whose words are these?",
-       o:["Dale’s report of hers, in his letter","Hers, in a letter of her own","Powhatan’s, sent by a messenger","Rolfe’s, from his letter to Dale"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["Dale’s report of hers","Hers, in a letter of her own","Powhatan’s, sent by a messenger","Rolfe’s, from his letter to Dale"],a:0},
       {stim:"Rolfe’s letter to Dale describes her “apparance of love” and “desire to be taught”. It does not give her age, or a word of hers.",
        q:"Whose eyes are we seeing through?",
-       o:["Rolfe’s, asking the governor’s leave","Her own, in her own words","Powhatan’s, through a messenger","A neutral observer’s, at the church"],a:0},
+       o:["Rolfe’s, asking the governor’s leave","Her own, in her own words","Powhatan’s, through a messenger","A neutral observer’s, watching at the church" /* review, 27 Nov: keyed option was the longest; a distractor lengthened */],a:0},
       {stim:"Powhatan, as Hamor wrote it: “if you offer me injurie, my countrie is large enough to goe from you”.",
        q:"How did these words reach us?",
-       o:["In Hamor’s English, through an interpreter","In Powhatan’s own hand","In a Powhatan account of 1614","In Pocahontas’s letters home"],a:0},
-      {stim:"Uttamatomakkin was sent to England “to number the people”, with a notched stick, and to find out if Smith was alive.",
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["In Hamor’s English","In Powhatan’s own hand","In a Powhatan account of 1614","In Pocahontas’s letters home"],a:0},
+      /* review, 27 Nov: stimulus gave Smith's report and her reported words as fact; Smith: "the King purposely sent him, as they say, to number the people here", and the search for Smith is in her words as Smith printed them (Tyler pp. 328-329). Keyed option was the longest */
+      {stim:"Smith wrote that Uttamatomakkin was sent to England “to number the people here”, and kept count with a notched stick; by Smith’s report of her words, he was also to find Smith.",
        q:"What was Powhatan trying to learn?",
-       o:["How many English there were, and the truth","Where the King kept his treasure","How the English built their ships","When the next fleet would sail"],a:0},
+       o:["How many English there were","Where the King kept his treasure","How the English built their ships","When the next fleet would sail"],a:0},
       {stim:"Smith printed, in 1624, her rebuke of him: “your Countriemen will lie much”.",
        q:"Why would Smith print a rebuke of himself?",
-       o:["It proved he was the Englishman she knew","She had made him promise to print it","He was ordered to by the King himself","He did not understand what it meant"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["It showed he was the one she knew","She had made him promise to print it","He was ordered to by the King himself","He did not understand what it meant"],a:0},
       {stim:"Chamberlain, a London letter-writer, 1617: she was going home “sore against her will”.",
        q:"Is this good evidence of what she wanted?",
-       o:["Some: third-hand gossip, but the only clue","Yes: he heard it from her directly","No: he never wrote any letters","Yes: she signed his letter herself"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["Some: gossip, but the only clue","Yes: he heard it from her directly","No: he never wrote any letters","Yes: she signed his letter herself"],a:0},
       {stim:"The register: “Rebecca Wrolfe, wyffe of Thomas Wrolf gent, A Virginian Lady borne”. Her husband was John.",
        q:"What does the clerk’s line leave out?",
        o:["Her own names and her people","The place where she was buried","That she was married at all","That she came from Virginia"],a:0},
-      {stim:"The Mattaponi oral history (2007) says, among other things, that Kocoum was killed and that she was poisoned in England. The English letters say none of this.",
+      /* review, 27 Nov: was "that Kocoum was killed and that she was poisoned"; Kocoum is not introduced elsewhere, and the book says "most likely poisoned" (CH8-RECORD, Mattaponi). Keyed option was the longest */
+      {stim:"The Mattaponi oral history (2007) says, among other things, that her first husband, Kocoum, was killed, and that she was most likely poisoned in England. The English letters say none of this.",
        q:"How should a historian treat the oral history?",
-       o:["As a community’s account, weighed like any source","As proof the English letters are all false","As worthless, because it was printed in 2007","As older and surer than any English letter"],a:0},
-      {stim:"Many people know Pocahontas from a 1995 film, in love with John Smith. The record has her about twelve when she met him, and married to Rolfe while a hostage.",
+       o:["As a community’s account, to be weighed","As proof the English letters are all false","As worthless, because it was printed in 2007","As older and surer than any English letter"],a:0},
+      /* review, 27 Nov: was "The record has her about twelve", unattributed; Smith: "a childe of twelve or thirteene yeeres of age" (Tyler p. 326). Keyed option was the longest */
+      {stim:"Many people know Pocahontas from a 1995 film, in love with John Smith. Smith wrote that she was “a childe of twelve or thirteene yeeres” when they met; she married Rolfe while held as a hostage.",
        q:"What does the gap between the film and the record show?",
-       o:["Stories about her keep being retold to suit the teller","The film used sources that historians have lost","The record must be wrong, since the film is popular","Nobody before 1995 ever wrote about her at all"],a:0},
+       o:["Stories about her get retold to suit the teller","The film used sources that historians have lost","The record must be wrong, since the film is popular","Nobody before 1995 ever wrote about her at all"],a:0},
       {stim:"The Chickahominy swore in 1614 to be “new Englishmen”. In 1616 they refused the tribute: “he was but Sir Thomas Dales man, and they had payed his Master”.",
        q:"What does 1616 suggest about the 1614 treaty?",
-       o:["It meant less to them than the English wrote","They had never agreed to anything at all","They wanted to become English subjects","Dale had written down their exact words"],a:0}]},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["It meant less than the English wrote","They had never agreed to anything at all","They wanted to become English subjects","Dale had written down their exact words"],a:0}]},
   ready:function(){
     const w=leafW();
     return (w.day>=LEAF_DAYS.length-1&&w.did.closed)?{ok:true,missing:[]}:{ok:false,missing:["Gravesend, in March 1617"]};
@@ -31499,7 +31514,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0511";
+const BUILD="20261127-0512";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
