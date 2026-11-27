@@ -28777,6 +28777,17 @@ registerWorld("ch7",function(root){
     G=fortGround;
     nextAt=[-44,23];
     if(sd.ruin)starveRuin(root,G,sd.ruin);
+    /* 27 Nov: Chapter VI now builds "some twenty houses" in spring 1609, so the fort of October
+       1609 has houses, not the 1607 tents; through the winter, each burnt frame starveRuin draws
+       is a house pulled down for firewood ("The Empty Houses"), and the rest still stand. The 2012
+       dig keeps its own ground */
+    if(where==="fort"){
+      const ruined=STARVE_TENTS.slice(0,Math.min(STARVE_TENTS.length,(sd.ruin||0)*2));
+      if(!STARVE.cut)STARVE.cut={tents:[],gaps:[],gate:false};
+      STARVE.cut.tents=STARVE_TENTS.slice();
+      STARVE.hide=(STARVE.hide||[]).concat(["awning"]);   /* as in Chapter VI from spring 1609 */
+      STARVE_TENTS.filter(function(t){return ruined.indexOf(t)<0;}).forEach(function(t){leafHouse(root,G,t[0],t[1],0);});
+    }
   }
   if(where==="fort"){
     if(w.day===0){
@@ -32892,7 +32903,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0948";
+const BUILD="20261127-0954";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
