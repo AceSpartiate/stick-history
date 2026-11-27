@@ -31120,11 +31120,12 @@ function skySpeaker(id){
 /* ---- THE RECORD THAT OPENS EACH SCENE ---- */
 const SKY_OPEN=[
   /* GH, Tyler p. 348; Company to Governor, 12 Aug. 1621 (Kingsbury III:493) */
-  {t:"Maids for Wiues",b:"<p class=\"note\">Killings on both sides, including of children; a poisoning; heads taken; captives held and enslaved; hunger; period words. In the sources’ words, none of it shown.</p><p>October 1621. Sir Francis Wyatt, the new governor, arrives with nine ships. The <i>Marmaduke</i> has brought women sent to marry planters.</p>"},
+  /* review, 27 Nov: trimmed from 47 words to the card budget of 35; content note kept whole in substance */
+  {t:"Maids for Wiues",b:"<p class=\"note\">Killings on both sides, including of children; a poisoning; heads taken; captives enslaved; hunger; period words. None of it shown.</p><p>Governor Wyatt arrives with nine ships; the <i>Marmaduke</i> brings women sent to marry planters.</p>"},
   /* GH, Tyler p. 357 */
   {t:"Jack of the Feather",b:"<p>Early March 1622. Word comes that Nemattanew, whom the English call Jack of the Feather, has been shot.</p><p>Nothing of it is shown.</p>"},
   /* Waterhouse (Kingsbury III:555); 22 March 1622 OS was a Friday */
-  {t:"Pace’s house",b:"<p class=\"note\">This scene is the night before a day of killing, 22 March 1622. The killing is not shown. It is told in documents.</p><p>Thursday 21 March, at night. Richard Pace’s house, across the James from James City.</p>"},
+  {t:"Pace’s house",b:"<p class=\"note\">The night before the killings of 22 March 1622. They are not shown; they are told in documents.</p><p>Thursday 21 March, at night. Richard Pace’s house, across the James from James City.</p>"},
   /* GH, Tyler pp. 369, 377-378 */
   {t:"Drawing in",b:"<p>Spring 1622. The outlying plantations are abandoned. “For want of Boats” their cattle and goods are left.</p><p>At Elizabeth City, Captain Nuce takes his neighbours in.</p>"},
   /* the Company, 1 Aug. 1622 (Kingsbury III:672); GH, Tyler pp. 385-386 */
@@ -31148,12 +31149,16 @@ const SKY_LOOKS=[
   /* GH, Tyler p. 370 */
   [["proctor","Mistress Proctor",-14,34,"Forced out","<p>Smith’s book: Mistress Proctor held her house “a moneth or three weekes after the Massacre”.</p><p>Then “the English Officers forced her … to goe with them, or they would fire her house themselves”.</p>"]],
   /* GH, Tyler pp. 379, 383-384 */
-  [["patawomeck","Elsewhere in the War",-28,46,"Thus to abuse their friends",leafCard("Smith’s book","1624, from a man with Captain Madison","At Patawomeck, friends of the English, Madison’s men “slew thirty or forty men, women and children”. A man with him: nothing could better “bring them all to ruine, then thus to abuse their friends”.",
+  /* review, 27 Nov: was 'nothing could better "bring them all to ruine, then thus to abuse their friends"'; "them"
+     reads as the Patawomeck, but the sentence is about Spain and the Papists ruining the plantations (Tyler p. 384) */
+  [["patawomeck","Elsewhere in the War",-28,46,"Thus to abuse their friends",leafCard("Smith’s book","1624, from a man with Captain Madison","At Patawomeck, friends of the English, Madison’s men “slew thirty or forty men, women and children”. A man with him: Spain could not have found a better way to ruin the colony “then thus to abuse their friends”.",
      "Captain Powell, the same year, met three men “by chance, whose heads hee cut off, burnt their houses”.")]],
   /* Frethorne (Kingsbury IV:58) */
   [["slaves","Two Taken",12,22,"Make slaves of them","<p>Frethorne: in a fight in February, “wee tooke two alive, and make slaves of them”.</p><p>He uses “slaves” for those captives, and as an insult. The word is his.</p>"]],
   /* the Council to Lord Mandeville, 30 March 1623 (Kingsbury IV:69) */
-  [["slaues","Made Slaues",-30,8,"Whose slaves?","<p>The Council in Virginia, March 1623: they lived “in feare to be made slaues” to the men who ran the Company in London.</p><p>The same planters held servants, and Africans.</p>"]]];
+  /* review, 27 Nov: was "to the men who ran the Company in London"; the letter's "those men" are the contractors for
+     the colony's tobacco, "auaritious & vnconscionable men" (Kingsbury IV:69-70, re-read 27 Nov) */
+  [["slaues","Made Slaues",-30,8,"Whose slaves?","<p>The Council in Virginia, March 1623: they lived “in feare to be made slaues” to the London men who held a contract for their tobacco.</p><p>The same planters held servants, and Africans.</p>"]]];
 
 /* ---- WHOSE ACCOUNT? ----  per scene; k: 0 saw it, 1 was told it, 2 wrote from far away, or later.
    res: the one line said for a row placed differently - fixed, so every one can be recorded */
@@ -31165,16 +31170,20 @@ const SKY_BOARD={
      {t:"The Eastern Shore king’s warning: the Council’s letter, 1623",k:1,res:"The rest of the Council could “say nothinge vnto yt”. Yeardley told them."}],
   1:[{t:"Nemattanew wore Morgan’s cap: Smith’s book",k:2,res:"Printed in London in 1624, from Master Wimp, whom nobody can identify."},
      {t:"Opechancanough “much grieved … with great threats of revenge”: Smith’s book",k:2,res:"Smith’s book, London, 1624. It does not say who heard the threats."},
-     {t:"He “could be contented his throte were Cutt”: the Council",k:1,res:"A message through an interpreter. The Council wanted to show it had no warning."},
+     /* review, 27 Nov: was "A message through an interpreter. The Council wanted to show it had no warning."; the letter says he "sent worde to Sr. George Yardley", no interpreter named, and the Council had been warned (Kingsbury IV:10-11) */
+     {t:"He “could be contented his throte were Cutt”: the Council",k:1,res:"A message sent to Yeardley. The Council wanted to show it had reason to feel safe."},
      {t:"“the Skye should sooner falle”: the Council",k:1,res:"Opechancanough’s word, carried by a messenger, written down by the Council."}],
   2:[{t:"An Indian “belonging to one Perry” warned Pace: Waterhouse, 1622",k:2,res:"Waterhouse wrote in London, from letters. He never crossed the Atlantic."},
-     {t:"Chauco warned “divers” on the day: the Council, 1623",k:1,res:"The Council had it from those he saved, a year later."},
+     /* review, 27 Nov: was "The Council had it from those he saved"; the letter does not say who told it (Kingsbury IV:98) */
+     {t:"Chauco warned “divers” on the day: the Council, 1623",k:1,res:"The Council wrote it a year later, and does not say who told it."},
      {t:"“Chanco” saved James City: William Stith’s history, 1747",k:2,res:"Stith wrote 125 years later. His name may be a misreading of “Chauco”."},
      {t:"“at the sight of a Peece they all ranne away”: Waterhouse",k:2,res:"Waterhouse again: London, from letters, to calm the Company’s investors."}],
-  3:[{t:"“aboue three hundred men women and Children”: the Council, April 1622",k:0,res:"The Council was in the colony, weeks after. A first count, not names."},
-     {t:"“The whole number is 347.”: Waterhouse’s list",k:2,res:"Made in London from the colony’s reports, so heirs could claim estates."},
+  3:[/* review, 27 Nov: was k:0 (Saw it); the Council at James City did not see deaths across 140 miles of river, it was sent word (Kingsbury III:612) */
+     {t:"“aboue three hundred men women and Children”: the Council, April 1622",k:1,res:"The Council was in the colony, but the count came in from plantations up and down the river. A first count, not names."},
+     {t:"“The whole number is 347.”: Waterhouse’s list",k:2,res:"Printed in London from the colony’s reports, so heirs could claim estates."},
      {t:"“about 400 of or People were slayne”: the <i>Discourse</i>, 1625",k:2,res:"Sandys’s party, three years later, asking to be put back in charge."},
-     {t:"A well “mantled with bricke”: a settler at Elizabeth City",k:0,res:"He lived there and saw it built. Smith printed his letter."}],
+     /* review, 27 Nov: was the well "mantled with bricke" (Tyler p. 378), which the record does not give to the Elizabeth City settler; his own line is "no meat, no worke" (p. 380; record, "Who wrote") */
+     {t:"“no meat, no worke”: a settler at Elizabeth City, in Smith’s book",k:0,res:"He lived there that summer, and “lost all, but my poore wife and children”. Smith printed his account."}],
   4:[{t:"“roote out from being any longer a people”: the Company, 1 August 1622",k:2,res:"Written in London, by men who would not fight the war."},
      {t:"“make them as secure as wee were”: George Sandys to his brother",k:0,res:"Sandys was there, writing privately: his own plan, not a report."},
      {t:"Chauco’s message, “blud inough had already been shedd”: the Council",k:1,res:"Opechancanough to Chauco, Chauco to the Council: told twice over."},
@@ -31184,9 +31193,12 @@ const SKY_BOARD={
      {t:"“they slew 80 Persons” at Martin’s Hundred: Frethorne’s letter",k:1,res:"He came at Christmas, nine months after. He heard it."},
      {t:"His letter, endorsed “Coppie”: Sir Nathaniel Rich’s papers",k:2,res:"Kept in London by an enemy of the Company, to use against it."}],
   6:[{t:"The sack was sent “to poysen them”: Robert Bennett’s letter",k:1,res:"Bennett was not at the parley. A private letter, weeks later."},
-     {t:"“by a succesfull stratageme”: the Council’s report",k:1,res:"The Council had it from Tucker’s men. Its report leaves the poison out."},
-     {t:"“RICHARD FRETHRAM”, dead: the list of February 1624",k:0,res:"Officers in the colony, counting the living and the dead."},
-     {t:"Virginia will “gett the name of a Slaughterhouse”: Captain Butler",k:0,res:"Butler was there that winter, and in trouble. His attack helped bring the inquiry."}]};
+     /* review, 27 Nov: was "by a succesfull stratageme", k:1, "The Council had it from Tucker's men"; not in the record, and Tucker sat on the Council, so the column was arguable. Opechancanough's death is plainly hearsay: he lived to 1646 (Kingsbury IV:102) */
+     {t:"“wee are assured, y[t] Apochancono is one” of the dead: the Council’s report",k:1,res:"“Assured” by others, and wrong: he lived until 1646. The same report says “stratageme”, and leaves the poison out."},
+     /* review, 27 Nov: was "RICHARD FRETHRAM", dead, k:0; a death since the last count is reported, not seen, so the column was arguable. The living were counted where they lived (Hotten p. 174) */
+     {t:"Angelo, living at James City: the list of February 1624",k:0,res:"Officers in the colony, counting the people living in each place."},
+     /* review, 27 Nov: was Virginia will "gett the name of a Slaughterhouse", k:0; a prediction from figures ("Tenn thousand soules transported") he could not have seen. Newcomers dying is what he could see (Tyler p. 413) */
+     {t:"Newcomers “seen dyinge under hedges”: Captain Butler",k:0,res:"Butler was there that winter, and in trouble. His attack helped bring the inquiry."}]};
 const SKY_CLOSE={
   6:"<p>Every Powhatan sentence in this chapter reached us through an English writer. Ask who wrote it down, and why.</p>"};
 
@@ -31310,7 +31322,7 @@ function skyAct(d){
       "<p>Why might the Council stress how little he cared?</p>",
       [["London blamed it","Blame","<p>The Company charged the Council with being “secure” after Nemattanew’s death. A calm Opechancanough made it look less to blame.</p>"],
        ["It was there; Smith was not","Half of it","<p>True. But the Council was answering London’s blame. Both are English reports, each written for a purpose.</p>"],
-       ["Opechancanough wrote to it","No letter","<p>He sent word by an interpreter. Nothing he wrote survives. Both are English reports, each with a purpose.</p>"]],"sky");
+       ["Opechancanough wrote to it","No letter","<p>He sent word to Yeardley. Nothing he wrote survives. Both are English reports, each with a purpose.</p>"]],"sky");
     return;
   }
   /* 2 · pace's house */
@@ -31360,7 +31372,8 @@ function skyAct(d){
   if(d.kind==="well"){
     skyDone("well");
     /* GH, Tyler pp. 378, 380 */
-    fortResult("Mantled with bricke","<p>A settler here, in Smith’s book: “a faire Well of fresh water mantled with bricke, because the River and Cricks are there brackish or salt”.</p><p>By summer, “no meat, no worke”.</p>",["+6 Ink"]);
+    /* review, 27 Nov: was "A settler here, in Smith's book"; p. 378 is Smith's compiled narrative, not given to the settler in the record */
+    fortResult("Mantled with bricke","<p>Smith’s book: “a faire Well of fresh water mantled with bricke, because the River and Cricks are there brackish or salt”.</p><p>By summer, “no meat, no worke”.</p>",["+6 Ink"]);
     return;
   }
   if(d.kind==="count"){
@@ -31445,7 +31458,8 @@ function skyAct(d){
       leafCard("The Council in Virginia","its report to London, 1623","“Wee haue by a succesfull stratageme, not onely regayned our People, but cutt of some kings, and divers of the greatest Comanders of the Eniniy”")+
       "<p>Why might the official report leave the poison out?</p>",
       [["London would read it","An official report","<p>Only a private letter, by a man not at the parley, names the poison. Both wrongly believed Opechancanough dead.</p>"],
-       ["There was no poison","Not settled","<p>Bennett says there was. He was not there, and wrote weeks later. The official report says “stratageme”, nothing more.</p>"],
+       /* review, 27 Nov: was "There was no poison", marked wrong; the record calls whether poison was used not settled (Disputes 6), so a student could argue it */
+       ["It was a private letter","Official","<p>The Council’s report went to London, officially. Only Bennett’s private letter, written weeks later by a man not at the parley, names the poison.</p>"],
        ["Bennett wrote the report","No","<p>Bennett was a merchant-planter, writing privately to his brother. The poisoning was his “Newse”.</p>"]],"stratageme");
     return;
   }
@@ -31842,19 +31856,19 @@ CONTENT.ch10={
        o:["Their land, and labour","Peace on any terms","To punish the guilty only","To leave Virginia"],a:0},
       {stim:"George Sandys, privately, March 1623: “make them as secure as wee were, that wee may follow their example in destroying them”.",
        q:"What was the peace for?",
-       o:["A trap","To end the war honestly","To trade for more corn","To free Powhatan captives"],a:0},
+       o:["A trap, to destroy them","To end the war honestly","To trade for more corn","To share the land fairly"],a:0},   /* review, 27 Nov: was "A trap" (shortest by far) and "To free Powhatan captives", arguable: the peace was "for whose sakes", the prisoners (Kingsbury IV:71-72) */
       {stim:"Robert Bennett’s private letter says the sack was sent “to poysen them”. The Council’s report says “by a succesfull stratageme”.",
        q:"Why might the official report leave the poison out?",
-       o:["London would read it","There was no poison at all","Bennett wrote the report","The sack was never sent"],a:0},
+       o:["London would read it","It was a private letter","Bennett wrote the report","The sack was never sent"],a:0},   /* review, 27 Nov: was "There was no poison at all", arguable (record, Disputes 6) */
       {stim:"Bennett, who was not at the parley: “yt is thought some tooe hundred weare poysned”.",
        q:"How should a historian use that number?",
-       o:["As a guess","As an exact count","As the Council’s own figure","As a Powhatan count"],a:0},
+       o:["As one man’s guess","As an exact count","As the Council’s own figure","As a Powhatan count"],a:0},
       {stim:"Frethorne, at Martin’s Hundred: “this day wee heare that there is 26 of English men slayne”.",
        q:"Did he see this?",
        o:["No: he heard it","Yes: he was there","Yes: he counted them","No: he made it up"],a:0},
       {stim:"Frethorne: “I haue nothing at all, no not a shirt to my backe, but two Ragges”.",
        q:"Saw, heard, or feared?",
-       o:["Saw","Heard from the sailors","Feared, not yet true","Told by his master"],a:0},
+       o:["Saw it himself","Heard from the sailors","Feared, not yet true","Told by his master"],a:0},
       {stim:"Frethorne’s letters survive as copies in the papers of Sir Nathaniel Rich, a leader of the attack on the Company.",
        q:"Why might Rich have kept them?",
        o:["To use against the Company","To send Frethorne money","To print in Smith’s book","To give back to his parents"],a:0},
@@ -31870,7 +31884,7 @@ CONTENT.ch10={
       {stim:"Smith, 1624: “The cause of the Massacre was the want of marshall discipline”. He was asking for soldiers, and a command.",
        q:"Why does Smith’s purpose matter?",
        o:["He wanted the job","He was there that day","He was Opechancanough’s friend","He wrote the Council’s letters"],a:0},
-      {stim:"A man with Captain Madison, at Patawomeck: they “slew thirty or forty men, women and children”, a people friendly to the English. He calls it a way “to bring them all to ruine”.",
+      {stim:"A man with Captain Madison, at Patawomeck: they “slew thirty or forty men, women and children”, a people friendly to the English. Spain, he writes, could not have ruined the colony better “then thus to abuse their friends”.",   /* review, 27 Nov: was He calls it a way "to bring them all to ruine"; "them" is the plantations, not the Patawomeck (Tyler p. 384) */
        q:"What does this source show?",
        o:["English blame for English acts","That the Patawomeck attacked first","That every town was an enemy","That Madison was hanged for it"],a:0},
       {stim:"Opechancanough’s “the Skye should sooner falle”, and Chauco’s “blud inough had already been shedd”, are known only from the Council’s letters.",
@@ -33865,7 +33879,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1039";
+const BUILD="20261127-1048";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
