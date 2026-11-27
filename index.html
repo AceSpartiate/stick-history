@@ -29009,31 +29009,37 @@ function leafPerson(id){return LEAF_PEOPLE.filter(function(p){return p.id===id;}
 
 const LEAF_SAYS={
   "delawarr":[
-    ["“I am come to do you good. But I will not suffer idleness, nor these vanities. Mark it: I will draw the sword of justice if I must.”"],
+    /* review, 27 Nov: was "I am come to do you good ... Mark it: I will draw the sword of justice if I must"; the record says he blamed their "haughtie vanities and sluggish idlenesse", warned "lest hee should be compelled to draw the sword of Justice", which "he had rather draw to the shedding of his vitall bloud, to protect them", and told them of "that store hee had brought" (GH, Tyler pp. 298-299) */
+    ["“I have brought you a store of food, and I would rather shed my own blood to protect you. But amend these haughty vanities and this sluggish idleness, lest I be compelled to draw the sword of justice.”"],
     [],[],[],[],[],[],[]],
   "percy":[
-    ["“The Lord Governor has brought food and a fleet. He has also brought a temper.”"],
+    /* review, 27 Nov: was "He has also brought a temper"; the record says nothing of De La Warr's temper, only his speech of order (GH, Tyler p. 298) */
+    ["“The Lord Governor has brought food, and men, and he means to have order.”"],
     [],                                   /* his dialogue beats, this scene */
     [],[],[],[],[],[]],
   "hamor":[[],[],
     [],                                   /* his dialogue beats, this scene */
-    ["“Three streets of framed houses, a church, and watch-houses at every corner. Write that in London, and they will send more men.”"],
+    ["“Three streets of framed houses, a church, and watch-houses at every corner. I will put all of it in my book.”"], /* review, 27 Nov: no motive in his mouth; his True Discourse (1615) is the book */
     [],[],
     ["“Savage will speak for us. Powhatan knows him; he was his boy.”"],
     []],
   "dale":[[],[],
     ["“Bowling, on a Sunday, and the corn not in the ground. The Lawes will be read in church, and kept.”"],
-    ["“Henrico. In honour of the Prince. It will be the chief town, when it is finished.”"],
+    /* review, 27 Nov: was "It will be the chief town, when it is finished"; the record says "in honour of our noble Prince Henry, called it Henrico" and "at each corner of the Towne a high commanding Watchhouse, a Church, and Store-houses" (GH, Tyler pp. 304-305) */
+    ["“Henrico, in honour of our noble Prince Henry. A watch-house at each corner, a church, and storehouses.”"],
     [],
-    ["“I have written to London that she was carefully instructed, and is baptised, and is married. That is three things done.”"],
+    /* review, 27 Nov: was "I have written to London ... That is three things done"; Dale's letter is dated 18 June 1614, after this scene, and says "Powhatans daughter I caused to be carefully instructed" (Purchas 19:106) */
+    ["“Powhatan’s daughter I have caused to be carefully instructed in the Christian religion. I shall write to London of it.”"],
     [],[]],
   "rolfe":[[],[],[],
-    ["“The seed of the country is bitter. This is from the West Indies. If it takes here, Virginia will have something England wants to buy.”"],
+    /* review, 27 Nov: was "The seed of the country is bitter"; no source read gives Rolfe's view of the local plant. Hamor gives his reasons as "the love he hath a long time borne unto it" and "to raise commodity to the adventurers" (Hamor via historicjamestowne.org); seed from the Caribbean (EV; historicjamestowne.org) */
+    ["“I mean to try a better tobacco than the country’s own, from West Indian seed. If it takes, it will raise commodity to the adventurers.”"],
     [],
     [],                                   /* his dialogue beats, this scene */
     [],[]],
   "argall":[[],[],[],[],
-    ["“Powhatan has English prisoners, and English guns. If I hold something he values, he will have to trade.”"],
+    /* review, 27 Nov: was a paraphrase ("If I hold something he values"); the framing rule wants Argall's own words: "resolving to possesse my selfe of her by any stratagem that I could use, for the ransoming of so many Englishmen as were prisoners with Powhatan" (Purchas 19:92-93) */
+    ["“Powhatan holds Englishmen prisoners, and our arms and tools. I mean to possess myself of his daughter by any stratagem I can, to ransom them.”"],
     [],[],[]],
   "smith":[[],[],[],[],[],[],[],
     ["“I have written to the Queen about her. Someone must tell them what she did for us.”"]]};
@@ -29057,8 +29063,9 @@ const LEAF_NPCS=[
    beats:[
     {npc:"“Sir Thomas Dale’s Lawes are hard, I grant you. Ask me whether they were needed.”",
      choices:[
+      /* review, 27 Nov: was "had not been ... should have been"; the record spells it "beene" twice (Hamor via GH, Tyler p. 303) */
       {t:"Were they needed?",wise:true,ink:8,
-       reply:"“If his Lawes had not been so strictly executed, I see not how the utter subversion of the Colonie should have been prevented.” He will print that in London in 1615, in a book meant to bring in money and men. In 1624 the colony’s own Assembly will call them “most severe and Crewell lawes … as mercylessly executed, often times without tryall or Judgment.”",
+       reply:"“If his Lawes had not beene so strictly executed, I see not how the utter subversion of the Colonie should have beene prevented.” He will print that in London in 1615, in a book meant to bring in money and men. In 1624 the colony’s own Assembly will call them “most severe and Crewell lawes … as mercylessly executed, often times without tryall or Judgment.”",
        insight:{g:"disp",b:"Severe and Cruel",s:"Ralph Hamor, the colony's secretary, defended Dale's Lawes in a 1615 book written to raise money: without them the colony would have fallen. The Virginia Assembly in 1624 called them “most severe and Crewell lawes … as mercylessly executed, often times without tryall or Judgment.” The Assembly blamed the Company in London for them, not Dale."}},
       {t:"What happens to a man who runs to Powhatan?",fair:true,ink:3,
        reply:"“The Lawes say death. The savages are paid to hunt them home.” He says it as if it were a reason, not a fact."},
@@ -29074,8 +29081,9 @@ const LEAF_NPCS=[
        insight:{g:"disp",b:"For the Good of This Plantation",s:"John Rolfe's letter asking Dale's leave to marry Pocahontas (1614) gives his reasons as the good of the colony, England's honour, God's glory, his own salvation and her conversion. He describes her “apparance of love” and “desire to be taught”. The letter does not give her age, her consent in her own words, or the fact that she was being held as a hostage."}},
       {t:"Does she want to marry you?",fair:true,ink:3,
        reply:"“I have written of her great appearance of love to me.” He says it carefully, as if it were the answer."},
+      /* review, 27 Nov: was "But I did not write that it was why"; his letter's first reason is "for the good of this plantation", and the word peace is not in it (Tyler pp. 239-244) */
       {t:"It will make the peace.",wise:false,
-       reply:"“God willing. But I did not write that it was why.”"}]}]}];
+       reply:"“God willing. I wrote ‘for the good of this plantation’. I did not write the word peace.”"}]}]}];
 
 function leafSpeaker(id){
   const day=leafW().day;
@@ -29093,18 +29101,21 @@ const LEAF_OPEN=[
   {t:"Henrico",b:"<p>“In the beginning of September, 1611”, Dale took men up the river and built a new town on a bluff, “in honour of our noble Prince Henry”.</p><p>And at about the same time, a gentleman named John Rolfe began to grow tobacco.</p>"},
   {t:"Passapatanzy",b:"<p>April 1613. The war with Powhatan has gone on for nearly three years. Powhatan holds English prisoners, guns and tools.</p><p>Captain Samuel Argall is trading for corn on the Potomac. He learns that Powhatan’s daughter, Pocahontas, is there. She is about seventeen.</p>"},
   {t:"Old swords",b:"<p>Pocahontas has been held for nearly a year. Powhatan returned seven men and seven useless muskets, and the English kept her.</p><p>March 1614: Dale takes a hundred and fifty men up the Pamunkey, with her, to make Powhatan pay the rest.</p>"},
-  {t:"Matchot",b:"<p>The marriage made a peace. In the spring of 1614 Dale sent Ralph Hamor and the interpreter Thomas Savage to Powhatan, at his new seat of Matchot, with a request.</p><p>This is Powhatan’s longest recorded speech of these years. It reached us in Hamor’s English.</p>"},
-  {t:"England",b:"<p>In 1616 Dale sailed home with Rolfe, their son Thomas, and Pocahontas, baptised Rebecca. The Company paid for her; she met the King and Queen, and watched a masque at court.</p><p>In March 1617 the ship for Virginia went down the Thames. At Gravesend she was taken ill.</p>"}];
+  /* review, 27 Nov: was "The marriage made a peace ... at his new seat of Matchot"; whether the marriage made the peace is disputed (CH8-RECORD, Disputes 20), and Hamor says only that he came to Matchot "where the King lay" (GH, Tyler p. 313) */
+  {t:"Matchot",b:"<p>After the marriage came a peace. In the spring of 1614 Dale sent Ralph Hamor and the interpreter Thomas Savage to Powhatan, at Matchot, “where the King lay”, with a request.</p><p>This is Powhatan’s longest recorded speech of these years. It reached us in Hamor’s English.</p>"},
+  /* review, 27 Nov: was "The Company paid for her; she met the King and Queen, and watched a masque at court ... At Gravesend she was taken ill"; Purchas says the Company "allowed provision for her selfe and her sonne" (19:118); Chamberlain names the king and "the maske" (SP 14/90/25 [web]); the Queen is Smith's hearsay, "as since I have heard" (Tyler p. 329); no source read says she fell ill at Gravesend; Purchas: "she came at Gravesend to her end and grave" (19:118) */
+  {t:"England",b:"<p>In 1616 Dale sailed home with Pocahontas, baptised Rebecca, her husband John Rolfe, and their son Thomas. Purchas wrote that the Company “allowed provision for her selfe and her sonne”. John Chamberlain, a London letter-writer, reported that she had been “with the king and graciously vsed”, and “well placed at the maske”.</p><p>In March 1617 the ship for Virginia went down the Thames. At Gravesend, Purchas wrote, she “came … to her end and grave”.</p>"}];
 
 /* ---- THINGS TO LOOK AT ---- [id, label, x, z, title, body] per scene */
 const LEAF_LOOKS=[
   [["sick","The Lord Governor",-24,-6,"A sicknesse of slothfulnesse","<p>De La Warr soon fell sick: “a hote and violent Ague”, then “the Flux”, “the Crampe”, “the Gout”, and “the Scurvy; which though in others it be a sicknesse of slothfulnesse, yet was in me an effect of weaknesse”.</p><p>In others, laziness. In him, weakness. He was cured in the Azores by “Orenges and Lemonds”.</p>"]],
   [],
-  [["bell","The Church Bell",-30,12,"Twice a day","<p>Article 6: “Everie man and woman duly twice a day upon the first towling of the Bell” to church, “vpon pain of losing his or her dayes allowance for the first omission, for the second to be whipt, and for the third to be condemned to the Gallies for six Moneths.”</p>"]],
-  [["mount","Mount Malado",40,-60,"A guest house for the sick","<p>Across the river from Henrico: “Mount Malado (a guest house for sicke people)”. Hamor called the air at Jamestown, “formerly scandaled for an unhealthfull aire”, as healthful as anywhere.</p><p>The Spanish prisoner Molina wrote, the same year, that there was not a year when half did not die.</p>"]],
+  /* review, 27 Nov: was "Everie ... upon" (EV's modernised u/v); Force prints "Euerie man and woman duly twice a day vpon the first towling of the Bell" (Lawes, art. 6, Force III no. 2 [web]) */
+  [["bell","The Church Bell",-30,12,"Twice a day","<p>Article 6: “Euerie man and woman duly twice a day vpon the first towling of the Bell” to church, “vpon pain of losing his or her dayes allowance for the first omission, for the second to be whipt, and for the third to be condemned to the Gallies for six Moneths.”</p>"]],
+  [["mount","Mount Malado",40,-60,"A guest house for the sick","<p>Across the river from Henrico: “Mount Malado (a guest house for sicke people)”. Hamor called the air at Jamestown, “formerly scandaled for an unhealthfull aire”, as healthful as anywhere.</p><p>The Spanish prisoner Molina wrote in 1613 that “there is not a year when half do not die.”</p>"]], /* review, 27 Nov: was "wrote, the same year"; Molina wrote in May 1613 and Hamor printed in 1615 (Tyler pp. 220, 306) */
   [],
   [["farm","The Three Acres",60,-40,"A farm of your own","<p>Hamor: on the common store, a man was “glad … he could slip from his labour”; “wee reaped not so much Corne from the labours of thirtie, as now three or foure doe provide for themselves”.</p><p>Dale gave some men “three Acres of cleare ground, in the nature of Farmes”. The first was William Spence, who had been there since 1607.</p>"]],
-  [["table","The Table-Book",-38,-148,"Written down","<p>Powhatan had Hamor write the list of goods he wanted “in a table-booke he had”, and would not give it back: “it did him much good in shewing to strangers”.</p><p>He kept the English writing, though he could not read it.</p>"]],
+  [["table","The Table-Book",-38,-148,"Written down","<p>Powhatan had Hamor write the list of goods he wanted “in a table-booke he had”, and would not give it back: “it did him much good in shewing to strangers”.</p><p>He kept the English writing, to show to strangers.</p>"]], /* review, 27 Nov: was "though he could not read it"; Hamor does not say (GH, Tyler p. 316) */
   [["ship","The Ship for Virginia",-40,80,"Homeward","<p>“she is vpon her return (though sore against her will) yf the wind wold come about to send them away.” <i>— John Chamberlain, a London letter-writer, 18 January 1617</i></p><p>That is the nearest any source comes to saying what she wanted. It is a gossip’s report.</p>"]]];
 
 /* ---- WHOSE WORDS? ----  per scene; k: 0 saw or heard it himself, 1 was told it, 2 says what someone felt */
@@ -29115,11 +29126,13 @@ const LEAF_WORDS={
      {t:"Percy: Davis said “itt was my Lords pleasure thatt we sholde see her dispatched”",k:1},
      {t:"Smith, 1624: they “tooke the Queene and her children prisoners, whom not long after they slew”",k:1}],
   4:[{t:"Argall: “I was told by certaine Indians, my friends, that the Great Powhatans Daughter Pokahuntis was with the great King Patowomeck”",k:1},
-     {t:"Argall: the King of Patowomeck “called his Counsell together” and decided to hand her over",k:1},
+     /* review, 27 Nov: was the council row, marked "Was told it"; Argall was at Patowomeck and does not say whether he sat with the council, so either mark is defensible. "he betrayed her into my Boat" (Purchas 19:93 [web]) is plainly seen */
+     {t:"Argall: “he betrayed her into my Boat”",k:0},
      {t:"Hamor: Japazaws’ wife begged to see the ship “till she wept”",k:1},
      {t:"Hamor: she “began to be exceeding pensiue, and discontented”",k:2},
      {t:"Smith, 1624: “by degrees pacifying her selfe”",k:2}],
-  5:[{t:"Dale: she “would not talke to any of them”",k:1},
+  /* review, 27 Nov: was Dale: she "would not talke to any of them", marked "Was told it"; Dale writes "we" as one of the landing party and does not say whether he saw it (Purchas 19:104 [web]), so the mark was unsupported. Powhatan was not at the wedding; his approbation came through Opachisco (Purchas 19:106 [web]; GH, Tyler p. 310) */
+  5:[{t:"Dale: “Her Father and friends gave approbation to it”",k:1},
      {t:"Rolfe: “her great apparance of love to me”",k:2},
      {t:"Dale: “her Uncle gave her to him in the Church”",k:0},
      {t:"Smith, 1624: “shee never had desire to goe to her father”",k:2}],
@@ -29129,7 +29142,8 @@ const LEAF_WORDS={
   7:[{t:"Smith: “without any word, she turned about, obscured her face”",k:0},
      {t:"Smith: “as not seeming well contented”",k:2},
      {t:"Smith: “your Countriemen will lie much”",k:0},
-     {t:"Chamberlain: “sore against her will”",k:1},
+     /* review, 27 Nov: was k:1 (was told it); the line claims what she wanted, and the chapter marks the like ("pacifying her selfe", "not seeming well contented") as saying what someone felt */
+     {t:"Chamberlain: “sore against her will”",k:2},
      {t:"Smith: she made “so religious and godly an end”",k:1}]};
 const LEAF_BLANK={
   1:"The Paspahegh queen’s own account: none survives. Her name is not written down. Her children’s names and number are not written down.",
@@ -29143,14 +29157,16 @@ const LEAF_CAPTURE=[
   {t:"Argall threatened the Patowomeck: no longer “brothers nor friends” unless they gave her up",v:0},
   {t:"A copper kettle as the price",v:1},
   {t:"A council deliberated for “some few houres”",v:0},
-  {t:"Japazaws’ wife pretended to weep to see the ship",v:1},
+  /* review, 27 Nov: was "pretended to weep to see the ship"; Hamor via Smith: "caused his wife to faine how desirous she was to see one, that hee offered to beat her for her importunitie, till she wept" (Tyler p. 307). The feigning is of the wish */
+  {t:"Japazaws’ wife feigned a longing to see the ship, “till she wept”",v:1},
   {t:"Feasting in the cabin, and treading on the captain’s foot",v:1},
   {t:"Argall’s aim: ransom for “so many Englishmen as were prisoners with Powhatan”",v:0}];
 
 /* ---- THE LAWES, SORTED ---- c: 0 God, 1 food and stores, 2 running away and order */
 const LEAF_LAWS_K=["God","Food and stores","Running away"];
 const LEAF_LAWS=[
-  {t:"Article 6: everyone to church “twice a day upon the first towling of the Bell”",c:0},
+  /* review, 27 Nov: was "upon"; Force prints "vpon" (Lawes, art. 6 [web]) */
+  {t:"Article 6: everyone to church “twice a day vpon the first towling of the Bell”",c:0},
   {t:"Article 29: no man or woman “shall runne away from the Colonie, to Powhathan”, upon pain of death",c:2},
   {t:"Article 31: anyone who should “steale any eares of the corne growing” … “shall be punished with death”",c:1},
   {t:"Article 33: a man who will not give the minister an account of his faith, “to be whipt”",c:0},
@@ -29227,14 +29243,16 @@ function leafAct(d){
   }
   if(d.kind==="workday"){
     leafDone("workday");
-    fortResult("Six till ten, two till four","<p>The Company’s book of 1610 described the new order: work “from six of the clocke in the morning, untill ten, and from two in the afternoone, till foure”, church first, and then “their proportion of food”.</p><p>That is the Company’s picture, printed in London to show the cure working. The man who wrote the colony’s next history, eight years later, did not see it that way.</p>",["+6 Ink"]);
+    /* review, 27 Nov: was "The man who wrote the colony's next history, eight years later, did not see it that way"; no such writer is in the record. The 1624 Assembly is: "most severe and Crewell lawes" (Tyler p. 422) */
+    fortResult("Six till ten, two till four","<p>The Company’s book of 1610 described the new order: work “from six of the clocke in the morning, untill ten, and from two in the afternoone, till foure”, church first, and then “their proportion of food”.</p><p>That is the Company’s picture, printed in London to show the cure working. The colony’s own Assembly, in 1624, remembered those years very differently.</p>",["+6 Ink"]);
     return;
   }
   /* 1 · Paspahegh */
   if(d.kind==="tabor"){
     leafQuiz("Kecoughtan · July 1610","The tabor",
       "<p>Percy: “Sir Thomas Gates beinge desyreous for to be Revendged upon the Indyans att Kekowhatan” had “a Taborer” play and dance to draw them out, and then “putt fyve to the sworde”.</p><p>Kecoughtan was the town that had feasted the English in 1607. What does Percy’s account show?</p>",
-      [["A trick, used to kill people who came out to watch","A tabor","<p>A drummer to draw them out, and then the sword. Percy tells it plainly, as revenge.</p><p>Modern historians put the dead at twelve to fourteen; Percy says five. The Kecoughtan left no account at all.</p>"],
+      /* review, 27 Nov: was "Modern historians put the dead at twelve to fourteen; Percy says five"; the figure is Encyclopedia Virginia's (First Anglo-Powhatan War timeline [web]); Percy: "putt fyve to the sworde wownded many others" (via EV [web]) */
+      [["A trick, used to kill people who came out to watch","A tabor","<p>A drummer to draw them out, and then the sword. Percy tells it plainly, as revenge.</p><p>Percy says “fyve” killed and “wownded many others”; Encyclopedia Virginia puts the dead at twelve to fourteen. The Kecoughtan left no account at all.</p>"],
        ["A feast to make peace with Kecoughtan","No feast","<p>No. The tabor was a lure. Then “fyve to the sworde”, Percy wrote.</p>"],
        ["A trade for corn that went wrong","Not trade","<p>No trade is mentioned. Percy calls it revenge: a drummer to draw them out, then the sword.</p>"]],"tabor");
     return;
@@ -29253,7 +29271,8 @@ function leafAct(d){
   if(d.kind==="queen"){
     leafQuiz("The ships · that night","The queen",
       "<p>Back at the ships, Captain Davis told Percy “itt was my Lords pleasure thatt we sholde see her dispatched The way he thowghte beste to Burne her”. Percy refused: “for to Burne her I did nott howlde itt fitteinge”. Davis took her ashore with two soldiers “and in the woods putt her to the Sworde”.</p>"+leafBlank(LEAF_BLANK[1])+"<p>What line is Percy drawing?</p>",
-      [["He would not burn her; he did not stop her being killed","The line","<p>He objected to burning, “haveinge seene so mutche Blood shedd thatt day”. He did not object to her death, and he does not say he tried to stop it. And he wrote it all down himself.</p><p>Of the queen we know only what was done to her.</p>"],
+      /* review, 27 Nov: added Percy's own alternative: "either by shott or Sworde to geve her a quicker dispatche" (Percy via EV [web]) */
+      [["He would not burn her; he did not stop her being killed","The line","<p>He objected to burning, “haveinge seene so mutche Blood shedd thatt day”. He did not object to her death: he proposed instead “either by shott or Sworde to geve her a quicker dispatche”. He does not say he tried to stop it. And he wrote it all down himself.</p><p>Of the queen we know only what was done to her.</p>"],
        ["He saved her life","He did not","<p>He did not. Davis killed her in the woods. Percy objected only to burning her.</p>"],
        ["He ordered her death","Not by his account","<p>Not by his account: he says Davis did it, claiming De La Warr’s wish, and that he himself refused to have her burned. It is his account.</p>"]],"queen");
     return;
@@ -29263,7 +29282,8 @@ function leafAct(d){
     leafQuiz("The fort · May 1611","Bowling in the streets",
       "<p>Hamor: Dale found the colony “growing againe to their former estate of penurie, being so improvident as not to put Corne in the ground”, and at Jamestown “most of the companie were at their daily and usuall works, bowling in the streets”.</p><p>The historian Tyler noted in 1907 that it was a Sunday, and bowling was a normal Sunday pastime in England. Does that change the story?</p>",
       [["Yes: men bowling on a Sunday are not proof of laziness","A Sunday","<p>It changes it. Hamor’s sentence makes them idle; Tyler’s note makes them Englishmen on their day off. Hamor was writing a book that praised Dale’s government, and Dale’s Lawes needed idle men to cure.</p>"],
-       ["No: bowling was forbidden on Sundays","It was not","<p>It was not forbidden in England; it was one of the usual Sunday pastimes. That is why Tyler’s note matters.</p>"],
+       /* review, 27 Nov: was "No: bowling was forbidden on Sundays" / "It was not forbidden in England"; Article 6 of the Lawes (in force from Gates's 24 May 1610) forbids breaking the Sabbath "by any gaming" (Force III no. 2 [web]), so the distractor was arguably true in Virginia */
+       ["No: it proves they never worked on any day","It does not","<p>It shows what some men did on a Sunday, which Tyler calls “one of the usual pastimes thought in England proper for the day”. The colony’s own Lawes forbade gaming on the Sabbath — but that is a charge of Sabbath-breaking, not of idleness.</p>"],
        ["No: they should have been planting corn on Sunday","A sabbath","<p>In 1611 working on a Sunday would itself have been an offence. Tyler’s point is that the bowling proves nothing about laziness.</p>"]],"bowls");
     return;
   }
@@ -29272,7 +29292,8 @@ function leafAct(d){
       "<p>The Lawes were read in church. Sort each article: is it about God, about food and stores, or about keeping people from running away?</p>",
       LEAF_LAWS,LEAF_LAWS_K,"lawes",function(right){
         leafDone("lawes");
-        fortResult("Keeping two hundred people alive","<p>You sorted "+right+" of "+LEAF_LAWS.length+".</p><p>Many of the Lawes are about church. Many are about food: stealing an ear of corn or killing a cow was punished by death, in a colony that had starved the winter before. One is about running to Powhatan, which shows how many tried.</p><p>Some laws are about keeping people alive in a small fort. That is a fair point to make. It is not an excuse for how they were enforced.</p>",["+6 Ink"]);});
+        /* review, 27 Nov: was "which shows how many tried"; the article shows no number. Hamor (Tyler p. 304) and the Assembly (p. 423) both write of runaways */
+        fortResult("Keeping two hundred people alive","<p>You sorted "+right+" of "+LEAF_LAWS.length+".</p><p>Many of the Lawes are about church. Many are about food: stealing an ear of corn or killing a cow was punished by death, in a colony that had starved the winter before. One is about running away to Powhatan; Hamor and the Assembly both write of men who did.</p><p>Some laws are about keeping people alive in a small fort. That is a fair point to make. It is not an excuse for how they were enforced.</p>",["+6 Ink"]);});
     return;
   }
   if(d.kind==="assembly"){
@@ -29282,7 +29303,8 @@ function leafAct(d){
         "“most severe and Crewell lawes … as mercylessly executed, often times without tryall or Judgment.” Runaways caught were put to death in several ways. A man who stole two or three pints of oatmeal was chained to a tree until he starved. Those who could not work from sickness got no food.",
         "Runaways “putt to sundry deaths as by hanginge, shooting and breakinge uppon the wheele”; “one for steelinge of 2 or 3 pints of oatemeale had a bodkinge thrust through his tounge and was tyed wth a chaine to a tree untill he starved”.")+
       "<p>Whom did the Assembly blame for the Lawes?</p>",
-      [["The Company in London, under Sir Thomas Smythe","London","<p>Not Dale. The Assembly blamed “Sr Tho : Smith his goverment” — the Company’s treasurer in London — and even wrote “Wee cannott for this our scarsitie blame our Comanders heere”. In 1624 they were fighting the old Company in a quarrel at home. Every source here has a side.</p>"],
+      /* review, 27 Nov: was "and even wrote 'Wee cannott ... blame our Comanders heere'" as if of the Lawes, and "fighting the old Company"; that line is about the scarcity of food (Tyler p. 423), and the Assembly took the Sandys side against Smythe's party inside the Company (Tyler p. 421) */
+      [["The Company in London, under Sir Thomas Smythe","London","<p>Not Dale. The Assembly blamed “Sr Tho : Smith his goverment” — the Company’s treasurer in London — and, of the hunger, even wrote “Wee cannott for this our scarsitie blame our Comanders heere”. In 1624 they were taking a side in a quarrel inside the Company in London, against Smythe’s party. Every source here has a side.</p>"],
        ["Sir Thomas Dale, by name","Not by name","<p>They never name Dale. They blame “Sr Tho : Smith his goverment”, the Company in London.</p>"],
        ["The King","Not the King","<p>They asked the King for help. They blamed “Sr Tho : Smith his goverment”, the Company in London.</p>"]],"assembly");
     return;
@@ -29296,12 +29318,14 @@ function leafAct(d){
   }
   if(d.kind==="plant"){
     leafDone("plant");
-    fortResult("Anno Domini 1612","<p>Hamor: “I may not forget the gentleman worthie of much commendations, which first tooke the pains to make triall thereof, his name Mr. John Rolfe, Anno Domini 1612, partly for the love he hath a long time borne unto it, and partly to raise commodity to the adventurers.”</p><p>The tobacco the Powhatan grew was harsh to English taste. Rolfe’s seed came from the West Indies. How he got it is not recorded. The first samples reached England in July 1613.</p>",["+6 Ink"]);
+    /* review, 27 Nov: was "harsh to English taste" (no source read says so), seed "from the West Indies", and an unattributed July 1613; EV (Rolfe entry [web]): samples delivered by the Elizabeth, 20 July 1613; historicjamestowne.org: seed "possibly from Trinidad" [web] */
+    fortResult("Anno Domini 1612","<p>Hamor: “I may not forget the gentleman worthie of much commendations, which first tooke the pains to make triall thereof, his name Mr. John Rolfe, Anno Domini 1612, partly for the love he hath a long time borne unto it, and partly to raise commodity to the adventurers.”</p><p>Rolfe passed over the tobacco the Powhatan grew. His seed came from the Spanish West Indies, perhaps Trinidad; how he got it is not recorded. Encyclopedia Virginia dates the first samples to reach England to 20 July 1613, in the ship <i>Elizabeth</i>.</p>",["+6 Ink"]);
     return;
   }
   if(d.kind==="molina"){
+    /* review, 27 Nov: was "a Spanish officer"; Tyler calls the three men seized at Point Comfort in 1611 "spies" and gives Molina no rank (p. 217) */
     leafQuiz("Henrico · a prisoner’s letter","Sewn into a shoe",
-      "<p>Don Diego de Molina, a Spanish officer held prisoner in the colony, wrote secretly to Spain’s ambassador in 1613, his letter “sewed between the soles of a shoe”:</p><p>“Last year there were seven hundred people and not three hundred and fifty remain, because little food and much labor on public works kills them and, more than all, the discontent in which they live seeing themselves treated as slaves with cruelty.”</p><p>What should a reader keep in mind?</p>",
+      "<p>Don Diego de Molina, a Spaniard seized at Point Comfort in 1611 as a spy and held prisoner in the colony, wrote secretly to Spain’s ambassador in 1613, his letter “sewed between the soles of a shoe”:</p><p>“Last year there were seven hundred people and not three hundred and fifty remain, because little food and much labor on public works kills them and, more than all, the discontent in which they live seeing themselves treated as slaves with cruelty.”</p><p>What should a reader keep in mind?</p>",
       [["He wanted Spain to attack, so he wanted the colony to look weak","An enemy’s letter","<p>He was a prisoner who wanted a Spanish fleet sent. A weak, miserable colony was what he wanted Spain to see. Tyler called the letter “a strong confirmation” of the colonists’ complaints — and also wrote that “Probably the wish was father to the thought”.</p><p>Both can be true. An enemy sees things a friend will not print.</p>"],
        ["As a Spaniard he could not understand English ways","Not the point","<p>He understood well enough. The point is what he wanted: a Spanish fleet. A weak colony was what he wanted Spain to see.</p>"],
        ["That his numbers must be exact, since he was there","Not necessarily","<p>Being there helps. Wanting a Spanish fleet sent does not. Tyler: “Probably the wish was father to the thought.”</p>"]],"molina");
@@ -29310,9 +29334,10 @@ function leafAct(d){
   if(d.kind==="counterblaste"){
     leafQuiz("Henrico · the King’s opinion","A Counterblaste",
       "<p>King James, <i>A Counterblaste to Tobacco</i> (1604): “A custome lothsome to the eye, hatefull to the Nose, harmefull to the braine, dangerous to the Lungs”.</p><p>His own colony was about to live by it. Who will win: the King, or the market?</p>",
-      [["The market: the colony grows what England will pay for","The market","<p>The market. By 1617 Jamestown’s market-place and streets were “planted with Tobacco”, and the best sold at three shillings a pound.</p><p>The King’s opinion did not change what Londoners would buy, or what Virginians would grow to sell them.</p>"],
+      /* review, 27 Nov: was "and the best sold at three shillings a pound" (by 1617) and "up to three shillings a pound by 1618"; GH gives it for 1618, the value of the colony's crop: "the best at three shillings the pound, the rest at eighteene pence" (Tyler p. 331) */
+      [["The market: the colony grows what England will pay for","The market","<p>The market. By 1617 Jamestown’s market-place and streets were “planted with Tobacco”, and in 1618 the best was valued at “three shillings the pound”.</p><p>The King’s opinion did not change what Londoners would buy, or what Virginians would grow to sell them.</p>"],
        ["The King: the colony stops growing it","It did not","<p>It did not. By 1617 even Jamestown’s streets were “planted with Tobacco”.</p>"],
-       ["Neither: tobacco never sold in England","It sold","<p>It sold, at up to three shillings a pound by 1618.</p>"]],"counterblaste");
+       ["Neither: tobacco never sold in England","It sold","<p>It sold. In 1618 the colony’s best was valued at “three shillings the pound”.</p>"]],"counterblaste");
     return;
   }
   /* 4 · the capture */
@@ -29325,17 +29350,19 @@ function leafAct(d){
     return;
   }
   if(d.kind==="ransom"){
+    /* review, 27 Nov: was "Then three months' silence" and "and corn"; Hamor via GH: "it was three moneths after ere hee returned us any answer", and the corn was promised for when they gave her back (Tyler p. 308) */
     leafQuiz("The ship · April to July 1613","Powhatan’s answer",
-      "<p>Argall sent word to Powhatan to “send home the Englishmen (whom he deteined in slaverie, with such armes and tooles, as the Indians had gotten, and stolne) and also a great quantitie of Corne”.</p><p>Powhatan’s first answer: “That he desired me to use his Daughter well, and bring my ship into his River, and there he would give mee my demands.” Then three months’ silence. Then he “returned seven of our men, with each of them an unserviceable Musket”, and offered corn. The English kept her.</p><p>What does the record show of Powhatan’s side?</p>",
+      "<p>Argall sent word to Powhatan to “send home the Englishmen (whom he deteined in slaverie, with such armes and tooles, as the Indians had gotten, and stolne) and also a great quantitie of Corne”.</p><p>Powhatan’s first answer: “That he desired me to use his Daughter well, and bring my ship into his River, and there he would give mee my demands.” Then, Hamor wrote, it was “three moneths after” before he answered again. Then he “returned seven of our men, with each of them an unserviceable Musket”, and offered corn. The English kept her.</p><p>What does the record show of Powhatan’s side?</p>",
       [["Only what the English wrote down of his messages and his deeds","Only the English","<p>Every word of Powhatan’s here is in an English captain’s letter. Why he waited three months, and why he sent useless muskets, nobody on his side wrote down.</p>"],
        ["That he did not care what happened to her","We cannot know","<p>His first message asked that she be used well. Beyond that the record is silent on what he felt; reading indifference into the three months is a guess.</p>"],
-       ["That he paid everything that was asked","He did not","<p>He did not: seven men, seven useless muskets, and corn. The English kept her for nearly a year.</p>"]],"ransom");
+       ["That he paid everything that was asked","He did not","<p>He did not: seven men, seven useless muskets, and a promise of corn. The English kept her for nearly a year.</p>"]],"ransom");
     return;
   }
   /* 5 · old swords, the letter, the wedding */
   if(d.kind==="swords"){
+    /* review, 27 Nov: was "At Matchot, Dale wrote"; Dale's letter does not name the place, only "further up the River" (Purchas 19:104 [web]) */
     leafQuiz("The Pamunkey · March 1614","Old swords",
-      "<p>At Matchot, Dale wrote, “The Kings daughter went ashoare, but would not talke to any of them, scarce to them of the best sort, and to them onely, that if her father had loved her, he would not value her lesse then old Swords, Peeces, or Axes: wherefore shee should still dwell with the English men, who loved her.”</p><p>These are the only words of hers recorded in a year of captivity. Whose words are they?</p>",
+      "<p>Up the Pamunkey, Dale wrote, “The Kings daughter went ashoare, but would not talke to any of them, scarce to them of the best sort, and to them onely, that if her father had loved her, he would not value her lesse then old Swords, Peeces, or Axes: wherefore shee should still dwell with the English men, who loved her.”</p><p>These are the only words of hers recorded in a year of captivity. Whose words are they?</p>",
       [["Dale’s report of what she said, in a letter about his success","Reported","<p>They are Dale’s report, in his letter home about his own success. He does not say whether he heard them himself. She was a captive speaking in front of her captors, and the words are exactly what Dale would want London to read.</p><p>That does not prove she did not say them. It tells you what you are holding.</p>"],
        ["Hers, written in her own hand","Not in her hand","<p>Nothing in her hand survives. These are Dale’s words for what she said.</p>"],
        ["Her father’s message to the English","Not his","<p>They are reported as hers, about her father, in Dale’s letter.</p>"]],"swords");
@@ -29351,13 +29378,15 @@ function leafAct(d){
   }
   if(d.kind==="wedding"){
     playCutscene({skippable:true,steps:LEAF_WEDDING()},function(){leafDone("wedding");enterWorld("ch8");
-      fortResult("About the fifth of April, 1614","<p>Powhatan gave his “sudden consent”: “within ten daies he sent Opachisco, an old Uncle of hers, and two of his sons, to see the manner of the mariage”. Dale: “Her Father and friends gave approbation to it, and her Uncle gave her to him in the Church.”</p><p>“ever since wee have had friendly trade and commerce, as well with Powhatan himselfe, as all his subjects.”</p>"+leafBlank(LEAF_BLANK[5])+"<p>Could a young woman held for a year by the people she was marrying have said no — and if she had, would any of these writers have told us?</p>",["+6 Ink"]);});
+      /* review, 27 Nov: was "About the fifth of April, 1614"; GH says "about the first of Aprill", Tyler's note "about the fifth" (p. 310); disputed (CH8-RECORD, Disputes 2) */
+      fortResult("April 1614","<p>Powhatan gave his “sudden consent”: “within ten daies he sent Opachisco, an old Uncle of hers, and two of his sons, to see the manner of the mariage”. Dale: “Her Father and friends gave approbation to it, and her Uncle gave her to him in the Church.”</p><p>“ever since wee have had friendly trade and commerce, as well with Powhatan himselfe, as all his subjects.”</p>"+leafBlank(LEAF_BLANK[5])+"<p>Could a young woman held for a year by the people she was marrying have said no — and if she had, would any of these writers have told us?</p>",["+6 Ink"]);});
     return;
   }
   /* 6 · Matchot */
   if(d.kind==="daughter"){
+    /* review, 27 Nov: was an unattributed parenthesis on Dale's wife; it is Tyler's note: "as he had a wife and several children living in England" (p. 314 n. 1) */
     leafQuiz("Matchot · Powhatan’s house","“My countrie is large enough”",
-      "<p>Dale wanted Powhatan’s youngest daughter too, “because being now one people … there could not be a truer assurance of peace”. Hamor told Powhatan she was “but twelve yeeres old”. (Dale had a wife living in England.)</p><p>Powhatan, as Hamor wrote it: “I have sold her within this few daies to a great Werowance, for two bushels of Rawrenoke”. And: “I hold it not a brotherly part to desire to bereave me of my two children at once.” And: “I am now old, and would gladly end my daies in peace; if you offer me injurie, my countrie is large enough to goe from you.”</p><p>Is the last line a threat, a plea, or a plan?</p>",
+      "<p>Dale wanted Powhatan’s youngest daughter too, “because being now one people … there could not be a truer assurance of peace”. Hamor told Powhatan she was “but twelve yeeres old”. (Dale had a wife in England, the historian Lyon Tyler noted in 1907.)</p><p>Powhatan, as Hamor wrote it: “I have sold her within this few daies to a great Werowance, for two bushels of Rawrenoke”. And: “I hold it not a brotherly part to desire to bereave me of my two children at once.” And: “I am now old, and would gladly end my daies in peace; if you offer me injurie, my countrie is large enough to goe from you.”</p><p>Is the last line a threat, a plea, or a plan?</p>",
       [["Any of the three: and it reaches us only in Hamor’s English","Hamor’s English","<p>It could be any of them. And every word is Hamor’s English, through the interpreter Thomas Savage. “Sold” is Hamor’s word for a marriage arranged with a gift of shell beads.</p><p>It is still the closest we come to Powhatan’s own voice in these years: an old man refusing to give up a second daughter.</p>"],
        ["A threat of war","Only one reading","<p>It could be read that way — but he says he would “gladly end my daies in peace”. It could be a plea, or a plan to move away. And it is Hamor’s English.</p>"],
        ["A promise to leave Virginia","Only one reading","<p>Moving away is one reading. It could also be a warning, or a plea. And every word is Hamor’s English, through an interpreter.</p>"]],"daughter");
@@ -29365,17 +29394,19 @@ function leafAct(d){
   }
   /* 7 · England */
   if(d.kind==="brentford"){
+    /* review, 27 Nov: was "In 1616 he had written to the Queen"; the letter survives only as Smith's 1624 "abstract" (Tyler p. 325) */
     leafQuiz("Brentford · as Smith printed it in 1624","“Your Countriemen will lie much”",
       "<p>Smith visited her at Brentford. “After a modest salutation, without any word, she turned about, obscured her face, as not seeming well contented.” Hours later she spoke, as Smith printed it eight years after:</p><p>“You did promise Powhatan what was yours should bee his, and he the like to you; you called him father being in his land a stranger, and by the same reason so must I doe you … They did tell us alwaies you were dead, and I knew no other till I came to Plimoth; yet Powhatan did command Uttamatomakkin to seeke you, and know the truth, because your Countriemen will lie much.”</p><p>Why would Smith print a rebuke of himself?</p>",
-      [["It shows how much she mattered to him — and so how much he mattered","It serves him","<p>Her anger at him is proof, in his book, that he was the Englishman she knew. In 1616 he had written to the Queen asking notice for her, and for himself.</p><p>It is still the longest speech of hers on record — written by the man she was rebuking, in a book he was selling.</p>"],
+      [["It shows how much she mattered to him — and so how much he mattered","It serves him","<p>Her anger at him is proof, in his book, that he was the Englishman she knew. In 1616, he says, he had written to the Queen asking notice for her, and for himself.</p><p>It is still the longest speech of hers on record — written by the man she was rebuking, in a book he was selling.</p>"],
        ["Because he had to: she wrote it down herself","She did not","<p>Nothing in her hand survives. Smith printed it, eight years later, in his own book.</p>"],
        ["To prove she never spoke English","She did","<p>The point of the scene is that she spoke, in English, at length. Smith printed it because it served him.</p>"]],"brentford");
     return;
   }
   if(d.kind==="stick"){
+    /* review, 27 Nov: was "Powhatan sent ... 'to number the people here'" and "his daughter said"; Smith hedges "the King purposely sent him, as they say, to number the people here" (Tyler p. 329), and her words reach us only as Smith reported them */
     leafQuiz("London · Uttamatomakkin","A notched stick",
-      "<p>Powhatan sent his counsellor Uttamatomakkin to England “to number the people here”. He “got a long sticke, whereon by notches hee did thinke to have kept the number”, “but he was quickly wearie of that taske”.</p><p>To Smith, about the King: “You gave Powhatan a white Dog, which Powhatan fed as himselfe; but your King gave me nothing, and I am better than your white Dog.”</p><p>What was Powhatan trying to find out?</p>",
-      [["How many English there were, and whether Smith was alive","Counting","<p>How many English there were — and, his daughter said, whether Smith was alive, “because your Countriemen will lie much”. Powhatan sent someone to see for himself.</p><p>Purchas met Uttamatomakkin and called him “a blasphemer of what he knew not, and preferring his God to ours”.</p>"],
+      "<p>Smith wrote that Powhatan sent his counsellor Uttamatomakkin to England, “as they say, to number the people here”. He “got a long sticke, whereon by notches hee did thinke to have kept the number”, “but he was quickly wearie of that taske”.</p><p>To Smith, about the King: “You gave Powhatan a white Dog, which Powhatan fed as himselfe; but your King gave me nothing, and I am better than your white Dog.”</p><p>What was Powhatan trying to find out?</p>",
+      [["How many English there were, and whether Smith was alive","Counting","<p>How many English there were — and, by Smith’s report of her words, whether Smith was alive, “because your Countriemen will lie much”. Powhatan sent someone to see for himself.</p><p>Purchas met Uttamatomakkin and called him “a blasphemer of what he knew not, and preferring his God to ours”.</p>"],
        ["Where the King kept his gold","Not gold","<p>He was sent “to number the people”. Counting people was his task.</p>"],
        ["How to build English ships","Not ships","<p>He was sent “to number the people”. Powhatan wanted to know how many English there were.</p>"]],"stick");
     return;
@@ -29416,7 +29447,7 @@ function LEAF_WEDDING(){
   const cx=LEAF.church?LEAF.church[0]:30, cz=LEAF.church?LEAF.church[1]:-12;
   return [
     {fade:"in",cam:{to:[cx+14,7,cz+18],look:[cx,3,cz],cut:true},t:4,
-     narrate:"About the fifth of April, 1614, in the church at Jamestown."},
+     narrate:"April 1614, in the church at Jamestown."}, /* Hamor: Opachisco gave her "as his deputy in the Church"; Jamestown is where Dale and Rolfe were. review, 27 Nov: was "About the fifth of April"; GH "about the first", Tyler "about the fifth" (p. 310) */
     {spawn:{id:"rolfeW",eq:LEAF_PEOPLE[4].eq,at:[cx+2,G8(cx+2,cz+7),cz+7],face:Math.PI}},
     {spawn:{id:"bride",make:function(){return tidewaterWoman(false);},at:[cx+6,G8(cx+6,cz+16),cz+16],face:Math.PI}},
     {spawn:{id:"uncle",make:function(){return tidewaterFigure();},at:[cx+8,G8(cx+8,cz+17),cz+17],face:Math.PI}},
@@ -29654,76 +29685,91 @@ CONTENT.ch8={
   people:LEAF_PEOPLE,
   npcs:LEAF_NPCS,
   charter:{insight:{b:"The Golden Leaf"}},
+  /* review, 27 Nov: frame was "I met her once, at the Bishop of London's"; Purchas: "I was present, when my Honorable & Reverend Patron, the L. Bishop of London, Doctor King entertained her" (19:118 [web]). Pass was "He did not print anything of hers"; he printed words reported as hers (Dale's letter), but nothing in her hand */
   reck:{seal:"records",kick:"Master Purchas’s Pilgrimes",title:"Whose Voice Is Missing?",
-    frame:"Samuel Purchas has a stack of letters and books, Argall’s, Dale’s, Hamor’s, Smith’s, and means to print them all together. “I met her once, at the Bishop of London’s. I have every Englishman’s account of her, and not one word of hers. Tell me how to read them. Six questions; I’ll bear two wrong — no more.”",
+    frame:"Samuel Purchas has a stack of letters and books, Argall’s, Dale’s, Hamor’s, Smith’s, and means to print them all together. “I saw her once, when my patron the Bishop of London entertained her. I have every Englishman’s account of her, and not one word of hers. Tell me how to read them. Six questions; I’ll bear two wrong — no more.”",
     lockLine:"Not yet. Master Purchas will sit with you after Gravesend.",
-    pass:{title:"The Pilgrimes Hold",body:"Purchas ties up his papers. “Then I shall print them, and a careful reader will know whose they are.” He printed them in 1625. He did not print anything of hers, because there was nothing of hers to print."},
+    pass:{title:"The Pilgrimes Hold",body:"Purchas ties up his papers. “Then I shall print them, and a careful reader will know whose they are.” He printed them in 1625. He printed nothing in her own hand, because there was nothing in her own hand to print."},
     fail:{title:"The Pilgrimes Do Not Hold",body:"“You are reading what they wrote about her as if she had written it,” says Purchas. “Look again at who holds the pen.”"},
     onPass:function(){leafW().done=true;},
     q:[
-      {stim:"De La Warr, 1610: he would “draw the sword of Justice”. Two months later, Percy’s soldiers killed the Paspahegh werowance’s children after “a Cowncell beinge called”.",
+      /* review, 27 Nov: stimulus did not say what the council decided; now Percy's full clause (via EV [web]) */
+      {stim:"De La Warr, 1610: he would “draw the sword of Justice”. Two months later, Percy wrote of the Paspahegh werowance’s children: “a Cowncell beinge called itt was agreed upon to putt the children to deathe”.",
        q:"In Percy’s account, who decided the children should die?",
        o:["An unnamed council","De La Warr himself","The children’s own town","A court in London"],a:0},
       {stim:"Percy refused to have the Paspahegh queen burned: “for to Burne her I did nott howlde itt fitteinge”. Captain Davis then killed her in the woods.",
        q:"What line is Percy drawing?",
-       o:["Against burning, not against her death","Against killing any prisoner at all","Against De La Warr’s whole command","Against the raid from the very start"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["Against burning, not her death","Against killing any prisoner at all","Against De La Warr’s whole command","Against the raid from the very start"],a:0},
       {stim:"No source gives the Paspahegh queen’s name, or her words, or her children’s names.",
        q:"What would we need to know her side?",
-       o:["An account from Paspahegh","A second English account","Percy’s other letters","The ship’s log that night"],a:0},
+       /* review, 27 Nov: keyed option was the longest; tied longest; a distractor lengthened */
+      o:["An account from Paspahegh","A second Englishman’s account","Percy’s other letters","The ship’s log that night"],a:0},
       {stim:"De La Warr on his own scurvy: “which though in others it be a sicknesse of slothfulnesse, yet was in me an effect of weaknesse”.",
        q:"What does this show about how colonists were judged?",
-       o:["The same illness was called laziness in others","Scurvy was understood well by doctors then","De La Warr was the laziest man in Virginia","Only gentlemen could catch scurvy at all"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["Others were blamed for the same illness","Scurvy was understood well by doctors then","De La Warr was the laziest man in Virginia","Only gentlemen could catch scurvy at all"],a:0},
       {stim:"Hamor: Dale found the men “bowling in the streets”. Tyler (1907): it was a Sunday, and bowling was a normal Sunday pastime.",
        q:"What does Tyler’s note do to Hamor’s sentence?",
-       o:["It shows bowling is no proof of laziness","It proves the men really were all idle","It shows Hamor was not in Virginia","It shows bowling was against the law"],a:0},
+       o:["It shows bowling is no proof of laziness","It proves that the men really were all idle" /* review, 27 Nov: keyed option was the longest; a distractor lengthened */,"It shows Hamor was not in Virginia","It shows bowling was against the law"],a:0},
       {stim:"Hamor defended Dale’s Lawes in a 1615 book written to raise money. The Assembly in 1624 called them “most severe and Crewell”, and blamed the Company in London.",
        q:"Why might the two accounts disagree?",
        o:["Each was written to serve a purpose","One of them was not in Virginia","The Lawes changed every single week","They describe two different colonies"],a:0},
       {stim:"Molina, a Spanish prisoner, 1613: the colonists are “treated as slaves with cruelty”. He wrote secretly, hoping Spain would attack.",
        q:"What should a reader keep in mind?",
-       o:["He wanted the colony to look weak","He could not have seen the colony","He wrote this in the year 1700","He was a friend of Captain Smith"],a:0},
+       o:["He wanted the colony to look weak","He could not have seen the colony himself" /* review, 27 Nov: keyed option tied longest; a distractor lengthened */,"He wrote this in the year 1700","He was a friend of Captain Smith"],a:0},
       {stim:"Hamor credits Rolfe’s tobacco “partly for the love he hath a long time borne unto it, and partly to raise commodity to the adventurers”.",
        q:"Which reason would investors care about?",
-       o:["Raising commodity: profit","His love of tobacco","His faith in God","His wish to marry"],a:0},
+       o:["Raising commodity: profit","His own long love of tobacco" /* review, 27 Nov: keyed option was the longest; a distractor lengthened */,"His faith in God","His wish to marry"],a:0},
       {stim:"King James called tobacco “lothsome to the eye, hatefull to the Nose”. By 1617 Jamestown’s streets were “planted with Tobacco”.",
        q:"What does this show?",
-       o:["The market mattered more than the King’s taste","The King ordered the streets to be planted","Tobacco was grown only for the King’s use","The colony stopped growing it after 1617"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["The market beat the King’s taste","The King ordered the streets to be planted","Tobacco was grown only for the King’s use","The colony stopped growing it after 1617"],a:0},
       {stim:"Hamor: “thirtie” on the common store produced less than “three or foure” on their own land. He was writing to attract settlers.",
        q:"Why be careful with this comparison?",
        o:["It was written to sell the colony","Nobody farmed at all in those years","Common stores always produce more","Hamor had never seen the farms"],a:0},
       {stim:"Argall (who did it): a threat and a council. Hamor (the Company’s book): a copper kettle and a weeping wife.",
        q:"Why might the Company’s book prefer the kettle?",
-       o:["It makes the English look clever, not threatening","It is the only version that has any details","Argall was not on the Potomac at the time","The kettle was the more expensive price"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["The English look clever, not menacing","It is the only version that has any details","Argall was not on the Potomac at the time","The kettle was the more expensive price"],a:0},
       {stim:"Dale: she would not talk to them, “that if her father had loved her, he would not value her lesse then old Swords, Peeces, or Axes”.",
        q:"Whose words are these?",
-       o:["Dale’s report of hers, in his letter","Hers, in a letter of her own","Powhatan’s, sent by a messenger","Rolfe’s, from his letter to Dale"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["Dale’s report of hers","Hers, in a letter of her own","Powhatan’s, sent by a messenger","Rolfe’s, from his letter to Dale"],a:0},
       {stim:"Rolfe’s letter to Dale describes her “apparance of love” and “desire to be taught”. It does not give her age, or a word of hers.",
        q:"Whose eyes are we seeing through?",
-       o:["Rolfe’s, asking the governor’s leave","Her own, in her own words","Powhatan’s, through a messenger","A neutral observer’s, at the church"],a:0},
+       o:["Rolfe’s, asking the governor’s leave","Her own, in her own words","Powhatan’s, through a messenger","A neutral observer’s, watching at the church" /* review, 27 Nov: keyed option was the longest; a distractor lengthened */],a:0},
       {stim:"Powhatan, as Hamor wrote it: “if you offer me injurie, my countrie is large enough to goe from you”.",
        q:"How did these words reach us?",
-       o:["In Hamor’s English, through an interpreter","In Powhatan’s own hand","In a Powhatan account of 1614","In Pocahontas’s letters home"],a:0},
-      {stim:"Uttamatomakkin was sent to England “to number the people”, with a notched stick, and to find out if Smith was alive.",
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["In Hamor’s English","In Powhatan’s own hand","In a Powhatan account of 1614","In Pocahontas’s letters home"],a:0},
+      /* review, 27 Nov: stimulus gave Smith's report and her reported words as fact; Smith: "the King purposely sent him, as they say, to number the people here", and the search for Smith is in her words as Smith printed them (Tyler pp. 328-329). Keyed option was the longest */
+      {stim:"Smith wrote that Uttamatomakkin was sent to England “to number the people here”, and kept count with a notched stick; by Smith’s report of her words, he was also to find Smith.",
        q:"What was Powhatan trying to learn?",
-       o:["How many English there were, and the truth","Where the King kept his treasure","How the English built their ships","When the next fleet would sail"],a:0},
+       o:["How many English there were","Where the King kept his treasure","How the English built their ships","When the next fleet would sail"],a:0},
       {stim:"Smith printed, in 1624, her rebuke of him: “your Countriemen will lie much”.",
        q:"Why would Smith print a rebuke of himself?",
-       o:["It proved he was the Englishman she knew","She had made him promise to print it","He was ordered to by the King himself","He did not understand what it meant"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["It showed he was the one she knew","She had made him promise to print it","He was ordered to by the King himself","He did not understand what it meant"],a:0},
       {stim:"Chamberlain, a London letter-writer, 1617: she was going home “sore against her will”.",
        q:"Is this good evidence of what she wanted?",
-       o:["Some: third-hand gossip, but the only clue","Yes: he heard it from her directly","No: he never wrote any letters","Yes: she signed his letter herself"],a:0},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["Some: gossip, but the only clue","Yes: he heard it from her directly","No: he never wrote any letters","Yes: she signed his letter herself"],a:0},
       {stim:"The register: “Rebecca Wrolfe, wyffe of Thomas Wrolf gent, A Virginian Lady borne”. Her husband was John.",
        q:"What does the clerk’s line leave out?",
        o:["Her own names and her people","The place where she was buried","That she was married at all","That she came from Virginia"],a:0},
-      {stim:"The Mattaponi oral history (2007) says, among other things, that Kocoum was killed and that she was poisoned in England. The English letters say none of this.",
+      /* review, 27 Nov: was "that Kocoum was killed and that she was poisoned"; Kocoum is not introduced elsewhere, and the book says "most likely poisoned" (CH8-RECORD, Mattaponi). Keyed option was the longest */
+      {stim:"The Mattaponi oral history (2007) says, among other things, that her first husband, Kocoum, was killed, and that she was most likely poisoned in England. The English letters say none of this.",
        q:"How should a historian treat the oral history?",
-       o:["As a community’s account, weighed like any source","As proof the English letters are all false","As worthless, because it was printed in 2007","As older and surer than any English letter"],a:0},
-      {stim:"Many people know Pocahontas from a 1995 film, in love with John Smith. The record has her about twelve when she met him, and married to Rolfe while a hostage.",
+       o:["As a community’s account, to be weighed","As proof the English letters are all false","As worthless, because it was printed in 2007","As older and surer than any English letter"],a:0},
+      /* review, 27 Nov: was "The record has her about twelve", unattributed; Smith: "a childe of twelve or thirteene yeeres of age" (Tyler p. 326). Keyed option was the longest */
+      {stim:"Many people know Pocahontas from a 1995 film, in love with John Smith. Smith wrote that she was “a childe of twelve or thirteene yeeres” when they met; she married Rolfe while held as a hostage.",
        q:"What does the gap between the film and the record show?",
-       o:["Stories about her keep being retold to suit the teller","The film used sources that historians have lost","The record must be wrong, since the film is popular","Nobody before 1995 ever wrote about her at all"],a:0},
+       o:["Stories about her get retold to suit the teller","The film used sources that historians have lost","The record must be wrong, since the film is popular","Nobody before 1995 ever wrote about her at all"],a:0},
       {stim:"The Chickahominy swore in 1614 to be “new Englishmen”. In 1616 they refused the tribute: “he was but Sir Thomas Dales man, and they had payed his Master”.",
        q:"What does 1616 suggest about the 1614 treaty?",
-       o:["It meant less to them than the English wrote","They had never agreed to anything at all","They wanted to become English subjects","Dale had written down their exact words"],a:0}]},
+       /* review, 27 Nov: keyed option was the longest; shortened or a distractor lengthened */
+      o:["It meant less than the English wrote","They had never agreed to anything at all","They wanted to become English subjects","Dale had written down their exact words"],a:0}]},
   ready:function(){
     const w=leafW();
     return (w.day>=LEAF_DAYS.length-1&&w.did.closed)?{ok:true,missing:[]}:{ok:false,missing:["Gravesend, in March 1617"]};
@@ -31612,7 +31658,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0505";
+const BUILD="20261127-0513";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
