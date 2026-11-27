@@ -30125,7 +30125,7 @@ function priceSpeaker(id){
 /* ---- THE RECORD THAT OPENS EACH SCENE ---- */
 const PRICE_OPEN=[
   /* "arryved at Point Comfort ye 15th of May" (Kingsbury III:70); "in May he arrived at James towne" (GH, Tyler p. 330) */
-  {t:"Tobacco in the streets",b:"<p class=\"note\">The buying and selling of people, harsh punishments, and period words for Africans and Indians: in the sources’ words, none of it shown.</p><p>15 May 1617. Captain Argall lands at Point Comfort, and comes up the river to Jamestown.</p>"},
+  {t:"Tobacco in the streets",b:"<p class=\"note\">Buying and selling people, harsh punishments, period words for Africans and Indians: in the sources’ words, none of it shown.</p><p>15 May 1617. Captain Argall lands at Point Comfort, then comes up to Jamestown.</p>"},
   /* GH, Tyler p. 333; undated, GH's margin puts it under 1618 */
   {t:"Two acres of corn",b:"<p>Smith’s book, under 1618: Chickahominy men killed the trader Richard Killingbeck and four others. Raiders killed a boy and three children at the Fairfax house.</p><p>Nothing of it is shown.</p>"},
   /* the joint stock "expired, November 30, 1616" (Tyler p. 247); the Instructions of 18 Nov. 1618 (Kingsbury III:98) */
@@ -30483,7 +30483,11 @@ function priceNext(fromBoard){
       "<p>Did tobacco cause it, help it, or not cause it at all (chance or politics)?</p>",
       rows,PRICE_K,"cause"+w.day,function(right){
         w.cause[w.day]=right;checkpoint("ch9-cause"+w.day);
-        fortResult("Did tobacco cause it?","<p>You placed "+right+" of "+rows.length+" as the record does.</p><ul>"+rows.map(function(r){return "<li>"+r.t+" — <b>"+PRICE_K[r.k]+"</b>: "+r.why+"</li>";}).join("")+"</ul>"+(PRICE_CLOSE[w.day]||""),
+        /* text budget, 27 Nov: only the rows placed differently from the record are explained,
+           each with the document's reason, so a right board is two lines, not a page */
+        const m=w.marks["cause"+w.day]||[], off=rows.filter(function(r,i){return m[i]!==r.k;});
+        fortResult("Did tobacco cause it?","<p>You placed "+right+" of "+rows.length+" as the record does.</p>"+
+          (off.length?"<ul>"+off.map(function(r){return "<li>"+r.t+" — <b>"+PRICE_K[r.k]+"</b>: "+r.why+"</li>";}).join("")+"</ul>":"")+(PRICE_CLOSE[w.day]||""),
           [],function(){priceNext(true);});});
     return;
   }
@@ -32743,7 +32747,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0623";
+const BUILD="20261127-0624";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
