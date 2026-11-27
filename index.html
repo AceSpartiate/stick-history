@@ -724,6 +724,8 @@
   .starveCard details summary{cursor:pointer;color:#6b4a24;font-size:.9em}
   /* Chapter VIII: where her own account would be. It stays empty, on purpose */
   .leafBlank{border-style:dashed;background:rgba(255,255,255,.25);color:#5a4a3a}
+  /* its own block, so the read-aloud gives "Her own account" a stop instead of running it into the line (27 Nov) */
+  .leafBlank>b{display:block}
   .captMark{min-width:3em;color:#5a3a1a}
   .sickDate{font-variant:small-caps;letter-spacing:.06em;opacity:.8;margin-top:0}
   .fortWho{color:#3f5c4f}
@@ -10586,6 +10588,7 @@ function readableText(el){
      caller that does not want it simply never looks at READ_MAP. */
   READ_MAP=[];
   const own=function(el,txt){if(el&&txt)READ_MAP.push({el:el,t:sayKey(txt)});};
+  const endStop=function(){const k=parts.length-1;if(k>=0&&!/[.!?:;][”’)\]]*$/.test(parts[k]))parts[k]=parts[k].replace(/[\s,—–-]+$/,"")+".";};
   (function walk(node,opts){
     for(let i=0;i<node.childNodes.length;i++){
       const c=node.childNodes[i];
@@ -10643,7 +10646,15 @@ function readableText(el){
         continue;
       }
       if(tag==="SCRIPT"||tag==="STYLE"||tag==="CANVAS")continue;
+      /* ---- A BLOCK ENDS A SENTENCE ----
+         A list item, an attribution in italics, a reward pill or a bold lead-in with no stop of
+         its own ran on into the next block: "...Saw or heard it himself Percy: ..." in one breath,
+         a line no recording can match, so the browser's flat voice read it (27 Nov). Entering and
+         leaving a block now closes whatever came before it. */
+      const blk=/^(P|LI|DIV|UL|OL|H[1-6]|BLOCKQUOTE|TABLE|TR|SECTION)$/.test(tag);
+      if(blk)endStop();
       walk(c,inOpts);
+      if(blk)endStop();
     }
   })(el,null);
   return parts.join(" ").replace(/\s+([.,;:!?])/g,"$1");
@@ -28488,7 +28499,7 @@ function starveLedger(){
     if(id==="ledger2")starveDone("ledger2");
     w.ledger[w.day]=right;saveGame();
     fortResult("The ledger","<p>You pinned "+right+" of "+rows.length+" to the writer who said it.</p><ul>"+rows.map(function(r){
-      return "<li>"+r.t+" — <b>"+label(r.v)+"</b>"+(w.pins[r.id]!==r.v?" (you said "+label(w.pins[r.id])+")":"")+"</li>";}).join("")+"</ul>"+
+      return "<li>"+r.t+" — <b>"+label(r.v)+"</b>."+(w.pins[r.id]!==r.v?" You said "+label(w.pins[r.id])+".":"")+"</li>";}).join("")+"</ul>"+
       "<p>Notice who each writer does <i>not</i> blame. Smith’s friends never blame Smith. The Company never blames itself, or the land. Percy never blames Percy.</p>",[],
       id==="ledger"?function(){starveNext(true);}:null);
   }}]);
@@ -29587,7 +29598,7 @@ function leafNext(fromWords){
       "<p>Saw it, was told it, or says what someone felt?</p>",
       rows,LEAF_K,"words"+w.day,function(right){
         w.words[w.day]=right;checkpoint("ch8-words"+w.day);
-        fortResult("Whose words","<p>You marked "+right+" of "+rows.length+" as the sources show.</p><ul>"+rows.map(function(r){return "<li>"+r.t+" — <b>"+LEAF_K[r.k]+"</b></li>";}).join("")+"</ul>"+
+        fortResult("Whose words","<p>You marked "+right+" of "+rows.length+" as the sources show.</p><ul>"+rows.map(function(r){return "<li>"+r.t+" — <b>"+LEAF_K[r.k]+"</b>.</li>";}).join("")+"</ul>"+
           leafBlank(LEAF_BLANK[w.day]),[],function(){leafNext(true);});});
     return;
   }
@@ -30530,6 +30541,15 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"27 November 2026 · latest",
+   head:"Less reading, and every line spoken",
+   lines:[
+     "<b>About half the reading</b>",
+     "Every chapter’s cards, conversations, scenes and results are shorter. The words of the people who were there stay exactly as they wrote them, cut to the line that matters.",
+     "<b>No more robot voice</b>",
+     "Some lines had no recording, so your browser read them in its own flat voice. Every line now has a recorded voice.",
+     "<b>Music, animals and real objects</b>",
+     "Quiet period music plays under each chapter (turn it off with the ♪ button or in the pause menu). Hogs, horses, a dog and rats move about the fort, and the table, the bell, the cooking pot and other objects are now proper models."]},
+  {when:"27 November 2026",
    head:"Chapter VIII: The Golden Leaf",
    lines:[
      "<b>A new chapter: 1610 to 1617</b>",
@@ -31920,7 +31940,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0602";
+const BUILD="20261127-0909";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

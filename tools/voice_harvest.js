@@ -39,7 +39,8 @@
     /* a table keyed by speaker (FORT_SAYS: {wingfield:[...], ...}) gives each key's lines to that speaker */
     for(const k of Object.keys(v)){if(k==='voice'||k==='id')continue;try{walk(v[k],d+1,npcs[k]?k:who);}catch(e){}}
   }
-  for(const n of names){try{const v=eval(n);if(v&&(typeof v==='object'||typeof v==='string'))walk(v,0,'narrator');}catch(e){}}
+  /* READ_MAP holds letters-only keys ("saworheardithimself"), not words to say */
+  for(const n of names){if(n==='READ_MAP')continue;try{const v=eval(n);if(v&&(typeof v==='object'||typeof v==='string'))walk(v,0,'narrator');}catch(e){}}
   /* Cutscene lines live inside the functions that play them (narrate:"..." in a
      playCutscene call), which no top-level name reaches: 74 of the game's 133 cutscene
      sentences were never recorded (found 2026-11-26). Read them out of the source text. */
@@ -54,20 +55,36 @@
   const lit=s=>{try{return JSON.parse(s);}catch(e){return null;}};
   const clean=v=>String(v).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
   const LIT=/"(?:[^"\\\n]|\\.)*"/g;
+  /* a literal with markup is read as the game reads a panel: put on the page, out of sight,
+     and walked by readableText, so "<b>Argall</b>, who did it" comes out as the game says it
+     ("Argall, who did it"), not as tag-stripped text ("Argall , who did it"). 27 Nov. */
+  const off=document.createElement('div');off.style.cssText='position:absolute;left:-99999px;top:0;width:600px';
+  document.body.appendChild(off);
   for(const m of script.matchAll(LIT)){
     const v=lit(m[0]);if(v==null)continue;const c=clean(v);
-    if(prose(c)&&(/\s/.test(c)||/^[A-Z][a-z]{3,}[.!?]?$/.test(c)))add(c,'narrator');
-    if(/<b>|<p>|<br>/i.test(v))for(const p of v.split(/<\/?(?:b|p|br)\s*\/?>/i)){const q=clean(p);if(prose(q)&&/\s/.test(q))add(q,'narrator');}}
+    if(prose(c)&&(/\s/.test(c)||/^[A-Z][a-z]{2,}[.!?]?$/.test(c)))add(c,'narrator');
+    if(/<b>|<p>|<br>/i.test(v))for(const p of v.split(/<\/?(?:b|p|br)\s*\/?>/i)){const q=clean(p);if(prose(q)&&/\s/.test(q))add(q,'narrator');}
+    if(/<[a-z]/i.test(v)&&prose(c)){try{off.innerHTML=v;const r=readableText(off);if(r)add(r,'narrator');}catch(e){}}}
+  off.remove();
   /* counts said aloud: "You answered "+right+" of "+n+"..." for every count a paper can give */
-  const TPL=/("(?:[^"\\\n]|\\.)*")\s*\+\s*[\w.$()\[\]]+\s*\+\s*("(?:[^"\\\n]|\\.)*")(?:\s*\+\s*[\w.$()\[\]]+\s*\+\s*("(?:[^"\\\n]|\\.)*"))?/g;
+  const TPL=/("(?:[^"\\\n]|\\.)*")\s*\+\s*([\w.$()\[\]]+)\s*\+\s*("(?:[^"\\\n]|\\.)*")(?:\s*\+\s*([\w.$()\[\]]+)\s*\+\s*("(?:[^"\\\n]|\\.)*"))?/g;
   for(const m of script.matchAll(TPL)){
-    const tg=x=>x==null?null:x.replace(/<[^>]*>/g,'');
-    const a=tg(lit(m[1])),b=tg(lit(m[2])),c=m[3]?tg(lit(m[3])):null;if(a==null||b==null)continue;
-    if(!/^(?:You|Asked|It passed)\b/.test(a)||!/^ of\b| of $/.test(b))continue;
-    for(let i=0;i<=8;i++){if(c==null){add(clean(a+i+b),'narrator');continue;}
-      for(let j=1;j<=8;j++)if(i<=j)add(clean(a+i+b+j+c),'narrator');}}
+    const tg=x=>x==null?null:x.replace(/<[^>]*>/g,' ');
+    const a=tg(lit(m[1])),b=tg(lit(m[3])),c=m[5]?tg(lit(m[5])):null;if(a==null||b==null)continue;
+    if(!/^\s*(?:You|Asked|It passed)\b/.test(a)||!/^\s+of\b|\sof\s+$/.test(b))continue;
+    /* the total, when the page can tell us what it is (LEAF_LAWS.length): only that one;
+       a local (rows.length) cannot be read from here, so 1 to 12. 27 Nov: "2 of 10" was missed */
+    let tot=null;try{const n=/^[A-Z][A-Z0-9_]*\.length$/.test(m[4])?eval(m[4]):null;if(Number.isInteger(n)&&n>0&&n<40)tot=n;}catch(e){}
+    const js=tot?[tot]:[1,2,3,4,5,6,7,8,9,10,11,12];
+    for(let i=0;i<=12;i++){if(c==null){if(i<=8)add(clean(a+i+b),'narrator');continue;}
+      for(const j of js)if(i<=j)add(clean(a+i+b+j+c),'narrator');}}
   /* and whatever this session actually spoke without a recording (sayPump writes VO_MISS) */
   try{for(const t of (window.VO_MISS||[]))add(clean(t),'narrator');}catch(e){}
+  /* lines the game builds while it runs (answer lists, "You said ...") that no literal holds:
+     tools/voice_drill.js finds them, and they are kept in tools/voice_extra.json so that a later
+     harvest without a drill does not count their recordings as orphans */
+  try{const ex=await (await fetch('tools/voice_extra.json?x='+Date.now())).json();for(const t of (ex.lines||[]))add(clean(t),'narrator');}catch(e){}
+  try{for(const v of STARVE_WRITERS)add('You said '+v[1]+'.','narrator');}catch(e){}
   const panels=[];
   closeAllModals();const nb=document.getElementById('btnNotes');if(nb){nb.click();await new Promise(r=>setTimeout(r,300));}
   for(const el of document.querySelectorAll('[data-read]')){try{const t=readableText(el);if(t)panels.push(t);}catch(e){}}
