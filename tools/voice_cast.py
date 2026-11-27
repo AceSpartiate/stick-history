@@ -104,6 +104,15 @@ CAST = {
              f"and a little anxious, a soft clear voice, {ENG}.",
     'argall': f"An English sea captain in his thirties, practical and calculating: blunt, quick and cool, "
               f"a firm seaman's voice, {ENG}.",
+    # Chapter IX, 27 Nov
+    'yeardley': f"An English soldier and new governor in his early thirties, newly knighted: measured, formal "
+                f"and careful to sound lawful, a steady middle voice, {ENG}.",
+    'pory': f"An English scholar and secretary in his fifties, a well-travelled talker: dry, witty and "
+            f"precise, a mellow educated voice, {ENG}.",
+    'persey': f"An English merchant in his thirties who keeps the Company's store: guarded, businesslike "
+              f"and a little defensive, a plain clipped voice, {ENG}.",
+    'spence': f"An English farmer and old soldier in his forties, one of the first settlers: weathered, "
+              f"plain-spoken and slow, a rough country voice, {ENG}.",
 }
 REEL_GAP = 0.6
 

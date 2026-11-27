@@ -44,6 +44,7 @@ VOICES = {
     "spelman": (25, 1.10), "davis": (27, 1.03), "strachey": (24, 0.98), "gates": (26, 0.92), "digger": (25, 1.04),
     # Chapter VIII
     "delawarr": (24, 0.90), "hamor": (25, 1.01), "dale": (27, 0.93), "rolfe": (26, 1.02), "argall": (27, 1.05),
+    "yeardley": (25, 0.97), "pory": (24, 1.04), "persey": (26, 0.99), "spence": (27, 0.92),
 }
 FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 

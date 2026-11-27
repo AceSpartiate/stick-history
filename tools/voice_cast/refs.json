@@ -130,5 +130,25 @@
  "digger": {
   "text": "Everything in this cellar was thrown away in one winter, and it is all evidence.",
   "desc": "A modern American archaeologist in his thirties: careful, warm and plain-spoken, a clear friendly voice, a present-day American accent."
+ },
+ "delawarr": {
+  "text": "But amend this sluggish idleness, lest I be compelled to draw the sword of justice.",
+  "desc": "An English lord and governor in his thirties, newly arrived and soon sick: aristocratic, stern and formal, a commanding but tired voice, an English accent of the early 1600s, not American."
+ },
+ "hamor": {
+  "text": "In sixteen twenty-four the Assembly called them most severe and Crewell lawes, and blamed the Company, not Dale.",
+  "desc": "An English colonial secretary in his twenties, an eager pamphleteer: smooth, confident and persuasive, a bright educated voice, an English accent of the early 1600s, not American."
+ },
+ "dale": {
+  "text": "Pow-a-tan's daughter I have caused to be carefully instructed in the Christian religion.",
+  "desc": "An English soldier and marshal in his forties, a hard disciplinarian: clipped, severe and certain, a harsh low voice, an English accent of the early 1600s, not American."
+ },
+ "rolfe": {
+  "text": "For the good of this plantation, for the honour of our countrie, for the glory of God,",
+  "desc": "A young English gentleman planter in his late twenties, earnest and devout: careful, sincere and a little anxious, a soft clear voice, an English accent of the early 1600s, not American."
+ },
+ "argall": {
+  "text": "I mean to possess myself of his daughter by any stratagem I can, to ransom them.",
+  "desc": "An English sea captain in his thirties, practical and calculating: blunt, quick and cool, a firm seaman's voice, an English accent of the early 1600s, not American."
  }
 }
