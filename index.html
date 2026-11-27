@@ -7114,8 +7114,12 @@ function buildCabins(root){
   if(!BG){const fl=new THREE.PointLight(lin(0xff8a3a),1.35,32*K);fl.position.set(hx,y+3.2*K,GZ);root.add(fl);}
   solid(hx,GZ,1.7*K,2.3*K,LVL.MAIN);
   const hood=box(3.4*K,0.5*K,4.6*K,0x3a2c1a);hood.position.set(hx,y+5.4*K,GZ);root.add(hood);
-  const kettle=new THREE.Mesh(new THREE.CylinderGeometry(1.0*K,0.78*K,1.3*K,8),mat(0x2b2b30));
-  kettle.position.set(hx,y+3.2*K,GZ-0.6*K);root.add(kettle);
+  /* 3d, 27 Nov: the kettle is assets/props3d/iron_pot.glb (TRELLIS.2, Chapter VII's pot)
+     at 1.45 of its size, 2.1 ft across, its feet where the cylinder's base was; the
+     eight-sided cylinder only if it fails */
+  placeProp(root,"assets/props3d/iron_pot.glb","iron_pot",hx,y+2.55*K,GZ-0.6*K,0,1.45*K,function(){
+    const kettle=new THREE.Mesh(new THREE.CylinderGeometry(1.0*K,0.78*K,1.3*K,8),mat(0x2b2b30));
+    kettle.position.set(hx,y+3.2*K,GZ-0.6*K);root.add(kettle);});
   const chain=box(0.12*K,2.0*K,0.12*K,0x3a3a40);chain.position.set(hx,y+4.6*K,GZ-0.6*K);root.add(chain);
   const tx=halfBeam(GZ,y)-2.4*K;
   const tbl=box(2.2*K,0.4*K,4.6*K,0x6b5433);tbl.position.set(tx,y+2.4*K,GZ);root.add(tbl);
@@ -19805,6 +19809,16 @@ function placeModel(root,file,node,x,y,z,ry,sx,sy,sz){
   }).catch(function(e){console.warn("model",file,e);});
   return grp;
 }
+/* 3d, 27 Nov: placeProp - one of the TRELLIS.2 props in assets/props3d/ (a Z-Image picture
+   lifted to a mesh, reduced and colour-baked by tools/blender/bake_glb.py; each file is
+   baked to its size in feet, so s is normally 1). fallback() draws the old hand-typed
+   geometry, and runs only if the file fails to load or lacks its node. */
+function placeProp(root,file,node,x,y,z,ry,s,fallback){
+  const grp=placeModel(root,file,node,x,y,z,ry,s,s,s), myRoot=worldRoot;
+  if(fallback)loadGLB(file).then(function(g){if(!g[node]&&worldRoot===myRoot)fallback();},
+                                 function(){if(worldRoot===myRoot)fallback();});
+  return grp;
+}
 /* ========== DEER, FEW AND WARY ==========
    Smith, A Map of Virginia (1612): "Of beastes the chiefe are Deare, nothing differing from
    ours. In the deserts towards the heads of the riuers, ther[e] are many, but amongst the
@@ -27320,6 +27334,11 @@ function PRES_CROWN(){
     {spawn:{id:"smithC",eq:PRES_PEOPLE[0].eq,at:[H.x+1,H.y,H.z-2.5],face:-Math.PI/2}},
     /* play-test, 27 Nov: at H.x-8 he stood inside the hearth ring, flames about his feet */
     {spawn:{id:"powC",make:function(){return presPowhatanStanding();},at:[H.x-6.5,H.y,H.z],face:Math.PI/2}},
+    /* 3d, 27 Nov: one of the Company's presents on the floor before him - the record has "a
+       Bason and Ewer", with a bed and its furniture - as assets/props3d/basin_ewer.glb
+       (TRELLIS.2), a brass basin 1.4 ft across with the ewer standing in it */
+    {spawn:{id:"giftC",make:function(){const g=new THREE.Group();
+      placeModel(g,"assets/props3d/basin_ewer.glb","basin_ewer",0,0,0,0,1);return g;},at:[H.x-3.6,H.y,H.z+1.7],face:0.6}},
     /* play-test, 27 Nov: four shots of this scene had Newport's back, or Smith's hat, between the
        camera and Powhatan - the crown went on behind Newport. From his left side now, with
        Newport leaning from behind his right shoulder */
@@ -27520,11 +27539,17 @@ function presPalace(root,G,x,z,sc){
 }
 function presTable(root,G,x,z){
   /* play-test, 27 Nov: a board on two trestles with papers on it, for "The Table" and the list */
-  const g=new Geo(), wood=RGB(0x7a5c3c), woodD=RGB(0x5a4128), paper=RGB(0xe9e0c8), gy=G(x,z);
-  for(const k of [-1,1])g.box(x+k*2.4,gy+1.3,z,0.3,2.6,2.2,woodD);
-  g.box(x,gy+2.7,z,6,0.25,2.8,wood);
-  g.box(x-1.2,gy+2.86,z+0.2,1.1,0.05,1.5,paper);g.box(x+0.9,gy+2.86,z-0.3,1.1,0.05,1.5,paper);
-  root.add(g.mesh(false,false));solid(x,z,3,1.4,LVL.MAIN,0);
+  /* 3d, 27 Nov: the hand-typed board and trestles gave way to assets/props3d/table.glb, a
+     table with standing ends, papers, an inkpot and a quill (TRELLIS.2). 5.1 x 3.6 ft at
+     this scale, its top at 2.8 ft as the board's was; the old boxes only if it fails */
+  const gy=G(x,z);
+  placeProp(root,"assets/props3d/table.glb","table",x,gy,z,Math.PI/2,1.05,function(){
+    const g=new Geo(), wood=RGB(0x7a5c3c), woodD=RGB(0x5a4128), paper=RGB(0xe9e0c8);
+    for(const k of [-1,1])g.box(x+k*2.4,gy+1.3,z,0.3,2.6,2.2,woodD);
+    g.box(x,gy+2.7,z,6,0.25,2.8,wood);
+    g.box(x-1.2,gy+2.86,z+0.2,1.1,0.05,1.5,paper);g.box(x+0.9,gy+2.86,z-0.3,1.1,0.05,1.5,paper);
+    root.add(g.mesh(false,false));});
+  solid(x,z,2.6,1.8,LVL.MAIN,0);
 }
 function presGlasshouse(root,G,x,z){
   /* a glasshouse in the woods: a beehive furnace of stone with its fire, a shed roof over a
@@ -27758,7 +27783,14 @@ registerWorld("ch6",function(root){
          ray were behind him; turned to face the ray, three-quarters to the camera */
       const f=buildFigure(PRES_PEOPLE[0].eq);f.position.set(-34,G(-34,70),70);f.rotation.y=1.3;root.add(f);
       PRES.figs.smith=f;
-      const r=presStingray();r.scale.setScalar(2.6);r.position.set(-31,-0.3,72);r.rotation.y=0.9;r.visible=false;root.add(r);PRES.ray=r;
+      /* 3d, 27 Nov: the ray is assets/props3d/stingray.glb (TRELLIS.2), 5.2 ft across as the
+         old diamond was at its scale of 2.6, flattened to under half a foot, and set back
+         1.4 ft along its length, since the model centres the tail with the body; presStingray()'s
+         two quads and a tail only if it fails */
+      const r=placeProp(root,"assets/props3d/stingray.glb","stingray",-32.1,-0.3,71.1,0.9,1,function(){
+        r.position.set(-31,-0.3,72);
+        r.scale.set(1,1,1);r.rotation.y=0.9;const o=presStingray();o.scale.setScalar(2.6);r.add(o);});
+      r.scale.y=0.4;r.visible=false;PRES.ray=r;
       duty("ray","Captain Smith, in the Shallows",-28,54,{kind:"ray",verb:"Go to him"});
     } else {
       /* ashore: the Captain laid by the fire, and the grave on the isle */
@@ -28613,18 +28645,27 @@ function starveChest(root,G,x,z){
 }
 /* play-test, 27 Nov: "The Bell" was a label over a crowd with no bell */
 function starveBell(root,G,x,z){
-  const g=new Geo(), wood=RGB(0x6a543a), bronze=RGB(0x8a6a3a), gy=G(x,z);
-  for(const k of [-2.4,2.4])g.beam8([x+k,gy-0.3,z],[x+k,gy+6,z],0.45,0.45,wood,wood);
-  g.beam8([x-3,gy+6,z],[x+3,gy+6,z],0.5,0.5,wood,wood);
-  g.oct(x,z,gy+3.8,gy+5.8,1.1,1.1,0.5,0.5,0.1,bronze,bronze);
-  root.add(g.mesh(false,false));solid(x,z,2.8,0.6,LVL.MAIN,0);
+  /* 3d, 27 Nov: assets/props3d/bell.glb (TRELLIS.2): a bronze bell hung from a beam on two
+     posts with feet, 6 ft tall and 6.3 ft across, the beam along x as the old one was; the
+     old beams and octagon only if it fails */
+  const gy=G(x,z);
+  placeProp(root,"assets/props3d/bell.glb","bell",x,gy,z,Math.PI/2,1,function(){
+    const g=new Geo(), wood=RGB(0x6a543a), bronze=RGB(0x8a6a3a);
+    for(const k of [-2.4,2.4])g.beam8([x+k,gy-0.3,z],[x+k,gy+6,z],0.45,0.45,wood,wood);
+    g.beam8([x-3,gy+6,z],[x+3,gy+6,z],0.5,0.5,wood,wood);
+    g.oct(x,z,gy+3.8,gy+5.8,1.1,1.1,0.5,0.5,0.1,bronze,bronze);
+    root.add(g.mesh(false,false));});
+  solid(x,z,3.1,1.5,LVL.MAIN,0);
 }
 /* play-test, 27 Nov: "What They Ate" stood over bare ground: a cold hearth and an empty pot */
 function starveHearth(root,G,x,z){
   const g=new Geo(), stone=RGB(0x6e6a62), iron=RGB(0x2b2b30), ash=RGB(0x5d5650), gy=G(x,z);
   g.box(x,gy+0.04,z,2.6,0.08,2.6,ash);
   for(let i=0;i<7;i++){const a=i/7*Math.PI*2;g.box(x+Math.cos(a)*1.7,gy+0.25,z+Math.sin(a)*1.7,0.7,0.5,0.6,stone);}
-  g.oct(x+2.6,z+0.6,gy,gy+1.0,0.7,0.7,0.55,0.55,0.08,iron,iron);
+  /* 3d, 27 Nov: the pot is assets/props3d/iron_pot.glb (TRELLIS.2), a three-legged iron pot
+     with ears, 1.3 ft across; the octagon only if it fails */
+  placeProp(root,"assets/props3d/iron_pot.glb","iron_pot",x+2.6,G(x+2.6,z+0.6),z+0.6,0.4,1.1,function(){
+    const o=new Geo();o.oct(x+2.6,z+0.6,gy,gy+1.0,0.7,0.7,0.55,0.55,0.08,iron,iron);root.add(o.mesh(false,false));});
   root.add(g.mesh(false,false));solid(x,z,1.6,1.6,LVL.MAIN,0);
 }
 function starveEarthwork(root,G,x,z){
@@ -28725,10 +28766,15 @@ registerWorld("ch7",function(root){
         root.add(bakeFigure(f));solid(a[0],a[1],0.8,0.8,LVL.MAIN,0);});
       /* Thomas Savage, come down from Powhatan with venison */
       const sv=buildFigure(crowdEq("boy",9));sv.position.set(8,G(8,38),38);sv.rotation.y=-2.6;root.add(sv);solid(8,38,1,1,LVL.MAIN,0);
-      const V=new Geo(), deer=RGB(0x8a6440), deerD=RGB(0x5e4430), vy=G(8,41);
-      V.oct(8,41,vy,vy+1.0,0.9,1.7,0.7,1.4,0.2,deerD,deer);                 /* the carcass, lying */
-      V.box(8,vy+0.5,42.9,0.5,0.5,0.9,deer);V.beam8([7.6,vy+0.3,40.2],[6.4,vy+0.2,39.4],0.15,0.1,deerD,deerD);
-      V.beam8([8.4,vy+0.3,40.2],[9.6,vy+0.2,39.4],0.15,0.1,deerD,deerD);root.add(V.mesh(false,false));
+      /* 3d, 27 Nov: the carcass, lying, is assets/props3d/carcass.glb (TRELLIS.2): a doe on
+         her side, about 4 ft long, along z as the old one lay; the old octagon, box and legs
+         only if it fails */
+      const vy=G(8,41);
+      placeProp(root,"assets/props3d/carcass.glb","carcass",8,vy,41,Math.PI/2,1,function(){
+        const V=new Geo(), deer=RGB(0x8a6440), deerD=RGB(0x5e4430);
+        V.oct(8,41,vy,vy+1.0,0.9,1.7,0.7,1.4,0.2,deerD,deer);
+        V.box(8,vy+0.5,42.9,0.5,0.5,0.9,deer);V.beam8([7.6,vy+0.3,40.2],[6.4,vy+0.2,39.4],0.15,0.1,deerD,deerD);
+        V.beam8([8.4,vy+0.3,40.2],[9.6,vy+0.2,39.4],0.15,0.1,deerD,deerD);root.add(V.mesh(false,false));});
       presTable(root,G,-30,2.5);   /* play-test, 27 Nov: "Smith's List" was a label over bare ground */
       /* work, 27 Nov: Ratcliffe's company carrying their stores down to the pinnace, "to inhabit
          Point comfort" */
@@ -28764,10 +28810,16 @@ registerWorld("ch7",function(root){
     }
     if(w.day===3){
       spots={percy:[-36,-2,2.6]};
+      /* 3d, 27 Nov: the four accounts lie on assets/props3d/table.glb now (presTable's model),
+         in a row along its front edge, on its top; the old boxed table only if it fails */
       const T=new Geo(), wood=RGB(0x6a543a), paper=RGB(0xe7dfca);
-      T.box(-30,G(-30,6)+1.9,6,6,0.2,3,wood);for(const c of [[-2.6,-1.2],[2.6,-1.2],[-2.6,1.2],[2.6,1.2]])T.box(-30+c[0],G(-30,6)+0.95,6+c[1],0.2,1.9,0.2,wood);
-      for(let i=0;i<4;i++)T.box(-32.2+i*1.5,G(-30,6)+2.05,6+(i%2)*0.3,1.1,0.03,1.4,paper);
-      root.add(T.mesh(false,false));solid(-30,6,3,1.5,LVL.MAIN,0);
+      const ty=3.0;   /* the model's top is 2.9-3.0 ft under the papers: at 2.84 they were inside it */
+      placeProp(root,"assets/props3d/table.glb","table",-30,G(-30,6),6,Math.PI/2,1.05,function(){
+        const W=new Geo();W.box(-30,G(-30,6)+1.9,6,6,0.2,3,wood);
+        for(const c of [[-2.6,-1.2],[2.6,-1.2],[-2.6,1.2],[2.6,1.2]])W.box(-30+c[0],G(-30,6)+0.95,6+c[1],0.2,1.9,0.2,wood);
+        root.add(W.mesh(false,false));pp.position.y=2.05-ty;});
+      for(let i=0;i<4;i++)T.box(-31.9+i*1.25,G(-30,6)+ty,6.65+(i%2)*0.2,1.0,0.03,1.2,paper);
+      const pp=T.mesh(false,false);root.add(pp);solid(-30,6,2.6,1.8,LVL.MAIN,0);
       duty("trial","The Four Accounts",-30,10,{kind:"trial",verb:"Read them"});
       thinCrowd([[-8,-10,2.8],[14,2,-1.8,"stoop"]]);
     }
@@ -31874,7 +31926,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0554";
+const BUILD="20261127-0559";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

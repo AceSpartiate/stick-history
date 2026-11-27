@@ -155,6 +155,42 @@
       "source": "made for this game: a black rat, the ship rat. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI (E:/VN-Tools/asset-toolkit/_stick_props/rat_s7); auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py; reduced and colour-baked by tools/blender/bake_glb.py, every frame on the standing pose's centre (2026-11-27)",
       "licence": "own",
       "notes": "binary glTF, vertex colours only, 300 triangles; pose \"standing\" of one; placed by presRats() in index.html"
+    },
+    {
+      "path": "assets/props3d/table.glb",
+      "source": "made for this game: a table with standing ends and a drawer, papers, an inkpot and a quill on it. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 11, prompt \"A seventeenth-century English wooden writing slope on a plain trestle table, with a few sheets of paper, an inkpot and a quill pen. Three-quarter view from slightly above, the whole object in frame with margin, every part visible, plain pure white studio background, soft even lighting, photoreal product photo.\"; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI; reduced and colour-baked by tools/blender/bake_glb.py (--tris 2500 --height 4.5 --voxel 0.035) (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 2,491 triangles, 249 KB; placed by presTable() in index.html (Chapters VI and VII) at scale 1.05, and under the four accounts in Chapter VII"
+    },
+    {
+      "path": "assets/props3d/bell.glb",
+      "source": "made for this game: a small bronze bell hung from a beam on two posts with feet. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 11, prompt \"A small bronze bell hanging from a simple wooden frame of two posts and a crossbar, seventeenth century. Three-quarter view from slightly above, the whole object in frame with margin, every part visible, plain pure white studio background, soft even lighting, photoreal product photo.\"; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI; reduced and colour-baked by tools/blender/bake_glb.py (--tris 2500 --height 6) (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 2,495 triangles, 215 KB; placed by starveBell() in index.html (Chapter VII, 23 May 1610)"
+    },
+    {
+      "path": "assets/props3d/iron_pot.glb",
+      "source": "made for this game: an empty three-legged iron cooking pot with two ears. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7, prompt \"A three-legged cast-iron cooking pot of the early 1600s with a bail handle, plain black iron, empty. Three-quarter view from slightly above, the whole object in frame with margin, every part visible, plain pure white studio background, soft even lighting, photoreal product photo.\"; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI; reduced and colour-baked by tools/blender/bake_glb.py (--tris 2000 --height 0.85) (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,999 triangles, 167 KB; placed by starveHearth() in index.html (Chapter VII, the winter) at scale 1.1, and as the cook's kettle on the ship in Chapter I (buildCabins, at 1.45 x K)"
+    },
+    {
+      "path": "assets/props3d/stingray.glb",
+      "source": "made for this game: a stingray lying flat, its tail out behind. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7, prompt \"A single brown Atlantic stingray lying flat, a broad diamond-shaped body and a long thin whip-like tail with a small spine on it, seen from above at an angle. Three-quarter view from slightly above, the whole object in frame with margin, every part visible, plain pure white studio background, soft even lighting, photoreal product photo.\"; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI; reduced and colour-baked by tools/blender/bake_glb.py (--tris 1500 --height 1.1) (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,499 triangles, 131 KB; placed in the Bay scene of Chapter VI (the ray that stung Smith), flattened to 0.4 of its height"
+    },
+    {
+      "path": "assets/props3d/basin_ewer.glb",
+      "source": "made for this game: a brass basin with a ewer standing in it, one of the Company's presents to Powhatan. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 11, prompt \"An early seventeenth-century English brass basin, wide and shallow, with a tall brass ewer standing in it, plain hammered metal. Three-quarter view from slightly above, the whole object in frame with margin, every part visible, plain pure white studio background, soft even lighting, photoreal product photo.\"; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI; reduced and colour-baked by tools/blender/bake_glb.py (--tris 2500 --height 1.08 --voxel 0.01) (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 2,500 triangles, 250 KB; spawned in PRES_CROWN() in index.html (Chapter VI, the crowning)"
+    },
+    {
+      "path": "assets/props3d/carcass.glb",
+      "source": "made for this game: a white-tailed doe lying dead on her side, the venison Thomas Savage brought down from Powhatan. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7, prompt \"A dead white-tailed deer doe lying on her side on the ground, her four legs bound together with a cord, eyes closed, no blood and no wounds, brown summer coat with a white belly. Full body three-quarter view from slightly above showing the head, the legs and the tail, plain pure white background, photoreal, studio lighting.\"; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI; reduced and colour-baked by tools/blender/bake_glb.py (--tris 2000 --height 2.0 --voxel 0.025) (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 2,000 triangles, 200 KB; placed in the fort scene of Chapter VII (early October 1609) by the gate"
     }
   ]
 }
