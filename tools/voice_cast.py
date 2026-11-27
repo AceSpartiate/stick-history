@@ -93,6 +93,17 @@ CAST = {
              f"steady voice, {ENG}.",
     'digger': "A modern American archaeologist in his thirties: careful, warm and plain-spoken, a clear "
               "friendly voice, a present-day American accent.",
+    # Chapter VIII. Ages from the record where known; otherwise what the part calls for.
+    'delawarr': f"An English lord and governor in his thirties, newly arrived and soon sick: aristocratic, stern and "
+                f"formal, a commanding but tired voice, {ENG}.",
+    'hamor': f"An English colonial secretary in his twenties, an eager pamphleteer: smooth, confident and "
+             f"persuasive, a bright educated voice, {ENG}.",
+    'dale': f"An English soldier and marshal in his forties, a hard disciplinarian: clipped, severe and "
+            f"certain, a harsh low voice, {ENG}.",
+    'rolfe': f"A young English gentleman planter in his late twenties, earnest and devout: careful, sincere "
+             f"and a little anxious, a soft clear voice, {ENG}.",
+    'argall': f"An English sea captain in his thirties, practical and calculating: blunt, quick and cool, "
+              f"a firm seaman's voice, {ENG}.",
 }
 REEL_GAP = 0.6
 
