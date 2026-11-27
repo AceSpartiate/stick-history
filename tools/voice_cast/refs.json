@@ -98,5 +98,17 @@
  "bargeman": {
   "text": "But there is a town there, and fires, and we have been cold in this boat since morning.",
   "desc": "An English soldier in a cold boat on a winter river: tired, restless and grumbling, a plain working voice, an English accent of the early 1600s, not American."
+ },
+ "scrivener": {
+  "text": "When the ship is gone, Captain Smith and I are to share out the rest between us: the town, the palisade, the fields.",
+  "desc": "A young English gentleman of the council in his twenties: earnest, capable and a little harried, a clear educated voice, an English accent of the early 1600s, not American."
+ },
+ "todkill": {
+  "text": "one of Smith's company, who writes",
+  "desc": "An English soldier and servant in his twenties who writes things down: plain, observant and loyal, a steady working man's voice with a dry edge, an English accent of the early 1600s, not American."
+ },
+ "russell": {
+  "text": "Much of the fashion of a thornback, with a longer tail, and on the tail a poisoned sting two or three inches long.",
+  "desc": "An English doctor of physic in his forties: calm, learned and wry, a measured, reassuring voice, an English accent of the early 1600s, not American."
  }
 }
