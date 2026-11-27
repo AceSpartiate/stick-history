@@ -1234,7 +1234,7 @@ const COSMETICS={
   build_survivor:{slot:"build",name:"Survivor",locked:1,desc:"A gaunt frame in a threadbare blanket. (Later chapters.)"},
   none_head:{slot:"head",name:"Bare Head",free:1,desc:""},
   head_cap:{slot:"head",name:"Monmouth Cap",buy:25,desc:"Soft black knitted wool with a rolled edge, worn back on the head - the commonest headwear aboard."},
-  head_capotain:{slot:"head",name:"Capotain Hat",buy:35,desc:"Tall stiff crown with a buckle band."},
+  head_capotain:{slot:"head",name:"Capotain Hat",buy:35,desc:"Tall stiff crown with a plain hatband."},
   head_feather:{slot:"head",name:"Feathered Hat",buy:45,desc:"Broad felt brim cocked with a plume."}
 };
 
@@ -1697,7 +1697,7 @@ function readMusterCode(txt){
    appearance is declared ONCE here and referenced; the next chapter to put him on
    screen uses this and cannot drift. */
 const SMITH_EQ={skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
-  accessory:"none_acc",head:"none_head",build:"build_normal",face:"smith"};
+  accessory:"none_acc",head:"none_head",build:"build_normal",face:"smith",look:"smith@1607/irons"};
 /* ---- `let`, NOT `const`, AND THAT ONE WORD WAS THE WHOLE WALL ----
    This held Chapter I's content and was bound once, for ever. Measured from Chapter II by
    object identity: `CH.reck` was THE SAME ARRAY OBJECT as from Chapter I - the same
@@ -2047,7 +2047,7 @@ let CH={
      "\u201cIf I die out here, tell my brother he was right.\u201d",
      "He waves you away without lifting his head from the rail."]},
   {id:"hunt",name:"Reverend Hunt",voice:"male",role:"chaplain to the voyage",lvl:2,pos:[3,-14],face:-2.2,
-   eq:{skin:"english",palette:"lostcolony",cloak:"cloak_weathered",torso:"torso_doublet",accessory:"none_acc",head:"none_head",build:"build_normal",face:"pious"},
+   eq:{skin:"english",palette:"lostcolony",cloak:"cloak_weathered",torso:"torso_doublet",accessory:"none_acc",head:"none_head",build:"build_normal",face:"pious",look:"hunt@1607"},
    lines:["\u201cPrayers at first light, whatever the weather. Especially in this weather.\u201d",
      /* "sick unto death these three weeks" put his illness in April, where nothing records it.
         The record puts it in the Downs: Hunt "was so weake and sicke, that few expected his
@@ -2159,7 +2159,8 @@ let CH={
   noteText:"A tally of names and crosses. At the foot, marked 'for London', a shorter column."},
 
  captain:{name:"Captain Newport",voice:"male",role:"master of the Susan Constant",need:2,
-  eq:{skin:"english",palette:"slate",cloak:"cloak_weathered",torso:"torso_doublet",accessory:"none_acc",head:"head_capotain",build:"build_normal",face:"stern"},
+  eq:{skin:"english",palette:"slate",cloak:"cloak_weathered",torso:"torso_doublet",accessory:"none_acc",head:"head_capotain",build:"build_normal",face:"stern",
+      arm:"no_right",look:"newport@1607"},
   beats:[
    {npc:"\u201cA thief in my hold. Give me one reason not to have you flogged before the mast.\u201d",
     choices:[
@@ -2879,9 +2880,284 @@ const HAIR={black:0x17120e,dark:0x2a1f16,brown:0x4e3a26,chestnut:0x613b22,auburn
   sandy:0x9a7a4a,fair:0xbb9d64,grey:0x8c877f,white:0xcdc8bd};
 const LOOK_DEFAULT={sex:"m",age:"adult",build:"normal",height:1,face:"oval",hair:"short",
   hairColor:HAIR.brown,beard:"none",beardColor:null,hat:null,dress:null,apron:false,
-  mantle:false,beads:false,paint:false,feet:"shoes",expr:"calm",colors:null,skin:null};
-/* named people, wired from the look book: PEOPLE_LOOK.smith={...}, then eq.look:"smith" */
-const PEOPLE_LOOK={};
+  mantle:false,beads:false,paint:false,feet:"shoes",expr:"calm",colors:null,skin:null,
+  cloak:false,plate:false,sash:null,ruff:false,lace:false,chain:false,ear:null};
+/* ---- WHAT THE DRESSING PASS ADDED (27 Nov), all optional, all from the look book ----
+     dress "jack"   a jack of plate: canvas or leather, quilted over small iron plates, with
+                    a bandolier - the common soldier's armour dug up at Jamestown (1.2).
+                    colors.torso is the jack, colors.sleeve the doublet sleeve under it
+     plate:true     an iron breastplate over whatever he wears (watch and war only)
+     cloak:true     a cloak in colors.cloak, without the wardrobe's cloak_weathered
+     sash: hex      a sash of office over the shoulder (Gates; Nuce's brick red)
+     ruff:true      a starched ruff instead of the falling band (Wingfield, Persey)
+     lace:true      a deeper, lace-edged band (Ratcliffe, Dale, Gates, the 1620s)
+     chain:true     a gold chain (Martin)
+     apron:true     on a man, a leather apron (Read, Laxon)
+     ear: hex       copper or pearl at his left ear ("In each eare commonly they haue 3
+                    great holes", Map, Tyler p. 100) */
+/* the dyes of 1.0 in the look book, the colours a cloth of 1607-1624 could actually be */
+const WOOL={canvas:0xd9cdae,linen:0xece6d6,russet:0x6e5236,grey:0x8a8272,madder:0x8a3b2f,
+  scarlet:0x9c1f1c,murrey:0x5e2a33,woad:0x4e6076,watchet:0x8aa3b5,green:0x4c7d6e,
+  yellow:0xb39a3e,tawny:0x8a6a3a,black:0x232022,frieze:0x6a6150,leather:0x6b4a2a,
+  deer:0x9b7a52,deerD:0x7a5c3c,copper:0xb8733a,pearl:0xeee8da,raccoon:0x6f6458,brick:0x9a4a32};
+
+/* ========== THE NAMED PEOPLE ==========
+   One entry per person, from FIGURES-LOOKBOOK.md Part 2 (stick-history-notes/docs). Face,
+   hair, beard and the one signature thing never change between chapters; the dress may, by
+   year (`by`, applied in order from the year given). `born` ages a man with the chapter: grey
+   creeping in past forty, "old" at fifty-five, and a youth at the boy's scale under sixteen.
+   `mood` is the resting expression (eq.face), `eqx` the few eq fields a look cannot say.
+   Read through personEq(key, year) or eq.look:"key@year" - see lookOf.
+
+   THE EVIDENCE, because a look is not a portrait. LIFE: Smith (van de Passe, 1616), Percy
+   (Syon House portrait, 1615) and Pocahontas (van de Passe, London 1616 - which is NOT used
+   for her Virginia figures). DOUBTFUL portraits, dress borrowed and the face not claimed:
+   Gates and Dale. DESCRIBED: Wingfield's beard, Powhatan, Yeardley's finery, Frethorne's
+   rags, Newport's arm. Everyone else is CLASS: a plausible look for his rank and year,
+   imagined, with a signature colour or item chosen only so a class can tell people apart.
+   No face is invented: shapes come from the shared five. No tattoo on any named woman. */
+const PEOPLE_LOOK={
+  /* ---- English, 1606-1610 ---- */
+  /* CLASS + one body fact: the right arm, lost off Cuba in 1590. Greying hair and short
+     beard imagined. Master's gentleman dress, a weathered sea cloak, a plumed hat */
+  newport:{born:1561,face:"square",hair:"short",hairColor:HAIR.dark,beard:"short",build:"heavy",
+    hat:"feather",dress:"doublet",cloak:true,mood:"stern",eqx:{arm:"no_right"},
+    colors:{torso:WOOL.woad,breech:WOOL.russet,stock:WOOL.grey,cloak:0x5f5a4e,hat:0x3a332a}},
+  /* LIFE: the 1616 engraving - full beard and moustache (the game's reading, forked and
+     turned up, is FACEDEF.smith and is unconfirmed), mid-length hair, no hat, a buttoned
+     doublet. A working soldier in Virginia: plain cloth */
+  smith:{born:1580,face:"square",hair:"short",hairColor:HAIR.chestnut,beard:"forked",
+    hat:"none",dress:"doublet",mood:"smith",
+    colors:{torso:WOOL.tawny,breech:WOOL.russet,stock:WOOL.grey},
+    /* held in irons from the Canaries: in his shirt, below in the ballast and brought up bound */
+    as:{irons:{dress:"shirt",colors:{torso:0xb9ad94,breech:WOOL.russet,stock:WOOL.grey}}}},
+  /* LIFE, with care: the 1615 portrait - "White shirt, red cloak over left shoulder" (Rose
+     2024). Slight and sickly ("fitts"). The beard is a gentleman's of 1615, not seen */
+  percy:{born:1580,face:"long",hair:"long",hairColor:HAIR.brown,beard:"pointed",build:"thin",
+    hat:"capotain",dress:"doublet",cloak:true,mood:"mild",
+    colors:{torso:0xb9ad94,breech:WOOL.murrey,stock:WOOL.grey,cloak:WOOL.scarlet,hat:0x2e2a26}},
+  /* CLASS + a wound. Dark hair and a square beard picked to differ from Percy and Smith; a
+     lawyer and Recorder, plain dark doublet, capotain, his writing case */
+  archer:{born:1574,face:"oval",hair:"short",hairColor:HAIR.black,beard:"short",
+    hat:"capotain",dress:"doublet",mood:"keen",eqx:{accessory:"acc_satchel"},
+    colors:{torso:WOOL.woad,breech:WOOL.grey,stock:WOOL.grey,hat:0x2a2622}},
+  /* CLASS: the clergy of 1.5, a black gown (the cloak) over a black doublet, plain band,
+     plain black hat; frail ("so weake and sicke"); a modest trimmed beard imagined */
+  hunt:{born:1568,face:"narrow",hair:"receding",hairColor:HAIR.brown,beard:"short",build:"thin",
+    hat:"broad",dress:"doublet",cloak:true,mood:"kind",
+    colors:{torso:WOOL.black,breech:WOOL.black,stock:0x4a4038,cloak:0x2a2628,hat:0x1e1c1c}},
+  /* CLASS: soldier-gentleman, a jack and his helmet (the signature), "a soldier, and no
+     seaman" */
+  kendall:{face:"narrow",hair:"cropped",hairColor:HAIR.dark,beard:"moustache",
+    hat:"morion",dress:"jack",mood:"shrewd",
+    colors:{torso:0x7a6a4c,sleeve:WOOL.woad,breech:WOOL.woad,stock:WOOL.grey}},
+  /* DESCRIBED, beard only: "one shott cleane through his bearde" (Archer). The oldest of the
+     council at 57 - grey, heavier; the richest gentleman of 1607, a ruff, cloak and capotain */
+  wingfield:{born:1550,face:"round",hair:"receding",hairColor:HAIR.brown,beard:"full",build:"heavy",
+    hat:"capotain",dress:"doublet",ruff:true,cloak:true,mood:"stern",
+    colors:{torso:WOOL.murrey,breech:WOOL.black,stock:WOOL.black,cloak:0x3a3236,hat:0x262224}},
+  /* CLASS: seaman-gentleman, doublet, sea cloak, capotain */
+  gosnold:{born:1571,face:"long",hair:"short",hairColor:HAIR.sandy,beard:"pointed",
+    hat:"capotain",dress:"doublet",cloak:true,mood:"shrewd",
+    colors:{torso:WOOL.green,breech:WOOL.grey,stock:WOOL.grey,cloak:0x58594e,hat:0x2e2a24}},
+  /* CLASS: a labourer of the 1607 list, young (imagined). Canvas, and a red Monmouth cap */
+  laydon:{face:"round",hair:"short",hairColor:HAIR.fair,beard:"stubble",
+    hat:"cap",dress:"shirt",mood:"plain",
+    colors:{torso:WOOL.canvas,breech:WOOL.russet,stock:WOOL.grey,hat:WOOL.madder}},
+  /* CLASS: a carpenter's leather apron in 1607 (imagined); Ensign by 1609, a jack over it */
+  laxon:{face:"square",hair:"cropped",hairColor:HAIR.brown,beard:"full",
+    hat:"none",dress:"shirt",apron:true,mood:"plain",
+    colors:{torso:WOOL.grey,breech:WOOL.russet,stock:WOOL.grey,apron:WOOL.leather},
+    by:[[1608,{dress:"jack",colors:{torso:0x7a6a4c,sleeve:WOOL.grey,breech:WOOL.russet,stock:WOOL.grey,apron:WOOL.leather}}]]},
+  /* CLASS: cape merchant, a plain gentleman */
+  studley:{face:"oval",hair:"receding",hairColor:HAIR.dark,beard:"short",
+    hat:"capotain",dress:"doublet",mood:"plain",
+    colors:{torso:WOOL.grey,breech:WOOL.russet,stock:WOOL.grey,hat:0x302a24}},
+  /* CLASS: gentleman-captain, one touch of finery - a lace band ("vnnecessarie pallas") */
+  ratcliffe:{face:"narrow",hair:"long",hairColor:HAIR.auburn,beard:"pointed",
+    hat:"feather",dress:"doublet",lace:true,mood:"shrewd",
+    colors:{torso:WOOL.madder,breech:WOOL.woad,stock:WOOL.grey,hat:0x2a2420}},
+  /* CLASS: a goldsmith's son, finer cloth and a gold chain (imagined) */
+  martin:{born:1560,face:"round",hair:"short",hairColor:HAIR.chestnut,beard:"short",build:"heavy",
+    hat:"capotain",dress:"merchant",chain:true,mood:"mild",
+    colors:{torso:WOOL.murrey,breech:WOOL.black,stock:WOOL.grey,hat:0x241f1f}},
+  /* CLASS: "James Read, Blacksmith": shirt sleeves, a leather apron, a Monmouth cap */
+  read:{face:"square",hair:"cropped",hairColor:HAIR.black,beard:"full",build:"heavy",
+    hat:"cap",dress:"shirt",apron:true,mood:"weary",
+    colors:{torso:WOOL.canvas,breech:WOOL.grey,stock:WOOL.grey,apron:0x4e3622,hat:0x3a3530}},
+  /* CLASS: council, 1608; a green doublet (imagined) */
+  scrivener:{face:"long",hair:"long",hairColor:HAIR.fair,beard:"moustache",
+    hat:"capotain",dress:"doublet",mood:"keen",
+    colors:{torso:WOOL.green,breech:WOOL.tawny,stock:WOOL.grey,hat:0x2e2a24}},
+  /* CLASS: one of Smith's soldiers, jack and Monmouth cap */
+  todkill:{face:"oval",hair:"short",hairColor:HAIR.sandy,beard:"short",
+    hat:"cap",dress:"jack",mood:"keen",
+    colors:{torso:0x8a7a58,sleeve:WOOL.russet,breech:WOOL.grey,stock:WOOL.grey,hat:WOOL.woad}},
+  /* CLASS: "Doctor of Physicke", a dark gown and black hat */
+  russell:{face:"oval",hair:"short",hairColor:HAIR.grey,beard:"pointed",
+    hat:"broad",dress:"doublet",cloak:true,mood:"mild",
+    colors:{torso:0x3a3236,breech:WOOL.black,stock:0x4a4038,cloak:0x2c2a30,hat:0x1e1c1c}},
+  /* CLASS, never voiced: a gentlewoman, her hat over the coif (imagined); her maid, a white
+     apron. No age, no expression that suggests speech or feeling */
+  forrest:{sex:"f",face:"oval",hair:"bun",hairColor:0x4a3424,hat:"capotain",dress:"gown",
+    mood:"plain",colors:{gown:WOOL.murrey,hat:0x2a2622}},
+  burras:{sex:"f",face:"round",hair:"bun",hairColor:0x7a5434,hat:"coif",dress:"gown",apron:true,
+    mood:"plain",colors:{gown:WOOL.russet}},
+
+  /* ---- English, 1609-1624 ---- */
+  /* CLASS: a gentleman's son of about fourteen in youth's dress, bare-headed. NOT Powhatan
+     dress - no source says he wore it */
+  spelman:{born:1595,face:"narrow",hair:"short",hairColor:HAIR.sandy,build:"thin",
+    hat:"none",dress:"doublet",mood:"eager",
+    colors:{torso:WOOL.watchet,breech:WOOL.grey,stock:WOOL.grey}},
+  /* CLASS: soldier-captain at Algernon Fort, breastplate and morion (the record's "moryons") */
+  davis:{face:"square",hair:"cropped",hairColor:HAIR.brown,beard:"full",
+    hat:"morion",dress:"jack",plate:true,mood:"keen",
+    colors:{torso:WOOL.leather,sleeve:WOOL.madder,breech:WOOL.russet,stock:WOOL.grey}},
+  /* CLASS: Gates's secretary, a year on Bermuda: a worn dark doublet and his papers */
+  strachey:{born:1572,face:"long",hair:"receding",hairColor:HAIR.brown,beard:"pointed",
+    hat:"capotain",dress:"doublet",mood:"keen",eqx:{accessory:"acc_satchel"},
+    colors:{torso:0x4a4a52,breech:WOOL.grey,stock:WOOL.grey,hat:0x2a2622}},
+  /* PORTRAIT?: the dress borrowed, the face not claimed - armour, a sash of office, a lace
+     collar. The helmet is in his hand in the picture; he wears his hat here */
+  gates:{face:"square",hair:"short",hairColor:HAIR.grey,beard:"pointed",
+    hat:"feather",dress:"doublet",plate:true,lace:true,sash:0xb8963c,mood:"keen",
+    colors:{torso:WOOL.tawny,breech:WOOL.tawny,stock:0xd8d0bc,hat:0x2e2822}},
+  /* treat as NO likeness (the Buckhurst portrait is not him): high nobility, the richest
+     dressed man - dark cloth, lace, a plumed hat; his guard in scarlet livery */
+  delawarr:{born:1576,face:"oval",hair:"long",hairColor:HAIR.dark,beard:"pointed",
+    hat:"feather",dress:"merchant",lace:true,cloak:true,mood:"shrewd",
+    colors:{torso:0x2c2436,breech:0x2c2436,stock:0x6a3a40,cloak:WOOL.scarlet,hat:0x1e1a1c}},
+  /* CLASS: young secretary, a blue doublet (imagined) */
+  hamor:{born:1589,face:"oval",hair:"short",hairColor:HAIR.auburn,beard:"none",
+    hat:"capotain",dress:"doublet",mood:"keen",
+    colors:{torso:WOOL.woad,breech:WOOL.woad,stock:WOOL.grey,hat:0x2a2622}},
+  /* PORTRAIT?: the dress borrowed - "a flat lace collar, bulbous breeches, and black hose",
+     a pointed beard and moustache, a tall black hat; in Virginia, the soldier of the Lawes,
+     a breastplate over the same clothes */
+  dale:{face:"narrow",hair:"short",hairColor:HAIR.black,beard:"pointed",
+    hat:"capotain",dress:"doublet",lace:true,plate:true,mood:"shrewd",
+    colors:{torso:0x3a2e30,breech:0x2e2a2c,stock:WOOL.black,hat:0x161414}},
+  /* NONE survives ("no descriptions of his appearance are extant"): a plain gentleman-
+     planter, working sleeves, a capotain */
+  rolfe:{born:1585,face:"oval",hair:"short",hairColor:HAIR.brown,beard:"short",
+    hat:"capotain",dress:"doublet",mood:"plain",
+    colors:{torso:WOOL.tawny,breech:WOOL.russet,stock:WOOL.grey,hat:0x3a3024}},
+  /* NONE found: a sea captain, a dark sea cloak over a doublet */
+  argall:{born:1580,face:"square",hair:"cropped",hairColor:HAIR.dark,beard:"short",
+    hat:"capotain",dress:"doublet",cloak:true,mood:"shrewd",
+    colors:{torso:WOOL.woad,breech:WOOL.grey,stock:WOOL.grey,cloak:0x3a3c40,hat:0x24221e},
+    by:[[1617,{lace:true}]]},
+  /* DESCRIBED, dress only: he came with "onely his sword"; by 1618 "extraordinarie braverie".
+     As governor, the richest dressed Englishman in the colony - gold lace and a plume */
+  yeardley:{born:1588,face:"round",hair:"short",hairColor:HAIR.chestnut,beard:"pointed",
+    hat:"feather",dress:"merchant",lace:true,cloak:true,sash:0xc9a24a,mood:"keen",
+    colors:{torso:WOOL.green,breech:WOOL.green,stock:0xb39a3e,cloak:WOOL.scarlet,hat:0x2a2420}},
+  /* CLASS: secretary and Speaker, dark cloth, a black gown at the Assembly */
+  pory:{born:1572,face:"round",hair:"receding",hairColor:HAIR.brown,beard:"short",build:"heavy",
+    hat:"capotain",dress:"doublet",cloak:true,mood:"mild",
+    colors:{torso:0x3a3440,breech:WOOL.black,stock:WOOL.grey,cloak:0x262428,hat:0x1e1c1c}},
+  /* CLASS: a wealthy merchant, good black with a white ruff (imagined) */
+  persey:{face:"oval",hair:"short",hairColor:HAIR.dark,beard:"short",build:"heavy",
+    hat:"capotain",dress:"merchant",ruff:true,mood:"shrewd",
+    colors:{torso:WOOL.black,breech:WOOL.black,stock:WOOL.grey,hat:0x1a1818}},
+  /* CLASS: an ancient planter who has done well, but plain - mended good cloth */
+  spence:{face:"long",hair:"receding",hairColor:HAIR.grey,beard:"full",
+    hat:"cap",dress:"doublet",mood:"weary",
+    colors:{torso:0x6a6a52,breech:WOOL.russet,stock:WOOL.grey,hat:WOOL.russet}},
+  /* NONE: a young knight-governor of the 1620s, deep band, a deep-blue cloak (imagined) */
+  wyatt:{born:1588,face:"long",hair:"long",hairColor:HAIR.brown,beard:"pointed",
+    hat:"capotain",dress:"merchant",lace:true,cloak:true,mood:"keen",
+    colors:{torso:WOOL.murrey,breech:WOOL.murrey,stock:WOOL.grey,cloak:0x2e3a5c,hat:0x221f1e}},
+  /* CLASS: a small planter, shirt and waistcoat, no hat */
+  pace:{face:"square",hair:"short",hairColor:HAIR.sandy,beard:"short",
+    hat:"none",dress:"shirt",mood:"plain",
+    colors:{torso:WOOL.linen,breech:WOOL.russet,stock:WOOL.grey}},
+  /* CLASS: soldier-captain of 1622, a breastplate in the war year and a brick-red sash */
+  nuce:{face:"oval",hair:"cropped",hairColor:HAIR.chestnut,beard:"full",
+    hat:"capotain",dress:"doublet",plate:true,sash:WOOL.brick,mood:"keen",
+    colors:{torso:WOOL.russet,breech:WOOL.grey,stock:WOOL.grey,hat:0x2a2622}},
+  /* NONE found - and not his brother Edwin's face: a scholar-gentleman in black */
+  gsandys:{born:1578,face:"narrow",hair:"short",hairColor:HAIR.dark,beard:"pointed",build:"thin",
+    hat:"capotain",dress:"doublet",mood:"keen",
+    colors:{torso:WOOL.black,breech:WOOL.black,stock:0x4a4038,hat:0x161414}},
+  /* DESCRIBED, his own words: "one poore suite", "one Capp", "my Cloke is stollen" - thin,
+     a worn russet suit and a cap, no cloak. Young; the youth's scale */
+  frethorne:{face:"narrow",hair:"short",hairColor:HAIR.brown,build:"thin",age:"boy",
+    hat:"cap",dress:"doublet",mood:"weary",
+    colors:{torso:0x7a6a52,breech:0x6a5a46,stock:WOOL.grey,hat:0x4a4038}},
+
+  /* ---- Powhatan people, named and drawn (all never voiced) ---- */
+  /* DESCRIBED: "a tall well proportioned man, with a sower looke; his head somwhat gray, his
+     beard so thinne that it seemeth none at al" (Map, 1612). The men's cut is class. His
+     signature is the pearl chains and the raccoon robe; NO crown or headdress of his own */
+  powhatan:{born:1548,face:"long",hair:"powhatan",hairColor:0x6a6560,height:1.05,mood:"plain",
+    dress:"bare",feet:"moccasin",mantle:true,beads:true,colors:{mantle:WOOL.raccoon}},
+  /* CLASS in every Virginia scene. As a child (1608-09) the maids' cut, a small winter
+     mantle, no paint, no beads; as captive and bride (1613-14) the mantle and long plait, no
+     bead chain and no red crown - "no source describes her dress in 1613-14". The 1616
+     engraving belongs to London only */
+  pocahontas:{born:1595,sex:"f",face:"oval",hair:"maid",hairColor:0x2a1d14,mood:"plain",
+    dress:"tw",feet:"moccasin",mantle:true,paint:false,beads:false,
+    by:[[1611,{hair:"plait"}]]},
+  /* CLASS: an elder of standing at a formal occasion, a mantle edged with white beads */
+  opachisco:{born:1560,face:"square",hair:"powhatan",hairColor:0x3a302a,mood:"plain",
+    dress:"bare",feet:"moccasin",mantle:true,beads:true,paint:true},
+  /* CLASS: working men in spring, bare to the waist. Kemps the copper at his ear, Tassore the
+     feathers in his knot (which every man's knot has) */
+  kemps:{face:"square",hair:"powhatan",hairColor:HAIR.black,mood:"plain",
+    dress:"bare",feet:"moccasin",ear:WOOL.copper,paint:true},
+  tassore:{face:"narrow",hair:"powhatan",hairColor:HAIR.black,mood:"plain",build:"thin",
+    dress:"bare",feet:"moccasin"},
+
+  /* ---- named in the game, NOT in the look book: dressed by class, imagined ---- */
+  /* Richard Bucke, the minister at the 1619 Assembly (look book 1.5 names him as `min`) */
+  bucke:{face:"oval",hair:"short",hairColor:HAIR.brown,beard:"short",
+    hat:"broad",dress:"doublet",cloak:true,mood:"kind",
+    colors:{torso:WOOL.black,breech:WOOL.black,stock:0x4a4038,cloak:0x262428,hat:0x1a1818}},
+  /* Samuel Purchas, the London clergyman who printed the accounts: the clergy of 1.5 */
+  purchas:{face:"round",hair:"receding",hairColor:HAIR.brown,beard:"short",
+    hat:"broad",dress:"doublet",cloak:true,mood:"mild",
+    colors:{torso:WOOL.black,breech:WOOL.black,stock:0x4a4038,cloak:0x2a2628,hat:0x1a1818}},
+  /* Uttamatomakkin, Powhatan's counsellor in London: a man of the better sort, mantle and
+     beads (1.9). Nothing describes him */
+  uttamatomakkin:{face:"long",hair:"powhatan",hairColor:HAIR.black,mood:"plain",
+    dress:"bare",feet:"moccasin",mantle:true,beads:true}
+};
+/* who a named person is in a given year: his own look, the dress for that year, and his age */
+function personLook(key,yr,variant){
+  const P=PEOPLE_LOOK[key];
+  if(!P)return null;
+  const L=Object.assign({},P);
+  if(P.by&&yr)for(const b of P.by)if(yr>=b[0])Object.assign(L,b[1]);
+  if(variant&&P.as&&P.as[variant])Object.assign(L,P.as[variant]);
+  delete L.as;
+  if(P.born&&yr){
+    const a=yr-P.born;
+    if(a<16)L.age="boy";
+    else if(a>=55)L.age="old";
+    if(L.hairColor!==undefined&&a>=40)L.hairColor=mixHex(L.hairColor,HAIR.grey,Math.min(0.62,(a-38)/30));
+  }
+  delete L.by;delete L.born;delete L.eqx;delete L.mood;
+  return L;
+}
+/* a named person's whole eq for a year; `over` is a scene's own change on top (Smith in irons,
+   a thin winter) and wins over everything */
+function personEq(key,yr,over){
+  const P=PEOPLE_LOOK[key]||{};
+  const tw=(P.dress==="bare"||P.dress==="tw");
+  const eq={skin:tw?"tidewater":"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
+    accessory:"none_acc",head:"none_head",build:"build_normal",face:P.mood||"plain",
+    look:key+"@"+(yr||0)};
+  if(P.eqx)Object.assign(eq,P.eqx);
+  if(over){
+    const lo=over.look;
+    Object.assign(eq,over);
+    if(lo&&typeof lo==="object")eq.look=Object.assign(personLook(key,yr)||{},lo);
+    else eq.look=key+"@"+(yr||0);
+  }
+  return eq;
+}
 /* the age's own scale, and how much bigger the head is against the body: a child's head is
    most of an adult's, which is the whole of what makes a small figure read as YOUNG rather
    than as a man further away */
@@ -2897,7 +3173,10 @@ function lookOf(eq){
   if(eq.build==="build_survivor")L.build="thin";
   if(eq.skin==="tidewater"){L.hair="powhatan";L.hairColor=HAIR.black;L.feet="moccasin";}
   let own=eq.look;
-  if(typeof own==="string")own=PEOPLE_LOOK[own]||null;
+  /* "percy" is his look; "percy@1609" is his look in 1609, dressed and aged for it; and
+     "smith@1607/irons" one of the person's own variants (PEOPLE_LOOK.smith.as.irons) */
+  if(typeof own==="string"){const m=/^([a-z]+)(?:@(\d+))?(?:\/([a-z]+))?$/.exec(own);
+    own=m?personLook(m[1],+(m[2]||0),m[3]):null;}
   if(own){
     for(const k in own)if(own[k]!==undefined&&own[k]!==null)L[k]=own[k];
     /* a Powhatan woman's hair is not the men's half-shaved fashion */
@@ -3011,6 +3290,8 @@ function figHead(HD,ex,h,exprKey){
   HD.fine(function(){                                                         /* ears */
     for(let s=-1;s<=1;s+=2)HD.box(s*(cw/2+0.012),1.628,-0.012,0.03,0.092,0.072,SKD);
   });
+  /* copper or pearl hung at his own left ear (+X, as the powhatan hair below explains) */
+  if(L.ear)HD.box(cw/2+0.026,1.548,-0.010,0.026,0.090,0.050,RGB(L.ear));
 
   /* ---- hair ---- */
   const hat=h.hat;
@@ -3086,7 +3367,8 @@ function figHead(HD,ex,h,exprKey){
     HD.oct(0,0,1.838,1.866,0.660,0.680,0.640,0.660,0.45,hd,hb);               /* brim */
     HD.oct(0,0,1.862,2.170,0.405,0.415,0.335,0.345,0.40,hd,hb);               /* tall crown */
     HD.oct(0,0,1.880,1.935,0.418,0.428,0.410,0.420,0.40,RGB(0x7a5a2a),RGB(0x7a5a2a));
-    HD.fine(function(){HD.box(0,1.907,0.214,0.060,0.058,0.020,RGB(0xb89a52));});
+    /* no buckle on the band: the buckled hat is a nineteenth-century picture (look book 1.13
+       and Part 3, item 9) */
   } else if(hat==="feather"||hat==="broad"){
     const br=hat==="feather"?0.76:0.80;
     HD.oct(0,0,1.838,1.862,br,0.68,br-0.02,0.66,0.45,hd,hb);
@@ -3156,20 +3438,30 @@ function buildFigureRaw(eq,opt){
   const DR={torso_doublet:"doublet",torso_buffcoat:"buffcoat",torso_merchant:"merchant",torso_bare:"bare"};
   let T=L.dress||DR[eq.torso]||"shirt";
   if(T==="bare"&&female)T="tw";
+  /* a jack of plate is cut like the buff coat - a quilted body with a short skirt and a
+     bandolier - in canvas or leather over iron plates, so it IS the buff coat's shape in
+     the jack's cloth, with the doublet's sleeves showing (the jack has none) */
+  const JACK=(T==="jack");
+  if(JACK)T="buffcoat";
+  /* a colour the look names is the colour wanted: shade it lightly, not down to the 0.62 a
+     palette dye takes (which was tuned for the wardrobe and turns murrey into black) */
+  const exT=CO.torso!==undefined, exB=CO.breech!==undefined;
   const LINEN=RGB(0xf1ede2),PEWTER=RGB(0xbcc0c8),LEATHER=RGB(0x6b4a2a),BUCKLE=RGB(0xc9a24a),
-        SHOE=RGB(CO.shoe!==undefined?CO.shoe:0x2a2118),BUFF=RGB(0xb8996a),FINE=RGB(0x2b2636),
+        SHOE=RGB(CO.shoe!==undefined?CO.shoe:0x2a2118),
+        BUFF=RGB(JACK?(exT?CO.torso:0x7d7058):0xb8996a),FINE=RGB(exT?shadeHex(CO.torso,0.82):0x2b2636),
         HIDE=RGB(0x6d543a),THONG=RGB(0x7a6242),DEER=RGB(0x9b7a52),DEERD=RGB(0x7a5c3c);
 
   /* One dye per garment, each falling back to eq.palette; each garment takes a SHADE of
      its dye. Linen bands and cuffs stay white on purpose. */
   const STOCKC=0xd2ccb8;
-  const WOOL_D=RGB(shadeHex(palHex,0.62)), WOOL_T=RGB(shadeHex(palHex,0.48));
+  const WOOL_D=RGB(shadeHex(palHex,exT?0.86:0.62)), WOOL_T=RGB(shadeHex(palHex,exT?0.70:0.48));
   let sleeveCol=CLOTH,cuffCol=null,breechCol=RGB(mixHex(brHex,0x8d8368,0.40)),
       stockCol=RGB(mixHex(stHex,STOCKC,0.34)),bareLegs=false,bareArms=false;
   const gownHex=(CO.gown!==undefined)?CO.gown:mixHex(palHex,0x6e5236,0.55);
-  if(T==="doublet"){sleeveCol=RGB(shadeHex(palHex,0.72));cuffCol=LINEN;breechCol=RGB(shadeHex(brHex,0.62));}
-  else if(T==="buffcoat"){sleeveCol=BUFF;breechCol=RGB(shadeHex(brHex,0.55));}
-  else if(T==="merchant"){sleeveCol=RGB(shadeHex(palHex,0.55));cuffCol=LINEN;breechCol=RGB(shadeHex(brHex,0.44));}
+  if(T==="doublet"){sleeveCol=RGB(shadeHex(palHex,exT?0.92:0.72));cuffCol=LINEN;breechCol=RGB(shadeHex(brHex,exB?0.84:0.62));}
+  else if(T==="buffcoat"){sleeveCol=JACK?RGB(shadeHex(CO.sleeve!==undefined?CO.sleeve:0x5a4a3a,0.92)):BUFF;
+    if(JACK)cuffCol=LINEN;breechCol=RGB(shadeHex(brHex,exB?0.80:0.55));}
+  else if(T==="merchant"){sleeveCol=RGB(shadeHex(palHex,exT?0.78:0.55));cuffCol=LINEN;breechCol=RGB(shadeHex(brHex,exB?0.74:0.44));}
   else if(T==="bare"||T==="tw"){
     /* ---- BARE, WHICH THE WARDROBE HAD NO WAY TO SAY ----
        Not a garment the player can put on: a way of building somebody who is not English.
@@ -3237,11 +3529,22 @@ function buildFigureRaw(eq,opt){
 
   /* ---- what is worn on the chest ---- */
   if(T==="doublet"||T==="merchant"){
-    const band=T==="merchant"?1.12:1.0;
-    /* the falling band: a broad linen collar lying on the shoulders */
-    figLoft(C,0,0.004,[[1.418,0.205*band*bw,0.150*bd,0,LINEN],[1.458,0.215*band*bw,0.158*bd,0,LINEN],
-      [1.475,0.090,0.080,0,LINEN]],8,{sq:2.2,caps:"bottom",innerBottom:true});
-    C.box(0,1.432,0.128*bd,0.26*band,0.052,0.050,LINEN);
+    const band=(T==="merchant"?1.12:1.0)*(L.lace?1.16:1.0);
+    if(L.ruff){
+      /* a starched ruff: a deep pleated wheel of linen round the neck */
+      figLoft(C,0,0.004,[[1.405,0.150*bw,0.135*bd,0,shadeRGB(LINEN,0.86)],[1.440,0.215*bw,0.190*bd,0,LINEN],
+        [1.482,0.150,0.135,0,shadeRGB(LINEN,0.92)]],12,{sq:2.0,caps:"both",innerBottom:true});
+      C.fine(function(){for(let i=0;i<12;i++){const a=(i/12)*Math.PI*2;
+        C.box(Math.sin(a)*0.205*bw,1.442,Math.cos(a)*0.182*bd,0.020,0.050,0.020,shadeRGB(LINEN,0.80),0);}});
+    } else {
+      /* the falling band: a broad linen collar lying on the shoulders */
+      figLoft(C,0,0.004,[[1.418,0.205*band*bw,0.150*bd,0,LINEN],[1.458,0.215*band*bw,0.158*bd,0,LINEN],
+        [1.475,0.090,0.080,0,LINEN]],8,{sq:2.2,caps:"bottom",innerBottom:true});
+      C.box(0,1.432,0.128*bd,0.26*band,0.052,0.050,LINEN);
+      /* lace: a scalloped edge to the band, in shade so it reads at a distance */
+      if(L.lace)C.fine(function(){for(let i=0;i<7;i++)
+        C.box(-0.15+i*0.05,1.405,0.150*bd,0.032,0.022,0.020,shadeRGB(LINEN,0.84),0.785);});
+    }
     /* the wings at the shoulder seams */
     for(let s=-1;s<=1;s+=2)C.oct(s*(shoX+0.02),0,1.355,1.425,0.11,0.26*bd,0.10,0.24*bd,0.40,WOOL_T,WOOL_T);
     const btn=T==="merchant"?RGB(0xd8b25a):PEWTER;
@@ -3253,7 +3556,12 @@ function buildFigureRaw(eq,opt){
     if(T==="doublet")B.box(-0.205*bw,0.905,0.05,0.10,0.13,0.07,RGB(0x7a5433));
   } else if(T==="buffcoat"){
     C.box(0,1.435,0.01,0.40*bw,0.05,0.28*bd,LINEN);
-    for(let s=-1;s<=1;s+=2)C.oct(s*(shoX+0.02),0,1.35,1.425,0.115,0.27*bd,0.105,0.25*bd,0.40,RGB(0xa2814f),RGB(0xa2814f));
+    const wingC=JACK?shadeRGB(BUFF,0.86):RGB(0xa2814f);
+    for(let s=-1;s<=1;s+=2)C.oct(s*(shoX+0.02),0,1.35,1.425,0.115,0.27*bd,0.105,0.25*bd,0.40,wingC,wingC);
+    /* the jack's quilting: the rows of rivets that hold the little plates inside it */
+    if(JACK)C.fine(function(){const rv=shadeRGB(BUFF,0.62);
+      for(let r=0;r<5;r++)for(let c=-2;c<=2;c++){if(c===0)continue;
+        C.box(c*0.058*bw,1.03+r*0.068,0.142*bd,0.016,0.016,0.012,rv);}});
     /* the baldric, shoulder to hip, and the sash */
     C.box(0.0,1.20,0.140*bd,0.06,0.62,0.03,RGB(0x5a3d26),0.55);
     C.box(0.0,1.20,-0.138*bd,0.06,0.62,0.03,RGB(0x5a3d26),-0.55);
@@ -3278,6 +3586,30 @@ function buildFigureRaw(eq,opt){
   }
   if(L.beads)C.fine(function(){for(let i=0;i<11;i++){const a=-1.3+i*0.26;
       C.box(Math.sin(a)*0.21*bw,1.40-Math.cos(a)*0.05,Math.cos(a)*0.15*bd,0.035,0.035,0.035,RGB(0xe9e4d6));}});
+  /* ---- the dressing pass's additions (see WOOL and the notes over it) ---- */
+  if(L.plate){
+    /* an iron breastplate and back, over the doublet or the jack: watch and war only */
+    const st=RGB(0x8f969c), stD=RGB(0x5f656c), pz=(T==="buffcoat")?0.008:0;
+    figLoft(C,0,pz,[[0.955,0.158*bw,0.132*bd,0.026+belly*0.5,stD],[1.07,0.172*bw,0.146*bd,0.030+belly,st],
+      [1.24,0.198*bw,0.152*bd,0.012,st],[1.385,0.200*bw,0.140*bd,0,shadeRGB(st,0.9)]],lod?8:10,{sq:2.6,flank:0.70});
+    C.fine(function(){C.box(0,1.16,0.176*bd+pz+belly,0.020,0.34,0.016,RGB(0xb4bac0));});   /* the ridge */
+  }
+  if(L.sash){
+    /* a sash of office from the right shoulder across to the left hip, knotted there */
+    const sc=RGB(L.sash), sd=shadeRGB(sc,0.80), sz=L.plate?0.176:0.150;
+    C.box(0.0,1.19,sz*bd+belly*0.5,0.075,0.64,0.030,sc,-0.62);
+    C.box(0.0,1.19,-sz*bd,0.075,0.64,0.030,sd,0.62);
+    B.box(0.15*bw,0.90,0.10*bd,0.08,0.16,0.06,sd);
+  }
+  if(L.chain)C.fine(function(){for(let i=0;i<15;i++){const a=-1.4+i*0.2;
+      C.box(Math.sin(a)*0.198*bw,1.43-Math.cos(a)*0.17,Math.cos(a)*(0.150*bd+(L.plate?0.026:0))+0.006,0.026,0.026,0.026,RGB(0xd4a83a));}});
+  if(L.apron&&T!=="gown"&&T!=="tw"){
+    /* a tradesman's leather apron, bib to the knee */
+    const ac=CO.apron!==undefined?RGB(CO.apron):LEATHER, acD=shadeRGB(ac,0.84);
+    if(T!=="buffcoat")C.box(0,1.15,0.138*bd+0.014+belly,0.22*bw,0.30,0.018,ac);   /* under a jack, only the skirt shows */
+    B.box(0,0.70,0.168*bd+0.020+belly*0.5,0.31*bw,0.48,0.020,ac);
+    C.fine(function(){for(let s=-1;s<=1;s+=2)C.box(s*0.09*bw,1.36,0.06*bd,0.025,0.10,0.16*bd,acD);});
+  }
 
   /* ---- below the waist: the body mesh ---- */
   const P=function(y,rx,rz,dz,c){return [y,rx*bw,rz*bd,dz||0,c];};
@@ -3344,7 +3676,7 @@ function buildFigureRaw(eq,opt){
 
   /* the cloak: a shell hung from the shoulders, open at the front, with its hood lying
      on the back of the neck. Mixed toward weathered grey whatever the dye. */
-  if(eq.cloak==="cloak_weathered"){
+  if(eq.cloak==="cloak_weathered"||L.cloak){
     const cw=(CO.cloak!==undefined)?CO.cloak:mixHex(clHex,0x6b6559,0.34);
     const cB=RGB(shadeHex(cw,0.80)), cT=RGB(shadeHex(cw,0.66));
     figLoft(C,0,-0.012,[[0.50,0.290*bw,0.225*bd,0,cT],[1.05,0.255*bw,0.195*bd,0,cB],[1.37,0.240*bw,0.170*bd,0,cB],
@@ -13099,9 +13431,7 @@ const COUNCIL={
      goals readout, the Atlas link - is wrong by exactly that much and says nothing. */
   outcome:{g:"known",b:"Overruled",
     s:"The council's president chose the site, not a vote. Being right did not decide it."},
-  eq:{skin:"english",palette:"company",cloak:"cloak_weathered",torso:"torso_merchant",
-      accessory:"none_acc",head:"head_capotain",build:"build_normal",face:"shrewd",
-      dye:{torso:"company",breech:"slate",stock:"ink",cloak:"lostcolony",head:"ink"}},
+  eq:personEq("wingfield",1607,{face:"shrewd"}),
   beats:[
    {npc:"\u201cWe must choose a seat for the fort. You have been up the river. Where would you plant?\u201d",
     choices:[
@@ -14043,6 +14373,14 @@ const SOURCES=[
    ]}
 ];
 function sourceOpen(sc){return !sc.need||!!S.insight[sc.need];}
+/* ---- HOW THE PEOPLE ARE DRAWN ----
+   The figures are dressed from FIGURES-LOOKBOOK.md (27 Nov 2026), and a student looking at a
+   face is entitled to know whether anyone ever saw it. Shown at the foot of The Sources. */
+const PEOPLE_DRAWN={h:"How the people are drawn",
+  t:"Only three people in this game have a likeness made from life: John Smith (engraved 1616), "+
+    "George Percy (painted 1615) and Pocahontas (engraved in London, 1616, in English dress). "+
+    "Everyone else, and Pocahontas in Virginia, is imagined: dressed from what the records say "+
+    "people of their rank and year wore."};
 
 /* ========== CODEX ========== */
 let CX_TAB="notes", CX_SRC=null;
@@ -14109,6 +14447,9 @@ function openCodex(){
       n.style.marginTop=".8em";
       n.textContent="A source opens when you have met it in play. Every word inside is theirs, spelling and all.";
       host.appendChild(n);
+      const pd=document.createElement("div");pd.className="cx-group cx-disp";pd.style.marginTop="1em";
+      pd.innerHTML="<h3>"+PEOPLE_DRAWN.h+'</h3><div class="cx-entry"><span>'+PEOPLE_DRAWN.t+"</span></div>";
+      host.appendChild(pd);
     }
     $("codex").scrollTop=0;
     return;
@@ -19335,7 +19676,10 @@ const CROWD_FACES={
   /* ship's boys: young and willing */
   boy:    ["eager","kind","plain","eager"],
   /* sailors and labourers, the bulk of the party */
-  hand:   ["plain","weary","keen","sly","kind","plain","hearty","weary"]
+  hand:   ["plain","weary","keen","sly","kind","plain","hearty","weary"],
+  /* planters and burgesses, and ministers */
+  planter:["plain","shrewd","mild","keen","weary"],
+  clergy: ["kind","mild","plain"]
 };
 function crowdFace(kind,i){
   const set=CROWD_FACES[kind]||CROWD_FACES.hand;
@@ -19347,7 +19691,7 @@ function crowdFace(kind,i){
    hair longer and their beards trimmed to a point; seamen and labourers cropped or long and
    bearded as it came; a soldier here and there in a morion. One labourer in seven is an older
    man - the muster has men in their forties and fifties among the labourers. */
-function crowdLook(kind,i){
+function crowdLook(kind,i,yr){
   const hc=[HAIR.brown,HAIR.dark,HAIR.chestnut,HAIR.sandy,HAIR.black,HAIR.auburn,HAIR.fair];
   const faces=["oval","long","square","round","narrow"];
   const k=Math.abs(i|0);
@@ -19362,30 +19706,93 @@ function crowdLook(kind,i){
     L.build=["normal","heavy","normal"][k%3];
   } else if(kind==="boy"){
     L.hair=["short","cropped","long"][k%3];
+  } else if(kind==="planter"){
+    L.hair=["short","long","receding","short"][k%4];
+    L.beard=["short","pointed","full","moustache","short"][k%5];
+    L.build=["normal","heavy","normal","thin"][k%4];
+    if(k%6===4)L.age="old";
+  } else if(kind==="clergy"){
+    L.hair=["short","receding"][k%2];
+    L.beard=["short","pointed"][k%2];
   } else {
     L.hair=["short","long","cropped","short","receding"][k%5];
     L.beard=["stubble","full","none","short","stubble","none"][k%6];
     L.build=["normal","thin","normal","heavy","thin"][k%5];
     if(k%7===3)L.age="old";
   }
-  return L;
+  return Object.assign(L,crowdDress(kind,k,yr||figYear()));
 }
-function crowdEq(kind,i){
-  if(kind==="gent")return {skin:"english",palette:"company",cloak:(i%2?"cloak_weathered":"none_cloak"),
-    torso:"torso_merchant",accessory:"none_acc",head:(i%2?"head_feather":"head_capotain"),
-    build:"build_normal",face:crowdFace("gent",i),dye:{torso:(i%2?"company":"slate"),breech:"slate",stock:"ink",cloak:"lostcolony",head:"ink"},
-    look:crowdLook("gent",i)};
-  if(kind==="soldier")return {skin:"english",palette:"slate",cloak:"none_cloak",
-    torso:"torso_buffcoat",accessory:"none_acc",head:"head_cap",build:"build_normal",
-    face:crowdFace("soldier",i),
-    dye:{torso:"slate",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"},look:crowdLook("soldier",i)};
-  if(kind==="boy")return {boy:true,skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
-    accessory:"none_acc",head:"none_head",build:"build_normal",face:crowdFace("boy",i),
-    dye:{torso:"ink",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"},look:crowdLook("boy",i)};
-  return {skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
-    accessory:"none_acc",head:(i%2?"head_cap":"none_head"),build:"build_normal",
-    face:crowdFace("hand",i),
-    dye:{torso:"ink",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"},look:crowdLook("hand",i)};
+/* ---- THE CROWD DRESSED BY CLASS AND BY YEAR (look book, Part 1) ----
+   Every crowd figure used to be dressed the same in 1607 and in 1622: every gentleman in
+   merchant's finery and every soldier in a buff coat, which the record has for neither.
+   Now the year of the chapter being built decides (figYear), and the class decides within it:
+     1607-1612  gentlemen in worn, plain doublets (murrey, woad, green, tawny, russet), a
+                capotain or bare-headed; labourers and seamen in shirt and slops of canvas,
+                russet and grey, a Monmouth cap or none; soldiers in the jack of plate dug up
+                at Jamestown, a morion one in three, a breastplate one in four until 1611.
+     1617-1620  the tobacco years: gentlemen visibly richer (merchant's cloth, lace, plumes),
+                soldiers at peace in plain doublets; labourers in the Company's plain kit.
+     1621-      the 1622 kit for working men - "A Monmoth Cap", "3 falling bands", "1 suit of
+                Canvase", "1 suit of Frize" (GH, Tyler p. 393) - and in the war year soldiers
+                back in jacks and morions, half of them in buff coats (a plausible guess: the
+                look book finds no buff coat in the record before the 1620s).
+   Nobody all in black: black is money, office or the pulpit. */
+const FIG_YEAR={ch1:1607,ch2:1607,ch3:1607,ch4:1607,ch5:1608,ch6:1608,ch7:1609,ch8:1613,ch9:1619,ch10:1622};
+function figYear(){
+  try{const c=CURRENT_WORLD?chapterOf(CURRENT_WORLD):null;return (c&&FIG_YEAR[c.world])||1607;}
+  catch(e){return 1607;}
+}
+function crowdDress(kind,k,yr){
+  const pick=function(a,m){return a[(k*(m||1))%a.length];};
+  const W=WOOL;
+  if(kind==="gent"){
+    if(yr<1617)return {dress:"doublet",hat:["capotain","none","capotain",yr>=1610?"feather":"none"][k%4],
+      cloak:k%3===0,colors:{torso:pick([W.murrey,W.woad,W.green,W.tawny,W.russet,0x5a6470]),
+        breech:pick([W.russet,W.grey,W.woad,W.tawny,W.murrey],3),stock:pick([W.grey,0xc8bfa8,W.madder],5),
+        cloak:pick([0x5a5448,0x4e4a44,0x5a4a3a],7),hat:pick([0x2e2a24,0x3a3226,0x2a2622],2)}};
+    return {dress:k%2?"doublet":"merchant",hat:k%2?"feather":"capotain",cloak:k%2===0,lace:k%3===0,
+      colors:{torso:pick([W.murrey,W.green,W.black,W.woad,W.tawny,0x6a3a4a]),
+        breech:pick([W.murrey,W.black,W.green,W.tawny],3),stock:pick([W.yellow,W.grey,W.madder,0xc8bfa8],5),
+        cloak:pick([0x3a2a30,0x262428,0x2e3a5c],7),hat:pick([0x221f1e,0x2a2420],2)}};
+  }
+  if(kind==="soldier"){
+    const jack={dress:"jack",hat:["morion","cap","none"][k%3],plate:yr<=1611&&k%4===1,
+      colors:{torso:pick([0x7a6a4c,W.leather,0x8a7a58]),sleeve:pick([W.russet,W.grey,W.madder,W.woad],3),
+        breech:pick([W.grey,W.russet,W.woad],5),stock:pick([W.grey,0xc8bfa8],2),hat:pick([W.russet,0x3a3530,W.madder],7)}};
+    if(yr<1617)return jack;
+    if(yr<1621)return {dress:"doublet",hat:["cap","capotain","none"][k%3],
+      colors:{torso:pick([W.woad,W.russet,W.grey,W.tawny]),breech:pick([W.grey,W.russet],3),stock:W.grey,
+        hat:pick([W.russet,0x3a3530,0x2a2622],5)}};
+    if(k%2)return Object.assign(jack,{hat:k%4===1?"morion":"cap"});
+    return {dress:"buffcoat",hat:k%4===0?"morion":"capotain",
+      colors:{breech:pick([W.grey,W.russet,W.woad],3),stock:W.grey,hat:0x2a2622}};
+  }
+  if(kind==="boy"){
+    if(yr<1617)return {dress:"shirt",hat:k%3===1?"cap":"none",
+      colors:{torso:pick([W.canvas,W.linen,W.canvas,W.grey]),breech:pick([W.canvas,W.russet,W.grey],3),
+        stock:W.grey,hat:pick([W.russet,W.madder,W.grey],5)}};
+    return {dress:"doublet",hat:k%3?"cap":"none",
+      colors:{torso:pick([W.canvas,W.frieze,W.russet]),breech:pick([W.canvas,W.frieze,W.grey],3),stock:W.grey,
+        hat:pick([W.russet,W.grey,0x3a3530],5)}};
+  }
+  if(kind==="planter")return {dress:yr>=1617&&k%5===0?"merchant":"doublet",hat:["capotain","cap","capotain","none"][k%4],
+    lace:yr>=1617&&k%4===2,cloak:k%5===3,
+    colors:{torso:pick([W.russet,W.green,W.woad,W.tawny,W.grey,W.murrey]),breech:pick([W.russet,W.grey,W.woad,W.tawny],3),
+      stock:pick([W.grey,0xc8bfa8,W.madder],5),cloak:pick([0x5a5448,0x3a3c40],2),hat:pick([0x2e2a24,0x3a3226,W.russet],7)}};
+  if(kind==="clergy")return {dress:"doublet",hat:"broad",cloak:true,
+    colors:{torso:W.black,breech:W.black,stock:0x4a4038,cloak:0x262428,hat:0x1a1818}};
+  /* hands: seamen and labourers */
+  if(yr<1617)return {dress:"shirt",hat:k%2?"cap":"none",
+    colors:{torso:pick([W.canvas,W.linen,W.canvas,W.grey,W.madder]),breech:pick([W.canvas,W.russet,W.grey,W.canvas,W.frieze],3),
+      stock:pick([W.grey,0xc8bfa8,W.russet],5),hat:pick([W.russet,W.grey,W.madder,W.woad,0x3a3530],7)}};
+  return {dress:k%3===2?"shirt":"doublet",hat:k%4===3?"none":"cap",
+    colors:{torso:pick([W.canvas,W.frieze,W.russet,W.grey,W.canvas]),breech:pick([W.canvas,W.frieze,W.russet,W.grey],3),
+      stock:pick([W.grey,0xc8bfa8],5),hat:pick([W.russet,W.grey,W.madder,0x3a3530,W.woad],7)}};
+}
+function crowdEq(kind,i,yr){
+  return {boy:kind==="boy",skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",
+    accessory:"none_acc",head:"none_head",build:"build_normal",face:crowdFace(kind,i),
+    look:crowdLook(kind,i,yr)};
 }
 const TASK_POSE={shallop:"stoop",cross:"stoop",stores:"stoop",smith:"stoop",
   surgeon:"stand",guard:"stand",idle:"stand",drum:"stand",boys:"stand"};
@@ -23573,10 +23980,7 @@ function sealedBox(){
     {shot:{of:["player"],dist:8*K,height:5.4*K,lookH:4.6*K,tight:true},t:5.0,
      narrate:"\u201cGeorge Kendall.\u201d An hour ago he said nobody had a warrant."},
     /* the prisoner, brought up under guard */
-    {spawn:{id:"smith",eq:{skin:"english",palette:"lostcolony",cloak:"none_cloak",
-       torso:"torso_buffcoat",accessory:"none_acc",head:"none_head",
-       build:"build_normal",face:"smith",
-       dye:{torso:"lostcolony",breech:"lostcolony",stock:"ink",cloak:"ink",head:"ink"}},
+    {spawn:{id:"smith",eq:SMITH_EQ,
       at:[px+9,gy,pz-7],face:Math.PI*0.85},
      shot:{of:["smith"],dist:8*K,height:5.2*K,lookH:4.4*K,tight:true},t:5.6,
      narrate:"\u201cAnd John Smith.\u201d He is brought up in bonds, a prisoner since the Canaries."},
@@ -24223,13 +24627,37 @@ function buildNocks(n){
    can give a man a mantle, an older man his years, or a named man his own look. */
 function tidewaterFigure(look,opt){
   const eq={skin:"tidewater",palette:"ink",cloak:"none_cloak",torso:"torso_bare",
-            accessory:"none_acc",head:"none_head",build:"build_normal",face:"plain",look:look||null};
+            accessory:"none_acc",head:"none_head",build:"build_normal",face:"plain",look:look||twCrowdLook()};
   return buildFigure(eq,opt);
+}
+/* ---- A TOWN IS NOT ONE MAN TWENTY TIMES (look book 1.9, 1.10) ----
+   With no look given, each Powhatan figure draws the next of a cycle: red paint on the head
+   and shoulders for most ("Their heads and shoulders are painted red", Map, Tyler p. 100),
+   copper at the ear for some, and a deerskin mantle for the better sort - "The better sort
+   vse large mantels of deare skins ... the common sort haue scarce to cover their nakednesse"
+   (Tyler p. 99) - and for most people in a winter chapter, when the skins "are dressed with
+   the haire". Women: the maids' cut (front and sides shaved, a long plait) for the young and
+   unmarried, the plait all of a length for the married (Percy, Tyler p. 19). No tattoo pattern
+   is drawn on anyone: the record says only "some". */
+let TW_SEQ=0;
+function twCold(){const c=(typeof CURRENT_WORLD!=="undefined"&&CURRENT_WORLD)?chapterOf(CURRENT_WORLD):null;
+  return c?({ch5:2,ch7:2,ch6:1}[c.world]||0):0;}
+function twCrowdLook(female){
+  const k=TW_SEQ++, cold=twCold();
+  const mantle=cold===2?(k%3!==2):cold===1?(k%3===0):(k%6===1);
+  if(female){
+    const maid=k%2===0;
+    return {sex:"f",hair:maid?"maid":"plait",hairColor:0x33251a,face:["oval","round","narrow"][k%3],
+      paint:maid||k%3===0,beads:maid,mantle:mantle,age:k%7===5?"old":"adult"};
+  }
+  return {face:["long","square","oval","narrow","round"][k%5],build:["normal","thin","normal","heavy","normal"][k%5],
+    paint:k%3!==1,mantle:mantle,beads:mantle&&k%2===1,ear:k%4===2?WOOL.copper:null,age:k%9===4?"old":"adult"};
 }
 function buildBowman(seed){
   /* the rig comes from the house figure builder, so the crawl and the draw can use the
-     same joints everything else in this game uses. */
-  const f=tidewaterFigure();
+     same joints everything else in this game uses. A bowman crawling to the dune crest wears
+     no mantle: the quiver hangs on his back */
+  const f=tidewaterFigure(Object.assign(twCrowdLook(),{mantle:false,beads:false}));
   const p=f.userData.parts;
   /* ---- A CHILD OF A FIGURE IS INSIDE THE FIGURE'S SCALE ----
      buildFigure wraps the body in a group scaled by FIG_SCALE - 2.916 - so anything
@@ -24989,10 +25417,7 @@ if($("gExit"))$("gExit").onclick=function(){closeDrill();setPaused(false);};
 const CAPE_PEOPLE=[
   {id:"newport",name:"Captain Newport",voice:"male",role:"master of the fleet",
    pos:[16,20],face:2.2,authority:1,
-   eq:{skin:"english",palette:"company",cloak:"cloak_weathered",torso:"torso_merchant",
-       accessory:"none_acc",head:"head_feather",build:"build_normal",face:"stern",
-       arm:"no_right",
-       dye:{torso:"company",breech:"slate",stock:"ink",cloak:"lostcolony",head:"ink"}},
+   eq:personEq("newport",1607),
    lines:["\u201cThe cross goes up, the shallop gets built, and then we look for a river.\u201d",
           /* "three times" was wrong: he lost the arm off Cuba in 1590 and went back to the West
              Indies year after year (Encyclopedia Virginia, "Newport, Christopher") */
@@ -25000,20 +25425,17 @@ const CAPE_PEOPLE=[
           "\u201cThis is a cape: no depth for the ships and no cover.\u201d"]},
   {id:"archer",name:"Captain Archer",voice:"male",role:"of the shore party",
    pos:[-24,18],face:0.9,
-   eq:{skin:"english",palette:"slate",cloak:"none_cloak",torso:"torso_doublet",
-       accessory:"none_acc",head:"head_capotain",build:"build_normal",face:"keen"},
+   eq:personEq("archer",1607),
    lines:["\u201cNone of us knows what is in those trees.\u201d",
           "\u201cI want the channel sounded before dark.\u201d"]},
   {id:"percy",name:"Master Percy",voice:"male",role:"keeps an account",
    pos:[8,40],face:-1.9,
-   eq:{skin:"english",palette:"lostcolony",cloak:"none_cloak",torso:"torso_merchant",
-       accessory:"none_acc",head:"head_capotain",build:"build_normal",face:"mild"},
+   eq:personEq("percy",1607),
    lines:["\u201cAbout four in the morning, we descried the land of Virginia. I have written it down.\u201d",
           "\u201cWhat England knows of this place will be what I write.\u201d"]},
   {id:"hunt",name:"Reverend Hunt",voice:"male",role:"chaplain to the voyage",
    pos:[26,-2],face:3.0,
-   eq:{skin:"english",palette:"ink",cloak:"cloak_weathered",torso:"torso_doublet",
-       accessory:"none_acc",head:"none_head",build:"build_normal",face:"kind"},
+   eq:personEq("hunt",1607),
    /* He gave thanks at no cross: no 1607 document records a service there (see CAPE_DOC). And he
       was sick in the Downs, not after the Canaries - "all which time, Mr Hunt our Preacher, was
       so weake and sicke, that few expected his recoverie" (Proceedings 1612). */
@@ -25047,9 +25469,7 @@ const CAPE_PEOPLE=[
    the thing that kills him. */
 const SERJEANT={
   id:"kendall",name:"Captain Kendall",voice:"male",role:"a soldier, and no seaman",
-  eq:{skin:"english",palette:"slate",cloak:"none_cloak",torso:"torso_buffcoat",
-      accessory:"none_acc",head:"head_capotain",build:"build_normal",face:"shrewd",
-      dye:{torso:"slate",breech:"slate",stock:"ink",cloak:"ink",head:"ink"}},
+  eq:personEq("kendall",1607),
   done:"\u201cThe piece is yours. Keep the match alive.\u201d",
   beats:[
   {npc:"\u201cWe prove the pieces before dark. Have you ever handled a caliver?\u201d",
@@ -26139,18 +26559,14 @@ function fortEpilogue(){
 /* ---- WHO IS ON THE ISLAND ---- */
 const FORT_PEOPLE=[
   {id:"wingfield",name:"President Wingfield",voice:"male",role:"President of the council",
-   eq:{skin:"english",palette:"company",cloak:"cloak_weathered",torso:"torso_merchant",accessory:"none_acc",
-       head:"head_feather",build:"build_normal",face:"stern",
-       dye:{torso:"company",breech:"slate",stock:"ink",cloak:"lostcolony",head:"ink"}}},
+   eq:personEq("wingfield",1607)},
   {id:"kendall",name:"Captain Kendall",voice:"male",role:"of the council, a soldier",eq:SERJEANT.eq},
   {id:"gosnold",name:"Captain Gosnold",voice:"male",role:"of the council, a seaman",
-   eq:{skin:"english",palette:"slate",cloak:"cloak_weathered",torso:"torso_merchant",accessory:"none_acc",
-       head:"head_capotain",build:"build_normal",face:"shrewd",
-       dye:{torso:"slate",breech:"slate",stock:"ink",cloak:"ink",head:"ink"}}},
-  {id:"laydon",name:"John Laydon",voice:"male",role:"a labourer",eq:crowdEq("hand",7)},
-  {id:"laxon",name:"William Laxon",voice:"male",role:"a carpenter",eq:crowdEq("hand",12)},
+   eq:personEq("gosnold",1607)},
+  {id:"laydon",name:"John Laydon",voice:"male",role:"a labourer",eq:personEq("laydon",1607)},
+  {id:"laxon",name:"William Laxon",voice:"male",role:"a carpenter",eq:personEq("laxon",1607)},
   {id:"hunt",name:"Reverend Hunt",voice:"male",role:"the preacher",eq:CAPE_PEOPLE.filter(function(m){return m.id==="hunt";})[0].eq},
-  {id:"smith",name:"John Smith",voice:"male",role:"a soldier, kept off the council",eq:crowdEq("soldier",5)}];
+  {id:"smith",name:"John Smith",voice:"male",role:"a soldier, kept off the council",eq:personEq("smith",1607)}];
 
 /* result() writes its body as text; the chapter's accounts carry quotation and emphasis */
 function fortResult(title,body,pills,after){
@@ -26391,14 +26807,14 @@ const SICK_DEAD=[
    chapters before, so a man keeps his voice from one chapter to the next. */
 const SICK_PEOPLE=[
   FORT_PEOPLE[0],                                                         /* wingfield */
-  {id:"studley",name:"Thomas Studley",voice:"male",role:"cape merchant, keeps the store",eq:crowdEq("gent",3)},
+  {id:"studley",name:"Thomas Studley",voice:"male",role:"cape merchant, keeps the store",eq:personEq("studley",1607)},
   FORT_PEOPLE.filter(function(m){return m.id==="smith";})[0],
   FORT_PEOPLE.filter(function(m){return m.id==="gosnold";})[0],
   FORT_PEOPLE.filter(function(m){return m.id==="kendall";})[0],
   FORT_PEOPLE.filter(function(m){return m.id==="hunt";})[0],
   {id:"percy",name:"Master Percy",voice:"male",role:"keeps an account",eq:CAPE_PEOPLE.filter(function(m){return m.id==="percy";})[0].eq},
-  {id:"ratcliffe",name:"Captain Ratcliffe",voice:"male",role:"of the council",eq:crowdEq("gent",6)},
-  {id:"martin",name:"Captain Martin",voice:"male",role:"of the council",eq:crowdEq("gent",9)},
+  {id:"ratcliffe",name:"Captain Ratcliffe",voice:"male",role:"of the council",eq:personEq("ratcliffe",1607)},
+  {id:"martin",name:"Captain Martin",voice:"male",role:"of the council",eq:personEq("martin",1607)},
   {id:"archer",name:"Master Archer",voice:"male",role:"Recorder of Virginia",eq:CAPE_PEOPLE.filter(function(m){return m.id==="archer";})[0].eq}];
 
 /* One array per scene (0-6); an empty array means he is not on his feet, or not here.
@@ -27061,7 +27477,7 @@ function powhatanFigure(){
     for(let i=0;i<13;i++){const a=-1.35+i*(2.7/12);g.box(Math.sin(a)*rr*0.9,yy-Math.cos(a)*0.08,Math.cos(a)*rr*0.75+0.12,0.09,0.09,0.09,pearl);}
   }
   grp.add(g.mesh(false,false));
-  const f=tidewaterFigure();
+  const f=tidewaterFigure(Object.assign(personLook("powhatan",1608),{mantle:false,beads:false}));
   f.position.set(0,top-2.33+0.25,0);            /* hips on the mats */
   const p=f.userData.parts;
   if(p){p.la.rotation.x=-0.35;p.ra.rotation.x=-0.35;}   /* hands in his lap, under the robe's edge */
@@ -27183,13 +27599,13 @@ const CAPT_PEOPLE=[
   /* review, 26 Nov: this was Chapter III's Smith object as it stood, so every dialogue in
      this chapter titled him "a soldier, kept off the council". He was sworn of it on 10
      June 1607, and is cape merchant here. Same man, same voice and clothes, his role now. */
-  Object.assign({},FORT_PEOPLE.filter(function(m){return m.id==="smith";})[0],{role:"cape merchant, of the council"}),
-  {id:"ratcliffe",name:"President Ratcliffe",voice:"male",role:"President of the council",eq:crowdEq("gent",6)},
-  {id:"martin",name:"Captain Martin",voice:"male",role:"of the council",eq:crowdEq("gent",9)},
-  {id:"archer",name:"Master Archer",voice:"male",role:"Recorder of Virginia",eq:CAPE_PEOPLE.filter(function(m){return m.id==="archer";})[0].eq},
-  {id:"percy",name:"Master Percy",voice:"male",role:"keeps an account",eq:CAPE_PEOPLE.filter(function(m){return m.id==="percy";})[0].eq},
+  Object.assign({},FORT_PEOPLE.filter(function(m){return m.id==="smith";})[0],{role:"cape merchant, of the council",eq:personEq("smith",1608)}),
+  {id:"ratcliffe",name:"President Ratcliffe",voice:"male",role:"President of the council",eq:personEq("ratcliffe",1608)},
+  {id:"martin",name:"Captain Martin",voice:"male",role:"of the council",eq:personEq("martin",1608)},
+  {id:"archer",name:"Master Archer",voice:"male",role:"Recorder of Virginia",eq:personEq("archer",1608)},
+  {id:"percy",name:"Master Percy",voice:"male",role:"keeps an account",eq:personEq("percy",1608)},
   FORT_PEOPLE.filter(function(m){return m.id==="hunt";})[0],
-  {id:"read",name:"James Read",voice:"male",role:"the blacksmith",eq:crowdEq("hand",21)},
+  {id:"read",name:"James Read",voice:"male",role:"the blacksmith",eq:personEq("read",1608)},
   {id:"bargeman",name:"A man of the barge",voice:"male",role:"one of Smith’s company",eq:crowdEq("soldier",11)}];
 
 /* One array per scene (0-5); empty means not here. Nobody says a thing the record does
@@ -27539,7 +27955,7 @@ function CAPT_TELL_1624(){
     {do:function(){const m=csActor("smithT");if(m){m.rotation.set(-Math.PI/2,0,0);m.position.y=H.y+1.25;}},
      cam:{to:[H.x+6,8,H.z+1],look:[H.x-4,0.8,H.z+3]},t:3.5,
      narrate:"and being ready with their clubs, to beat out his brains,"},
-    {spawn:{id:"girl",make:function(){return tidewaterWoman(true);},at:[H.x-12,H.y,H.z-7],face:0.4}},
+    {spawn:{id:"girl",make:function(){return tidewaterWoman(true,"pocahontas@1608");},at:[H.x-12,H.y,H.z-7],face:0.4}},
     {move:{id:"girl",to:[H.x-5.6,H.y,H.z+0.2],face:0.5},t:5,
      do:function(){setTimeout(function(){const g=csActor("girl");if(g)poseFigure(g,"kneel",2);},4200);},
      narrate:"Pocahontas the King's dearest daughter … laid her own upon his to save him from death."},
@@ -27589,9 +28005,13 @@ function captCompare(){
    the look book (1.10): a married woman wears it all one length tied in a plait; a maid has
    the front and sides shaved close and the plait behind. */
 function tidewaterWoman(girl,look){
+  /* a named woman comes as a key ("pocahontas@1608"), and her entry says everything */
+  if(typeof look==="string")return buildFigure({skin:"tidewater",palette:"ink",cloak:"none_cloak",torso:"torso_bare",
+    accessory:"none_acc",head:"none_head",build:"build_normal",face:"plain",look:look});
   const eq={skin:"tidewater",palette:"ink",cloak:"none_cloak",torso:"torso_bare",
             accessory:"none_acc",head:"none_head",build:"build_normal",face:"plain",boy:!!girl,
-            look:Object.assign({sex:"f",hair:girl?"maid":"plait",hairColor:0x33251a,paint:!girl,beads:!girl},look||{})};
+            look:Object.assign({sex:"f",hair:girl?"maid":"plait",hairColor:0x33251a,paint:!girl,beads:!girl},
+              (!look&&!girl)?twCrowdLook(true):(look||{}))};
   return buildFigure(eq);
 }
 
@@ -28309,16 +28729,16 @@ const PRES={later:[],ship:null,ships:[],rats:[],ray:null,lit:false,winter:false,
    PRES_SAYS for the voice harvester. */
 const PRES_PEOPLE=[
   Object.assign({},CAPT_PEOPLE[0],{role:"of the council"}),
-  {id:"scrivener",name:"Master Scrivener",voice:"male",role:"of the council",eq:crowdEq("gent",11)},
-  {id:"todkill",name:"Anas Todkill",voice:"male",role:"one of Smith’s company, who writes",eq:crowdEq("soldier",14)},
-  {id:"russell",name:"Doctor Russell",voice:"male",role:"Walter Russell, doctor of physic",eq:crowdEq("gent",15)},
-  {id:"newport",name:"Captain Newport",voice:"male",role:"master of the fleet",eq:CAPE_PEOPLE.filter(function(m){return m.id==="newport";})[0].eq},
+  {id:"scrivener",name:"Master Scrivener",voice:"male",role:"of the council",eq:personEq("scrivener",1608)},
+  {id:"todkill",name:"Anas Todkill",voice:"male",role:"one of Smith’s company, who writes",eq:personEq("todkill",1608)},
+  {id:"russell",name:"Doctor Russell",voice:"male",role:"Walter Russell, doctor of physic",eq:personEq("russell",1608)},
+  {id:"newport",name:"Captain Newport",voice:"male",role:"master of the fleet",eq:personEq("newport",1608)},
   Object.assign({},FORT_PEOPLE[0],{name:"Master Wingfield",role:"the deposed President, going home"}),
   CAPT_PEOPLE[3],
   Object.assign({},CAPT_PEOPLE[1],{name:"Captain Ratcliffe",role:"of the council"}),
   CAPT_PEOPLE[2],
   CAPT_PEOPLE[4],
-  Object.assign({},FORT_PEOPLE.filter(function(m){return m.id==="laxon";})[0],{name:"Ensign Laxon",role:"an ensign now"}),
+  Object.assign({},FORT_PEOPLE.filter(function(m){return m.id==="laxon";})[0],{name:"Ensign Laxon",role:"an ensign now",eq:personEq("laxon",1608)}),
   FORT_PEOPLE.filter(function(m){return m.id==="laydon";})[0]];
 function presPerson(id){return PRES_PEOPLE.filter(function(p){return p.id===id;})[0];}
 
@@ -28853,7 +29273,7 @@ function presTelling(){
        narrate:"London, 1624. Smith tells it again, in his own book, with modern spelling."},
       /* play-test, 27 Nov: he stood turned away from her, and the close shot cut off his head */
       {spawn:{id:"smithW",eq:PRES_PEOPLE[0].eq,at:[hx+8,G6(hx+8,hz+9),hz+9],face:-2.3}},
-      {spawn:{id:"girlW",make:function(){return tidewaterWoman(true);},at:[hx-50,G6(hx-50,hz-46),hz-46],face:0.7}},
+      {spawn:{id:"girlW",make:function(){return tidewaterWoman(true,"pocahontas@1609");},at:[hx-50,G6(hx-50,hz-46),hz-46],face:0.7}},
       {move:{id:"girlW",to:[hx+4,G6(hx+4,hz+5),hz+5],face:0.6},t:6,cam:{to:[hx+20,6,hz+16],look:[hx-14,2.5,hz-14]},
        narrate:"“Pocahontas his dearest jewel and daughter, in that dark night came through the irksome woods,"},
       {cam:{to:[hx+20,6,hz+12],look:[hx+5,3.8,hz+4]},t:6.5,
@@ -28949,17 +29369,26 @@ function presPagesSummary(){
 /* 27 Nov: built by the figure builder as a woman (look.dress "gown") instead of a man with a
    gown hung off his neck joint - which turned the whole skirt whenever she turned her head. A
    gentlewoman in dark cloth; a goodwife in brown wool with a linen apron. */
+/* Dressed by the look book (1.7): a gentlewoman in murrey, blue, green or black with a coif, a
+   maid or goodwife in russet, grey or madder red with a coif and an apron. From 1619 the
+   gentlewoman may wear a felt hat over it - Pory's collier's wife "weares her rough bever hatt
+   with a faire perle hatband" (Tyler p. 285). Named women come as a key ("forrest@1608"). */
+let EW_SEQ=0;
 function englishWoman(gentle,look){
-  const eq={skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"none_head",
-            build:"build_normal",face:"plain",dye:{torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"},
-            look:Object.assign({sex:"f",dress:"gown",hat:"coif",apron:!gentle,hair:"bun",
-              hairColor:gentle?0x4a3424:0x6a4a2c,colors:{gown:gentle?0x2e2a3a:0x6e5236}},look||{})};
-  return buildFigure(eq);
+  const base={skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"none_head",
+            build:"build_normal",face:"plain",dye:{torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"}};
+  if(typeof look==="string")return buildFigure(Object.assign(base,{look:look}));
+  const k=EW_SEQ++, late=figYear()>=1619;
+  const gown=gentle?[WOOL.murrey,WOOL.woad,WOOL.green,0x2e2a3a][k%4]:[WOOL.russet,WOOL.grey,WOOL.madder,WOOL.frieze][k%4];
+  base.look=Object.assign({sex:"f",dress:"gown",hat:(gentle&&late&&k%2===0)?"broad":"coif",apron:!gentle,hair:"bun",
+    hairColor:[0x4a3424,0x6a4a2c,0x2a1f16,0x9a7a4a][k%4],face:["oval","round","long"][k%3],
+    colors:{gown:gown,hat:0x2a2420}},look||{});
+  return buildFigure(base);
 }
 /* Powhatan standing, for the crowning: the tidewater figure, the scarlet cloak (hidden
    until it is put on him) and the crown (hidden until Newport puts it there) */
 function presPowhatanStanding(){
-  const f=tidewaterFigure();
+  const f=tidewaterFigure(Object.assign(personLook("powhatan",1608),{beads:false}));
   const p=f.userData.parts;
   if(p&&p.neck){
     const c=new Geo(), red=RGB(0x9c1f1c), redD=RGB(0x6e1412);
@@ -29140,8 +29569,8 @@ registerWorld("ch6",function(root){
          you were offered Newport's talk instead */
       spots={smith:[6,10,3.2],scrivener:[-30,0,2.6],newport:[-50,20,3.0],laydon:[-44,-10,2.0]};
       presGlasshouse(root,G,-178,-160);
-      const fo=englishWoman(true);fo.position.set(24,G(24,12),12);fo.rotation.y=0.25;root.add(fo);solid(24,12,1,1,LVL.MAIN,0);
-      const ab=englishWoman(false);ab.position.set(27.5,G(27.5,13.5),13.5);ab.rotation.y=-0.2;root.add(ab);solid(27.5,13.5,1,1,LVL.MAIN,0);
+      const fo=englishWoman(true,"forrest@1608");fo.position.set(24,G(24,12),12);fo.rotation.y=0.25;root.add(fo);solid(24,12,1,1,LVL.MAIN,0);
+      const ab=englishWoman(false,"burras@1608");ab.position.set(27.5,G(27.5,13.5),13.5);ab.rotation.y=-0.2;root.add(ab);solid(27.5,13.5,1,1,LVL.MAIN,0);
       /* the two gallants at the edge of the wood, with axes, and a felled trunk */
       /* play-test, 27 Nov: they were out past the east curtain, about 450 feet of walking round
          the fort; moved into the woods off the south-east bulwark, and presRoute leads there */
@@ -29180,7 +29609,7 @@ registerWorld("ch6",function(root){
       fortWell(root,G,-62,-34);
       /* work, 27 Nov: Kemps and Tassore "taught vs how to order and plant our fields": they
          break the ground with digging sticks, and the earth comes up */
-      [[-30,-34,0.3],[-25,-36,-0.4]].forEach(function(a,i){const f=tidewaterFigure();f.position.set(a[0],G(a[0],a[1]),a[1]);
+      [[-30,-34,0.3],[-25,-36,-0.4]].forEach(function(a,i){const f=tidewaterFigure(["kemps@1609","tassore@1609"][i]);f.position.set(a[0],G(a[0],a[1]),a[1]);
         f.rotation.y=a[2];root.add(f);workAdd(f,"dig",{prop:"bar",heap:workHeap(root,a[0]+1.5,a[1]+3,0x5e4a32,24)});});
       /* and the company goes out to live off the country, baskets on their backs, to the boats */
       if(!w.did.disperse)[[6,44],[-6,48]].forEach(function(a,i){
@@ -29568,14 +29997,14 @@ const STARVE={later:[],ship:null,ships:[],boat:null,lit:false,winter:false,figs:
 /* ---- THE PEOPLE ---- thin, by the winter: build_survivor is the game's own gaunt frame */
 function starveThin(eq){return Object.assign({},eq,{build:"build_survivor"});}
 const STARVE_PEOPLE=[
-  {id:"percy",name:"President Percy",voice:"male",role:"President, and sick",eq:CAPT_PEOPLE[4].eq},
-  {id:"spelman",name:"Henry Spelman",voice:"male",role:"a boy of the Third Supply",eq:crowdEq("boy",3)},
-  {id:"davis",name:"Captain Davis",voice:"male",role:"a captain, with sixteen men",eq:crowdEq("soldier",8)},
+  {id:"percy",name:"President Percy",voice:"male",role:"President, and sick",eq:personEq("percy",1609,{build:"build_survivor"})},
+  {id:"spelman",name:"Henry Spelman",voice:"male",role:"a boy of the Third Supply",eq:personEq("spelman",1609)},
+  {id:"davis",name:"Captain Davis",voice:"male",role:"a captain, with sixteen men",eq:personEq("davis",1609)},
   /* play-test, 27 Nov: he was "President Ratcliffe, President of the council" in October 1609,
      with Percy President - Chapter V's entry, kept whole. Captain now; his words are unchanged */
-  Object.assign({},CAPT_PEOPLE[1],{name:"Captain Ratcliffe",role:"a captain, sent to Point Comfort"}),
-  {id:"strachey",name:"Master Strachey",voice:"male",role:"Secretary to Sir Thomas Gates",eq:crowdEq("gent",17)},
-  {id:"gates",name:"Sir Thomas Gates",voice:"male",role:"Lieutenant Governor, from Bermuda",eq:crowdEq("gent",19)},
+  Object.assign({},CAPT_PEOPLE[1],{name:"Captain Ratcliffe",role:"a captain, sent to Point Comfort",eq:personEq("ratcliffe",1609)}),
+  {id:"strachey",name:"Master Strachey",voice:"male",role:"Secretary to Sir Thomas Gates",eq:personEq("strachey",1610)},
+  {id:"gates",name:"Sir Thomas Gates",voice:"male",role:"Lieutenant Governor, from Bermuda",eq:personEq("gates",1610)},
   {id:"digger",name:"An Archaeologist",voice:"male",role:"James Fort, 2012",
    eq:{skin:"english",palette:"slate",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"head_cap",build:"build_normal",face:"plain",
        dye:{torso:"slate",breech:"slate",stock:"ink",cloak:"ink",head:"ink"}}}];
@@ -29983,7 +30412,7 @@ function STARVE_LED(){
        npcMeshes.forEach(function(n){if(n.npc&&n.npc.id==="spelman")n.mesh.visible=false;});
        if(STARVE.figs.pw)STARVE.figs.pw.visible=false;
        if(player){player.position.set(-8,G7(-8,14),14);player.rotation.y=-2.2;}
-       starveWalk(tidewaterFigure(),[[-2,4],[-10,1],[-16.5,-1],[-16.5,-54]],4.2);
+       starveWalk(tidewaterFigure("powhatan@1609"),[[-2,4],[-10,1],[-16.5,-1],[-16.5,-54]],4.2);
        starveWalk(buildFigure(STARVE_PEOPLE[1].eq),[[6,8],[4,2],[-12,-0.5],[-14.5,-3],[-14.5,-51]],4.2);
        starveWalk(buildFigure(crowdEq("hand",31)),[[9,9],[6,0.5],[-12,-1.5],[-18.5,-3],[-18.5,-49]],4.2);},
      narrate:"“ye king departed taking me and ye dutchman with him.”"},
@@ -30339,7 +30768,7 @@ registerWorld("ch7",function(root){
     /* play-test, 27 Nov: Spelman stood on "The Storehouse", the two names one over the other */
     spots=w.did.baskets?{}:{ratcliffe:[-14,10,2.6],spelman:[12,6,-2.6]};
     if(!w.did.baskets){
-      const pw=tidewaterFigure();pw.position.set(-2,G(-2,4),4);pw.rotation.y=0;root.add(pw);solid(-2,4,1,1,LVL.MAIN,0);STARVE.figs.pw=pw;
+      const pw=tidewaterFigure("powhatan@1609");pw.position.set(-2,G(-2,4),4);pw.rotation.y=0;root.add(pw);solid(-2,4,1,1,LVL.MAIN,0);STARVE.figs.pw=pw;
       [[-6,5,0.3],[2,5.5,-0.3],[-4,8,0.1]].forEach(function(a){const f=tidewaterFigure();f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));});
     }
     duty("baskets","The Storehouse",4,12,{kind:"baskets",verb:"Watch the corn measured"});
@@ -30610,13 +31039,13 @@ const LEAF={later:[],lit:false,night:false,plants:[],ship:null,t:0};
 
 /* ---- THE PEOPLE ---- */
 const LEAF_PEOPLE=[
-  {id:"delawarr",name:"Lord De La Warr",voice:"male",role:"Lord Governor and Captain General",eq:crowdEq("gent",23)},
-  Object.assign({},CAPT_PEOPLE[4],{name:"Master Percy",role:"commands the raid"}),
-  {id:"hamor",name:"Master Hamor",voice:"male",role:"Secretary of the colony",eq:crowdEq("gent",25)},
-  {id:"dale",name:"Sir Thomas Dale",voice:"male",role:"Marshal, and Deputy Governor",eq:crowdEq("soldier",26)},
-  {id:"rolfe",name:"Master Rolfe",voice:"male",role:"a gentleman, who grows tobacco",eq:crowdEq("gent",27)},
-  {id:"argall",name:"Captain Argall",voice:"male",role:"captain of the Treasurer",eq:crowdEq("soldier",28)},
-  Object.assign({},CAPT_PEOPLE[0],{role:"in London, 1616"})];
+  {id:"delawarr",name:"Lord De La Warr",voice:"male",role:"Lord Governor and Captain General",eq:personEq("delawarr",1610)},
+  Object.assign({},CAPT_PEOPLE[4],{name:"Master Percy",role:"commands the raid",eq:personEq("percy",1610)}),
+  {id:"hamor",name:"Master Hamor",voice:"male",role:"Secretary of the colony",eq:personEq("hamor",1613)},
+  {id:"dale",name:"Sir Thomas Dale",voice:"male",role:"Marshal, and Deputy Governor",eq:personEq("dale",1611)},
+  {id:"rolfe",name:"Master Rolfe",voice:"male",role:"a gentleman, who grows tobacco",eq:personEq("rolfe",1613)},
+  {id:"argall",name:"Captain Argall",voice:"male",role:"captain of the Treasurer",eq:personEq("argall",1613)},
+  Object.assign({},CAPT_PEOPLE[0],{role:"in London, 1616",eq:personEq("smith",1616)})];
 function leafPerson(id){return LEAF_PEOPLE.filter(function(p){return p.id===id;})[0];}
 
 const LEAF_SAYS={
@@ -31066,12 +31495,12 @@ function LEAF_WEDDING(){
     {fade:"in",cam:{to:[cx+18,gy+9,cz+15],look:[cx,gy+4,cz-3],cut:true},t:4,
      narrate:"April 1614, in the church at Jamestown."}, /* Hamor: Opachisco gave her "as his deputy in the Church"; Jamestown is where Dale and Rolfe were. review, 27 Nov: was "About the fifth of April"; GH "about the first", Tyler "about the fifth" (p. 310) */
     {spawn:{id:"rolfeW",eq:LEAF_PEOPLE[4].eq,at:[cx-2,G8(cx-2,cz+3.5),cz+3.5],face:Math.PI/2}},
-    {spawn:{id:"son1",make:function(){return tidewaterFigure();},at:[cx+7,G8(cx+7,cz+7),cz+7],face:-2.2}},
-    {spawn:{id:"son2",make:function(){return tidewaterFigure();},at:[cx+8.5,G8(cx+8.5,cz+5),cz+5],face:-1.9}},
+    {spawn:{id:"son1",make:function(){return tidewaterFigure({mantle:true,ear:WOOL.copper,paint:true,face:"long"});},at:[cx+7,G8(cx+7,cz+7),cz+7],face:-2.2}},
+    {spawn:{id:"son2",make:function(){return tidewaterFigure({mantle:true,ear:WOOL.copper,paint:true,face:"oval",build:"thin"});},at:[cx+8.5,G8(cx+8.5,cz+5),cz+5],face:-1.9}},
     {spawn:{id:"eng1",eq:crowdEq("gent",31),at:[cx-7,G8(cx-7,cz+6.5),cz+6.5],face:2.2}},
     {spawn:{id:"eng2",eq:crowdEq("hand",32),at:[cx-8,G8(cx-8,cz+4),cz+4],face:1.9}},
-    {spawn:{id:"bride",make:function(){return tidewaterWoman(false);},at:[cx+6,G8(cx+6,cz+16),cz+16],face:Math.PI}},
-    {spawn:{id:"uncle",make:function(){return tidewaterFigure();},at:[cx+8,G8(cx+8,cz+17),cz+17],face:Math.PI}},
+    {spawn:{id:"bride",make:function(){return tidewaterWoman(false,"pocahontas@1614");},at:[cx+6,G8(cx+6,cz+16),cz+16],face:Math.PI}},
+    {spawn:{id:"uncle",make:function(){return tidewaterFigure("opachisco@1614");},at:[cx+8,G8(cx+8,cz+17),cz+17],face:Math.PI}},
     {move:{id:"bride",to:[cx+1.5,G8(cx+1.5,cz+3.5),cz+3.5],face:-Math.PI/2},t:4.5,
      cam:{to:[cx+3,gy+5,cz+19],look:[cx+2,gy+3,cz+6]},
      narrate:"Her uncle Opachisco, sent by Powhatan with two of his sons, “to see the manner of the mariage”."},
@@ -31522,7 +31951,7 @@ registerWorld("ch8",function(root){
     LEAF.ship=placeShip(root,"discovery",0.8,30,110,Math.PI/2);
     if(!w.did.capture){
       /* she is here before the capture; nothing is made of her but a figure at the town */
-      const pf=tidewaterWoman(false);pf.position.set(-12,G(-12,0),0);pf.rotation.y=0.6;root.add(pf);solid(-12,0,1,1,LVL.MAIN,0);
+      const pf=tidewaterWoman(false,"pocahontas@1613");pf.position.set(-12,G(-12,0),0);pf.rotation.y=0.6;root.add(pf);solid(-12,0,1,1,LVL.MAIN,0);
       LEAF.her=pf;   /* play-test, 27 Nov: she stood on in the town after she was taken aboard */
     }
     [[-20,10,0.2],[20,4,-0.4],[0,-14,0.9]].forEach(function(a){const f=tidewaterFigure();f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(f);});
@@ -31565,7 +31994,7 @@ registerWorld("ch8",function(root){
        were labels over bare grass. The book and the sheet are on chests; Uttamatomakkin, who
        sailed home on this ship, stands with his stick; Purchas sits at a table with his papers */
     starveChest(root,G,4,12.5);
-    {const u=tidewaterFigure();u.position.set(22,G(22,17),17);u.rotation.y=-0.76;root.add(u);solid(22,17,1,1,LVL.MAIN,0);
+    {const u=tidewaterFigure("uttamatomakkin@1616");u.position.set(22,G(22,17),17);u.rotation.y=-0.76;root.add(u);solid(22,17,1,1,LVL.MAIN,0);
       const K=new Geo(), wood=RGB(0x8a6a44), notch=RGB(0x3a2c20), gy=G(23.6,17.4);
       K.beam8([23.6,gy-0.2,17.4],[23.8,gy+6.2,17.2],0.16,0.14,wood,wood);
       for(let i=0;i<9;i++)K.box(23.62+i*0.02,gy+2.2+i*0.42,17.33,0.2,0.06,0.2,notch);
@@ -31577,7 +32006,7 @@ registerWorld("ch8",function(root){
     if(!w.did.closed)starveChest(root,G,-20,32.5);
     if(w.did.closed){nextAt=null;duty("record","Master Purchas’s Pilgrimes",-22,30,{kind:"record",verb:"Close the chapter’s record"});
       presTable(root,G,-22,26.5);
-      const pu=buildFigure(crowdEq("gent",33));pu.position.set(-22,G(-22,23.4),23.4);pu.rotation.y=0;root.add(pu);solid(-22,23.4,1,1,LVL.MAIN,0);}
+      const pu=buildFigure(personEq("purchas",1617));pu.position.set(-22,G(-22,23.4),23.4);pu.rotation.y=0;root.add(pu);solid(-22,23.4,1,1,LVL.MAIN,0);}
   }
 
   /* play-test, 27 Nov: "The Lord Governor" (his sickness), "The Lord Governor" (the sermon) and
@@ -31768,14 +32197,14 @@ const PRICE={later:[],lit:false,plot:null,church:null,t:0};
 
 /* ---- THE PEOPLE ---- */
 const PRICE_PEOPLE=[
-  {id:"argall",name:"Captain Argall",voice:"male",role:"governs the colony, 1617 to 1619",eq:crowdEq("soldier",28)},
+  {id:"argall",name:"Captain Argall",voice:"male",role:"governs the colony, 1617 to 1619",eq:personEq("argall",1617)},
   /* review, 27 Nov: was "of the governor's council"; this row speaks in 1617-18, when Rolfe was
      "Secretary and Recorder" (CH9-RECORD, Who wrote); the council is Yeardley's, 1619 (GH, Tyler p. 335) */
-  {id:"rolfe",name:"Master Rolfe",voice:"male",role:"Secretary and Recorder of the colony",eq:crowdEq("gent",27)},
-  {id:"yeardley",name:"Sir George Yeardley",voice:"male",role:"governor, from April 1619",eq:crowdEq("soldier",36)},
-  {id:"pory",name:"Master Pory",voice:"male",role:"Secretary, and Speaker of the Assembly",eq:crowdEq("gent",34)},
-  {id:"persey",name:"Master Persey",voice:"male",role:"the cape merchant",eq:crowdEq("gent",37)},
-  {id:"spence",name:"Ensign Spence",voice:"male",role:"an ancient planter, set free",eq:crowdEq("hand",38)}];
+  {id:"rolfe",name:"Master Rolfe",voice:"male",role:"Secretary and Recorder of the colony",eq:personEq("rolfe",1618)},
+  {id:"yeardley",name:"Sir George Yeardley",voice:"male",role:"governor, from April 1619",eq:personEq("yeardley",1619)},
+  {id:"pory",name:"Master Pory",voice:"male",role:"Secretary, and Speaker of the Assembly",eq:personEq("pory",1619)},
+  {id:"persey",name:"Master Persey",voice:"male",role:"the cape merchant",eq:personEq("persey",1619)},
+  {id:"spence",name:"Ensign Spence",voice:"male",role:"an ancient planter, set free",eq:personEq("spence",1619)}];
 function pricePerson(id){return PRICE_PEOPLE.filter(function(p){return p.id===id;})[0];}
 
 const PRICE_SAYS={
@@ -32265,13 +32694,13 @@ function PRICE_OATH(){
       g.box(0,2.7,0,2.2,0.16,3.6,cloth);g.box(0.2,2.8,-0.6,0.9,0.03,1.1,paper);return g.mesh(false,false);},at:at(cx+8.5,cz),face:0}},
     {spawn:{id:"gov",eq:PRICE_PEOPLE[2].eq,at:at(cx+10.2,cz),face:-Math.PI/2}},
     {spawn:{id:"spk",eq:PRICE_PEOPLE[3].eq,at:at(cx+6.6,cz),face:-Math.PI/2}},
-    {spawn:{id:"min",eq:crowdEq("gent",60),at:at(cx+7,cz-3.8),face:-Math.PI/2}},
+    {spawn:{id:"min",eq:personEq("bucke",1619),at:at(cx+7,cz-3.8),face:-Math.PI/2}},
     {spawn:{id:"clk",eq:crowdEq("gent",61),at:at(cx+7,cz+3.8),face:-Math.PI/2}},
     {spawn:{id:"sgt",eq:crowdEq("soldier",62),at:at(cx+2,cz-4.6),face:-Math.PI/2}}];
   [[cx+9.6,cz-3],[cx+9.6,cz+3],[cx+11,cz-4.6],[cx+11,cz+4.6]].forEach(function(a,i){
     steps.push({spawn:{id:"cnl"+i,eq:crowdEq("gent",63+i),at:at(a[0],a[1]),face:-Math.PI/2}});});
   for(let r=0;r<3;r++)for(let k=0;k<3;k++)
-    steps.push({spawn:{id:"b"+(r*3+k),eq:crowdEq(k%2?"gent":"soldier",70+r*3+k),at:at(cx-10+r*2.6,cz-3+k*3),face:Math.PI/2}});
+    steps.push({spawn:{id:"b"+(r*3+k),eq:crowdEq(k%2?"gent":"planter",70+r*3+k),at:at(cx-10+r*2.6,cz-3+k*3),face:Math.PI/2}});
   return steps.concat([
     {fade:"in",cam:{to:[cx-12.4,gy+11,cz],look:[cx+9,gy+3.5,cz],cut:true},t:4.5,
      narrate:"Friday 30 July 1619. The quire of the church at James City."},
@@ -32655,12 +33084,12 @@ const SKY={later:[],lit:false,night:false,plot:null,cut:null,t:0};
 
 /* ---- THE PEOPLE ---- */
 const SKY_PEOPLE=[
-  {id:"wyatt",name:"Sir Francis Wyatt",voice:"male",role:"governor, from October 1621",eq:crowdEq("gent",41)},
-  {id:"yeardley",name:"Sir George Yeardley",voice:"male",role:"governor until October 1621",eq:crowdEq("soldier",36)},
-  {id:"pace",name:"Master Pace",voice:"male",role:"a planter, across the river from James City",eq:crowdEq("hand",44)},
-  {id:"nuce",name:"Captain Nuce",voice:"male",role:"commands at Elizabeth City",eq:crowdEq("soldier",46)},
-  {id:"gsandys",name:"Master George Sandys",voice:"male",role:"Treasurer of the colony",eq:crowdEq("gent",45)},
-  {id:"frethorne",name:"Richard Frethorne",voice:"male",role:"a servant at Martin’s Hundred",eq:crowdEq("boy",47)}];
+  {id:"wyatt",name:"Sir Francis Wyatt",voice:"male",role:"governor, from October 1621",eq:personEq("wyatt",1621)},
+  {id:"yeardley",name:"Sir George Yeardley",voice:"male",role:"governor until October 1621",eq:personEq("yeardley",1621)},
+  {id:"pace",name:"Master Pace",voice:"male",role:"a planter, across the river from James City",eq:personEq("pace",1622)},
+  {id:"nuce",name:"Captain Nuce",voice:"male",role:"commands at Elizabeth City",eq:personEq("nuce",1622)},
+  {id:"gsandys",name:"Master George Sandys",voice:"male",role:"Treasurer of the colony",eq:personEq("gsandys",1622)},
+  {id:"frethorne",name:"Richard Frethorne",voice:"male",role:"a servant at Martin’s Hundred",eq:personEq("frethorne",1623)}];
 function skyPerson(id){return SKY_PEOPLE.filter(function(p){return p.id===id;})[0];}
 
 const SKY_SAYS={
@@ -35544,7 +35973,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1415";
+const BUILD="20261127-1454";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
