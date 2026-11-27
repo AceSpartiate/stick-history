@@ -13925,7 +13925,7 @@ function overboardCutscene(){
     {shot:{of:["player"],dist:12,height:5,lookH:4.6,tight:true},t:1.8,sfx:"wind",gain:0.2,
      narrate:"Three questions were put to him at the mast, and he answered not one of them."},
     {move:{id:"cap",to:[1.2*K,y,pz-2.4*K],face:0},t:1.4},
-    {shot:{of:["player","cap"],height:5.2},t:2.6,
+    {shot:{of:["player","cap"],height:5.2},t:2.6,by:"cap",to:"player",
      narrate:"\u201cI have carried fools across an ocean,\u201d said the Captain, \u201cbut I'll not carry one into Virginia.\u201d"},
     {do:function(){playSfx("creak",0.4);}},
     {move:{id:"player",to:[rail,y+1.2,pz],face:1.57},t:1.6},
@@ -16975,6 +16975,7 @@ function discharge(hung){
 }
 function ignite(hung){
   playSfx("boom",0.5);gunSmoke(1);
+  if(player)fmGunshot(player.position.x,player.position.z,34,player);
   knock={vx:0,vz:0,t:0};camKick=0.05;
   const A=ARMS[GUN.arm];
   /* SIGNED, because the direction of a bad charge is not the same fault twice. Too
@@ -27359,7 +27360,17 @@ function sickFigures(root,G,sd){
      wall now, and clear of the door and of Studley at (-70,14). */
   const LIE=[[30,-6],[36,-4],[42,-6],[48,-4],[54,-6],[-58,16],[-88,16],[-94,16],[-100,16],[24,-26],[30,-28],[36,-26]];
   for(let i=0;i<sd.sick&&i<LIE.length;i++){
-    const at=LIE[i], f=buildFigure(crowdEq("hand",i+70));
+    const at=LIE[i];
+    /* movement pass, 27 Nov: one in four of the sick is sat up on his pallet, hunched over his
+       knees with a hand pressed to his belly and rocking a little (figReact "sitSick") - a
+       live crowd figure, the rest lying baked as they were */
+    if(i%4===1&&!sd.night){
+      const s=buildFigure(crowdEq("hand",i+70),{lod:1});
+      s.position.set(at[0],G(at[0],at[1])+0.24,at[1]+1.0);s.rotation.y=srand(i*5.1)*0.8-0.4;
+      root.add(s);figReact(s,"sitSick",{instant:true});
+      continue;
+    }
+    const f=buildFigure(crowdEq("hand",i+70));
     f.rotation.x=-Math.PI/2;f.rotation.z=srand(i*5.1)*0.4-0.2;
     f.position.set(at[0],G(at[0],at[1])+0.35,at[1]+2.2);
     root.add(bakeFigure(f));
@@ -28047,12 +28058,12 @@ function CAPT_TELL_1608(){
      cam:{to:[H.x+14,7,H.z+6],look:[H.x-14,3.5,H.z]},
      narrate:"Their Emperor proudly lying upon a bedstead a foot high, upon ten or twelve mats,"},
     {cam:{to:[H.x-6,6.5,H.z+3.5],look:[H.x-20,3.5,H.z]},t:5},
-    {cam:{to:[H.x+12,6.5,H.z-1.5],look:[H.x-20,4,H.z+1]},t:4.5,
+    {cam:{to:[H.x+12,6.5,H.z-1.5],look:[H.x-20,4,H.z+1]},t:4.5,by:"smithT",
      narrate:"He kindly welcomed me … assuring me his friendship, and my liberty within four days."},
-    {t:5,narrate:"He asked me the cause of our coming. I told him, being in fight with the Spaniards our enemy …"},
-    {cam:{to:[H.x-4,8,H.z+3],look:[H.x-16,3,H.z]},t:6,
+    {t:5,by:"smithT",narrate:"He asked me the cause of our coming. I told him, being in fight with the Spaniards our enemy …"},
+    {cam:{to:[H.x-4,8,H.z+3],look:[H.x-16,3,H.z]},t:6,by:"smithT",
      narrate:"He desired me … to live with him upon his river … hatchets and copper we should make him."},
-    {t:3,narrate:"And he sent me home, with four men."},
+    {t:3,by:"smithT",narrate:"And he sent me home, with four men."},
     {t:5,narrate:"His tale of the Spaniards was false. And there are no stones in it."},
     {fade:"out",t:1}];
 }
@@ -29635,7 +29646,9 @@ function PRES_CROWN(){
      narrate:"“and Newport put the Crowne on his head;”"},
     {sfx:"crack",shake:0.5,cam:{to:[H.x+0.5,6.5,H.z+4.5],look:[H.x-6.5,4,H.z-1]},
      do:function(){setTimeout(function(){playSfx("crack");},180);setTimeout(function(){playSfx("crack");},420);
-       const p=csActor("powC");if(p){p.userData.parts.body.rotation.x=-0.08;p.position.z+=1.2;}},t:5,
+       const p=csActor("powC");if(p){p.userData.parts.body.rotation.x=-0.08;p.position.z+=1.2;
+         /* "start[ed] vp in a horrible feare": he flinches from the guns */
+         figReact(p,"flinch",{from:[H.x+0.5,H.z+4.5]});}},t:5,
      narrate:"“such a volly of shot, that the king start[ed] vp in a horrible feare.”"},
     {shake:0,t:5.5,narrate:"In return, “he gaue his old shoes and his mantle to Captain Newport”."},
     {cam:{to:[H.x+21,6,H.z+2],look:[H.x-12,3,H.z]},t:5.5},
@@ -29672,9 +29685,9 @@ function presTelling(){
       {spawn:{id:"girlW",make:function(){return tidewaterWoman(true);},at:[hx-50,G6(hx-50,hz-46),hz-46],face:0.7}},
       {move:{id:"girlW",to:[hx+4,G6(hx+4,hz+5),hz+5],face:0.6},t:6,cam:{to:[hx+20,6,hz+16],look:[hx-14,2.5,hz-14]},
        narrate:"“Pocahontas his dearest jewel and daughter, in that dark night came through the irksome woods,"},
-      {cam:{to:[hx+20,6,hz+12],look:[hx+5,3.8,hz+4]},t:6.5,
+      {cam:{to:[hx+20,6,hz+12],look:[hx+5,3.8,hz+4]},t:6.5,by:"girlW",to:"smithW",
        narrate:"and told our Captain … Powhatan and all the power he could make, would after come kill us all."},
-      {t:6,narrate:"… with the tears running down her cheeks, she said she durst not be seen to have any:"},
+      {t:6,by:"girlW",to:"smithW",narrate:"… with the tears running down her cheeks, she said she durst not be seen to have any:"},
       {move:{id:"girlW",to:[hx-50,G6(hx-50,hz-46),hz-46],face:-2.4},t:4.5,
        narrate:"for if Powhatan should know it, she were but dead, and so she ran away by herself as she came.”"},
       {cam:{to:[hx+24,7,hz+20],look:[hx-10,3,hz-12]},t:5.5,
@@ -30842,7 +30855,10 @@ function STARVE_COMMISSION(){
   return [
     {fade:"in",cam:{to:[-8,6,-16],look:[-26,3.5,-2],cut:true},t:2.5,do:function(){
        if(STARVE.figs.percy)STARVE.figs.percy.visible=false;
-       starveWalk(buildFigure(starveThin(STARVE_PEOPLE[0].eq)),[[-36,-2],[-29,-1],[-17.5,-4.5]],1.7);}},
+       starveWalk(buildFigure(starveThin(STARVE_PEOPLE[0].eq)),[[-36,-2],[-29,-1],[-17.5,-4.5]],1.7,function(m){
+         /* he comes to the Lieutenant-Governor and stands before him; Gates acknowledges it */
+         m.rotation.y=Math.PI/2;figReact(m,"attention");
+         const g=figRef("gates");if(g)figReact(g,"nod");});}},
     {t:6},
     {fade:"out",t:1}];
 }
@@ -32865,7 +32881,7 @@ function priceAct(d){
   }
   if(d.kind==="hoe"&&!d.worked){
     d.worked=true;priceFace(d,2);
-    playerDoes("dig",4,"The market-place and streets, planted with tobacco.",{},function(){
+    playerDoes("hoe",4,"The market-place and streets, planted with tobacco.",{},function(){   /* a hoe, not a spade: tobacco was hilled with one */
       if(PRICE.plot)PRICE.plot.visible=true;priceAct(d);});
     return;
   }
@@ -33097,12 +33113,18 @@ function PRICE_OATH(){
   return steps.concat([
     {fade:"in",cam:{to:[cx-12.4,gy+11,cz],look:[cx+9,gy+3.5,cz],cut:true},t:4.5,
      narrate:"Friday 30 July 1619. The quire of the church at James City."},
-    {cam:{to:[cx+5,gy+9.5,cz+5.3],look:[cx-7,gy+3.5,cz-1]},t:5,
+    /* movement pass: Bucke says the prayer (by), and the burgesses kneel for it; they are up
+       again when they are called */
+    {cam:{to:[cx+5,gy+9.5,cz+5.3],look:[cx-7,gy+3.5,cz-1]},t:5,by:"min",
+     do:function(){for(let i=0;i<9;i++){const b=csActor("b"+i);if(b)figReact(b,"kneelPray");}},
      narrate:"Master Bucke, the minister, said a prayer. Then the burgesses were called in, one by one, by name."},
     /* play-test, 27 Nov: this step had no camera of its own, so the burgess walked out of the
        nave shot and took his oath as a hat brim at the foot of the frame. Now it is seen from
        the quire, over the council, with his face to the table */
     {move:{id:"b8",to:at(cx+3.6,cz+1),face:Math.PI/2},cam:{to:[cx+9.5,gy+10.8,cz+5.4],look:[cx+3.2,gy+4.6,cz+0.6]},t:4.5,
+     by:"b8",to:"gov",
+     do:function(){for(let i=0;i<9;i++){const b=csActor("b"+i);if(b)figReact(b,"clear");}
+       const g=csActor("gov");if(g)figReact(g,"nod");},
      narrate:"Each took the oath of supremacy, “none staggering at it”, the Speaker wrote."},
     {cam:{to:[cx-1,gy+10,cz-5.3],look:[cx+9,gy+3.5,cz+1]},t:5,
      narrate:"Twenty-two burgesses were chosen. Who voted for them, the record does not say."},
@@ -36366,7 +36388,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1515";
+const BUILD="20261127-1517";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
