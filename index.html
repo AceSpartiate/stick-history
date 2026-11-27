@@ -9353,6 +9353,7 @@ function enterWorld(id){
   WORLD.hull=true;                        /* a deck for a ground means a ship around it */
   WORLD.sea=-9999;                        /* no open water inside a hull */
   WORLD.blocked=function(x,z){return blocked(x,z);};
+  WORLD.camBox=null;                      /* play-test, 27 Nov: a room the camera stays inside */
   liveReset();LIVE.root=worldRoot;        /* the ground paint is per world */
   WORLDS[id](worldRoot);
   liveSoon(30);                           /* after the builder's own microtasks: cached models land first */
@@ -10069,8 +10070,16 @@ function animate(){
   } else {
     const t=Math.min(1,(camDist-FP_AT)/10);
     const flat=camDist*Math.cos(camPitch);
-    const cx=px+Math.sin(camYaw)*flat,cz=pz+Math.cos(camYaw)*flat;
-    const cy=py+camHeight*t+camDist*Math.sin(camPitch);
+    let cx=px+Math.sin(camYaw)*flat,cz=pz+Math.cos(camYaw)*flat;
+    let cy=py+camHeight*t+camDist*Math.sin(camPitch);
+    /* play-test, 27 Nov: Chapter XII's court room has walls and a ceiling, and the camera stood
+       outside them looking at boards. A world may set WORLD.camBox {x0,x1,z0,z1,y1}: the camera
+       is drawn in along its own line to the player until it is inside, then kept under the ceiling */
+    const CB=WORLD.camBox;
+    if(CB){const dx=cx-px, dz=cz-pz;let k=1;
+      if(px+dx>CB.x1)k=Math.min(k,(CB.x1-px)/dx);if(px+dx<CB.x0)k=Math.min(k,(CB.x0-px)/dx);
+      if(pz+dz>CB.z1)k=Math.min(k,(CB.z1-pz)/dz);if(pz+dz<CB.z0)k=Math.min(k,(CB.z0-pz)/dz);
+      k=Math.max(0.12,k);cx=px+dx*k;cz=pz+dz*k;cy=Math.min(CB.y1,py+(cy-py)*k);}
     cam.position.lerp(new THREE.Vector3(cx,cy,cz),Math.min(1,dt*7));
     cam.lookAt(px,py+(below?3.4:5)*t+3.2*(1-t),pz);
   }
@@ -29166,10 +29175,20 @@ const WORK_PROP={
     g.beam8([0,-0.02,0],[0,-0.3,0.05],0.012,0.008,ink,ink);g.beam8([0,0.02,0],[0,0.32,-0.05],0.05,0.015,vane,vane);return g.mesh(false,false);}};
 /* what a carrier carries, held against the chest: in the body's own space */
 const WORK_LOAD={
-  cask:function(){const g=new Geo(), st=RGB(0x7a5a3a), hp=RGB(0x3e3a34);
-    g.oct(0,0,-0.4,0.4,0.32,0.32,0.32,0.32,0.08,st,st);g.box(0,-0.22,0,0.66,0.05,0.66,hp);g.box(0,0.22,0,0.66,0.05,0.66,hp);
+  /* play-test, 27 Nov: oct takes full widths, so the old cask was a rod 0.32 across inside two
+     square hoop plates twice its size - a pile read as black slabs. Now a bellied stave body
+     with its hoops as thin rings just proud of it; the same 0.8 length, so LOAD_HOLD still fits */
+  cask:function(){const g=new Geo(), st=RGB(0x7a5a3a), stD=RGB(0x5e4430), hp=RGB(0x3e3a34);
+    g.oct(0,0,-0.4,0,0.48,0.48,0.58,0.58,0.75,stD,st);g.oct(0,0,0,0.4,0.58,0.58,0.48,0.48,0.75,st,stD);
+    for(const y of [-0.33,-0.12,0.12,0.33]){const r=0.58-Math.abs(y)*0.25+0.03;g.oct(0,0,y-0.025,y+0.025,r,r,r,r,0.75,hp,hp);}
     const m=g.mesh(false,false);m.rotation.z=Math.PI/2;const w=new THREE.Group();w.add(m);return w;},
-  basket:function(){const g=new Geo(), w=RGB(0xa88a52), c=RGB(0xd9b84a);g.oct(0,0,-0.2,0.2,0.26,0.26,0.32,0.32,0.04,w,w);g.box(0,0.21,0,0.5,0.06,0.5,c);return g.mesh(false,false);},
+  /* play-test, 27 Nov: the basket was a small tub under a bright yellow square slab, so a row of
+     them read as yellow crates. Now round (near-octagonal), low and wide, woven brown with a
+     lighter rim, the load a low mound sitting inside the rim; the rim falls at LOAD_HOLD's hands */
+  basket:function(){const g=new Geo(), wD=RGB(0x6e5432), w=RGB(0x94744a), rim=RGB(0xa88a5a), c=RGB(0xb09a5c);
+    g.oct(0,0,-0.2,0.14,0.5,0.5,0.62,0.62,0.6,wD,w);g.oct(0,0,0.14,0.2,0.64,0.64,0.64,0.64,0.6,rim,rim);
+    for(const y of [-0.1,0.02]){const a=0.515+(y+0.2)*0.353, b=a+0.03*0.353;g.oct(0,0,y,y+0.03,a,a,b,b,0.6,wD,wD);}
+    g.oct(0,0,0.1,0.24,0.54,0.54,0.3,0.3,0.6,c,shadeRGB(c,1.08));return g.mesh(false,false);},
   wood:function(){const g=new Geo(), b=RGB(0x6a5038);for(let i=0;i<4;i++)g.beam8([-0.45,-0.1+i*0.08,(i%2)*0.08-0.04],[0.45,-0.08+i*0.08,(i%2)*0.08-0.04],0.06,0.06,b,b);return g.mesh(false,false);},
   board:function(){const g=new Geo(), b=RGB(0xa88a62);g.box(0,0,0,1.6,0.05,0.28,b);return g.mesh(false,false);}};
 
@@ -29425,7 +29444,9 @@ const LOAD_HOLD={
   chest: {at:[0,0.00,0.35],hx:0.34,hy:-0.04,hz:0.35,ground:0.17},
   basket:{at:[0,-0.04,0.38],hx:0.32,hy:0.05,hz:0.38,ground:0.21},
   wood:  {at:[0,0.02,0.33],hx:0.25,hy:-0.10,hz:0.33,ground:0.10},
-  board: {at:[-0.41,0.45,0.02],shoulder:true,ground:0.03}};
+  board: {at:[-0.41,0.45,0.02],shoulder:true,ground:0.03},
+  /* play-test, 27 Nov: a litter's pole end, both hands close on it (Chapter XII) */
+  pole:  {at:[0,-0.02,0.36],hx:0.09,hy:0.0,hz:0.36,ground:0.17}};
 function fmLoadAt(e,up,sq){
   const p=e.p, H=LOAD_HOLD[e.loadKind]||LOAD_HOLD.cask, ld=e.load, V=FM.v[6];
   if(!ld||!p.spine)return;
@@ -29695,6 +29716,9 @@ function workStack(root,x,z,kind,max){
     const k=pile.items.length, m=WORK_LOAD[kind||"cask"](), G=WORLD.ground||function(){return 0;};
     const row=k%3, tier=Math.floor(k/3);
     m.scale.setScalar(FIG_SCALE);
+    /* play-test, 27 Nov: a cask is carried across the body (its axis along x), but a pile lies
+       side by side, so it is turned: 1.7 apart and 0.85/1.45 per tier is a cask's own nesting */
+    if((kind||"cask")==="cask")m.rotation.y=Math.PI/2;
     m.position.set(x+(row-1)*1.7+tier*0.85,G(x,z)+0.8+tier*1.45,z);root.add(m);pile.items.push(m);
   };
   return pile;
@@ -31202,7 +31226,7 @@ function starveQuiz(kick,title,body,opts,id,after){
 /* a document card: the plain words, and the source in full behind a button */
 function starveCard(c){
   return "<div class=\"starveCard\"><b>"+c.who+"</b> <i>— "+c.when+"</i><br><small>"+c.role+"</small><p>"+c.plain+"</p>"+
-    "<details><summary>Read the source in full <small>(teachers: graphic)</small></summary><p>"+c.full+"</p></details></div>";
+    "<details><summary>Read the source in full"+graphicTag(c.full)+"</summary><p>"+c.full+"</p></details></div>";
 }
 
 function starveAct(d){
@@ -32272,9 +32296,14 @@ function leafQuiz(kick,title,body,opts,id,after){
     else{result(false,o[1],"",["+6 Ink"],after||null);$("resBody").innerHTML=o[2];}}};})));
 }
 /* a document card: plain words; the source in full behind a fold */
+/* lead, 27 Nov: the play-test found "(teachers: graphic)" on every fold, even a court order; it is
+   now shown only when the full text holds violence, read by the period words for it - erring toward
+   the label, since a plain text that carries it costs less than a graphic one that does not */
+const GRAPHIC_RE=/kill|slay|slew|slain|murther|murder|burn|fire[ds]?\b|blood|head|scalp|skin|wound|dead|dying|death|sword|knife|shot|hang|tortur|body|bodies|bones|flesh|fry|massacre|execut|poison|poysen|smite|smote|stab/i;
+function graphicTag(full){return GRAPHIC_RE.test(String(full||"").replace(/<[^>]*>/g," "))?" <small>(teachers: graphic)</small>":"";}
 function leafCard(who,when,plain,full){
   return "<div class=\"starveCard\"><b>"+who+"</b> <i>— "+when+"</i><p>"+plain+"</p>"+
-    (full?"<details><summary>Read the source in full <small>(teachers: graphic)</small></summary><p>"+full+"</p></details>":"")+"</div>";
+    (full?"<details><summary>Read the source in full"+graphicTag(full)+"</summary><p>"+full+"</p></details>":"")+"</div>";
 }
 function leafBlank(t){return "<div class=\"starveCard leafBlank\"><b>Her own account</b><p>"+t+"</p></div>";}
 /* a sheet of rows, each marked with one of `keys`; marks kept in w.marks[id] */
@@ -35708,6 +35737,9 @@ WORK_LOAD.fowl=function(){const g=new Geo(), fe=RGB(0x5e5444), feD=RGB(0x3e3a30)
 LOAD_HOLD.fowl={at:[0,-0.04,0.38],hx:0.32,hy:0.05,hz:0.38,ground:0.12};
 /* a piece shouldered, as the board rides: the load's +x ends up forward, so the barrel is laid
    along +x and tipped up, the muzzle high and the butt behind the shoulder */
+/* play-test, 27 Nov: the end of a litter pole, the litter's own pole drawn by the scene; an empty
+   holder, so only the hands show where it is */
+WORK_LOAD.pole=function(){return new THREE.Group();};
 WORK_LOAD.piece=function(){const g=new Geo(), wood=RGB(0x5a4128), iron=RGB(0x3a3a3e);
   g.beam8([-0.55,0,0],[0.95,0,0],0.04,0.045,iron,iron);g.box(-0.75,-0.03,0,0.45,0.1,0.06,wood);
   const m=g.mesh(false,false);m.rotation.z=0.55;const w=new THREE.Group();w.add(m);return w;};
@@ -36793,7 +36825,8 @@ function bayAct(d){
   }
   /* 1 · the arbella */
   if(d.kind==="rope"&&!d.worked){
-    bayWork(d,"haul",4,"Winthrop, 12 April: the sick children sway the rope up and down, till they are warm.",{},function(){
+    /* play-test, 27 Nov: the line said what the card after it quotes; now it says what is done */
+    bayWork(d,"haul",4,"Sick children on the open deck, at a rope from the steerage to the mainmast.",{},function(){
       BAY.rope.forEach(function(e){workRemove(e);});BAY.rope.length=0;});
     return;
   }
@@ -36876,7 +36909,7 @@ function bayAct(d){
     return;
   }
   if(d.kind==="stakes"&&!d.worked){
-    bayWork(d,"hammer",4.5,"Stakes for the palisade at the new town. Watertown said the rate for it meant “bondage”.",{},function(){
+    bayWork(d,"hammer",4.5,"Stakes for the palisade at the new town. A rate on the towns paid for it.",{},function(){
       if(BAY.stakes)BAY.stakes.visible=true;});
     return;
   }
@@ -36927,7 +36960,7 @@ function bayAct(d){
   }
   /* 5 · saybrook */
   if(d.kind==="watch"&&!d.worked){
-    bayWork(d,"lift",4,"Night watch at the gate, the match alight. Gardener: “this caused me to keep watch and ward”.",{load:"piece"});
+    bayWork(d,"lift",4,"Night watch at the gate, the musket’s match alight.",{load:"piece"});
     return;
   }
   if(d.kind==="watch"){
@@ -36973,11 +37006,21 @@ function bayAct(d){
     return;
   }
   if(d.kind==="wounded"&&!d.worked){
-    bayWork(d,"lift",4,"Four men to one wounded man, Mason wrote. Down to the pinnaces.",{});
+    /* play-test, 27 Nov: the player lifted nothing (lift with no load holds no pose) beside a litter
+       that never moved. Now the four take up the poles together and the litter rises on their
+       hands; then they have carried him down to the shore, by the boat */
+    BAY.bearers.forEach(function(f){BAY.lift.push(workAdd(f,"lift",{load:"pole"}));});
+    bayWork(d,"lift",4,"Four men to one wounded man, Mason wrote. Down to the pinnaces.",{load:"pole"},function(){
+      BAY.lift.forEach(function(e){workRemove(e);});BAY.lift.length=0;
+      const L=BAY.litter, x=-18, z=54, yaw=0.6;
+      BAY.bearers.forEach(function(f){if(f.parent)f.parent.remove(f);});
+      L.position.set(x,G0w(x,z),z);L.rotation.y=yaw;L.userData.gy=G0w(x,z);
+      BAY.bearers=bayBearers(L.parent,G0w,x,z,yaw,-1);
+      BAY.bearers.forEach(function(f){BAY.lift.push(workAdd(f,"lift",{load:"pole"}));});});
     return;
   }
   if(d.kind==="wounded"){
-    bayDone("wounded");
+    bayDone("wounded");bayCaptivesWalk();
     /* Orr pp. 31-32 */
     fortResult("Four to One Man",leafCard("John Mason","he was there","Four or five men were “so wounded that they must be carried … we were constrained to put four to one Man … at length we hired several Indians, who eased us of that Burthen”.")+"<p>He counts two English killed, and about twenty wounded.</p>",["+6 Ink"]);
     return;
@@ -37061,9 +37104,11 @@ function bayNext(fromBoard){
 /* the Arbella comes in off Salem, 12 June 1630 (WJ i pp. 49-50): the bow, the shore ahead */
 function BAY_LANDFALL(){
   return [
-    {fade:"in",cam:{to:[8,LVL_Y[LVL.MAIN]+22,-4],look:[-6,6,-160],cut:true},t:4.5,
+    /* play-test, 27 Nov: both shots stood in the rigging, the foremast across the middle of the
+       first; now off the bow (the bowsprit in frame, bow at z -56), then off the port bow */
+    {do:function(){if(BAY.shore)BAY.shore.visible=true;},fade:"in",cam:{to:[10,LVL_Y[LVL.MAIN]+16,-66],look:[-6,4,-220],cut:true},t:4.5,
      narrate:"Saturday, 12 June 1630. The Arbella comes in off Salem."},
-    {cam:{to:[-22,LVL_Y[LVL.MAIN]+20,-14],look:[-70,4,-170]},t:4.5,
+    {cam:{to:[-26,LVL_Y[LVL.MAIN]+6,-30],look:[-70,4,-200],cut:true},t:4.5,
      narrate:"Endecott’s settlers had wintered here, since 1628."},
     {fade:"out",t:1}];
 }
@@ -37077,6 +37122,8 @@ function BAY_FLIGHT(){
      narrate:"Winthrop: “they found he had been gone three days before”."},
     {fade:"out",t:1}];
 }
+function G0w(x,z){return (WORLD.ground||function(){return 0;})(x,z);}
+function bayCaptivesWalk(){BAY.capt.forEach(function(c){if(BAY.walk.indexOf(c)<0){c.f.visible=true;c.s=0;BAY.walk.push(c);}});}
 function bayFleeOff(){if(BAY.flee){BAY.flee.f.visible=false;const i=BAY.walk.indexOf(BAY.flee);if(i>=0)BAY.walk.splice(i,1);}}
 /* the night march: the column through the woods, the smoke far off over the trees. The fort is
    never shown (record, "Content and framing", 6) */
@@ -37086,7 +37133,8 @@ function BAY_MARCH(){
      /* review, 27 Nov: was "Connecticut's men"; Underhill's Massachusetts men marched too (record, "Who went") */
      narrate:"May 1637. Connecticut and Massachusetts men, with Mohegan and Narragansett allies, march toward the Pequot fort."},
     {cam:{to:[14,9,-64],look:[-4,4,-130]},t:5,
-     narrate:"Mason, years later: a dog barked, and a man cried “Owanux! Owanux!”, which is “Englishmen! Englishmen!”"},
+     /* play-test, 27 Nov: this line said "Owanux!" and the card after it says it again, quoted */
+     narrate:"The column goes on through the woods, toward the fort at Mystic."},
     {cam:{to:[10,14,10],look:[-60,40,-240]},t:5,
      narrate:"Smoke rises over the trees. What happened at the fort is told only in words."},
     {fade:"out",t:1}];
@@ -37118,15 +37166,29 @@ function bayHand(f){
   if(p&&p.shoulderR){p.shoulderR.rotation.set(-2.9,0,0.18);if(p.elbowR)p.elbowR.rotation.set(-0.3,0,0);}
   return f;
 }
-/* smoke over the trees, far off: a column of opaque grey lumps (no new transparency), turned
-   slowly so it seems to roll */
+/* smoke over the trees, far off. play-test, 27 Nov: it was eighteen stacked octagonal blocks,
+   turned as one, and read as a grey stone worm. Now 40 round puffs (one opaque InstancedMesh, one
+   draw call, no blending): each rises, swells and drifts downwind, going from dark at the trees to
+   the fog's own colour at the top, where it thins away and comes round again at the bottom */
 function baySmoke(root,G,x,z,h){
-  const g=new Geo(), n=18, gy=G(x,z);
-  for(let i=0;i<n;i++){const t=i/(n-1), y0=gy+h*0.2+t*h*0.8, w=8+t*26, dx=t*t*30+Math.sin(i*2.3)*3*t, dz=Math.cos(i*1.9)*3*t;
-    const c0=RGB(mixHex(0x262422,0x4e4b48,t)), c1=RGB(mixHex(0x302d2a,0x5a5754,t));
-    g.oct(dx,dz,y0,y0+h*0.09+w*0.3,w,w*0.85,w*0.8,w*0.7,0.85,c0,c1);
-    g.oct(dx+w*0.35,dz-w*0.2,y0+h*0.03,y0+h*0.07+w*0.25,w*0.7,w*0.6,w*0.55,w*0.5,0.85,c0,c1);}
-  const m=g.mesh(false,false);m.position.set(x,0,z);root.add(m);BAY.smoke.push(m);return m;
+  const n=40, m=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),new THREE.MeshLambertMaterial({}),n);
+  m.position.set(x,G(x,z),z);m.frustumCulled=false;   /* the instances' bounds are not the geometry's */
+  m.userData.smoke={n:n,h:h};
+  for(let i=0;i<n;i++)m.setColorAt(i,new THREE.Color(0x555250));
+  root.add(m);BAY.smoke.push(m);bayPuffs(m,0);return m;
+}
+function bayPuffs(m,t){
+  const S0=m.userData.smoke, n=S0.n, h=S0.h, o=new THREE.Object3D(), c=new THREE.Color(), dark=new THREE.Color(0x2c2926).convertSRGBToLinear(),
+    light=new THREE.Color(0x524e49).convertSRGBToLinear(), fog=scene.fog?scene.fog.color:light;
+  for(let i=0;i<n;i++){
+    /* colours are sRGB, made linear as RGB() does; each puff is thrown off the column's line by
+       its own amount, so it is not a string of beads */
+    const u=(i/n+t/45)%1, k=srand(i*3.7), k2=srand(i*5.3)-0.5, k3=srand(i*7.1)-0.5;
+    const r=(9+u*22+k*6)*Math.min(1,u/0.08)*(u>0.8?1-(u-0.8)/0.2*0.8:1);
+    o.position.set(u*u*h*0.5+k2*(6+u*26)+Math.sin(i*2.3+t*0.05)*3*u,h*0.12+u*h+k3*8,k3*(5+u*16));
+    o.scale.set(r,r*0.78,r);o.rotation.set(k*3,i,0);o.updateMatrix();m.setMatrixAt(i,o.matrix);
+    c.copy(dark).lerp(light,smooth01(0,0.6,u)).lerp(fog,0.45*smooth01(0.4,1,u));m.setColorAt(i,c);}
+  m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;
 }
 /* a line of palisade stakes, set along a run; part of it hidden until the work is done */
 function bayStakes(root,G,x0,z0,x1,z1,n,hideFrom){
@@ -37135,13 +37197,37 @@ function bayStakes(root,G,x0,z0,x1,z1,n,hideFrom){
     (i>=hideFrom?b:a).beam8([x,gy-0.3,z],[x,gy+h,z],0.7,0.55,stake,top);}
   root.add(a.mesh(false,false));const m=b.mesh(false,false);root.add(m);return m;
 }
-/* a litter: two poles and a wounded man under a cover, on the ground */
+/* a litter: two poles, a canvas, and a wounded man lying on it under a cover to the chest.
+   play-test, 27 Nov: it was a pale lump on two poles, with nobody on it. Built in its own group
+   (poles along local z, the canvas between) so four bearers can lift it; returned */
 function bayLitter(root,G,x,z,yaw,i){
-  const g=new Geo(), pole=RGB(0x6a5038), cov=RGB([0x6e5236,0x8a8272][i%2]), gy=G(x,z), c=Math.cos(yaw), s=Math.sin(yaw);
-  const P=function(a,b,y){return [x+a*c+b*s,gy+y,z-a*s+b*c];};
-  for(const a of [-1.3,1.3])g.beam8(P(a,-5,0.5),P(a,5,0.5),0.25,0.25,pole,pole);
-  g.oct(x,z,gy+0.5,gy+1.2,2.4*Math.abs(c)+5.6*Math.abs(s),2.4*Math.abs(s)+5.6*Math.abs(c),1.4*Math.abs(c)+4.6*Math.abs(s),1.4*Math.abs(s)+4.6*Math.abs(c),0.4,shadeRGB(cov,0.8),cov);
-  root.add(g.mesh(false,false));solid(x,z,2.4,2.4,LVL.MAIN,0);
+  const grp=new THREE.Group(), g=new Geo(), pole=RGB(0x6a5038), canvas=RGB(0x8a7c5e), cov=RGB([0x6e5236,0x5e6a56][i%2]);
+  for(const a of [-1.3,1.3])g.beam8([a,0.5,-5],[a,0.5,5],0.25,0.25,pole,pole);
+  g.box(0,0.56,0,2.5,0.08,7.6,canvas);
+  g.box(0,1.06,1.15,2.1,0.9,4.0,cov);g.box(0,1.06,-0.9,2.1,0.6,0.25,shadeRGB(cov,0.85));
+  grp.add(g.mesh(false,false));
+  /* on his back, head to -z: x by -90 degrees turns his up to -z and his face to the sky */
+  const f=buildFigure(crowdEq("soldier",595+i,1637));f.rotation.set(-Math.PI/2,0,0);f.position.set(0,0.95,2.6);
+  grp.add(bakeFigure(f));
+  grp.position.set(x,G(x,z),z);grp.rotation.y=yaw;root.add(grp);solid(x,z,2.4,2.4,LVL.MAIN,0);
+  return grp;
+}
+/* four bearers at the pole ends, facing in, "four to one Man" (Mason, Orr p. 32); `skip` leaves
+   out the one whose place the player takes. Live, so they can lift */
+function bayBearers(root,G,x,z,yaw,skip){
+  const c=Math.cos(yaw), s=Math.sin(yaw), out=[];
+  [[-1.3,-5.6],[1.3,-5.6],[1.3,5.6],[-1.3,5.6]].forEach(function(e,k){
+    if(k===skip)return;
+    const px=x+e[0]*c+e[1]*s, pz=z-e[0]*s+e[1]*c, f=buildFigure(crowdEq("soldier",590+k,1637));
+    f.position.set(px,G(px,pz),pz);f.rotation.y=yaw+(e[1]>0?Math.PI:0);root.add(f);solid(px,pz,1,1,LVL.MAIN,0);out.push(f);});
+  return out;
+}
+/* the litter rides on its bearers' hands: the mean height of their pole ends */
+function bayLitterRide(){
+  const L=BAY.litter;if(!L||!BAY.lift.length)return;
+  let y=0, n=0;const v=new THREE.Vector3();
+  for(const e of BAY.lift)if(e.load){e.f.updateMatrixWorld(true);e.load.getWorldPosition(v);y+=v.y;n++;}
+  if(n)L.position.y=Math.max(L.userData.gy,y/n-0.5);
 }
 /* the court room at Newtown: a meetinghouse of boards inside, benches, the governor's table.
    Opaque walls and a ceiling of beams; windows are pale boards of daylight, not glass */
@@ -37194,7 +37280,8 @@ SITE_TERRAIN.newtown={sea:120,shore:90,flat:-60,deep:-1.0,fall:0.01,rise:0.6,inl
 
 registerWorld("ch12",function(root){
   const w=bayW(), sd=bayDay(), where=sd.where, day=w.day;
-  BAY.later=[];BAY.walk=[];BAY.smoke=[];BAY.ship=null;BAY.flee=null;BAY.stakes=null;BAY.rope=[];BAY.column=[];
+  BAY.later=[];BAY.walk=[];BAY.smoke=[];BAY.ship=null;BAY.flee=null;BAY.stakes=null;BAY.rope=[];BAY.column=[];BAY.ropeMesh=null;BAY.capt=[];BAY.shore=null;
+  BAY.litter=null;BAY.bearers=[];BAY.lift=[];
   BLAZE.fires.length=0;
   let G, spots={}, at=[0,42], face=Math.PI, nextAt=null, look0=0, pitch0=0.30, ship=false;
   const duty=function(id,label,x,z,data){
@@ -37224,7 +37311,9 @@ registerWorld("ch12",function(root){
     const foot=workStack(root,-11,50,"cask",9);
     workMan(root,crowdEq("hand",510,1630),10,39,0,"carry",{from:[10,39],to:[-3,52],load:"cask",speed:2.6,drop:foot.drop});
     workMan(root,crowdEq("hand",511,1630),14,41,0,"carry",{from:[13,40.5],to:[0,53.5],load:"cask",speed:2.9});
-    workMan(root,crowdEq("hand",512,1630),-25,-21.2,Math.PI,"hammer");
+    /* play-test, 27 Nov: copied from Chapter XI's quay, where the houses stand at z -28; here they
+       stand at -22, so he hammered from inside one. At its front now, as he was there */
+    workMan(root,crowdEq("hand",512,1630),-30,-15.2,Math.PI,"hammer");
     presTable(root,G,-18,20.5);duty("agreement","The Cambridge Agreement",-18,24,{kind:"agreement",verb:"Read it"});
     /* the Company's members, hands raised for the vote; Winthrop and Dudley among them */
     presTable(root,G,24,8);duty("charter","The Company’s Vote",24,12,{kind:"charter",after:"agreement",verb:"Read it"});
@@ -37255,16 +37344,21 @@ registerWorld("ch12",function(root){
        L.oct(x,z,-2,10+srand(i*1.7)*10,130,70,90,40,0.35,landD,land);
        for(let k=0;k<5;k++){const tx=x-40+k*20+srand(i*7+k)*8, tz=z+srand(k*5+i)*20-10;
          L.oct(tx,tz,8,30+srand(i+k*2)*10,9,9,0.6,0.6,0.2,tree,tree);}}
-     root.add(L.mesh(false,false));}
+     /* play-test, 27 Nov: it stood on the horizon from April, mid-Atlantic; it comes up at the landfall */
+     BAY.shore=L.mesh(false,false);BAY.shore.visible=!!w.did.landfall;root.add(BAY.shore);}
     /* the rope from the steerage to the mainmast (WJ i p. 31), and the sick children at it,
        some of one side and some of the other */
-    {const r=new Geo(), rope=RGB(0xbfb094);r.beam8([-8.5,y+4.2,17],[-0.9,y+4.4,0.9],0.12,0.12,rope,rope);root.add(r.mesh(false,false));}
+    /* play-test, 27 Nov: the rope ran at 4.2-4.4 above the deck, over the children's heads (their
+       wrists swing 2.45-3.15), so they hauled at nothing. Now at their hands, and it sways up and
+       down with them (updateBay) until the work is done */
+    {const r=new Geo(), rope=RGB(0xbfb094);r.beam8([-8.5,y+2.75,17],[-0.9,y+2.75,0.9],0.12,0.12,rope,rope);
+     BAY.ropeMesh=r.mesh(false,false);root.add(BAY.ropeMesh);}
     /* at the two ends of it: the middle of the deck is the capstan's (bars to 6.6 ft from z=10.8) */
     [[0.14,-1],[0.24,1],[0.86,-1],[0.96,1]].forEach(function(a,i){
       const u=a[0], x=-0.9+(-8.5+0.9)*u, z=0.9+(17-0.9)*u, nx=0.9*a[1], nz=0.43*a[1];
       const c=(i%2)?buildFigure(Object.assign(crowdEq("boy",530+i,1630),{look:Object.assign(crowdLook("boy",530+i,1630),{age:"child"})}),{lod:1})
         :englishWoman(false,{age:"child"});
-      c.position.set(x+nx*1.3,y,z+nz*1.3);c.rotation.y=Math.atan2(-nx,-nz);root.add(c);BAY.rope.push(workAdd(c,"haul",{}));});
+      c.position.set(x+nx*0.7,y,z+nz*0.7);c.rotation.y=Math.atan2(-nx,-nz);root.add(c);BAY.rope.push(workAdd(c,"haul",{}));});
     duty("rope","The Rope",-10.4,13,{kind:"rope",verb:"Take hold",face:[-7.9,14.4],stand:[-9.6,13.6],reach:1.6});
     plyDeckChest(root,LVL.MAIN,6.5,-2);duty("modell","The Sermon",6.5,1.5,{kind:"modell",after:"rope",verb:"Read it"});
     plyDeckChest(root,LVL.MAIN,9.5,-15.5);plyDeckChest(root,LVL.MAIN,-9.5,-15.5);plyDeckChest(root,LVL.MAIN,9.5,13);
@@ -37308,7 +37402,7 @@ registerWorld("ch12",function(root){
     /* Massachusett men bringing corn in baskets to trade (Clap, Young p. 352) */
     [[70,-6],[76,-2]].forEach(function(p,i){const f=tidewaterFigure(plyWampLook({mantle:true}));
       f.position.set(p[0],G(p[0],p[1]),p[1]);root.add(f);workAdd(f,"carry",{from:p,to:[34,4+i*3],load:"basket",speed:2.2});});
-    skyBaskets(root,G,30,10,4);
+    skyBaskets(root,G,30,10,3);   /* play-test, 27 Nov: three on the ground; a fourth stacked on a basket */
     duty("clams","The Flats",6,58,{kind:"clams",verb:"Gather them",face:[6,62],stand:[6,59]});
     starveChest(root,G,30,16.5);duty("corn","The Corn Sellers",30,20,{kind:"corn",after:"clams",verb:"Read it"});
     starveChest(root,G,14,40.5);duty("lyon","The Lyon’s Lemons",14,44,{kind:"lyon",after:"corn",verb:"Read it"});
@@ -37328,7 +37422,9 @@ registerWorld("ch12",function(root){
     BAY.stakes=bayStakes(root,G,40,0,76,0,44,30);BAY.stakes.visible=!!w.did.stakes;solid(58,0,18,0.8,LVL.MAIN,0);
     workMan(root,crowdEq("hand",566,1631),54,-3,0,"hammer");
     workMan(root,crowdEq("hand",567,1631),46,10,0,"carry",{from:[46,12],to:[56,4],load:"board",speed:2.4});
-    duty("stakes","The Palisade Stakes",62,4,{kind:"stakes",after:"oath",verb:"Drive a stake",face:[62,0.5],stand:[62,3.2]});
+    /* play-test, 27 Nov: the player drove a stake that already stood (x 62 is stake 26 of the 30
+       shown); now he drives the last one of the standing run, and the rest go up when it is done */
+    duty("stakes","The Palisade Stakes",64.3,4,{kind:"stakes",after:"oath",verb:"Drive a stake",face:[64.3,0.5],stand:[64.3,3.2]});
     starveChest(root,G,-30,26.5);starveChest(root,G,30,26.5);starveChest(root,G,-40,0.5);
     spots={winthrop:[8,32]};
     nextAt=[-6,36];starveChest(root,G,-6,32.5);
@@ -37345,9 +37441,9 @@ registerWorld("ch12",function(root){
     [[6,-6,2.8],[-12,2,2.2]].forEach(function(a,i){stand(crowdEq("planter",570+i,1634),a[0],a[1],a[2]);});
     starveChest(root,G,-24,6.5);duty("treatise","The Treatise",-24,10,{kind:"treatise",verb:"Read it"});
     starveChest(root,G,24,6.5);duty("opinions","Salem’s Letter",24,10,{kind:"opinions",after:"treatise",verb:"Read it"});
-    presTable(root,G,0,14);duty("order","The Court’s Order",0,18,{kind:"order",after:"opinions",verb:"Copy it",face:[0,14],stand:[0,16.6]});
+    presTable(root,G,0,14);duty("order","The Court’s Order",0,18,{kind:"order",after:"opinions",verb:"Copy it",face:[0,14],stand:[0,17.1]});   /* play-test, 27 Nov: 16.6 is inside the table's collider, so the player wrote in the air where he stood */
     starveChest(root,G,-40,-23.5);starveChest(root,G,30,26.5);starveChest(root,G,-30,26.5);
-    {const f=buildFigure(personEq("williams",1636));BAY.flee=bayWalker(root,f,[[-84,-70],[-120,-150]],1.6,true);BAY.flee.s=BAY.flee.L;}
+    {const f=buildFigure(personEq("williams",1636));BAY.flee=bayWalker(root,f,[[-84,-70],[-120,-150]],2.6,true);   /* play-test, 27 Nov: at 1.6 he hardly moved in ten seconds */BAY.flee.s=BAY.flee.L;}
     spots={williams:[16,24]};
     nextAt=[-6,36];starveChest(root,G,-6,32.5);
     at=[0,42];
@@ -37381,23 +37477,35 @@ registerWorld("ch12",function(root){
     placeShip(root,"discovery",1,-50,170,Math.PI/2);placeShip(root,"discovery",1,60,185,Math.PI/2);
     BAY.ship=placeShip(root,"godspeed",1,200,260,Math.PI/2);
     captBarge(root,G,-6,68,0.3);
-    bayLitter(root,G,-16,36,0.2,0);bayLitter(root,G,-6,40,-0.3,1);
-    [[-19,33,0.4],[-13,41,-2.6],[-3,37,0.2]].forEach(function(a,i){stand(crowdEq("soldier",590+i,1637),a[0],a[1],a[2]);});
+    bayLitter(root,G,-16,36,0.2,0);
+    /* the wounded man the player helps carry: three bearers waiting at the poles; once carried, the
+       four of them stand with him down at the shore, by the boat */
+    {const C=w.did.wounded?[-18,54,0.6]:[-6,40,-0.3];
+     BAY.litter=bayLitter(root,G,C[0],C[1],C[2],1);BAY.litter.userData.gy=G(C[0],C[1]);
+     BAY.bearers=bayBearers(root,G,C[0],C[1],C[2],w.did.wounded?-1:0);
+     if(w.did.wounded)BAY.bearers.forEach(function(f){BAY.lift.push(workAdd(f,"lift",{load:"pole"}));});}
+    stand(crowdEq("soldier",594,1637),-19,31,0.4);
     /* the column, ready for the march (hidden until it moves) */
     for(let i=0;i<6;i++){const f=i%3===2?tidewaterFigure(plyWampLook({mantle:false})):buildFigure(crowdEq("soldier",600+i,1637));
-      BAY.column.push(bayWalker(root,f,[[i*0.6-1,-40-i*5],[-2,-150-i*5]],2.2,true));}
+      /* play-test, 27 Nov: 2.2 a second (2.6 ft/s) carried the column 11 units in a 5-second shot,
+         so it seemed to stand; 3.6 is a soldier's marching pace, 4.3 ft/s */
+      BAY.column.push(bayWalker(root,f,[[i*0.6-1,-40-i*5],[-2,-150-i*5]],3.6,true));}
     /* Uncas and Mohegan men, by the shore */
     stand(personEq("uncas",1637),34,30,plyFace(34,30,[0,42]));
     [[38,34],[30,36],[40,26]].forEach(function(a,i){native(a[0],a[1],plyFace(a[0],a[1],[0,42])+(i-1)*0.3,{mantle:i===1});});
     /* captives walking under guard, far off along the shore: women and children, two soldiers */
+    /* play-test, 27 Nov: they walked at 0.9 (1 ft/s) from the moment the scene opened, before the
+       march, so they read as standing still and came before Mystic. Now they appear when the
+       wounded are carried (the captives' duty opens then) and walk at a slow 1.8, 2.2 ft/s */
     [[-190,58],[-196,60],[-202,57],[-208,61],[-214,58]].forEach(function(p,i){
       const look=Object.assign(twCrowdLook(true),{hair:"loose",hairColor:HAIR.black,paint:false,ear:null},i%2?{age:"child"}:{});
-      BAY.walk.push(bayWalker(root,tidewaterFigure(look),[p,[p[0]+120,p[1]+4]],0.9));});
-    [[-186,54],[-218,63]].forEach(function(p,i){BAY.walk.push(bayWalker(root,buildFigure(crowdEq("soldier",610+i,1637)),[p,[p[0]+120,p[1]+4]],0.9));});
+      BAY.capt.push(bayWalker(root,tidewaterFigure(look),[p,[p[0]+120,p[1]+4]],1.8,true));});
+    [[-186,54],[-218,63]].forEach(function(p,i){BAY.capt.push(bayWalker(root,buildFigure(crowdEq("soldier",610+i,1637)),[p,[p[0]+120,p[1]+4]],1.8,true));});
+    if(w.did.wounded)bayCaptivesWalk();
     /* Hartford, September 1638: a table, and the two sachems who signed by their marks */
     presTable(root,G,70,16);stand(personEq("miantonomi",1638),64,14,plyFace(64,14,[70,30]));stand(personEq("uncas",1638),76,14,plyFace(76,14,[70,30]));
     duty("march","The Path",0,-20,{kind:"march",verb:"March"});
-    duty("wounded","The Wounded",-10,30,{kind:"wounded",after:"march",verb:"Lift",face:[-6,40],stand:[-8,36.5],reach:1.4});
+    duty("wounded","The Wounded",-10,30,{kind:"wounded",after:"march",verb:"Lift",face:[-7.2,39.6],stand:[-5.6,34.3],reach:0.1});
     starveChest(root,G,8,48.5);duty("captives","The Captives",8,52,{kind:"captives",after:"wounded",verb:"Read it"});
     starveChest(root,G,-34,42.5);starveChest(root,G,-12,48.5);starveChest(root,G,40,44.5);
     spots={mason:[-24,20],underhill:[16,20]};
@@ -37413,7 +37521,7 @@ registerWorld("ch12",function(root){
     const G0=captLand(root,"newtown",{trees:60,winter:true,clear:function(x,z){return Math.hypot(x,z)<90;}});
     let top=-1e9;for(const x of [-31,0,31])for(const z of [-31,0,27])top=Math.max(top,G0(x,z));
     const fy=top+0.3;G=function(){return fy;};WORLD.ground=G;WORLD.hull=false;
-    bayCourtRoom(root,G);
+    bayCourtRoom(root,G);WORLD.camBox={x0:-28,x1:28,z0:-28,z1:24.4,y1:fy+13.6};   /* the room is 60 x 56, 15 high */
     presTable(root,G,0,-16);
     [[-14,-24],[-8,-24.5],[8,-24.5],[14,-24],[-20,-23]].forEach(function(a,i){
       const f=buildFigure(crowdEq("gent",620+i,1637));f.position.set(a[0],fy+1.2,a[1]);f.rotation.y=0;root.add(bakeFigure(f));});
@@ -37423,7 +37531,7 @@ registerWorld("ch12",function(root){
       const f=i%3===1?englishWoman(i%2===0):buildFigure(crowdEq(i%2?"planter":"hand",630+i,1637));
       f.position.set(a[0],fy,a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));solid(a[0],a[1],1,1,LVL.MAIN,0);});
     presTable(root,G,-22,-8);duty("meetings","Her Meetings",-22,-4,{kind:"meetings",verb:"Read it"});
-    presTable(root,G,22,-8);duty("examination","The Reporter’s Table",22,-4,{kind:"examination",after:"meetings",verb:"Write",face:[22,-8],stand:[22,-5.4]});
+    presTable(root,G,22,-8);duty("examination","The Reporter’s Table",22,-4,{kind:"examination",after:"meetings",verb:"Write",face:[22,-8],stand:[22,-4.9]});   /* play-test, 27 Nov: as the order at Salem */
     starveChest(root,G,6,-6.5);duty("sentence","The Vote",6,-3,{kind:"sentence",after:"examination",verb:"Read it"});
     spots=w.did.closed?{winthrop:[0,-23]}:{winthrop:[0,-23],hutchinson:[0,-11.5]};
     starveChest(root,G,-25,4.5);starveChest(root,G,25,4.5);starveChest(root,G,-25,-15.5);starveChest(root,G,25,-15.5);
@@ -37433,7 +37541,7 @@ registerWorld("ch12",function(root){
       presTable(root,G,-24,22);
       const sc=buildFigure(personEq("secretary",1638));sc.position.set(-24,fy,24.6);sc.rotation.y=Math.PI;root.add(sc);solid(-24,24.6,1,1,LVL.MAIN,0);}
     else starveChest(root,G,0,23.5);
-    at=[0,18];
+    at=[0,11];   /* play-test, 27 Nov: at 18 the camera had eight feet of room behind him */
   }
 
   const LOOK_AFTER={james0:"agreement",objection:"agreement",henry:"landfall",garrett:"corn",james3:"hands",coggeshall:"oath",
@@ -37467,7 +37575,9 @@ function updateBay(dt){
   /* the fires; the light of each scene is SCENE_LOOK.ch12, via applyLook */
   updateBlaze(dt);
   for(const W of BAY.walk)bayWalkAt(W,dt);
-  for(const m of BAY.smoke)m.rotation.y+=dt*0.03;
+  for(const m of BAY.smoke)bayPuffs(m,BAY.t);
+  bayLitterRide();
+  if(BAY.ropeMesh)BAY.ropeMesh.position.y=BAY.rope.length?0.16*Math.sin(BAY.t*Math.PI*2/1.9):0;
   /* the Desire stands out to sea */
   if(BAY.ship&&BAY.ship.position.x<600)BAY.ship.position.x+=dt*1.4;
 }
@@ -39645,7 +39755,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-2121";
+const BUILD="20261127-2135";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
