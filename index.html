@@ -27272,8 +27272,9 @@ function presRegion(x,z){
   if(z>=o[1])return "beach";
   return x<o[0]?"landW":"landE";
 }
-function presRoute(it){
-  if(!it||!player||presDay().where!=="fort")return it;
+function presRoute(it,anyFort){
+  /* play-test, 27 Nov: Chapter VII's fort scenes route the same way; they pass anyFort */
+  if(!it||!player||(anyFort!==true&&presDay().where!=="fort"))return it;
   const px=player.position.x, pz=player.position.z, from=presRegion(px,pz), to=presRegion(it.x,it.z);
   if(from===to)return it;
   /* in the gateway itself, keep going the way you are going: a radius here made the arrow
@@ -27463,7 +27464,8 @@ const STARVE_DAYS=[
   {where:"dig",date:"James Fort, summer 2012",need:["jane"],next:"Back to 1610"},
   {where:"comfort",date:"Spring 1610 — Algernon Fort, at Point Comfort",need:["crabs","sails"],next:"The Ledger"},
   {where:"fort",date:"23 May 1610",need:["view","commission"],next:"The Ledger",ruin:3},
-  {where:"river",date:"7 to 10 June 1610",need:["burn","helm"],next:null}];
+  /* play-test, 27 Nov: ruin - the river scene is played at the fort now, which is still a ruin */
+  {where:"river",date:"7 to 10 June 1610",need:["burn","helm"],next:null,ruin:3}];
 const STARVE_DUTY={
   store:"Count what is left in the store",venison:"Meet the boys from Powhatan",
   baskets:"Watch the corn measured",five:"Set the five accounts side by side",
@@ -27480,7 +27482,7 @@ function starveW(){
 }
 function starveDay(){return STARVE_DAYS[Math.min(starveW().day,STARVE_DAYS.length-1)];}
 function starveNeed(){const w=starveW(), sd=starveDay();for(const k of sd.need)if(!w.did[k])return k;return null;}
-const STARVE={later:[],ship:null,ships:[],boat:null,lit:false,winter:false,figs:{},t:0,view:[]};
+const STARVE={later:[],ship:null,ships:[],boat:null,lit:false,winter:false,figs:{},t:0,view:[],walk:[],cut:null};
 
 /* ---- THE PEOPLE ---- thin, by the winter: build_survivor is the game's own gaunt frame */
 function starveThin(eq){return Object.assign({},eq,{build:"build_survivor"});}
@@ -27488,7 +27490,9 @@ const STARVE_PEOPLE=[
   {id:"percy",name:"President Percy",voice:"male",role:"President, and sick",eq:CAPT_PEOPLE[4].eq},
   {id:"spelman",name:"Henry Spelman",voice:"male",role:"a boy of the Third Supply",eq:crowdEq("boy",3)},
   {id:"davis",name:"Captain Davis",voice:"male",role:"commands at Algernon Fort",eq:crowdEq("soldier",8)},
-  CAPT_PEOPLE[1],                                                         /* ratcliffe */
+  /* play-test, 27 Nov: he was "President Ratcliffe, President of the council" in October 1609,
+     with Percy President - Chapter V's entry, kept whole. Captain now; his words are unchanged */
+  Object.assign({},CAPT_PEOPLE[1],{name:"Captain Ratcliffe",role:"a captain of the council"}),
   {id:"strachey",name:"Master Strachey",voice:"male",role:"Secretary to Sir Thomas Gates",eq:crowdEq("gent",17)},
   {id:"gates",name:"Sir Thomas Gates",voice:"male",role:"Lieutenant Governor, from Bermuda",eq:crowdEq("gent",19)},
   {id:"digger",name:"An Archaeologist",voice:"male",role:"James Fort, 2012",
@@ -27593,9 +27597,11 @@ const STARVE_OPEN=[
 const STARVE_LOOKS=[
   [["list","Smith’s List",-30,6,"The friends’ list","<p>“Leaving vs thus, with 3 ships, 7 boates … 10 weekes provision in the store, 490 and odde persons … 6 mares and a horse, 5 or 600 swine.”</p><p>Then: “Now were we all constrained to liue only of that which Smith had only for his owne company, for the rest had consumed their proportions.”</p>"]],
   [["field","The Corn Field",30,-40,"Corn about the town","<p>Spelman: “a great number Indians that lay lurking in ye woods & corne about”.</p><p>The corn is harvested and stored. The Powhatan were short themselves: Strachey later wrote that “(at their best) [they] have little more, then from hand to mouth”.</p>"]],
-  [["houses","The Empty Houses",-52,-20,"Firewood","<p>Houses whose owners have died are pulled apart and burned. Strachey, in May, will say it was “rather then the dwellers would step into the Woods a stones cast off from them, to fetch other fire-wood”.</p><p>Why wouldn’t they? Strachey also wrote that “the Indian killed as fast without, if our men stirred but beyond the bounds of their Block-house, as Famine and Pestilence did within.”</p>"],
+  /* play-test, 27 Nov: "The Empty Houses" was under the awning and "The Woods" among the tents;
+     the first is at a burnt frame now, the second at the gap torn in the east curtain */
+  [["houses","The Empty Houses",63,-24,"Firewood","<p>Houses whose owners have died are pulled apart and burned. Strachey, in May, will say it was “rather then the dwellers would step into the Woods a stones cast off from them, to fetch other fire-wood”.</p><p>Why wouldn’t they? Strachey also wrote that “the Indian killed as fast without, if our men stirred but beyond the bounds of their Block-house, as Famine and Pestilence did within.”</p>"],
    ["what","What They Ate",-40,14,"After the hogs","<p>Percy: “haveinge fedd upon horses and other beastes as longe as they Lasted, we weare gladd to make shifte with vermin as doggs Catts Ratts and myce”, and “to eate Bootes shoes or any other leather”.</p><p>Smith, 1624: “roots, herbes, acornes, walnuts, berries, now and then a little fish … yea, even the very skinnes of our horses.”</p>"],
-   ["runaways","The Woods",60,-60,"Runaways","<p>“Many of our men this starveinge Tyme did Runn away unto the Salvages whome we never heard of after.” <i>— Percy</i></p><p>That is the first time the words “starving time” appear in an eyewitness’s hand. What happened to the runaways, nobody recorded.</p>"]],
+   ["runaways","The Woods",88,-86,"Runaways","<p>“Many of our men this starveinge Tyme did Runn away unto the Salvages whome we never heard of after.” <i>— Percy</i></p><p>That is the first time the words “starving time” appear in an eyewitness’s hand. What happened to the runaways, nobody recorded.</p>"]],
   [["store","The Store",-70,16,"Robbing the store","<p>“some to satisfye their hunger have Robbed the store for the which I Caused them to be executed.” <i>— Percy</i></p><p>He wrote it himself. Their names and their number are not given.</p>"]],
   [["sieve","The Sieve",8,-8,"What a cellar keeps","<p>Everything in this layer was thrown away in one winter: animal bones, among them horse, dog, cat, rat and snake, and the girl’s bones with them.</p><p>The written sources say the colonists ate those animals. Here, the bones say it too.</p>"]],
   [["pots","The Crab Pots",24,40,"Crabs for the hogs","<p>Percy: “the Crabb fishes wherewith they had fedd their hoggs wold have been a greate relefe unto us and saved many of our Lyves.”</p><p>He also wrote that Davis meant “to have keptt some of the better sorte alyve and with their towe pinnesses to have Retourned for England”.</p>"]],
@@ -27754,6 +27760,7 @@ function starveAct(d){
   if(d.kind==="view"){
     if(STARVE.view.indexOf(d.v)<0)STARVE.view.push(d.v);
     w.view=STARVE.view.slice();
+    saveGame();   /* play-test, 27 Nov: two of three seen, then a reload, and the walk began again */
     const NOTE={wall:"“the Pallisadoes torne downe”",gate:"“the Ports open, the Gates from off the hinges”",houses:"“emptie houses (which Owners death had taken from them) rent up and burnt, rather then the dwellers would step into the Woods a stones cast off from them, to fetch other fire-wood”"};
     for(let i=interactables.length-1;i>=0;i--){const it=interactables[i];
       if(it.action==="starve"&&it.data&&it.data.kind==="view"&&it.data.v===d.v){if(it.el)it.el.style.display="none";interactables.splice(i,1);}}
@@ -27763,8 +27770,9 @@ function starveAct(d){
     updateGuide();return;
   }
   if(d.kind==="commission"){
-    starveDone("commission");
-    fortResult("Sixteen days","<p>Strachey read Gates’s commission aloud, and “Captaine <i>Percie</i> (then President) delivered up unto him his Commission, the old Patent and the Councell Seale”.</p><p>Gates had brought food that would “serve one hundred and fiftie for a Sea Voyage”. Shared out, the store would last “not possible to serve longer then sixteene dayes”.</p><p>The Company printed that “if God had not sent Sir Thomas Gates from the Bermudos within foure daies, they had all beene famished”. Smith, copying it in 1624, wrote “almost”.</p>",["+6 Ink"]);
+    /* play-test, 27 Nov: the duty was a card with nothing to see; Percy crosses to Gates first */
+    playCutscene({skippable:true,steps:STARVE_COMMISSION()},function(){starveDone("commission");enterWorld("ch7");
+    fortResult("Sixteen days","<p>Strachey read Gates’s commission aloud, and “Captaine <i>Percie</i> (then President) delivered up unto him his Commission, the old Patent and the Councell Seale”.</p><p>Gates had brought food that would “serve one hundred and fiftie for a Sea Voyage”. Shared out, the store would last “not possible to serve longer then sixteene dayes”.</p><p>The Company printed that “if God had not sent Sir Thomas Gates from the Bermudos within foure daies, they had all beene famished”. Smith, copying it in 1624, wrote “almost”.</p>",["+6 Ink"]);});
     return;
   }
   /* 7 · the helm */
@@ -27867,7 +27875,8 @@ function starveNext(fromLedger){
   if(need){toast("Not yet: "+STARVE_DUTY[need].charAt(0).toLowerCase()+STARVE_DUTY[need].slice(1)+".");return;}
   /* the ledger is the way out of every scene that has new lines to pin */
   const fresh=STARVE_LEDGER.some(function(r){return r.at===w.day;});
-  if(!fromLedger&&fresh&&sd.next==="The Ledger"&&w.day!==2){starveLedger();return;}
+  /* play-test, 27 Nov: a reload after the ledger was done opened it again on the way out */
+  if(!fromLedger&&fresh&&sd.next==="The Ledger"&&w.day!==2&&w.ledger[w.day]==null){starveLedger();return;}
   if(w.day>=STARVE_DAYS.length-1)return;
   w.day++;
   checkpoint("ch7-day"+w.day);
@@ -27876,53 +27885,146 @@ function starveNext(fromLedger){
 }
 
 /* ---- THE CUTSCENES ---- */
+/* someone walking a line of points, driven by updateStarve, which the cutscene loop calls */
+function starveWalk(m,pts,v){
+  m.position.set(pts[0][0],G7(pts[0][0],pts[0][1]),pts[0][1]);(worldRoot||scene).add(m);
+  STARVE.walk.push({m:m,pts:pts,i:1,v:v||2.4});return m;
+}
+/* play-test, 27 Nov: Spelman was spawned inside the storehouse wall and walked off alone, while
+   his standing double and Powhatan stayed at the baskets, and the second shot looked at him
+   through the storehouse. Powhatan, Spelman and the Dutchman go together now, round the
+   storehouse and up a clear lane inland, and the second shot waits at its end looking back */
 function STARVE_LED(){
   return [
-    {fade:"in",cam:{to:[30,10,40],look:[-10,3,-10],cut:true},t:4,
+    {fade:"in",cam:{to:[30,10,40],look:[-6,3,0],cut:true},t:4,do:function(){
+       npcMeshes.forEach(function(n){if(n.npc&&n.npc.id==="spelman")n.mesh.visible=false;});
+       if(STARVE.figs.pw)STARVE.figs.pw.visible=false;
+       if(player){player.position.set(-8,G7(-8,14),14);player.rotation.y=-2.2;}
+       starveWalk(tidewaterFigure(),[[-2,4],[-10,1],[-16.5,-1],[-16.5,-54]],4.2);
+       starveWalk(buildFigure(STARVE_PEOPLE[1].eq),[[6,8],[4,2],[-12,-0.5],[-14.5,-3],[-14.5,-51]],4.2);
+       starveWalk(buildFigure(crowdEq("hand",31)),[[9,9],[6,0.5],[-12,-1.5],[-18.5,-3],[-18.5,-49]],4.2);},
      narrate:"“ye king departed taking me and ye dutchman with him.” Spelman is led away, inland, with Powhatan."},
-    {spawn:{id:"sp",eq:STARVE_PEOPLE[1].eq,at:[-4,G7(-4,-4),-4],face:Math.PI}},
-    {move:{id:"sp",to:[-40,G7(-40,-70),-70],face:Math.PI*0.9},t:5,cam:{to:[10,8,20],look:[-30,3,-50]},
+    {cam:{to:[-17,6,-76],look:[-16,3,-26]},t:5,
      narrate:"Behind him, at the storehouse, the English are carrying corn to the ship."},
-    {sfx:"wind",t:5,narrate:"Then, Spelman wrote, came “an oulis and whoopubb”, and the men in the corn “shott the men as they passed by them”. He did not see it. He heard it."},
+    {sfx:"wind",cam:{to:[-15,7,-66],look:[0,4,-8]},t:5,narrate:"Then, Spelman wrote, came “an oulis and whoopubb”, and the men in the corn “shott the men as they passed by them”. He did not see it. He heard it."},
     {fade:"out",t:1}];
 }
 function STARVE_SAILS(){
   return [
-    {fade:"in",cam:{to:[0,14,40],look:[0,4,200],cut:true},t:4,do:function(){STARVE.ships.forEach(function(s){s.go=true;});},
+    /* play-test, 27 Nov: the player's head stood in the bottom of the first shot */
+    {fade:"in",cam:{to:[0,14,40],look:[0,4,200],cut:true},t:4,do:function(){if(player)player.visible=false;STARVE.ships.forEach(function(s){s.go=true;});},
      narrate:"Two pinnaces, coming in from the sea, where no English ship was looked for."},
     {t:5,narrate:"Built on the Bermudas, of the wreck of the Sea Venture and of cedar, by the people everyone had counted drowned."},
-    {cam:{to:[20,8,60],look:[0,3,140]},t:4.5,narrate:"Monday, the twenty-first of May, 1610, about noon."},
+    /* play-test, 27 Nov: the last shot cut both ships off at the tops */
+    {cam:{to:[38,4,48],look:[-22,13,124]},t:4.5,narrate:"Monday, the twenty-first of May, 1610, about noon."},
     {fade:"out",t:1}];
 }
+/* play-test, 27 Nov: played at the fort now. On Mulberry shore the last line, "The town they had
+   left standing was still standing", was said over two ships and open water, and the ships
+   turned back stern first, the longboat sailing through one of them. Downriver is -x, as in
+   Chapter VI: the pinnaces go down, the longboat comes up to meet them, they turn about under
+   helm, and the last shot is the town from the river */
 function STARVE_HELM(){
   return [
-    {fade:"in",cam:{to:[-20,12,60],look:[60,4,140],cut:true},t:4.5,do:function(){STARVE.ships.forEach(function(s){s.go=true;});},
+    {fade:"in",cam:{to:[50,16,60],look:[-30,5,104],cut:true},t:4.5,do:function(){if(player)player.visible=false;STARVE.ships.forEach(function(s){s.go=true;});},
      narrate:"The seventh of June. “that night, with the tide” they fell down to Hog Island, and “the morning tide brought us to another Iland, which we have called Mulberry Iland.”"},
-    {t:4.5,do:function(){if(STARVE.boat)STARVE.boat.go=true;},
+    {cam:{to:[60,12,80],look:[-200,3,112]},t:4.5,do:function(){if(STARVE.boat){STARVE.boat.go=true;STARVE.boat.m.visible=true;}},
      narrate:"There they saw a boat rowing up the river towards them."},
-    {cam:{to:[10,6,96],look:[40,2,120]},t:5.5,
+    {cam:{to:[-90,14,60],look:[-150,4,110]},t:5.5,
      narrate:"Percy: “Capteyne Bruster sentt from my Lorde La Ware, who was come unto us with many gentlemen of quallety and the hundrethe men besides.”"},
-    {t:5,do:function(){STARVE.ships.forEach(function(s){s.v=-s.v;});},
+    {t:5,do:function(){STARVE.ships.forEach(function(s){s.to=s.home;s.v=-s.v;s.yawTo=-Math.PI/2;});},
      narrate:"“our Governour bore up the helme”, and that night “relanded all his men at the Fort againe”."},
-    {cam:{to:[-20,12,60],look:[60,4,140]},t:4,narrate:"The town they had left standing was still standing."},
+    {cam:{to:[0,70,190],look:[-10,0,0],cut:true},t:4,narrate:"The town they had left standing was still standing."},
+    {fade:"out",t:1}];
+}
+/* play-test, 27 Nov: Percy giving up his commission had nothing to watch; he crosses to Gates.
+   No words are added: the card that follows says what was done */
+function STARVE_COMMISSION(){
+  return [
+    {fade:"in",cam:{to:[-8,6,-16],look:[-26,3.5,-2],cut:true},t:2.5,do:function(){
+       if(STARVE.figs.percy)STARVE.figs.percy.visible=false;
+       starveWalk(buildFigure(starveThin(STARVE_PEOPLE[0].eq)),[[-36,-2],[-29,-1],[-17.5,-4.5]],1.7);}},
+    {t:6},
     {fade:"out",t:1}];
 }
 function G7(x,z){return WORLD.ground?WORLD.ground(x,z):0;}
 
 /* ---- NEW THINGS IN THE WORLD ---- */
+/* play-test, 27 Nov: THE FORT RUNS DOWN. The burnt frames stood under the awning and among the
+   tents, and nothing else changed between October and May. Now, as the winter goes on, the
+   shelters are taken down one by one and a burnt frame stands where each one was, the palisade
+   is torn open in places (charred stumps in the gap; its colliders stay, so nobody walks out
+   through one), and by May the gate is off its hinges. The fort's parts are single meshes that
+   arrive later, so updateStarve cuts them as they come (starveCut). */
+const STARVE_TENTS=[[63,-30],[-6,-33],[27,-41],[48,-47],[11,-48],[22,-22]];
+const STARVE_GAPS=[[0.55,1],[0.3,-1],[0.3,1]];   /* [how far from the river corner to the north bulwark, side] */
+function starveGap(g){return [g[1]*210*(1-g[0]),30-222*g[0]];}
 function starveRuin(root,G,level){
-  /* the fort as Strachey found it: palisade torn down in places, houses pulled apart for
-     firewood. Drawn over the standing fort: gaps are charred stumps where the stakes were, and
-     burnt house frames are black posts and fallen rafters on the ground. */
-  const g=new Geo(), char=RGB(0x2b2520), charL=RGB(0x463a2e), ash=RGB(0x5d5650);
-  const frames=[[-52,-20],[-60,-8],[20,-30],[40,-12],[-20,-40]].slice(0,1+level);
+  const g=new Geo(), char=RGB(0x2b2520), charL=RGB(0x463a2e), ash=RGB(0x5d5650), wood=RGB(0x5a4836);
+  const frames=STARVE_TENTS.slice(0,Math.min(STARVE_TENTS.length,level*2));
   frames.forEach(function(a,i){
     const x=a[0],z=a[1],gy=G(x,z);
     g.box(x,gy+0.05,z,12,0.1,9,ash);
     for(const c of [[-5,-3.5],[5,-3.5],[-5,3.5],[5,3.5]])g.beam8([x+c[0],gy-0.3,z+c[1]],[x+c[0],gy+2+srand(i*3+c[0])*4,z+c[1]],0.5,0.4,char,charL);
     for(let k=0;k<4;k++){const a0=srand(i*5.1+k)*Math.PI;g.beam8([x-4*Math.cos(a0),gy+0.3,z-4*Math.sin(a0)],[x+4*Math.cos(a0),gy+0.5,z+4*Math.sin(a0)],0.35,0.35,char,charL);}
   });
+  const gaps=STARVE_GAPS.slice(0,level);
+  gaps.forEach(function(gp,i){
+    const c=starveGap(gp), s=gp[1], L=Math.hypot(210,222), ux=-s*210/L, uz=-222/L, nx=s*uz, nz=-s*ux;
+    for(let k=-5;k<=5.01;k+=1.1){const x=c[0]+ux*k, z=c[1]+uz*k, gy=G(x,z);
+      g.beam8([x,gy-0.3,z],[x,gy+0.5+srand(i*9+k)*1.3,z],0.55,0.5,char,charL);}
+    for(const f of [[-3,2,-0.5,4.5],[1,3,3.5,5.5]]){
+      const x0=c[0]+ux*f[0]+nx*f[1], z0=c[1]+uz*f[0]+nz*f[1], x1=c[0]+ux*f[2]+nx*f[3], z1=c[1]+uz*f[2]+nz*f[3];
+      g.beam8([x0,G(x0,z0)+0.3,z0],[x1,G(x1,z1)+0.3,z1],0.5,0.5,char,charL);}
+  });
+  if(level>=3){
+    /* "the Gates from off the hinges": one leaf lies inside the gateway */
+    const gx=-12,gz=21,gy=G(gx,gz);
+    for(let k=0;k<5;k++)g.box(gx,gy+0.12,gz-1.9+k*0.95,10,0.24,0.85,wood);
+    for(const o of [-3.2,3.2])g.box(gx+o,gy+0.3,gz,0.5,0.14,4.8,char);
+  }
   root.add(g.mesh(false,false));
+  STARVE.cut={tents:frames,gaps:gaps.map(starveGap),gate:level>=3};
+}
+/* drop the pieces of a fort part that `test` picks, by their centres. Pieces are found by
+   welding vertices at the same place, since every face of the model has its own four */
+function starveCut(m,test){
+  m.updateMatrixWorld(true);
+  const g0=m.geometry, p=g0.attributes.position, idx=g0.index?g0.index.array:null;
+  if(!idx)return;
+  const n=p.count, par=[], key=new Map(), v=new THREE.Vector3(), sum={};
+  for(let i=0;i<n;i++)par[i]=i;
+  const f=function(a){while(par[a]!==a){par[a]=par[par[a]];a=par[a];}return a;};
+  for(let i=0;i<n;i++){const k=Math.round(p.getX(i)*100)+","+Math.round(p.getY(i)*100)+","+Math.round(p.getZ(i)*100);
+    const j=key.get(k);if(j===undefined)key.set(k,i);else par[f(i)]=f(j);}
+  for(let t=0;t<idx.length;t+=3){const a=f(idx[t]);par[f(idx[t+1])]=a;par[f(idx[t+2])]=a;}
+  for(let i=0;i<n;i++){const r=f(i), c=sum[r]||(sum[r]=[0,0,0]);v.fromBufferAttribute(p,i).applyMatrix4(m.matrixWorld);c[0]+=v.x;c[1]+=v.z;c[2]++;}
+  const keep=[];
+  for(let t=0;t<idx.length;t+=3){const c=sum[f(idx[t])];if(!test(c[0]/c[2],c[1]/c[2]))keep.push(idx[t],idx[t+1],idx[t+2]);}
+  const g=g0.clone();g.setIndex(keep);m.geometry=g;     /* a copy: the loaded part is shared */
+}
+/* play-test, 27 Nov: papers on a sea chest, for spots away from the fort's tables */
+function starveChest(root,G,x,z){
+  const g=new Geo(), wood=RGB(0x6b5236), band=RGB(0x3a2c20), paper=RGB(0xe9e0c8), gy=G(x,z);
+  g.box(x,gy+0.7,z,2.6,1.4,1.5,wood);g.box(x,gy+1.45,z,2.7,0.12,1.6,band);
+  g.box(x-0.5,gy+1.53,z,0.9,0.04,1.2,paper);g.box(x+0.6,gy+1.53,z+0.1,0.9,0.04,1.2,paper);
+  root.add(g.mesh(false,false));solid(x,z,1.4,0.9,LVL.MAIN,0);
+}
+/* play-test, 27 Nov: "The Bell" was a label over a crowd with no bell */
+function starveBell(root,G,x,z){
+  const g=new Geo(), wood=RGB(0x6a543a), bronze=RGB(0x8a6a3a), gy=G(x,z);
+  for(const k of [-2.4,2.4])g.beam8([x+k,gy-0.3,z],[x+k,gy+6,z],0.45,0.45,wood,wood);
+  g.beam8([x-3,gy+6,z],[x+3,gy+6,z],0.5,0.5,wood,wood);
+  g.oct(x,z,gy+3.8,gy+5.8,1.1,1.1,0.5,0.5,0.1,bronze,bronze);
+  root.add(g.mesh(false,false));solid(x,z,2.8,0.6,LVL.MAIN,0);
+}
+/* play-test, 27 Nov: "What They Ate" stood over bare ground: a cold hearth and an empty pot */
+function starveHearth(root,G,x,z){
+  const g=new Geo(), stone=RGB(0x6e6a62), iron=RGB(0x2b2b30), ash=RGB(0x5d5650), gy=G(x,z);
+  g.box(x,gy+0.04,z,2.6,0.08,2.6,ash);
+  for(let i=0;i<7;i++){const a=i/7*Math.PI*2;g.box(x+Math.cos(a)*1.7,gy+0.25,z+Math.sin(a)*1.7,0.7,0.5,0.6,stone);}
+  g.oct(x+2.6,z+0.6,gy,gy+1.0,0.7,0.7,0.55,0.55,0.08,iron,iron);
+  root.add(g.mesh(false,false));solid(x,z,1.6,1.6,LVL.MAIN,0);
 }
 function starveEarthwork(root,G,x,z){
   /* Algernon Fort: a small earthen work with a stake fence, at the river's mouth */
@@ -27938,6 +28040,8 @@ function starveEarthwork(root,G,x,z){
     Q(P(a0,R+0.8,2.6),P(a1,R+0.8,2.6),P(a1,R-0.8,2.6),P(a0,R-0.8,2.6),earth);  /* top */
     Q(P(a0,R-0.8,2.6),P(a1,R-0.8,2.6),P(a1,R-2.6,-0.3),P(a0,R-2.6,-0.3),earth);/* inner slope */
     for(let k=0;k<3;k++){const a=a0+(a1-a0)*k/3;g.beam8(P(a,R,2.2),P(a,R,6.2),0.35,0.28,stake,stake);}
+    /* play-test, 27 Nov: the bank had no colliders, and a student walked through it, stakes and all */
+    const am=(a0+a1)/2;solid(x+Math.cos(am)*R,z+Math.sin(am)*R,1.8,1.8,LVL.MAIN,0);
   }
   root.add(g.mesh(false,false));
 }
@@ -27986,33 +28090,46 @@ SITE_TERRAIN.mulberry={sea:56,shore:20,flat:-40,deep:-2.2,fall:0.03,rise:1.6,inl
 registerWorld("ch7",function(root){
   const w=starveW(), sd=starveDay(), where=sd.where;
   STARVE.ship=null;STARVE.ships=[];STARVE.boat=null;STARVE.lit=false;STARVE.winter=!!sd.winter;STARVE.figs={};STARVE.later=[];
-  STARVE.view=(w.view||[]).slice();STARVE.hide=null;BLAZE.fires.length=0;
-  let G, spots={}, at=[0,20], face=Math.PI, nextAt=null;
+  STARVE.view=(w.view||[]).slice();STARVE.hide=null;STARVE.walk=[];STARVE.cut=null;BLAZE.fires.length=0;
+  /* play-test, 27 Nov: from (0,20) the camera trailed outside the river wall and looked back over it */
+  let G, spots={}, at=[0,-2], face=Math.PI, nextAt=null, look0=0;
   const duty=function(id,label,x,z,data){
     if(data.kind&&STARVE_DUTY[data.kind]&&w.did[data.kind])return;
+    if(data.kind==="view"&&STARVE.view.indexOf(data.v)>=0)return;   /* play-test, 27 Nov: seen before a reload */
     const it={id:id,label:label,x:x,z:z,y:G(x,z),lvl:LVL.MAIN,r:8,action:"starve",data:data};
     if(data.after&&!w.did[data.after]){STARVE.later.push(it);return;}
     interactables.push(it);};
   const thinCrowd=function(list){list.forEach(function(a,i){
     const f=buildFigure(starveThin(crowdEq(i%3?"hand":"gent",80+i)));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];
     if(a[3])poseFigure(f,a[3],i+2);root.add(bakeFigure(f));solid(a[0],a[1],0.8,0.8,LVL.MAIN,0);});};
+  /* play-test, 27 Nov: "Go On", "The Ledger" and the ledger board were labels over bare ground,
+     the first against the inside of the river wall; a table with papers under each now */
+  const desk=function(x,z){presTable(root,G,x,z-3.5);};
 
-  if(where==="fort"||where==="dig"){
+  if(where==="fort"||where==="dig"||where==="river"){
     const view=Object.assign({},fortW(),{epi:true,stretch:4,attack:null});
-    buildFortWorld(root,view,{ships:where==="dig"?[]:["discovery"],people:false,record:false,winter:!!sd.winter});
+    /* play-test, 27 Nov: after the landing De La Warr's three ships ride off the fort */
+    const ships=where==="dig"?[]:where==="river"?(w.did.helm?["susan","godspeed","discovery"]:[]):["discovery"];
+    buildFortWorld(root,view,{ships:ships,people:false,record:false,winter:!!sd.winter});
     G=fortGround;
-    nextAt=[-30,26];
+    nextAt=[-44,23];
     if(sd.ruin)starveRuin(root,G,sd.ruin);
   }
   if(where==="fort"){
     if(w.day===0){
       spots={percy:[-36,-2,2.6],spelman:[4,36,Math.PI],davis:[-60,40,1.4],ratcliffe:[-44,-6,2.2]};
+      /* play-test, 27 Nov: about five hundred people that October, and nobody in the camp; it is
+         full now, and empties scene by scene (four in the winter, two at the trial) */
+      [[-10,0,0.4],[6,-20,2.2],[30,-10,-1.2],[18,4,3.0],[-20,-30,1.0],[40,-30,-0.6],[55,-15,2.6],[-60,24,0.3],[-25,20,2.8],[12,-36,1.6]].forEach(function(a,i){
+        const f=buildFigure(crowdEq(i%3?"hand":"gent",120+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];
+        root.add(bakeFigure(f));solid(a[0],a[1],0.8,0.8,LVL.MAIN,0);});
       /* Thomas Savage, come down from Powhatan with venison */
       const sv=buildFigure(crowdEq("boy",9));sv.position.set(8,G(8,38),38);sv.rotation.y=-2.6;root.add(sv);solid(8,38,1,1,LVL.MAIN,0);
       const V=new Geo(), deer=RGB(0x8a6440), deerD=RGB(0x5e4430), vy=G(8,41);
       V.oct(8,41,vy,vy+1.0,0.9,1.7,0.7,1.4,0.2,deerD,deer);                 /* the carcass, lying */
       V.box(8,vy+0.5,42.9,0.5,0.5,0.9,deer);V.beam8([7.6,vy+0.3,40.2],[6.4,vy+0.2,39.4],0.15,0.1,deerD,deerD);
       V.beam8([8.4,vy+0.3,40.2],[9.6,vy+0.2,39.4],0.15,0.1,deerD,deerD);root.add(V.mesh(false,false));
+      presTable(root,G,-30,2.5);   /* play-test, 27 Nov: "Smith's List" was a label over bare ground */
       duty("store","The Storehouse",-70,16,{kind:"store",verb:"Count what is left"});
       duty("venison","The Gate",2,34,{kind:"venison",verb:"Meet them"});
     }
@@ -28027,7 +28144,9 @@ registerWorld("ch7",function(root){
         P.beam8([48+a[0],py-0.3,-34+a[1]],[48+a[0],py+2.6,-34+a[1]],0.4,0.4,wood,wood);
         for(const h of [0.9,2.0])P.beam8([48+a[0],py+h,-34+a[1]],[48+b[0],py+h,-34+b[1]],0.25,0.25,wood,wood);}
       root.add(P.mesh(false,false));
+      starveHearth(root,G,-41,10);
       duty("pryse","The Market Place",0,4,{kind:"pryse",verb:"Hear what happened"});
+      presTable(root,G,-62,15.5);
       duty("ledger2","The Ledger",-62,20,{kind:"ledger2",after:"pryse",verb:"Pin the winter to its writers"});
     }
     if(w.day===3){
@@ -28040,26 +28159,35 @@ registerWorld("ch7",function(root){
       thinCrowd([[-8,-10,2.8],[14,2,-1.8,"stoop"]]);
     }
     if(w.day===6){
-      spots={percy:[-36,-2,2.6],strachey:[-24,-6,2.0],gates:[-18,0,2.6]};
+      /* play-test, 27 Nov: Strachey's and Gates's names lay one over the other, Gates by an awning post */
+      spots={strachey:[-24,-10,2.0],gates:[-14,-4,-1.6]};
       thinCrowd([[-28,14,3.0],[-34,16,2.8,"stoop"],[-22,18,3.3],[-40,10,2.6]]);
+      starveBell(root,G,-30,8.5);
       const s=placeShip(root,"discovery",0.8,-150,100,Math.PI/2);STARVE.ships.push({m:s,go:false,to:-150,v:0});
-      duty("v_wall","The Palisade",-100,-40,{kind:"view",v:"wall",verb:"Look"});
+      /* play-test, 27 Nov: "The Palisade" stood 45 feet from it, behind the storehouse, and "The
+         Houses" under the awning; they are at the torn west curtain and a burnt frame now */
+      duty("v_wall","The Palisade",-141,-31,{kind:"view",v:"wall",verb:"Look"});
       duty("v_gate","The Gate",0,32,{kind:"view",v:"gate",verb:"Look"});
-      duty("v_houses","The Houses",-52,-14,{kind:"view",v:"houses",verb:"Look"});
+      duty("v_houses","The Houses",-6,-27,{kind:"view",v:"houses",verb:"Look"});
       duty("commission","President Percy",-36,2,{kind:"commission",after:"view",verb:"Watch"});
-      delete spots.percy;
-      const pf=buildFigure(starveThin(STARVE_PEOPLE[0].eq));pf.position.set(-36,G(-36,-2),-2);pf.rotation.y=2.6;root.add(pf);solid(-36,-2,1,1,LVL.MAIN,0);
+      const pf=buildFigure(starveThin(STARVE_PEOPLE[0].eq));
+      if(w.did.commission){pf.position.set(-17.5,G(-17.5,-4.5),-4.5);pf.rotation.y=Math.PI/2;}
+      else{pf.position.set(-36,G(-36,-2),-2);pf.rotation.y=2.6;solid(-36,-2,1,1,LVL.MAIN,0);}
+      root.add(pf);STARVE.figs.percy=pf;
     }
   }
   if(where==="dig"){
     /* 2012: the fort's 1607 camp, awning and storehouse are not there; their GLB parts arrive
-       a promise later (fortPlace), so updateStarve hides them as they come, as Chapter V's ash */
-    STARVE.hide=["storehouse_roof","storehouse_walls","camp_shelters","awning"];
+       a promise later (fortPlace), so updateStarve hides them as they come, as Chapter V's ash.
+       play-test, 27 Nov: the storehouse's bare frame, the cook fire, the casks, the felled
+       ground's logs and the corn were all still standing in 2012 */
+    STARVE.hide=["storehouse_roof","storehouse_walls","storehouse_frame","camp_shelters","camp_fire","camp_casks_open","camp_casks","awning",
+      "clearing_1","clearing_2","clearing_3","cornfield_1","cornfield_2"];
     starveDig(root,G);
     spots={digger:[6,-2,2.4]};
     const d2=buildFigure(STARVE_PEOPLE[6].eq);d2.position.set(-3,G(-3,-14),-14);poseFigure(d2,"kneel",3);root.add(bakeFigure(d2));
-    duty("jane","The Bone Report",-10,-4,{kind:"jane",verb:"Read it"});
-    nextAt=[-30,26];
+    presTable(root,G,-14,-4);   /* play-test, 27 Nov: the report lay on nothing, at the tarp's corner */
+    duty("jane","The Bone Report",-14,-0.5,{kind:"jane",verb:"Read it"});
   }
   if(where==="orapakes"){
     G=captLand(root,"orapakes",{trees:120,winter:true,clear:function(x,z){return Math.hypot(x,z)<90;}});
@@ -28072,44 +28200,81 @@ registerWorld("ch7",function(root){
     for(let i=0;i<30;i++){const fx=20+(i%6)*4, fz=-32-Math.floor(i/6)*4;B.beam8([fx,G(fx,fz),fz],[fx,G(fx,fz)+3.4,fz],0.15,0.08,RGB(0xa58a4c),RGB(0xc2a660));}
     root.add(B.mesh(false,false));
     captBarge(root,G,10,96,0.2);
-    spots=w.did.baskets?{}:{ratcliffe:[-14,10,2.6],spelman:[6,8,-2.8]};
+    /* play-test, 27 Nov: Spelman stood on "The Storehouse", the two names one over the other */
+    spots=w.did.baskets?{}:{ratcliffe:[-14,10,2.6],spelman:[12,6,-2.6]};
     if(!w.did.baskets){
-      const pw=tidewaterFigure();pw.position.set(-2,G(-2,4),4);pw.rotation.y=0;root.add(pw);solid(-2,4,1,1,LVL.MAIN,0);
+      const pw=tidewaterFigure();pw.position.set(-2,G(-2,4),4);pw.rotation.y=0;root.add(pw);solid(-2,4,1,1,LVL.MAIN,0);STARVE.figs.pw=pw;
       [[-6,5,0.3],[2,5.5,-0.3],[-4,8,0.1]].forEach(function(a){const f=tidewaterFigure();f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));});
     }
     duty("baskets","The Storehouse",4,12,{kind:"baskets",verb:"Watch the corn measured"});
-    duty("five","Five Accounts",12,40,{kind:"five",after:"baskets",verb:"Set them side by side"});
+    /* play-test, 27 Nov: "Five Accounts" and "Back Down the River" were labels over the bare
+       beach; the accounts are on a chest, and the way back is at the barge */
+    starveChest(root,G,0,80);
+    duty("five","Five Accounts",0,83.5,{kind:"five",after:"baskets",verb:"Set them side by side"});
     at=[14,56];
-    nextAt=[26,52];
+    nextAt=[16,88];
   }
   if(where==="comfort"){
     G=captLand(root,"comfort",{trees:60,winter:false,clear:function(x,z){return Math.hypot(x,z-10)<60;}});
     starveEarthwork(root,G,0,10);
     starveCrabPots(root,G,20,40);
     [[8,0,0.4],[12,6,2.0],[-6,-2,1.1],[2,18,-0.8]].forEach(function(a){starveHog(root,G,a[0],a[1],a[2]);});
-    spots={davis:[-6,16,2.4],percy:[10,24,-2.8]};
+    /* play-test, 27 Nov: Percy stood against the inside of the bank, his name on its slope */
+    spots={davis:[-6,16,2.4],percy:[5,22,-2.6]};
     [[-12,8,0.8],[6,-6,2.4],[16,14,-1.6]].forEach(function(a,i){const f=buildFigure(crowdEq("soldier",90+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));solid(a[0],a[1],0.8,0.8,LVL.MAIN,0);});
-    if(!w.did.sails)[[-40,260],[-10,290]].forEach(function(a,i){
-      const s=placeShip(root,"discovery",0.55,a[0],a[1],Math.PI);STARVE.ships.push({m:s,go:false,to:120,v:-14,z:true});});
+    /* play-test, 27 Nov: they came in stern first (yaw PI is bow to the sea), and once they had
+       come in they were gone at the next load; they lie in the bay now, where they stopped */
+    [[-40,260],[-10,290]].forEach(function(a,i){
+      const s=placeShip(root,"discovery",0.55,a[0],w.did.sails?120+i:a[1],0);STARVE.ships.push({m:s,go:false,to:120+i,v:-14,z:true});});
     duty("crabs","The Crab Pots",24,36,{kind:"crabs",verb:"Look"});
     duty("sails","The Bay",0,52,{kind:"sails",after:"crabs",verb:"Watch"});
     at=[0,40];
     nextAt=[-14,40];
+    starveChest(root,G,-14,37);
   }
   if(where==="river"){
-    G=captLand(root,"mulberry",{trees:110,winter:false,clear:function(x,z){return z>-10;}});
-    [[10,100],[96,116]].forEach(function(a,i){const s=placeShip(root,"discovery",0.6,a[0],a[1],Math.PI/2+0.1*i);STARVE.ships.push({m:s,go:false,to:a[0]+400,v:6});});
-    if(!w.did.helm){const L=new Geo();buildShallop(L,160,-0.3,120,-Math.PI/2,0.02);STARVE.boat={m:L.mesh(false,false),go:false};root.add(STARVE.boat.m);}
-    spots=w.did.helm?{}:{gates:[-6,24,2.8],strachey:[4,26,-2.6]};
-    thinCrowd([[12,30,2.2],[16,34,2.6],[-12,30,0.6]]);
-    duty("burn","Sir Thomas Gates",-4,28,{kind:"burn",verb:"Hear him"});
-    duty("helm","The Pinnaces",10,44,{kind:"helm",after:"burn",verb:"Go aboard"});
-    if(w.did.helm)duty("record","Master Strachey’s Report",0,30,{kind:"record",verb:"Close the chapter’s record"});
-    at=[0,34];
+    /* play-test, 27 Nov: THE SEVENTH OF JUNE IS AT THE FORT. On Mulberry Island's shore Gates kept
+       the men from burning a town that was not there, and "The Fort Gate" stood over grass. The
+       pinnaces ride off the fort, the guns are going into the ground before the gate, and after
+       the landing Strachey sits on the strand with De La Warr's ships in the river */
+    [[20,106],[130,104]].forEach(function(a,i){
+      const s=placeShip(root,"discovery",0.6,a[0],a[1],Math.PI/2+0.03*i);
+      STARVE.ships.push({m:s,go:false,home:a[0],to:[-110,-30][i],v:-11});});
+    if(!w.did.helm){const L=new Geo();buildShallop(L,-420,-0.3,114,Math.PI/2,0.02);
+      STARVE.boat={m:L.mesh(false,false),go:false,v:26,stop:250};STARVE.boat.m.visible=false;root.add(STARVE.boat.m);}
+    /* the guns, "before the Fort gate, which looked into the River" */
+    {const T=new Geo(), soil=RGB(0x5a4630), gy=G(13,38);
+      T.box(13,gy+0.04,40,9,0.08,2.6,RGB(0x3e3022));T.oct(13,43.5,gy-0.2,gy+1.2,4.5,1.4,3.2,0.8,0.3,soil,RGB(0x6a5538));
+      root.add(T.mesh(false,false));fortSaker(root,"saker_truck",13,gy,36.5,Math.PI/2);solid(13,38,5,2.5,LVL.MAIN,0);}
+    if(!w.did.helm){
+      if(!w.did.burn){
+        /* Gates, until he has been heard: one name over him, not two */
+        const gf=buildFigure(STARVE_PEOPLE[5].eq);gf.position.set(-10,G(-10,44),44);gf.rotation.y=0.6;root.add(gf);solid(-10,44,1,1,LVL.MAIN,0);
+        spots={strachey:[6,46,-0.6]};
+      } else spots={gates:[-10,44,0.6],strachey:[6,46,-0.6]};
+      thinCrowd([[16,52,2.2],[19,55,2.6],[-18,52,0.6],[24,50,2.0]]);
+    } else {
+      thinCrowd([[-22,48,0.6],[-26,52,0.4],[18,50,-0.6]]);
+      [[4,54,3.0],[9,56,2.8],[30,48,-2.6],[-2,58,3.2]].forEach(function(a,i){
+        const f=buildFigure(crowdEq(i%2?"soldier":"gent",140+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];
+        root.add(bakeFigure(f));solid(a[0],a[1],0.8,0.8,LVL.MAIN,0);});
+      /* Strachey, "his writing box open on a barrel head" */
+      const sf=buildFigure(STARVE_PEOPLE[4].eq);sf.position.set(-14,G(-14,40),40);sf.rotation.y=0.4;root.add(sf);solid(-14,40,1,1,LVL.MAIN,0);
+      placeModel(root,"assets/props/barrel.glb","barrel",-11,G(-11,41),41,0.4,1.15/1.2,3.2/3,1.15/1.2);solid(-11,41,1.6,1.6,LVL.MAIN);
+      const D=new Geo(), dy=G(-11,41)+3.25;D.box(-11,dy+0.25,41,1.6,0.5,1.1,RGB(0x6b5236));D.box(-11.2,dy+0.52,41,1.0,0.04,0.8,RGB(0xe9e0c8));root.add(D.mesh(false,false));
+    }
+    if(!w.did.burn)duty("burn","Sir Thomas Gates",-10,47,{kind:"burn",verb:"Hear him"});
+    /* the ship's boat, drawn up at the water's edge, to take them out to the pinnaces */
+    if(!w.did.helm){const SB=new Geo();buildShallop(SB,42,-0.3,73,0.4,0.06);root.add(SB.mesh(false,false));}
+    duty("helm","The Pinnaces",36,63,{kind:"helm",after:"burn",verb:"Go aboard"});
+    if(w.did.helm)duty("record","Master Strachey’s Report",-14,44,{kind:"record",verb:"Close the chapter’s record"});
+    at=[0,56];face=0;look0=Math.PI;nextAt=null;
   }
 
   /* ---- LOOKS ---- */
-  (STARVE_LOOKS[w.day]||[]).forEach(function(L){duty("look_"+L[0],L[1],L[2],L[3],{kind:"look",id:L[0],verb:"Look"});});
+  (STARVE_LOOKS[w.day]||[]).forEach(function(L){
+    /* play-test, 27 Nov: two "The Crab Pots" labels four feet apart; the look waits for the duty */
+    duty("look_"+L[0],L[1],L[2],L[3],{kind:"look",id:L[0],verb:"Look",after:where==="comfort"&&L[0]==="pots"?"crabs":null});});
   /* ---- PEOPLE ---- */
   for(const id in spots){
     const d=starveSpeaker(id);
@@ -28119,16 +28284,19 @@ registerWorld("ch7",function(root){
     npcMeshes.push({npc:d,mesh:f});solid(x,z,1,1,LVL.MAIN,0);
     interactables.push({id:id,label:d.name,x:x,z:z+3,y:gy,lvl:LVL.MAIN,r:7,action:"talk",data:d});
   }
-  if(nextAt&&sd.next)duty("next",sd.next,nextAt[0],nextAt[1],{kind:"next",verb:starveNeed()?"Not yet":"Go on"});
+  if(nextAt&&sd.next){
+    if(where==="fort"||where==="dig")desk(nextAt[0],nextAt[1]);
+    duty("next",sd.next,nextAt[0],nextAt[1],{kind:"next",verb:starveNeed()?"Not yet":"Go on"});
+  }
 
   if(w.day===0&&!w.did.open0){
     w.did.open0=true;
     setTimeout(function(){if(CURRENT_WORLD==="ch7")
       fortResult(STARVE_OPEN[0].t,"<p class=\"sickDate\">"+STARVE_DAYS[0].date+"</p>"+STARVE_OPEN[0].b,[]);},500);
   }
-  if(where!=="fort"&&where!=="dig"){player=buildFigure(S.equip);root.add(player);playerParts=player.userData.parts;dressCarried(player);}
+  if(where!=="fort"&&where!=="dig"&&where!=="river"){player=buildFigure(S.equip);root.add(player);playerParts=player.userData.parts;dressCarried(player);}
   player.position.set(at[0],G(at[0],at[1]),at[1]);player.rotation.y=face;
-  camYaw=0;camPitch=0.30;
+  camYaw=look0;camPitch=0.30;
 });
 
 function updateStarve(dt){
@@ -28149,18 +28317,35 @@ function updateStarve(dt){
     STARVE.lit=true;
   }
   if(STARVE.hide&&FORT.parts)for(const k of STARVE.hide){const p=FORT.parts[k];if(p&&p.visible)p.visible=false;}
+  /* the ruin, cut into each fort part as it arrives */
+  if(STARVE.cut&&FORT.parts){
+    const C=STARVE.cut, once=function(k,test){const p=FORT.parts[k];if(p&&!p.userData.starveCut){p.userData.starveCut=true;starveCut(p,test);}};
+    if(C.tents.length)once("camp_shelters",function(x,z){return C.tents.some(function(h){return Math.hypot(x-h[0],z-h[1])<9;});});
+    if(C.gaps.length){const gap=function(x,z){return C.gaps.some(function(h){return Math.hypot(x-h[0],z-h[1])<6;});};once("palisade_east",gap);once("palisade_west",gap);}
+    if(C.gate)once("gate",function(x,z){return z<29.2;});
+  }
   STARVE.ships.forEach(function(s){
+    /* play-test, 27 Nov: a ship that turns about comes round under helm, not stern first */
+    if(s.yawTo!==undefined){const d=s.yawTo-s.m.rotation.y;s.m.rotation.y+=Math.sign(d)*Math.min(Math.abs(d),dt*0.55);}
     if(!s.go)return;
     if(s.z){if(s.m.position.z>s.to)s.m.position.z=Math.max(s.to,s.m.position.z+dt*s.v);}
+    else if(s.home!==undefined){const d=s.to-s.m.position.x;s.m.position.x+=Math.sign(d)*Math.min(Math.abs(d),dt*Math.abs(s.v));}
     else s.m.position.x+=dt*s.v;
   });
-  if(STARVE.boat&&STARVE.boat.go){const b=STARVE.boat.m;if(b.position.x>-120)b.position.x-=dt*16;}
+  if(STARVE.boat&&STARVE.boat.go){const b=STARVE.boat;if(b.m.position.x<b.stop)b.m.position.x=Math.min(b.stop,b.m.position.x+dt*b.v);}
+  for(const k of STARVE.walk){
+    if(k.i>=k.pts.length)continue;
+    const p=k.pts[k.i], m=k.m, dx=p[0]-m.position.x, dz=p[1]-m.position.z, d=Math.hypot(dx,dz);
+    if(d<0.05){k.i++;continue;}
+    const s=Math.min(d,dt*k.v)/d;m.position.x+=dx*s;m.position.z+=dz*s;
+    m.position.y=G7(m.position.x,m.position.z);m.rotation.y=Math.atan2(dx,dz);
+  }
   updateBlaze(dt);
 }
 
 /* ---- CHAPTER VII'S CONTENT, AND ITS MUSTER ----
-   Sat with Master Strachey on Mulberry Island's shore after the landing, so every item is
-   ungated. Written off docs/CH7-RECORD.md §Teaching hooks. */
+   Sat with Master Strachey on the strand before the fort after the landing (play-test, 27 Nov:
+   it was Mulberry Island's shore), so every item is ungated. Written off docs/CH7-RECORD.md §Teaching hooks. */
 CONTENT.ch7={
   people:STARVE_PEOPLE,
   npcs:STARVE_NPCS,
@@ -28608,12 +28793,15 @@ const CHAPTERS=[
      if(w.did.helm)return "10 June 1610 · Master Strachey is waiting";
      return sd.date.split(" — ")[0]+" · "+(need?STARVE_DUTY[need].charAt(0).toLowerCase()+STARVE_DUTY[need].slice(1):"go on when you are ready"); },
    next:function(){ const w=starveW(), need=starveNeed();
+     /* play-test, 27 Nov: the arrow pointed through the palisade at the gate, at Davis and at
+        Spelman; in the fort it routes by the gate as Chapter VI's does */
+     const fort=["fort","dig","river"].indexOf(starveDay().where)>=0, R=function(it){return fort?presRoute(it,true):it;};
      if(need){
        const c=findSpot(function(it){return it.action==="starve"&&it.data&&(it.data.kind===need||(need==="view"&&it.data.kind==="view"));});
-       if(c)return {it:c,why:"what the day asks"};
+       if(c)return {it:R(c),why:"what the day asks"};
      }
      const o=findSpot(function(it){return it.id==="next"||it.id==="record";});
-     if(o)return {it:o,why:w.did.helm?"the chapter ends here":"the next date"};
+     if(o)return {it:R(o),why:w.did.helm?"the chapter ends here":"the next date"};
      return null; },
    end:{head:"The Starving Time — Complete",yr:"Chapter VII · 10 June 1610",nextWorld:null,
      body:"<p>Lord De La Warr has landed with three ships, a sermon has been preached, and a commission read. The colony that sailed away on the seventh is back on the tenth.</p>"+
@@ -30076,7 +30264,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0157";
+const BUILD="20261127-0221";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
