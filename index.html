@@ -3195,7 +3195,13 @@ const PEOPLE_LOOK={
      oil, transferred from panel), called the "strongest and best likeness extant"; whether it was
      painted from life is debated (AAS catalogue entry, read 27 Nov). The catalogue text does not
      describe the dress; its picture-library keywords give "beard" and "ruff". So: a ruff and a
-     beard, the beard's shape and the colours imagined. Governor: dark good cloth, not all black */
+     beard, the beard's shape and the colours imagined. Governor: dark good cloth, not all black.
+     review, 27 Nov: the AAS catalogue essay (bios/153.pdf) re-read. Given as from life, c. 1630,
+     in 1830; Bolton (1919) thought it painted in 1691 from a miniature; Dresser and Burroughs
+     (1935, with x-rays) judged it "probably of European origin and of a mid-seventeenth century
+     date", which the AAS calls "unchallenged". It praises the hands and "costume details" but
+     describes neither; "beard" and "ruff" (the keywords) were NOT found on the catalogue pages
+     read, so they stand UNVERIFIED. A State House canvas is "a c. 1770 copy" of a lost one */
   winthrop:{born:1588,face:"long",hair:"short",hairColor:HAIR.dark,beard:"pointed",
     hat:"capotain",dress:"doublet",ruff:true,cloak:true,mood:"keen",
     colors:{torso:0x2a2630,breech:WOOL.murrey,stock:WOOL.grey,cloak:0x2e2a30,hat:0x1e1c1c}},
@@ -3211,7 +3217,12 @@ const PEOPLE_LOOK={
     colors:{torso:0x2e2a2e,breech:0x2e2a2e,stock:WOOL.grey,cloak:0x3a3440,hat:0x1a1818}},
   /* PORTRAIT?: a portrait of about 1665, kept by the family and known now through copies (AAS
      Hewes 42, Corne's copy of 1802); no description of its dress was read. Dressed by class: an
-     assistant in cloth; in arms for the 1636 commission (1.2 - watch and war only). Imagined */
+     assistant in cloth; in arms for the 1636 commission (1.2 - watch and war only). Imagined.
+     review, 27 Nov: the AAS catalogue essay (bios/42.pdf) re-read. The c. 1665 original passed
+     down in the family "until it was willed to the Commonwealth of Massachusetts in 1937"; "at
+     least twenty-three versions are known"; before 1802 William Bentley found "The face is the only part
+     which is not entirely gone". It gives him 1589-1665, so it shows a man of about 76; nothing
+     in it can dress him at 47 in 1636. No dress is described: hair, beard and colours UNVERIFIED */
   endecott:{face:"long",hair:"short",hairColor:HAIR.dark,beard:"pointed",
     hat:"capotain",dress:"doublet",cloak:true,mood:"stern",
     colors:{torso:WOOL.green,breech:WOOL.russet,stock:WOOL.grey,cloak:0x3a3236,hat:0x241f1f},
@@ -36486,7 +36497,9 @@ const BAY_NPCS=[
        reply:"Only the General Court might now make laws and raise taxes, through each town’s deputies. Then “The court chose a new governor, viz., Thomas Dudley”.",
        insight:{g:"known",b:"A New Governor",s:"May 1634: the freemen’s deputies read the patent, the General Court took back lawmaking, and it chose Thomas Dudley over Winthrop. Having a say is not winning."}},
       {t:"Who may vote here?",fair:true,ink:3,
-       reply:"Freemen only, and since May 1631 only church members: the court’s own records say so."},
+       /* review, 27 Nov: was "since May 1631 only church members"; the order bars non-members from being
+          admitted, it did not unmake freemen (MBR i p. 87) */
+       reply:"Freemen only, and since May 1631 only church members could be made freemen: the court’s own records say so."},
       {t:"So every settler voted for governor.",wise:false,
        reply:"Only freemen: men, and church members. Women, servants and Native people had no vote."}]}]},
   {id:"williams",name:"Roger Williams",voice:"male",role:"a minister, at Salem",at:4,eq:personEq("williams",1635),
@@ -36512,7 +36525,8 @@ const BAY_NPCS=[
     {npc:"“They came without acquainting any of us in the River. I said: you come hither to raise these wasps about my ears.”",
      choices:[
       {t:"What did you fear?",wise:true,ink:8,
-       reply:"“I knew that I should lose our corn-field.” He wrote it in 1660, twenty-three years later, from old papers.",
+       /* review, 27 Nov: was "twenty-three years later"; the raid was August 1636, the Relation June 1660 */
+       reply:"“I knew that I should lose our corn-field.” He wrote it in 1660, from old papers.",
        insight:{g:"known",b:"Raise These Wasps",s:"Lion Gardener, commanding Saybrook, was not asked before Endecott’s raid of 1636. He warned it would “raise these wasps about my ears”: written in 1660."}},
       /* WJ i p. 186 */
       {t:"Who sent them?",fair:true,ink:3,
@@ -36549,8 +36563,10 @@ const BAY_OPEN=[
 
 /* ---- THE JAMESTOWN AND PLYMOUTH CARDS ---- TEKS 8.2(B), 8.3: reasons, who votes, land.
    Objection 7 is the Bay's own judgement of Jamestown (Young p. 277) */
+/* review, 27 Nov: was "The Bay's 1629 paper judged it"; Objection 7 speaks of "those plantations
+   that have been formerly made" and names no colony (Young p. 277, re-read) */
 const BAY_JAMES=[
-  "<div class=\"starveCard\"><b>Jamestown, 1607</b><p>A company, for profit. The Bay’s 1629 paper judged it: “they aimed chiefly at profit”, with “the very scums of the land”.</p></div>"+
+  "<div class=\"starveCard\"><b>Jamestown, 1607</b><p>A company, for profit. The Bay’s 1629 paper said earlier colonies “aimed chiefly at profit”, with “the very scums of the land”.</p></div>"+
   "<div class=\"starveCard\"><b>Plymouth, 1620</b><p>A church that had left the Church of England, paid for by investors who wanted fish.</p></div>",
   "<div class=\"starveCard\"><b>Jamestown, 1619</b><p>An Assembly called by the Company in London: burgesses chosen by the plantations.</p></div>"+
   "<div class=\"starveCard\"><b>Plymouth, 1620</b><p>A compact signed by the men aboard ship, promising “all due submission and obedience”.</p></div>",
@@ -36570,9 +36586,9 @@ const BAY_LOOKS=[
    ["rich","Rich and Poor",-9.5,-12,"Some must be rich",leafCard("A Modell of Christian Charity","1630","“in all times some must be rich, some poore, some high and eminent in power and dignitie; others mean and in submission.”")+"<p>A sermon on duty between unequal people, not on equality.</p>"],
    ["henry","Henry Winthrop",9.5,16.5,"Drowned at Salem","<p>Winthrop’s journal, in modern spelling, July 1630: “My son, Henry Winthrop, was drowned at Salem.”</p>"]],
   /* Young p. 312; Young p. 315; WJ i pp. 55-56 */
-  [["servants","Servants Set Free",-30,30,"Wholly unable to feed them",leafCard("Thomas Dudley","1631, in Young’s modernised text","About 180 servants came for food, and “necessity enforced us, to our extreme loss, to give them all liberty, who had cost us about £16 or £20 a person”.")+"<p>Freedom, given because food ran out.</p>"],
+  [["servants","Servants Set Free",-30,30,"Wholly unable to feed them",leafCard("Thomas Dudley","1631, in Young’s modernised text",/* review, 27 Nov: was "About 180 servants came for food"; Dudley: "the remainder of a hundred and eighty servants" (Young p. 312, re-read) */"What remained of 180 servants sent before came for food, and “necessity enforced us, to our extreme loss, to give them all liberty, who had cost us about £16 or £20 a person”.")+"<p>Freedom, given because food ran out.</p>"],
    ["home","Going Home",30,30,"Glad were we",leafCard("Thomas Dudley","1631","“not much less than a hundred” went back, “partly out of dislike of our government, which restrained and punished their excesses, and partly through fear of famine”. “Glad were we so to be rid of them.”")],
-   ["garrett","Castaways on Cape Cod",-40,4,"Built them a wigwam",leafCard("John Winthrop","his journal, in modern spelling, December 1630","English castaways, frozen on Cape Cod, were taken in by a Native couple. One man “fetched a hatchet, and built them a wigwam and covered it, and gat them wood”.",
+   ["garrett","Castaways on Cape Cod",-40,4,"Built them a wigwam",leafCard("John Winthrop","his journal, in modern spelling, December 1630",/* review, 27 Nov: was "taken in by a Native couple"; "two Indian squaws, who, coming home, told their husbands" (WJ i pp. 55-56) */"English castaways, frozen on Cape Cod, were found by two Native women, whose husbands took them in. One man “fetched a hatchet, and built them a wigwam and covered it, and gat them wood”.",
      "“Garrett died about two days after his landing; and the ground being so frozen as they could not dig his grave, the Indian hewed a hole about half a yard deep, with his hatchet, and having laid the corpse in it, he laid over it a great heap of wood to keep it from the wolves.”")+"<p>None of the people who saved them is named.</p>"]],
   /* the cards; WJ i p. 151; WJ i p. 123 */
   [["james3","The Jamestown and Plymouth Cards",-30,30,"Who votes?",BAY_JAMES[1]],
@@ -36604,17 +36620,21 @@ const BAY_LOOKS=[
    ["machit","Mach It",-12,52,"Too furious",leafCard("John Underhill","1638, in a partly modernised text","“Our Indians came to us, and much rejoiced at our victories … but cried Mach it, mach it; that is, It is naught, it is naught, because it is too furious, and slays too many men.”")+
      "<p>The one Native judgement of Mystic in the record, carried by an Englishman.</p>"],
    ["wife","Mononotto’s Wife",40,48,"Her children",leafCard("Winthrop’s letter, copied by Bradford","28 July 1637","“a womon of a very modest countenance and behaviour. It was by her mediation that the 2. English maids were spared … One of her first requests was, that … her children might not be taken from her.”")+
-     "<p>Her name is not in the letter. Winthrop “had taken charge of her”.</p>"],
+     /* review, 27 Nov: was Winthrop "had taken charge of her"; the letter: "so that I have taken charge of her" (MS p. 226) */
+     "<p>Her name is not in the letter. Winthrop: “I have taken charge of her”.</p>"],
    ["hartford","Hartford, 1638",70,20,"No more Pequots",leafCard("The Treaty of Hartford","21 September 1638, in modern spelling","The Pequot “shall no more be called Pequots but Narragansetts and Mohegans”, nor “live in the country that was formerly theirs but now is the English by conquest”.")+
      "<p>Signed by Connecticut’s men, and by the marks of Miantonomi and Uncas. The Pequot were not a party.</p>"]],
   /* WJ i p. 238; MBR i p. 207; Adams p. 232 and p. 63 n.; Body of Liberties, Capital Laws 2 */
   [["thanks","A Day of Thanksgiving",-25,8,"12 October 1637","<p>Winthrop’s journal, in modern spelling: “A day of thanksgiving kept in all the churches for our victories against the Pequods, and for the success of the assembly”.</p>"+
-     "<p>Any link to the modern holiday is a later claim this record can neither support nor refute.</p>"],
+     /* review, 27 Nov: the design asks to say what it was; such days were frequent (WJ i p. 51, 8 July 1630) */
+     "<p>Such days were common: the Bay kept one on 8 July 1630. Any link to the modern holiday is a later claim this record can neither support nor refute.</p>"],
    ["aspinwall","A Petition",25,8,"Disfranchized",leafCard("The court’s records","2 November 1637","William Aspinwall, “for haveing his hand to a petition or remonstrance, being a seditious libell … is disfranchized & banished”.")+"<p>Signing a petition cost a man his vote.</p>"],
    ["jesabel","A Name for Her",-25,-12,"American Jesabel",leafCard("A Short Story","London, 1644","“This American Jesabel kept her strength and reputation, even among the people of God, till the hand of Civill Justice laid hold on her”.")+
      "<p>Its editor, in 1894, thought the epithet was Thomas Welde’s, not Winthrop’s.</p>"],
    ["witch","A Later Law",25,-12,"Salem, 1692",leafCard("The Body of Liberties","1641","“If any man or woeman be a witch, (that is hath or consulteth with a familiar spirit,) They shall be put to death.”")+
-     "<p>The Salem witch trials came in 1692, fifty-five years after this court. A different time; the same law.</p>"]]];
+     /* review, 27 Nov: was "the same law"; the 1692 trials sat under the new province, and the record
+        says only "Different time, same legal world" */
+     "<p>The Salem witch trials came in 1692, fifty-five years after this court. A different time; the same legal world.</p>"]]];
 
 /* ---- WHO HAD A SAY? ----  per scene; k: 0 had a say, 1 spoke but did not decide, 2 no say.
    res: the one line said for a row placed differently - fixed, so every one can be recorded.
@@ -36629,44 +36649,60 @@ const BAY_BOARD={
      {t:"The writer of the Modell",k:1,res:"A sermon instructs; it decides nothing. Usually credited to Winthrop, it survives only in a copy in another hand."},
      {t:"The sick children on the rope",k:2,res:"Winthrop’s journal tells what was done for them. It names none of them."},
      {t:"The women of the fleet",k:2,res:"Women could not be freemen. No account by a woman of the fleet was found for this chapter."}],
-  2:[{t:"The masters who freed about 180 servants",k:0,res:"Dudley, one of them, wrote that “necessity enforced us” to free them, because there was no food."},
+  /* review, 27 Nov: row was "who freed about 180 servants" (Dudley: "the remainder of" 180, Young
+     p. 312); Clap's row was k:1 "Spoke, but did not decide", but his memoir came decades later and
+     in 1630 he held no office or vote, so his say in the decision was none */
+  2:[{t:"The masters who freed their servants",k:0,res:"Dudley, one of them, wrote that “necessity enforced us” to free them, because there was no food."},
      {t:"The servants set free",k:2,res:"Freed because they could not be fed. Only their masters’ side survives, in Dudley’s letter."},
      {t:"The Native people who sold corn",k:0,res:"Their trade was their choice. Roger Clap remembered their baskets decades later; none of their words survive."},
      {t:"The poorer sort, who lay long in tents",k:2,res:"Winthrop names them only as a sort. Dudley counts the year’s dead “by estimation”, with no list of names."},
-     {t:"Roger Clap, a settler of 1630",k:1,res:"He told of the hunger decades later, in a memoir. He decided nothing; he tells what he saw."}],
+     {t:"Roger Clap, a young settler of 1630",k:2,res:"He held no office and no vote in 1630. Decades later he told of the hunger, in a memoir."}],
   3:[{t:"A freeman who was a church member",k:0,res:"By his vote, and from May 1634 through his town’s deputies. The court’s own records, 1631 and 1634."},
      {t:"A woman who was a church member",k:2,res:"She could join a church, but women were never made freemen, and only freemen voted. The court’s own records."},
      {t:"A servant",k:2,res:"Not a freeman, so no vote. Dudley’s letter counts servants by what they cost."},
      {t:"A man outside the churches",k:2,res:"From May 1631 “noe man” was made a freeman unless a church member. The court’s own records."},
-     {t:"A Massachusett man",k:2,res:"Not a freeman, and never in the court’s lists. No Native voice is recorded at the General Court."},
+     /* review, 27 Nov: was "never in the court's lists. No Native voice is recorded at the General
+        Court"; the record did not count the lists, and read the court's books only in part */
+     {t:"A Massachusett man",k:2,res:"Not a freeman, so no vote. Only church members could become freemen. The court’s own records."},
      {t:"Watertown’s pastor and elder",k:1,res:"They warned of “bondage” over a tax; summoned, “they acknowledged their fault”. Winthrop’s journal is the only account."},
      {t:"Governor Winthrop, in May 1634",k:0,res:"He had a say by office, and the court chose Thomas Dudley instead. Having a say is not the same as winning."}],
   4:[{t:"The magistrates of the General Court",k:0,res:"They ordered him to “depte out of this jurisdiccon within sixe weekes”. The court’s own record."},
      {t:"Roger Williams",k:1,res:"His opinions survive in his judges’ record and Winthrop’s journal. His own account came decades later."},
      {t:"The ministers, all but one",k:1,res:"Winthrop: the court sentenced him, “all the ministers, save one, approving”. The ministers advised; the court sentenced."},
-     {t:"Salem’s deputies, in 1635",k:2,res:"“their deputies were not received” until Salem gave satisfaction for its church’s letter. Winthrop’s journal."},
+     /* review, 27 Nov: was "until Salem gave satisfaction"; the journal says only "until they should
+        give satisfaction about the letter" (WJ i p. 155, 12 July 1635, re-read) */
+     {t:"Salem’s deputies, in 1635",k:2,res:"“their deputies were not received until they should give satisfaction about the letter”. Winthrop’s journal."},
      {t:"The Native owners of the land",k:2,res:"Williams said the English needed their agreement. The court’s order never mentions them."}],
   5:[{t:"The Massachusetts magistrates",k:0,res:"They sent Endecott with a commission. Winthrop’s journal copies it, August 1636."},
      {t:"Lion Gardener, at Saybrook",k:1,res:"He warned them, and was not asked. He wrote it in 1660, from old papers."},
      {t:"John Eliot, a minister",k:1,res:"He preached against a Pequot treaty made “without consent of the people”, and was brought to agree. Winthrop’s journal."},
      {t:"Connecticut’s General Court",k:0,res:"It ordered “an offensiue warr agt the Pequoitt”, 1 May 1637. Its order is printed in Orr’s 1897 edition."},
      {t:"The Narragansett sachems",k:0,res:"They chose the English side. Bradford guesses why; no Narragansett reasons from 1637 survive in their own words."},
-     {t:"The people of Block Island",k:2,res:"Endecott’s men found them gone, and burned their wigwams and corn. Winthrop’s journal."}],
+     /* review, 27 Nov: was "The people of Block Island"; by Winthrop's prisoner some of them killed
+        Oldham, so "no say" in the war at large is arguable. Narrowed to Endecott's raid */
+     {t:"The people of Block Island, when Endecott came",k:2,res:"Endecott’s men found them gone, and burned their wigwams and corn. Winthrop’s journal."}],
   6:[{t:"The English who divided the captives",k:0,res:"Winthrop’s letter: “The prisoners were devided”. Bradford copied it into his history."},
      {t:"Mononotto’s wife",k:1,res:"She asked that her children not be taken from her. Only Winthrop, who held her, wrote it down."},
      {t:"The boys shipped on the Desire",k:2,res:"Fifteen boys and two women, Winthrop’s journal says, carried to Providence Isle in the Caribbean."},
-     {t:"The allies who cried “Mach it”",k:1,res:"Underhill heard them judge the English way of war “too furious”. He wrote it in 1638."},
+     /* review, 27 Nov: was "The allies who cried Mach it"; they fought, so "had a say by arms" was
+        arguable. Narrowed to the English way of fighting, which Mason says the English had
+        "formerly concluded" (Orr pp. 27-30) */
+     {t:"The allies, on the English way of fighting",k:1,res:"They cried “Mach it”: “too furious”, Underhill heard in 1638. The plan was the English captains’: “We had formerly concluded”, Mason wrote."},
      {t:"Miantonomi and Uncas, at Hartford",k:0,res:"Each signed the treaty by his mark. It survives in later copies; read here in modern spelling."},
      {t:"The Pequot, at Hartford",k:2,res:"Not a party to the treaty. It says the survivors “shall no more be called Pequots”."}],
-  7:[{t:"The magistrates of the court",k:0,res:"All but three raised their hands to banish her. The trial’s unknown reporter wrote it down; it was printed in 1767."},
+  /* review, 27 Nov: row was "The magistrates of the court"; the vote was the General Court's,
+     which since 1634 sat with the towns' deputies (MBR i pp. 117-118). Aspinwall's res adds
+     "& iustifiing the same" (MBR i p. 207, re-read) */
+  7:[{t:"The members of the General Court",k:0,res:"All but three raised their hands to banish her. The trial’s unknown reporter wrote it down; it was printed in 1767."},
      {t:"Anne Hutchinson",k:1,res:"She spoke at length, and asked why. “Say no more”, the governor answered. Her words survive only as the reporter took them down."},
      {t:"Coddington and Colborn, who voted against",k:0,res:"They voted, and lost. Having a say is not the same as winning, or as being right."},
      {t:"The women who came to her meetings",k:2,res:"No woman could vote for the court. What they said at her meetings is not recorded."},
-     {t:"William Aspinwall, after he signed a petition",k:2,res:"The same court “disfranchized & banished” him for signing. The court’s own book."},
+     {t:"William Aspinwall, after he signed a petition",k:2,res:"The same court “disfranchized & banished” him for signing, and for justifying it. The court’s own book."},
      {t:"Pequot captives in the towns",k:2,res:"Divided among the towns by the English. Winthrop’s letter says so; none of their words survive."}]};
 /* Young p. 319; the Pequot Museum booklet (2023); Body of Liberties (1641) */
 const BAY_CLOSE={
-  2:"<p>Dudley: from April to December 1630 “there died by estimation about two hundred at the least: so low hath the Lord brought us!”</p>",
+  /* review, 27 Nov: the elision was not marked (was "at the least: so low ... us!"; Young p. 319) */
+  2:"<p>Dudley: from April to December 1630 “there died by estimation about two hundred at the least … so low hath the Lord brought us”.</p>",
   6:"<p>The Pequot Museum, run by the Mashantucket Pequot Tribal Nation: the Pequots “kept alive their identity as an independent people”.</p>",
   7:"<p>The Body of Liberties, 1641: “Every man whether Inhabitant or fForreiner, free or not free shall have libertie to come to any publique Court”, to petition it.</p>"};
 
@@ -36730,7 +36766,9 @@ function bayAct(d){
       "<p>Why make that the condition?</p>",
       [["To govern themselves, not from London","Self-government","<p>The Company’s government would sail with them. Virginia’s was run from London until 1624; this one would sit in New England.</p>"],
        ["To leave the King’s rule","Not that","<p>The charter still forbade laws “repugnant to the Lawes” of England. They went as the King’s subjects.</p>"],
-       ["To keep the voyage secret","Not secret","<p>The Company debated it openly, and voted on it three days later with hands raised.</p>"]],"agreement");
+       /* review, 27 Nov: was "The Company debated it openly"; no debate is in the record, and the
+          Company's July minutes (not read for it) may say the opposite */
+       ["To keep the voyage secret","Not that","<p>The condition was the government and the patent going with them. The Company voted on it three days later, with hands raised.</p>"]],"agreement");
     return;
   }
   if(d.kind==="charter"){
@@ -36833,7 +36871,8 @@ function bayAct(d){
       "<p>What does the oath add that the Compact did not?</p>",
       [["A vote, cast by conscience","A vote","<p>The Compact promised obedience. The Bay’s freeman swore to vote “in myne owne conscience”, for the public good.</p>"],
        ["Obedience, and nothing more","More than that","<p>It gives him a vote, to cast “in myne owne conscience”. The Compact promised obedience only.</p>"],
-       ["A vote for every settler","Freemen only","<p>Only freemen took it. Other men of twenty and over swore a residents’ oath, with no vote.</p>"]],"oath");
+       /* review, 27 Nov: was "Other men of twenty and over swore a residents' oath"; not in the record */
+       ["A vote for every settler","Freemen only","<p>Only freemen took it, and from 1631 only church members could become freemen.</p>"]],"oath");
     return;
   }
   if(d.kind==="stakes"&&!d.worked){
@@ -36854,7 +36893,9 @@ function bayAct(d){
       leafCard("John Winthrop","his journal, in modern spelling","Williams’s treatise “disputes their right to the lands they possessed here”: claiming by the king’s grant, “they could have no title … except they compounded with the natives”.")+
       "<p>In Williams’s view, what would give the English a title?</p>",
       [["An agreement with the Native owners","Agreement","<p>“compounded with the natives”: an agreement, and payment. A king’s grant was not enough.</p>"],
-       ["The King’s patent","Not enough","<p>That is what he denied. He charged King James with “a solemn public lie” for claiming the land.</p>"],
+       /* review, 27 Nov: was "for claiming the land"; the lie was James's claim to be "the first
+          Christian prince that had discovered this land" (WJ i pp. 116-117) */
+       ["The King’s patent","Not enough","<p>That is what he denied. He charged King James with “a solemn public lie” for calling himself “the first Christian prince that had discovered this land”.</p>"],
        ["Being first to arrive","Not that","<p>He disputed any title “claiming by the king’s grant”, unless the natives agreed.</p>"]],"treatise");
     return;
   }
@@ -36863,7 +36904,7 @@ function bayAct(d){
     bayQuiz("Boston · July 1635","Their deputies were not received",
       leafCard("John Winthrop","his journal, in modern spelling","Williams held “that the magistrate ought not to punish the breach of the first table” except to keep the civil peace. Salem’s church made him its teacher, and wrote to protest.")+
       "<p>What did Salem lose?</p>",
-      [["Its voice at the court, for a time","Its voice","<p>Its land petition was refused, and at the next court “their deputies were not received” until Salem gave satisfaction.</p>"],
+      [["Its voice at the court, for a time","Its voice",/* review, 27 Nov: was "until Salem gave satisfaction" (WJ i p. 155) */"<p>Its land petition was refused, and at the next court “their deputies were not received until they should give satisfaction about the letter”.</p>"],
        ["Its church","Not its church","<p>The church stood. The court refused Salem’s petition, and turned away its deputies.</p>"],
        ["Nothing at all","Something","<p>Its land petition was refused, and its deputies were not received at the next court.</p>"]],"opinions");
     return;
@@ -36892,7 +36933,10 @@ function bayAct(d){
   if(d.kind==="watch"){
     bayDone("watch");
     /* Orr p. 126 */
-    fortResult("Watch and Ward",leafCard("Lion Gardener","written in 1660, in a partly modernised text","“this caused me to keep watch and ward, for I saw they plotted our destruction.”")+"<p>He wrote it twenty-three years later, from “some old papers”.</p>",["+6 Ink"]);
+    /* review, 27 Nov: was "... for I saw they plotted our destruction" and "twenty-three years
+       later"; the clause is on Orr p. 126 but not in the record, so trimmed to the key line; the
+       watch came before Endecott's raid (Aug. 1636), nearly twenty-four years before June 1660 */
+    fortResult("Watch and Ward",leafCard("Lion Gardener","written in 1660, in a partly modernised text","“this caused me to keep watch and ward”.")+"<p>He wrote it in 1660, from “some old papers”.</p>",["+6 Ink"]);
     return;
   }
   if(d.kind==="parley"){
@@ -36921,7 +36965,11 @@ function bayAct(d){
       /* Orr p. 27; Underhill (Orr pp. 80-81); MS p. 223; Pequot Museum (2023); Prince (Orr p. 31 n.) */
       fortResult("Owanux!",leafCard("John Mason","about 1670; he was there","Nearing the fort he “heard a Dog bark and an Indian crying Owanux! Owanux! which is Englishmen! Englishmen!”",
           "John Underhill, 1638, who was there, in a partly modernised text: “Sometimes the Scripture declareth women and children must perish with their parents. Sometimes the case alters; but we will not dispute it now. We had sufficient light from the word of God for our proceedings.” William Bradford, who was not there: “It was conceived they thus destroyed about 400. at this time. It was a fearfull sight to see them thus frying in ye fyer”.")+
-        "<p>On 26 May 1637 the English and their allies burned the Pequot fort at Mystic. Men, women and children died. The Pequot Museum calls it a massacre; Prince, in 1736, “Mistick Fight”.</p>",["+6 Ink"]);});
+        /* review, 27 Nov: was "the English and their allies burned ... Men, women and children died.
+           The Pequot Museum calls it a massacre". The design binds one verb, killed, for Wethersfield,
+           Oldham and Mystic; who fired the fort is Mason's and Winthrop's "by firing it" (the English),
+           while the allies' part is a dispute (record, Disputes 12); "massacre" is the museum's word */
+        "<p>On 26 May 1637 the English set fire to the Pequot fort at Mystic, their allies around it. Men, women and children were killed. The Pequot Museum calls it a “massacre”; Prince, in 1736, the “Mistick Fight”.</p>",["+6 Ink"]);});
     return;
   }
   if(d.kind==="wounded"&&!d.worked){
@@ -36937,7 +36985,7 @@ function bayAct(d){
   if(d.kind==="captives"){
     /* MS p. 225 (Winthrop's letter of 28 July 1637); WJ i pp. 227-228, 260 */
     bayQuiz("Boston · July 1637 to February 1638","The prisoners were devided",
-      priceCard("Winthrop’s letter, copied by Bradford","28 July 1637","“The prisoners were devided … we send ye male children to Bermuda … & ye women & maid children are disposed aboute in ye townes.”")+
+      priceCard("Winthrop’s letter, copied by Bradford","28 July 1637","“The prisoners were devided … we send ye male children to Bermuda … & ye women & maid children are disposed aboute in the townes.”")+/* review, 27 Nov: was "in ye townes"; the record reads "in the townes" (MS p. 225) */
       priceCard("Winthrop’s journal, modern spelling","26 February 1638","the <i>Desire</i> “returned from the West Indies … and brought some cotton, and tobacco, and negroes, etc.”")+
       "<p class=\"note\">“negroes” is Winthrop’s word.</p><p>What does the record say of the <i>Desire</i>’s two voyages?</p>",
       [["Both cargoes; no trade stated","As written","<p>The same ship took Pequot boys and women out, and brought enslaved Africans back. The record does not say one was traded for the other.</p>"],
@@ -37035,7 +37083,8 @@ function bayFleeOff(){if(BAY.flee){BAY.flee.f.visible=false;const i=BAY.walk.ind
 function BAY_MARCH(){
   return [
     {do:function(){BAY.column.forEach(function(c){c.s=0;c.f.visible=true;if(BAY.walk.indexOf(c)<0)BAY.walk.push(c);});},fade:"in",cam:{to:[16,7,-28],look:[0,4,-80],cut:true},t:5,
-     narrate:"May 1637. Connecticut’s men, with Mohegan and Narragansett allies, march toward the Pequot fort."},
+     /* review, 27 Nov: was "Connecticut's men"; Underhill's Massachusetts men marched too (record, "Who went") */
+     narrate:"May 1637. Connecticut and Massachusetts men, with Mohegan and Narragansett allies, march toward the Pequot fort."},
     {cam:{to:[14,9,-64],look:[-4,4,-130]},t:5,
      narrate:"Mason, years later: a dog barked, and a man cried “Owanux! Owanux!”, which is “Englishmen! Englishmen!”"},
     {cam:{to:[10,14,10],look:[-60,40,-240]},t:5,
@@ -37474,7 +37523,8 @@ CONTENT.ch12={
        o:["No tax without their consent","No tax on church members","No tax for ten years","No tax to be sent to England"],a:0},
       {stim:"May 1634: “The court chose a new governor, viz., Thomas Dudley.” Winthrop had been governor since 1630.",
        q:"What does 1634 show about having a say?",
-       o:["It can be lost at a vote","It lasts for life","It belongs to the richest","It comes from the King"],a:0},
+       /* review, 27 Nov: was "It comes from the King"; arguable, since the freemen's vote came by the King's charter */
+       o:["It can be lost at a vote","It lasts for life","It belongs to the richest","It belongs to the governor"],a:0},
       {stim:"The court’s order, 1635: Williams banished for “newe & dangerous opinions, against the aucthoritie of magistrates, as also writt lres of defamacon”.",
        q:"What does the order leave out that Winthrop’s journal has?",
        o:["His view of the land","His view of magistrates","His letters","The six weeks"],a:0},
@@ -37504,7 +37554,9 @@ CONTENT.ch12={
        o:["It does not say there was one","Captives were traded for Africans","The captives bought their freedom","The Africans were set free"],a:0},
       {stim:"Anne Hutchinson: “I desire to know wherefore I am banished?” The governor: “Say no more, the court knows wherefore and is satisfied.”",
        q:"How does she appear in the court’s own book?",
-       o:["Only in the charge and sentence","Word for word, as she spoke","In a letter she wrote","Not at all; she is never named in it"],a:0},
+       /* review, 27 Nov: was "Only in the charge and sentence"; the book also gives the clerk's summary
+          of what she "declared voluntarily" (MBR i p. 207), so that key was arguable */
+       o:["In a clerk’s short summary","Word for word, as she spoke","In a letter she wrote","Not at all; she is never named in it"],a:0},
       {stim:"The Body of Liberties, 1641: “There shall never be any bond slaverie … unles it be lawfull Captives taken in just warres”.",
        q:"Who could that “unles” cover?",
        o:["Captives such as the Pequot","English debtors in prison","Church members who sinned","No one at all, whoever they were"],a:0},
@@ -38012,7 +38064,10 @@ const CHAPTERS=[
    ready:true,world:"ch12",pace:2.5,near:9,
    /* the content note (record, "Content and framing"): disease, killings on both sides, a town
       burned with its people, remains as trophies, captives enslaved, period words */
-   intro:function(){ return "In 1630 a company carried its charter to New England. You may know “a city upon a hill” and “religious freedom”: here is who decided. Disease, killings on both sides, a town burned with its people, remains sent as trophies, captives enslaved, period words: in the sources’ words, none of it shown."; },
+   /* review, 27 Nov: was "You may know ... here is who decided"; the design asks the opening card to
+      say once, plainly, what the record supports (the Modell a warning; Williams and Hutchinson
+      banished), and the content note to name children's deaths. 59 words */
+   intro:function(){ return "In 1630 a company carried its charter to New England. You may know “a city upon a hill” and “religious freedom”: the sermon was a warning, and this colony banished dissenters. Disease, killings on both sides, a town burned with its people, remains sent as trophies, captives enslaved, period words: in the sources’ words, none shown."; },
    obj:function(){ return "Live eight scenes, 1629 to 1637. After each, sort the people: who had a say, who spoke but did not decide, who had none? Then sit with the Secretary of the General Court."; },
    goals:function(){
      const w=bayW(), need=bayNeed();
@@ -38034,9 +38089,11 @@ const CHAPTERS=[
    /* the Treaty of Hartford (CT lesson's modern-spelling text); the Pequot Museum booklet (2023);
       the Body of Liberties (Whitmore 1889); MBR i p. 253; WJ ii p. 138 (modern spelling) */
    end:{head:"As a Citty upon a Hill — Complete",yr:"Chapter XII · November 1637",nextWorld:null,
-     body:"<p>Hartford, 1638: the Pequot “shall no more be called Pequots”. The Pequot Museum names Robin Cassasinnamon “the Pequot’s first leader following the 1637 massacre”.</p>"+
+     /* review, 27 Nov: the design's closing card wants the Pequot's return in the nation's words;
+        the museum booklet (2023), re-read, says Cassasinnamon "helped the Pequots return to their land" */
+     body:"<p>Hartford, 1638: the Pequot “shall no more be called Pequots”. The Pequot Museum: Robin Cassasinnamon, the first leader after 1637, “helped the Pequots return to their land”.</p>"+
        "<p>The Body of Liberties, 1641: “There shall never be any bond slaverie … unles it be lawfull Captives taken in just warres”.</p>"+
-       "<p>In 1639 the court named its college Harvard. In 1643 Anne Hutchinson was killed.</p>"}},
+       "<p>Harvard College was named in 1639. In 1643 Anne Hutchinson was killed.</p>"}},
 ];
 /* The title screen is shown before any world begins, so it needs painting once here.
    Safe at this point and not one line earlier: CHAPTERS is closed above. */
@@ -38131,7 +38188,8 @@ const PATCH_NOTES=[
    head:"Chapter XII: As a Citty upon a Hill",
    lines:[
      "<b>A new chapter: Massachusetts Bay, 1629 to 1637</b>",
-     "A company that took its charter across the ocean, the Arbella and Winthrop’s sermon, Boston’s first hungry year, the General Court, Roger Williams, the Pequot War, and Anne Hutchinson’s trial.",
+     /* review, 27 Nov: was "Winthrop's sermon"; the record says "usually credited", McGann doubts it */
+     "A company that took its charter across the ocean, the Arbella and the sermon credited to Winthrop, Boston’s first hungry year, the General Court, Roger Williams, the Pequot War, and Anne Hutchinson’s trial.",
      "<b>A note for teachers</b>",
      "This chapter includes deaths from disease, including children, killings on both sides, including of women and children, a town burned with its people, remains sent as trophies, captives enslaved and shipped away, and period words. All of it is told in words, with the writer named, and none of it is drawn. The fort at Mystic is never shown.",
      "<b>Who had a say?</b>",
@@ -39587,7 +39645,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-2107";
+const BUILD="20261127-2121";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
