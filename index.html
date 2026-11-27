@@ -1384,6 +1384,7 @@ function applyBlob(d){
     if(S.works.ch8&&S.works.ch8.done)S.reached["ch9"]=true;
     if(S.works.ch9&&S.works.ch9.done)S.reached["ch10"]=true;
     if(S.works.ch10&&S.works.ch10.done)S.reached["ch11"]=true;
+    if(S.works.ch11&&S.works.ch11.done)S.reached["ch12"]=true;
     if(typeof AMBUSH!=="undefined")AMBUSH.done=!!d.ambushDone;
     SAVED_WORLD=d.world||"ch1";
     return true;
@@ -3184,7 +3185,79 @@ const PEOPLE_LOOK={
     dress:"bare",feet:"moccasin",mantle:true,beads:true,paint:true},
   /* DESCRIBED: "a proper lustie man, and a man of accounte for his vallour" (MS p. 63). Never voiced */
   hobbamock:{face:"square",hair:"loose",hairColor:HAIR.black,height:1.04,mood:"plain",
-    dress:"bare",feet:"moccasin",beads:true}
+    dress:"bare",feet:"moccasin",beads:true},
+
+  /* ---- Massachusetts Bay and the Pequot War, 1629-1638 (Chapter XII). The look book's
+     Plymouth rule (1.13) applied to the Bay: working and middling dress in sadd colours, no
+     all-black colonists; black only for office or the pulpit, and then with colour beside it.
+     New England Native people keep the New England hair (1.14), never the Powhatan cut ---- */
+  /* PORTRAIT?: the American Antiquarian Society's portrait (Hewes 153, anonymous, "c. 1630/1691",
+     oil, transferred from panel), called the "strongest and best likeness extant"; whether it was
+     painted from life is debated (AAS catalogue entry, read 27 Nov). The catalogue text does not
+     describe the dress; its picture-library keywords give "beard" and "ruff". So: a ruff and a
+     beard, the beard's shape and the colours imagined. Governor: dark good cloth, not all black */
+  winthrop:{born:1588,face:"long",hair:"short",hairColor:HAIR.dark,beard:"pointed",
+    hat:"capotain",dress:"doublet",ruff:true,cloak:true,mood:"keen",
+    colors:{torso:0x2a2630,breech:WOOL.murrey,stock:WOOL.grey,cloak:0x2e2a30,hat:0x1e1c1c}},
+  /* CLASS: no likeness was checked. The deputy governor, in his fifties in 1630; plain good cloth
+     and a cloak. Imagined */
+  dudley:{born:1576,face:"square",hair:"receding",hairColor:HAIR.brown,beard:"full",build:"heavy",
+    hat:"capotain",dress:"doublet",cloak:true,mood:"stern",
+    colors:{torso:WOOL.woad,breech:WOOL.russet,stock:WOOL.grey,cloak:0x3a3236,hat:0x241f1f}},
+  /* CLASS: no likeness survives. A young minister (the clergy of 1.5): dark gown-like doublet and
+     cloak, a white band, grey stockings. Imagined */
+  williams:{face:"narrow",hair:"long",hairColor:HAIR.chestnut,beard:"moustache",build:"thin",
+    hat:"broad",dress:"doublet",cloak:true,mood:"keen",
+    colors:{torso:0x2e2a2e,breech:0x2e2a2e,stock:WOOL.grey,cloak:0x3a3440,hat:0x1a1818}},
+  /* PORTRAIT?: a portrait of about 1665, kept by the family and known now through copies (AAS
+     Hewes 42, Corne's copy of 1802); no description of its dress was read. Dressed by class: an
+     assistant in cloth; in arms for the 1636 commission (1.2 - watch and war only). Imagined */
+  endecott:{face:"long",hair:"short",hairColor:HAIR.dark,beard:"pointed",
+    hat:"capotain",dress:"doublet",cloak:true,mood:"stern",
+    colors:{torso:WOOL.green,breech:WOOL.russet,stock:WOOL.grey,cloak:0x3a3236,hat:0x241f1f},
+    by:[[1636,{hat:"morion",plate:true,cloak:false}]]},
+  /* DESCRIBED, one fact: "my buff coat preserved me" at the Saybrook parley (Orr p. 132). The
+     soldier-engineer of 1.2: the buff coat as a jack in buff leather. Imagined otherwise */
+  gardener:{face:"square",hair:"cropped",hairColor:HAIR.brown,beard:"full",
+    hat:"cap",dress:"jack",mood:"weary",
+    colors:{torso:0xb08a58,sleeve:WOOL.russet,breech:WOOL.grey,stock:WOOL.grey,hat:WOOL.russet}},
+  /* CLASS: Connecticut's commander in 1637; a soldier of 1.2, breastplate and morion. Imagined */
+  mason:{face:"square",hair:"short",hairColor:HAIR.dark,beard:"short",
+    hat:"morion",dress:"jack",plate:true,mood:"stern",
+    colors:{torso:WOOL.leather,sleeve:WOOL.madder,breech:WOOL.russet,stock:WOOL.grey}},
+  /* CLASS: Massachusetts captain; a soldier of 1.2. Imagined */
+  underhill:{face:"oval",hair:"short",hairColor:HAIR.auburn,beard:"pointed",
+    hat:"morion",dress:"jack",plate:true,mood:"keen",
+    colors:{torso:WOOL.leather,sleeve:WOOL.woad,breech:WOOL.grey,stock:WOOL.grey}},
+  /* CLASS: the Boston minister (1.5), drawn and silent: no words of his are in the record read */
+  cotton:{face:"round",hair:"receding",hairColor:HAIR.grey,beard:"full",
+    hat:"broad",dress:"doublet",cloak:true,mood:"mild",
+    colors:{torso:0x2a2628,breech:0x2a2628,stock:0x4a4038,cloak:0x262428,hat:0x1a1818}},
+  /* CLASS: no likeness survives and no one describes her. A merchant's wife of Boston, the
+     gentlewoman of 1.7: a coif, a gown in murrey. No age stated beyond the scale. Imagined */
+  hutchinson:{sex:"f",face:"oval",hair:"bun",hairColor:0x5a3e28,hat:"coif",dress:"gown",
+    mood:"keen",colors:{gown:WOOL.murrey,hat:0x2a2622}},
+  /* CLASS: the Secretary of the General Court, entering the records; not named in the record.
+     A clerk's plain cloth and a writing case. Imagined */
+  secretary:{face:"oval",hair:"short",hairColor:HAIR.brown,beard:"short",
+    hat:"capotain",dress:"doublet",mood:"mild",eqx:{accessory:"acc_satchel"},
+    colors:{torso:WOOL.grey,breech:WOOL.russet,stock:WOOL.grey,hat:0x2e2a24}},
+  /* CLASS: the Mohegan sachem. No likeness or description was read: the New England men's hair,
+     a deerskin mantle, beads. Imagined. Drawn, never voiced */
+  uncas:{face:"square",hair:"loose",hairColor:HAIR.black,height:1.04,mood:"plain",
+    dress:"bare",feet:"moccasin",mantle:true,beads:true},
+  /* CLASS: the Narragansett sachem. No likeness or description was read. Imagined. Never voiced */
+  miantonomi:{face:"long",hair:"loose",hairColor:HAIR.black,height:1.02,mood:"plain",
+    dress:"bare",feet:"moccasin",mantle:true,beads:true},
+  /* CLASS: the Pequot chief sachem. No likeness or description was read. Imagined. Not drawn in
+     any scene (none places him); kept so a later scene uses this look and no other */
+  sassacus:{face:"square",hair:"loose",hairColor:HAIR.black,build:"heavy",mood:"plain",
+    dress:"bare",feet:"moccasin",mantle:true,beads:true},
+  /* DESCRIBED, in Winthrop's letter (MS p. 226): "a womon of a very modest countenance and
+     behaviour". Unnamed in the source, and no name is borrowed from later books. Dress imagined:
+     a New England woman's deerskin, a mantle. No marks, no paint. Never voiced */
+  mononottowife:{sex:"f",face:"oval",hair:"plait",hairColor:HAIR.black,mood:"plain",
+    dress:"tw",feet:"moccasin",mantle:true,paint:false,beads:false}
 };
 /* who a named person is in a given year: his own look, the dress for that year, and his age */
 function personLook(key,yr,variant){
@@ -9890,7 +9963,7 @@ function animate(){
   /* play-test, 27 Nov: Chapter VI's ships, the boat from the falls, the rats and its night sky
      are driven by updatePres, which this branch never called - so "Captain Newport set sail"
      played over a ship riding at anchor, and the boat from the falls never came in */
-  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);updateCsTalk(dt);updateReacts(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
+  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateBay(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);updateCsTalk(dt);updateReacts(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
   if(CAMLOCK.on){
     updateFx(dt);updateFlog(dt);updateShadows();updateReacts(dt);
     cam.position.lerp(CAMLOCK.pos,Math.min(1,dt*3.5));
@@ -9909,7 +9982,7 @@ function animate(){
     player.position.y=WORLD.ground(player.position.x,player.position.z)+JUMP.y;
   if(AMBUSH.on||DUSK.on){updateAmbush(dt);updateArrows(dt);}
   else if(FORT.on){updateFort(dt);updateArrows(dt);}
-  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateWork(dt);
+  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateBay(dt);updateWork(dt);
   if(LESSON.on){
     updateFx(dt);updateLesson(dt);updateShadows();updateReacts(dt);
     renderer.render(scene,cam);return;
@@ -10085,6 +10158,7 @@ function animate(){
         :best.action==="price"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="sky"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="ply"?((best.data&&best.data.verb)||"Go to it")
+        :best.action==="bay"?((best.data&&best.data.verb)||"Go to it")
         /* Named explicitly rather than inherited. A new action with no verb used
            to fall through to "Read the papers", which hid the mistake; now it
            reads "Use" and is obviously unfinished. */
@@ -10678,6 +10752,7 @@ function doInteract(){
   else if(a==="price"){priceAct(activeSpot.data);}
   else if(a==="sky"){skyAct(activeSpot.data);}
   else if(a==="ply"){plyAct(activeSpot.data);}
+  else if(a==="bay"){bayAct(activeSpot.data);}
   else if(a==="reck"){
     if(chapterReady())openReckoning();
     else toast("The scrivener will not sit with you yet. Still to ask: "+reckMissing().join("; ")+".");}
@@ -12200,9 +12275,9 @@ const MUSIC_FILES={
   sickness:"assets/music/sickness.ogg", president:"assets/music/president.ogg",
   starving:"assets/music/starving.ogg", tobacco:"assets/music/tobacco.ogg"};
 const MUSIC_BY_WORLD={ch1:"voyage", ch2:"fort", comfort:"fort", archers:"fort", james:"fort", ch3:"fort",
-  ch4:"sickness", ch5:"sickness", ch6:"president", ch7:"starving", ch8:"tobacco", ch9:"tobacco", ch10:"sickness", ch11:"voyage"};
+  ch4:"sickness", ch5:"sickness", ch6:"president", ch7:"starving", ch8:"tobacco", ch9:"tobacco", ch10:"sickness", ch11:"voyage", ch12:"president"};
 /* places with no music (see above) - the `where` of a chapter's day */
-const MUSIC_SILENT={kecoughtan:true, york:true, orapakes:true, dig:true, pointcomfort:true, pace:true, patuxet:true};   /* pointcomfort: Chapter IX, the Africans' arrival - documents only, quiet; pace: Chapter X, the night before 22 March 1622 */
+const MUSIC_SILENT={kecoughtan:true, york:true, orapakes:true, dig:true, pointcomfort:true, pace:true, patuxet:true, march:true};   /* pointcomfort: Chapter IX, the Africans' arrival - documents only, quiet; pace: Chapter X, the night before 22 March 1622 */
 const MUSIC_VOL=0.32, MUSIC_DUCK=0.2, MUSIC_FADE=2.4;
 const MUSIC_CAN=VO_CAN;
 const MUSIC={live:false, decks:[], i:0, cur:null, duck:-1, master:null};
@@ -12216,6 +12291,7 @@ function musicWhere(w){
     if(w==="ch9")return priceDay().where;
     if(w==="ch10")return skyDay().where;
     if(w==="ch11")return plyDay().where;
+    if(w==="ch12")return bayDay().where;
   }catch(e){}
   return null;
 }
@@ -15312,7 +15388,7 @@ function openIntro(worldId){
   $("introDate").textContent=c.d;
   $("introBody").textContent=c.intro?c.intro():"";
   $("introObj").textContent=c.obj?c.obj():"";
-  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":(worldId==="ch8")?"To the Fort":(worldId==="ch9")?"To Jamestown":(worldId==="ch10")?"To James City":(worldId==="ch11")?"To Southampton":"Into the Boats";
+  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":(worldId==="ch8")?"To the Fort":(worldId==="ch9")?"To Jamestown":(worldId==="ch10")?"To James City":(worldId==="ch11")?"To Southampton":(worldId==="ch12")?"To England":"Into the Boats";
   show("intro");
 }
 function beginWorld(worldId){
@@ -15493,7 +15569,7 @@ const CONDITIONS={weather:0,fouling:0,supply:0};
    not evidenced: the ship's hold is still air, and every outdoor scene here is an
    open shore in April with wind coming off the water. */
 /* ch4: the summer of 1607 was a drought (Stahle et al. 1998) - the driest air the game has */
-const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22, ch8:0.10, ch9:0.10, ch10:0.10, ch11:0.10};   /* ch5: a wet winter on the rivers */
+const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22, ch8:0.10, ch9:0.10, ch10:0.10, ch11:0.10, ch12:0.10};   /* ch5: a wet winter on the rivers */
 function armState(arm){
   return {
     /* a match above 0.7 takes no penalty at all - good play is rewarded in
@@ -20364,7 +20440,7 @@ function crowdLook(kind,i,yr){
                 back in jacks and morions, half of them in buff coats (a plausible guess: the
                 look book finds no buff coat in the record before the 1620s).
    Nobody all in black: black is money, office or the pulpit. */
-const FIG_YEAR={ch1:1607,ch2:1607,ch3:1607,ch4:1607,ch5:1608,ch6:1608,ch7:1609,ch8:1613,ch9:1619,ch10:1622,ch11:1621};
+const FIG_YEAR={ch1:1607,ch2:1607,ch3:1607,ch4:1607,ch5:1608,ch6:1608,ch7:1609,ch8:1613,ch9:1619,ch10:1622,ch11:1621,ch12:1634};
 function figYear(){
   try{const c=CURRENT_WORLD?chapterOf(CURRENT_WORLD):null;return (c&&FIG_YEAR[c.world])||1607;}
   catch(e){return 1607;}
@@ -24950,13 +25026,27 @@ const SCENE_LOOK={
     lk("summer",{top:0x4a7898,hor:0xcacdbc,elev:58,clouds:3}),       /* 1622: the fort going up */
     lk("summer",{top:0x5a809e,hor:0xd6d0b4,near:170,far:780,sunC:0xfff0c4,elev:62,clouds:1,
       cloudC:0xf2eedf})                                               /* 1623: the drought */
+  ],
+  /* XII. As a citty upon a hill, August 1629 to November 1637 (BAY_DAYS) */
+  ch12:[
+    lk("autumn",{top:0x5a7890,hor:0xc8c4b4,sunC:0xf0dcc0,sun:0.74,elev:36,clouds:4}),  /* London, the stores going down */
+    lk("summer",{top:0x3f78a8,hor:0xcad6d8,elev:58,clouds:3,cloudC:0xf4f4f0}),       /* the Atlantic, spring into summer: bright */
+    lk("autumn",{top:0x6c8494,hor:0xc4c0b0,near:150,far:720,sun:0.66,sunC:0xeadcc4,elev:30,
+      hemi:0.54,clouds:3}),                                           /* the first year: low sun, sickness, the flats */
+    lk("spring",{top:0x4a7aa4,hor:0xccd4d0,sunC:0xfaf0dc,sun:0.86,elev:50,clouds:2}), /* the court's years: clear, open */
+    lk("winter",{top:0x8a96a0,hor:0xd2d6d6,near:140,far:660,sun:0.55,sunC:0xf0f0f0,elev:22,
+      hemi:0.64,clouds:3,cloudC:0xe8eaec}),                           /* Salem under snow: flat, cold, pale */
+    lk("night",{top:0x101826,hor:0x2e3442,curve:0.5,hSky:0x6a7488,sunC:0x8a98b8,exp:1.04}), /* Saybrook at night, the watch */
+    lk("grey",{top:0x6e7c86,hor:0xb4b8b0,near:140,far:700,sun:0.60,sunC:0xe4ddd0,elev:24,
+      wood:0x34402a}),                                                /* the march: grey dawn, woods, far smoke */
+    lk("grey",{top:0x7d8890,hor:0xc2c4bc,hemi:0.70,sun:0.62,sunC:0xf2e8d8,elev:20,exp:1.02})  /* November, the court room: window light */
   ]
 };
 /* which day of its chapter a world is showing - the same index each *_DAYS table uses */
 const LOOK_DAY={ch4:function(){return sickW().day;},ch5:function(){return captW().day;},
   ch6:function(){return presW().day;},ch7:function(){return starveW().day;},
   ch8:function(){return leafW().day;},ch9:function(){return priceW().day;},
-  ch10:function(){return skyW().day;},ch11:function(){return plyW().day;}};
+  ch10:function(){return skyW().day;},ch11:function(){return plyW().day;},ch12:function(){return bayW().day;}};
 function lookDay(w){const f=LOOK_DAY[w];try{return f?(f()|0):0;}catch(e){return 0;}}
 function sceneLook(){
   const w=CURRENT_WORLD;
@@ -36261,6 +36351,1173 @@ CONTENT.ch11={
   targets:collectInsights(PLY_NPCS), unlocks:[]
 };
 
+/* ==================== CHAPTER XII: AS A CITTY UPON A HILL ====================
+   August 1629 to November 1637: the Cambridge Agreement and the Company's vote to carry its
+   charter to New England, the Arbella and the Modell, Boston's first year, the General Court
+   made from a company court (hands raised, church members only, Watertown's "bondage", the
+   deputies of 1634), Roger Williams at Salem, the road to the Pequot War at Saybrook, the
+   march to Mystic and the captives, and Anne Hutchinson before the court at Newtown.
+   Design: notes docs/CH12-DESIGN.md. Every fact is in docs/CH12-RECORD.md, checked 27
+   November. RE-READ 27 November, before anything went on screen:
+   - Winthrop's Journal (Hosmer 1908, archive.org winthropsjournal00wint / 02wint): every line
+     here was re-read on that text. It is SAVAGE'S MODERNISED SPELLING; the original-spelling
+     edition (Dunn 1996) could not be read, so every journal line on screen says "in modern
+     spelling" in its attribution.
+   - The court's records (Shurtleff 1853, archive.org recordsofgoverno01mass): pp. 51, 87, 160-161
+     and 207 re-read on the PAGE IMAGES (IIIF leaves 75, 111, 184-185, 231); pp. 79, 117-118, 183,
+     253 on the archive.org text of the same printing, which agrees with the record's readings.
+     Superscripts are written out (Mr, lres, yor).
+   - Young's Chronicles (1846, modernised by Young): the Agreement, the Considerations, the Humble
+     Request, Dudley and Clap, all re-read on the archive.org text (chroniclesoffirs00younuoft).
+   - The Modell (MHS Coll. 3rd ser. VII, 1838; archive.org MeaseMHS1838), pp. 33 and 47, re-read.
+   - Hutchinson's examination (Hutchinson's History II, Appendix II; archive.org
+     historyofprovinc02hutc), every line re-read; the long s is written s.
+   - A Short Story (Adams 1894, antinomianisminc00adam), the meetings and "American Jesabel", and
+     Adams's note giving the epithet to Welde, re-read.
+   - Orr (1897, historypequotwa00orrgoog): Mason, Underhill (the MHS's partly modernised text;
+     Underhill's 1638 page numbers were NOT re-read, so no page is cited for him), Gardener and
+     Prince, all re-read. Mason's "We must Burn them" was NOT found on the OCR and is left out.
+   - Bradford (1898, bradfordsh00brad): the appeal, "about 400.", Winthrop's letter of 28 July
+     1637 and Mononotto's wife, re-read.
+   - Wood (Gutenberg 47082 via archive.org), the Pequot line, re-read.
+   - The Body of Liberties (Whitmore 1889, coloniallawsofma1660mass): the "free or not free",
+     "bond slaverie" and witch clauses re-read.
+   - The Treaty of Hartford: re-read on the Connecticut lesson's printing, which is in MODERN
+     SPELLING; it is attributed so on screen.
+   - The Pequot Museum's 2023 self-guided tour booklet (pequotmuseum.org), re-read.
+   LEFT OUT, because they could not be re-read: Winthrop's letter to his wife ("seven hundred
+   persons"); the Tribal Nation's own history page (it refused the fetch); the Mohegan Tribe's
+   reading of Hartford; the Narragansett Tribe's "land use rights"; Williams's Key; Vincent's
+   count; the 1647 school law (MBR vol. II not read); Reagan's "shining" (web summary only).
+
+   WHAT THE CHAPTER IS ABOUT. "Who had a say?" After each scene the player sorts the people of
+   its decision - Had a say / Spoke, but did not decide / No say - and the result names, for each
+   row placed differently, the right column and how we know (who carried the words). The trap:
+   having a say is not being right (Winthrop voted out in 1634; Coddington and Colborn outvoted).
+   Fixed Jamestown and Plymouth cards in scenes 0, 3 and 4.
+
+   CONTENT. No killing on either side is drawn, and the fort at Mystic is never shown: the march
+   is woods and far smoke, then the wounded carried to the boats. Block Island and the Pequot
+   river burn EMPTY, far off. Captives walk under guard at a distance; no chains, no sale. The
+   burning words are behind "Read the source in full". Native people are drawn and never voiced:
+   every Native word is carried by an English writer, attributed. Anne Hutchinson speaks only her
+   words from the examination. Cotton left no words in the record read, so he is drawn and silent.
+
+   DEPARTURES FROM THE DESIGN, and why:
+   - Cotton is not a speaker (no recorded words of his in the record); the court's words are the
+     governor's, as the transcript gives them.
+   - The closing card keeps to the 60-word budget: Hartford, the Pequot Museum's line, the
+     Body of Liberties' "unles", Harvard and Hutchinson's death. §12 closes board 7; the 1647
+     school law is left out (not re-read).
+   - Miantonomi and Uncas stand at a small Hartford table in scene 6 (the scene runs to September
+     1638); Sassacus has a look but is not drawn (no scene places him).
+   - The Arbella is Chapter I's ship, as Chapter XI's Mayflower is. */
+
+/* ---- THE SCENES ---- */
+const BAY_DAYS=[
+  {where:"england",date:"August 1629 to April 1630 — Cambridge and London",need:["agreement","charter","stores"],next:"Who Had a Say?"},
+  {where:"ship",date:"April to June 1630 — the Arbella",need:["rope","modell","landfall"],next:"Who Had a Say?"},
+  {where:"boston",date:"July 1630 to February 1631 — Boston",need:["clams","corn","lyon"],next:"Who Had a Say?"},
+  {where:"court",date:"October 1630 to May 1635 — Boston",need:["hands","oath","stakes"],next:"Who Had a Say?"},
+  {where:"salem",date:"1631 to January 1636 — Salem",need:["treatise","opinions","order"],next:"Who Had a Say?"},
+  {where:"saybrook",date:"1634 to April 1637 — Saybrook fort",need:["watch","parley","appeal"],next:"Who Had a Say?"},
+  {where:"march",date:"May 1637 to September 1638 — the Pequot country",need:["march","wounded","captives"],next:"Who Had a Say?"},
+  {where:"newtown",date:"November 1637 — the court at Newtown",need:["meetings","examination","sentence"],next:"Freedom for Whom?"}];
+const BAY_DUTY={
+  agreement:"Read the Cambridge Agreement",charter:"Read the Company’s vote",stores:"Pack the stores",
+  rope:"Stretch the rope for the sick",modell:"Read the sermon",landfall:"Come in to Salem",
+  clams:"Gather clams on the flats",corn:"Read who sold the corn",lyon:"Read two causes of scurvy",
+  hands:"Read who may vote",oath:"Read the freeman’s oath",stakes:"Set the palisade stakes",
+  treatise:"Read the treatise on the patent",opinions:"Read what Salem lost",order:"Copy the court’s order",
+  watch:"Keep watch and ward",parley:"Read the parley",appeal:"Read the Pequot appeal",
+  march:"March with the column",wounded:"Carry the wounded",captives:"Read what became of the captives",
+  meetings:"Read about her meetings",examination:"Take down the examination",sentence:"Read the vote"};
+function bayW(){
+  S.works=S.works||{};
+  if(!S.works.ch12)S.works.ch12={day:0,did:{},board:{},marks:{},done:false};
+  return S.works.ch12;
+}
+function bayDay(){return BAY_DAYS[Math.min(bayW().day,BAY_DAYS.length-1)];}
+function bayNeed(){const w=bayW(), sd=bayDay();for(const k of sd.need)if(!w.did[k])return k;return null;}
+const BAY={later:[],t:0,walk:[],smoke:[],ship:null,flee:null,stakes:null};
+
+/* ---- THE PEOPLE ---- (only those whose own words, or words reported as theirs, survive) */
+const BAY_PEOPLE=[
+  {id:"winthrop",name:"John Winthrop",voice:"male",role:"governor of the Company",eq:personEq("winthrop",1630)},
+  {id:"dudley",name:"Thomas Dudley",voice:"male",role:"deputy governor",eq:personEq("dudley",1631)},
+  {id:"williams",name:"Roger Williams",voice:"male",role:"a minister, at Salem",eq:personEq("williams",1635)},
+  {id:"endecott",name:"John Endecott",voice:"male",role:"an assistant, commanding",eq:personEq("endecott",1636)},
+  {id:"gardener",name:"Lion Gardener",voice:"male",role:"commander of Saybrook fort",eq:personEq("gardener",1636)},
+  {id:"mason",name:"Captain John Mason",voice:"male",role:"commanding Connecticut’s men",eq:personEq("mason",1637)},
+  {id:"underhill",name:"Captain John Underhill",voice:"male",role:"commanding Massachusetts men",eq:personEq("underhill",1637)},
+  {id:"hutchinson",name:"Anne Hutchinson",voice:"female",role:"of Boston, before the court",
+   eq:personEq("hutchinson",1637,{dye:{torso:"ink",breech:"ink",stock:"ink",cloak:"ink",head:"ink"}})}];
+function bayPerson(id){return BAY_PEOPLE.filter(function(p){return p.id===id;})[0];}
+
+/* the lines said by those who are not asked: each from their own words (or, for the journal,
+   Savage's modernised text of them), turned to the first person as Chapter XI's are */
+const BAY_SAYS={
+  /* WJ i p. 31 (12 April 1630); WJ i p. 58 (Feb. 1631); Hutchinson ii pp. 483, 520 */
+  "winthrop":[[],["“Our children that were sick we fetched out, and made them sway a rope up and down till they were warm.”"],
+    ["“The poorer sort, who lay long in tents, had the scurvy. When this ship brought juice of lemons, many recovered speedily.”"],[],[],[],[],
+    ["“Your conscience you must keep, or it must be kept for you.”","“Say no more. The court knows wherefore, and is satisfied.”"]],
+  /* Young p. 324 (his letter, March 1631, modernised by Young) */
+  "dudley":[[],[],["“If any come hither to plant for worldly ends, that can live well at home, he commits an error, of which he will soon repent him.”"],[],[],[],[],[]],
+  /* WJ i p. 186, the commission he carried (Aug. 1636) */
+  "endecott":[[],[],[],[],[],["“My commission: to demand the murderers of Captain Stone, a thousand fathom of wampum, and some of their children as hostages.”"],[],[]],
+  /* Orr p. 32 (Mason, c. 1670); Orr p. 84 (Underhill, 1638, the MHS's partly modernised text) */
+  "mason":[[],[],[],[],[],[],["“Four or five of our men were so wounded that they must be carried. We were constrained to put four to one man.”"],[]],
+  "underhill":[[],[],[],[],[],[],["“Our Indians cried Mach it, mach it; that is, It is naught, because it is too furious, and slays too many men.”"],[]],
+  /* Hutchinson ii pp. 483, 509, 520: her words only, as the unknown reporter took them down */
+  "hutchinson":[[],[],[],[],[],[],[],["“That’s matter of conscience, Sir.”","“You have power over my body, but the Lord Jesus hath power over my body and soul.”","“I desire to know wherefore I am banished?”"]]};
+
+/* ---- THE THREE WHO ARE ASKED ---- */
+const BAY_NPCS=[
+  {id:"winthrop",name:"John Winthrop",voice:"male",role:"governor until May 1634",at:3,eq:personEq("winthrop",1634),
+   /* WJ i p. 74 (his answer to Watertown, Feb. 1632) */
+   done:"“This government is rather in the nature of a parliament.”",
+   beats:[
+    /* WJ i pp. 122-123, April 1634: "for the present they were not furnished with a sufficient
+       number of men qualified for such a business" */
+    {npc:"“The deputies desired a sight of the patent. I told them they had not yet men enough qualified for such a business. Ask.”",
+     choices:[
+      /* MBR i pp. 117-118; WJ i p. 125 */
+      {t:"What did the court do in May?",wise:true,ink:8,
+       reply:"Only the General Court might now make laws and raise taxes, through each town’s deputies. Then “The court chose a new governor, viz., Thomas Dudley”.",
+       insight:{g:"known",b:"A New Governor",s:"May 1634: the freemen’s deputies read the patent, the General Court took back lawmaking, and it chose Thomas Dudley over Winthrop. Having a say is not winning."}},
+      {t:"Who may vote here?",fair:true,ink:3,
+       reply:"Freemen only, and since May 1631 only church members: the court’s own records say so."},
+      {t:"So every settler voted for governor.",wise:false,
+       reply:"Only freemen: men, and church members. Women, servants and Native people had no vote."}]}]},
+  {id:"williams",name:"Roger Williams",voice:"male",role:"a minister, at Salem",at:4,eq:personEq("williams",1635),
+   done:"“Except they compounded with the natives.”",
+   beats:[
+    /* WJ i pp. 116-117, Winthrop's report of the treatise, turned to the first person */
+    {npc:"“I wrote that, claiming by the king’s grant, you can have no title here, except you compound with the natives. Ask.”",
+     choices:[
+      /* MBR i pp. 160-161, re-read on the page image */
+      {t:"What does the court’s order say?",wise:true,ink:8,
+       reply:"It names his “newe & dangerous opinions, against the aucthoritie of magistrates”, and his letters. The land is in Winthrop’s journal, not in the order.",
+       insight:{g:"known",b:"Newe & Dangerous Opinions",s:"The court banished Williams in 1635 for opinions “against the aucthoritie of magistrates” and for letters. His view of the land is in Winthrop’s journal, not the order."}},
+      /* WJ i p. 117 */
+      {t:"Did he stand by the treatise?",fair:true,ink:3,
+       reply:"In 1633 he wrote “very submissively”, Winthrop says, offering his book “to be burnt”."},
+      {t:"So he was banished for religious freedom.",wise:false,
+       reply:"The order names his opinions on magistrates’ power, and his letters. His books on liberty of conscience came later."}]}]},
+  {id:"gardener",name:"Lion Gardener",voice:"male",role:"commander of Saybrook fort",at:5,eq:personEq("gardener",1636),
+   /* Orr p. 126 */
+   done:"“And then you will take wing and flee away.”",
+   beats:[
+    /* Orr p. 126, written 1660 */
+    {npc:"“They came without acquainting any of us in the River. I said: you come hither to raise these wasps about my ears.”",
+     choices:[
+      {t:"What did you fear?",wise:true,ink:8,
+       reply:"“I knew that I should lose our corn-field.” He wrote it in 1660, twenty-three years later, from old papers.",
+       insight:{g:"known",b:"Raise These Wasps",s:"Lion Gardener, commanding Saybrook, was not asked before Endecott’s raid of 1636. He warned it would “raise these wasps about my ears”: written in 1660."}},
+      /* WJ i p. 186 */
+      {t:"Who sent them?",fair:true,ink:3,
+       reply:"The Massachusetts magistrates, with a commission. Winthrop’s journal copies it."},
+      {t:"So Saybrook chose the war.",wise:false,
+       reply:"Gardener was not asked. The Massachusetts magistrates sent the force “without acquainting any of us”, he says."}]}]}];
+
+function baySpeaker(id){
+  const day=bayW().day;
+  for(const n of BAY_NPCS)if(n.id===id&&n.at===day)return n;
+  const set=BAY_SAYS[id], lines=set&&set[day];
+  if(!lines||!lines.length)return null;
+  return Object.assign({},bayPerson(id),{lines:lines});
+}
+
+/* ---- THE RECORD THAT OPENS EACH SCENE ---- */
+const BAY_OPEN=[
+  /* Young pp. 281-282 */
+  {t:"Provided Always",b:"<p>Cambridge, 26 August 1629. Twelve gentlemen agree to sail for New England, on one condition.</p>"},
+  /* WJ i pp. 23-31; Young p. 299 */
+  {t:"The Arbella",b:"<p>April 1630. The <i>Arbella</i> puts to sea from the Isle of Wight, leading the governor’s fleet.</p>"},
+  /* Young pp. 312-315 */
+  {t:"The First Year",b:"<p>July 1630. The fleet’s people settle in small towns around the bay, Boston among them. Many are sick.</p><p>Illness is shown here. No death is drawn.</p>"},
+  /* MBR i p. 79 */
+  {t:"The General Court",b:"<p>19 October 1630. The Company’s General Court meets at Boston, the first held in New England.</p>"},
+  /* WJ i pp. 61-62, 154 */
+  {t:"Salem",b:"<p>1631. Roger Williams, a young minister, comes to New England. Salem’s church wants him; the governor and assistants object.</p>"},
+  /* Orr p. 126 */
+  {t:"Saybrook",b:"<p class=\"note\">Killings on both sides are told here in documents. None is shown.</p><p>1634 to 1637. Saybrook fort, at the mouth of the Connecticut River, commanded by Lion Gardener.</p>"},
+  /* Orr p. ix */
+  {t:"May 1637",b:"<p class=\"note\">The attack on the Pequot fort at Mystic is told here in the writers’ words. Nothing is shown.</p><p>1 May 1637. Connecticut’s court orders “an offensiue warr agt the Pequoitt”.</p>"},
+  /* MBR i p. 207 */
+  {t:"Newtown",b:"<p>2 November 1637. The General Court sits at Newtown. Before it stands Anne Hutchinson, of Boston.</p>"}];
+
+/* ---- THE JAMESTOWN AND PLYMOUTH CARDS ---- TEKS 8.2(B), 8.3: reasons, who votes, land.
+   Objection 7 is the Bay's own judgement of Jamestown (Young p. 277) */
+const BAY_JAMES=[
+  "<div class=\"starveCard\"><b>Jamestown, 1607</b><p>A company, for profit. The Bay’s 1629 paper judged it: “they aimed chiefly at profit”, with “the very scums of the land”.</p></div>"+
+  "<div class=\"starveCard\"><b>Plymouth, 1620</b><p>A church that had left the Church of England, paid for by investors who wanted fish.</p></div>",
+  "<div class=\"starveCard\"><b>Jamestown, 1619</b><p>An Assembly called by the Company in London: burgesses chosen by the plantations.</p></div>"+
+  "<div class=\"starveCard\"><b>Plymouth, 1620</b><p>A compact signed by the men aboard ship, promising “all due submission and obedience”.</p></div>",
+  "<div class=\"starveCard\"><b>Jamestown, 1619</b><p>Land for every person a planter brought over: the headright.</p></div>"+
+  "<div class=\"starveCard\"><b>Plymouth, 1620</b><p>Built on Patuxet’s fields, emptied by sickness. They paid the Nauset for corn they had taken.</p></div>"];
+
+/* ---- THINGS TO LOOK AT ---- [id, label, x, z, title, body] per scene */
+const BAY_LOOKS=[
+  /* Young pp. 271-273; Young pp. 275-277 (Objection 5, read whole behind the link) */
+  [["reasons","Eight Reasons",-34,24,"The General Considerations",leafCard("General Considerations","1629, for recruits; Savage gave it to Winthrop","To “carry the Gospel”; a “refuge for many” from coming judgment; “the land grows weary of her inhabitants”; the poor “counted the greatest burdens”.")+"<p>Eight reasons in all. Religion is one kind among several.</p>"],
+   ["objection","Objection 5",26,24,"Possessed of others",leafCard("General Considerations","1629, in Young’s modernised text","“what warrant have we to take that land, which is and hath been of long time possessed of others”? The answer: “This savage people ruleth over many lands without title or property”.",
+     "“Obj. 5. But what warrant have we to take that land, which is and hath been of long time possessed of others the sons of Adam? Ans. That which is common to all is proper to none. This savage people ruleth over many lands without title or property; for they enclose no ground, neither have they cattle to maintain it, but remove their dwellings as they have occasion, or as they can prevail against their neighbours. … Thirdly, God hath consumed the natives with a miraculous plague, whereby the greater part of the country is left void of inhabitants. Fourthly, we shall come in with good leave of the natives.”")+
+     "<p>“Possessed of others” and “void”, in one answer. “Savage” is the writer’s word.</p>"],
+   ["james0","The Jamestown and Plymouth Cards",44,24,"Founded for what?",BAY_JAMES[0]]],
+  /* Young p. 296; MHS Coll. 3:VII p. 33; WJ i p. 51 */
+  [["humble","Our Dear Mother",9.5,-12,"The Humble Request",leafCard("The governor and company","aboard the Arbella, 7 April 1630","They “esteem it our honor to call the Church of England, from whence we rise, our dear mother”.")+"<p>Plymouth had left the Church of England. The Bay said it had not.</p>"],
+   ["rich","Rich and Poor",-9.5,-12,"Some must be rich",leafCard("A Modell of Christian Charity","1630","“in all times some must be rich, some poore, some high and eminent in power and dignitie; others mean and in submission.”")+"<p>A sermon on duty between unequal people, not on equality.</p>"],
+   ["henry","Henry Winthrop",9.5,16.5,"Drowned at Salem","<p>Winthrop’s journal, in modern spelling, July 1630: “My son, Henry Winthrop, was drowned at Salem.”</p>"]],
+  /* Young p. 312; Young p. 315; WJ i pp. 55-56 */
+  [["servants","Servants Set Free",-30,30,"Wholly unable to feed them",leafCard("Thomas Dudley","1631, in Young’s modernised text","About 180 servants came for food, and “necessity enforced us, to our extreme loss, to give them all liberty, who had cost us about £16 or £20 a person”.")+"<p>Freedom, given because food ran out.</p>"],
+   ["home","Going Home",30,30,"Glad were we",leafCard("Thomas Dudley","1631","“not much less than a hundred” went back, “partly out of dislike of our government, which restrained and punished their excesses, and partly through fear of famine”. “Glad were we so to be rid of them.”")],
+   ["garrett","Castaways on Cape Cod",-40,4,"Built them a wigwam",leafCard("John Winthrop","his journal, in modern spelling, December 1630","English castaways, frozen on Cape Cod, were taken in by a Native couple. One man “fetched a hatchet, and built them a wigwam and covered it, and gat them wood”.",
+     "“Garrett died about two days after his landing; and the ground being so frozen as they could not dig his grave, the Indian hewed a hole about half a yard deep, with his hatchet, and having laid the corpse in it, he laid over it a great heap of wood to keep it from the wolves.”")+"<p>None of the people who saved them is named.</p>"]],
+  /* the cards; WJ i p. 151; WJ i p. 123 */
+  [["james3","The Jamestown and Plymouth Cards",-30,30,"Who votes?",BAY_JAMES[1]],
+   ["magna","A Magna Charta",30,30,"A body of laws",leafCard("John Winthrop","his journal, in modern spelling, May 1635","The deputies feared magistrates “might proceed according to their discretions”, and had men appointed “to frame a body of grounds of laws, in resemblance to a Magna Charta”.")+"<p>It led to the Body of Liberties of 1641.</p>"],
+   ["coggeshall","Received as a Member",-40,4,"Confession of his faith",leafCard("John Winthrop","his journal, in modern spelling, 1634","John Coggeshall, “though he were well known and approved of the church, yet was not received but by confession of his faith”.")+"<p>The church decided who was a member, and so who could be a freeman.</p>"]],
+  /* WJ i pp. 114-115; the card; WJ i p. 117 */
+  [["smallpox","The Smallpox",-40,-20,"Most of them died",leafCard("John Winthrop","his journal, in modern spelling, December 1633","“John Sagamore died of the small pox, and almost all his people … The towns in the bay took away many of the children; but most of them died soon after.”")+"<p>No Massachusett account of these months survives.</p>"],
+   ["james4","The Jamestown and Plymouth Cards",30,30,"Whose land?",BAY_JAMES[2]],
+   ["book","His Book",-30,30,"To be burnt","<p>Winthrop’s journal, in modern spelling: in 1633 Williams wrote “very submissively”, “offering his book, or any part of it, to be burnt”.</p><p>Two years later he was banished.</p>"]],
+  /* WJ i pp. 117, 139; WJ i p. 185 and Prince (Orr p. 6); WJ i pp. 188-189; Wood pt. 2 ch. 3 and Hosmer's note (WJ i p. 189 n.); Prince (Orr p. 6) */
+  [["stone","Captain Stone",-24,-6,"Two accounts",priceCard("Winthrop’s journal, the news from Plymouth","January 1634","while Stone slept, the sachem “knocked him on the head”")+
+     priceCard("Winthrop’s journal, the Pequot envoys","November 1634","Stone “took two of their men and bound them, and made them show him the way up the river”")+
+     "<p>Winthrop: “having no means to contradict it, we inclined to believe it.” Both in modern spelling.</p>"],
+   ["oldham","John Oldham",24,-4,"Who killed him?",priceCard("Winthrop’s journal, modern spelling","1636, from a prisoner","“all the sachems of the Naragansett, except Canonicus and Miantunnomoh, were the contrivers of Mr. Oldham’s death”, because he traded with the Pequot")+
+     priceCard("Thomas Prince","Boston, 1736","“In 1635, they killed Capt. Oldham”, meaning the Pequot")+"<p>A century on, the year and the blame both moved.</p>"],
+   ["river","Fires Down the Coast",12,26,"Burned empty",leafCard("John Winthrop","his journal, in modern spelling, August 1636","On Block Island the people fled, and Endecott’s men “burnt their wigwams, and all their matts, and some corn”. On the Pequot river, “Two of them our men killed”.")+
+     "<p>The sachem had offered to meet “if our men would lay down their arms, as his men should do their bows”.</p>"],
+   ["wood","Two Judgements",-12,26,"A stately people",priceCard("William Wood","1634, a settler","“The Pequants be a stately warlike people, of whom I never heard any misdemeanour”")+
+     priceCard("James Hosmer, an editor","1908","excusing Endecott: the Pequot “preyed like wolves upon its neighbors”")],
+   ["wethersfield","Wethersfield",0,-26,"23 April 1637",leafCard("Thomas Prince","Boston, 1736","At Wethersfield “they killed nine more and carried two young Women Captive”.",
+     "Prince also writes, of earlier captives, “Those they took alive they tortured to Death in a most barbarous Manner”: a summary written a century later.")+"<p>Prince, a minister, wrote a century after; he was not there.</p>"]],
+  /* the counts (Orr pp. 31, 80; MS p. 223; WJ i p. 220; Pequot Museum 2023); Orr p. 84; MS p. 226; the Treaty (modernised) */
+  [["counts","How Many?",-34,46,"Who counted?",
+     priceCard("John Mason, there","about 1670","“six or seven Hundred, as some of themselves confessed”")+
+     priceCard("John Underhill, there","1638","“about four hundred souls”, “reported by themselves”")+
+     priceCard("William Bradford, not there","about 1645","“about 400.”, “It was conceived”")+
+     priceCard("John Winthrop, not there","1637","about three hundred, in modern spelling")+
+     priceCard("The Pequot Museum","2023","“approximately 600 Pequots”")+"<p>No single number is known.</p>"],
+   ["machit","Mach It",-12,52,"Too furious",leafCard("John Underhill","1638, in a partly modernised text","“Our Indians came to us, and much rejoiced at our victories … but cried Mach it, mach it; that is, It is naught, it is naught, because it is too furious, and slays too many men.”")+
+     "<p>The one Native judgement of Mystic in the record, carried by an Englishman.</p>"],
+   ["wife","Mononotto’s Wife",40,48,"Her children",leafCard("Winthrop’s letter, copied by Bradford","28 July 1637","“a womon of a very modest countenance and behaviour. It was by her mediation that the 2. English maids were spared … One of her first requests was, that … her children might not be taken from her.”")+
+     "<p>Her name is not in the letter. Winthrop “had taken charge of her”.</p>"],
+   ["hartford","Hartford, 1638",70,20,"No more Pequots",leafCard("The Treaty of Hartford","21 September 1638, in modern spelling","The Pequot “shall no more be called Pequots but Narragansetts and Mohegans”, nor “live in the country that was formerly theirs but now is the English by conquest”.")+
+     "<p>Signed by Connecticut’s men, and by the marks of Miantonomi and Uncas. The Pequot were not a party.</p>"]],
+  /* WJ i p. 238; MBR i p. 207; Adams p. 232 and p. 63 n.; Body of Liberties, Capital Laws 2 */
+  [["thanks","A Day of Thanksgiving",-25,8,"12 October 1637","<p>Winthrop’s journal, in modern spelling: “A day of thanksgiving kept in all the churches for our victories against the Pequods, and for the success of the assembly”.</p>"+
+     "<p>Any link to the modern holiday is a later claim this record can neither support nor refute.</p>"],
+   ["aspinwall","A Petition",25,8,"Disfranchized",leafCard("The court’s records","2 November 1637","William Aspinwall, “for haveing his hand to a petition or remonstrance, being a seditious libell … is disfranchized & banished”.")+"<p>Signing a petition cost a man his vote.</p>"],
+   ["jesabel","A Name for Her",-25,-12,"American Jesabel",leafCard("A Short Story","London, 1644","“This American Jesabel kept her strength and reputation, even among the people of God, till the hand of Civill Justice laid hold on her”.")+
+     "<p>Its editor, in 1894, thought the epithet was Thomas Welde’s, not Winthrop’s.</p>"],
+   ["witch","A Later Law",25,-12,"Salem, 1692",leafCard("The Body of Liberties","1641","“If any man or woeman be a witch, (that is hath or consulteth with a familiar spirit,) They shall be put to death.”")+
+     "<p>The Salem witch trials came in 1692, fifty-five years after this court. A different time; the same law.</p>"]]];
+
+/* ---- WHO HAD A SAY? ----  per scene; k: 0 had a say, 1 spoke but did not decide, 2 no say.
+   res: the one line said for a row placed differently - fixed, so every one can be recorded.
+   Each names how we know: whose pen carried it */
+const BAY_K=["Had a say","Spoke, but did not decide","No say"];
+const BAY_BOARD={
+  0:[{t:"The twelve who signed at Cambridge",k:0,res:"They made their sailing a condition. Their agreement survives, printed in 1846 by Alexander Young."},
+     {t:"The Company’s members, in London",k:0,res:"By hands raised, 29 August 1629. The Company’s own clerk wrote the vote in its records."},
+     {t:"Endecott’s settlers already at Salem",k:2,res:"The vote was taken in London, by the Company present. Dudley’s letter tells what the settlers were suffering."},
+     {t:"The Massachusett, whose country it was",k:2,res:"The charter names converting “the Natives” as its “principall Ende”. No Massachusett was asked; the charter itself shows it."}],
+  1:[{t:"The Company’s freemen aboard",k:0,res:"By the charter they chose the governor and assistants. The charter’s text survives."},
+     {t:"The writer of the Modell",k:1,res:"A sermon instructs; it decides nothing. Usually credited to Winthrop, it survives only in a copy in another hand."},
+     {t:"The sick children on the rope",k:2,res:"Winthrop’s journal tells what was done for them. It names none of them."},
+     {t:"The women of the fleet",k:2,res:"Women could not be freemen. No account by a woman of the fleet was found for this chapter."}],
+  2:[{t:"The masters who freed about 180 servants",k:0,res:"Dudley, one of them, wrote that “necessity enforced us” to free them, because there was no food."},
+     {t:"The servants set free",k:2,res:"Freed because they could not be fed. Only their masters’ side survives, in Dudley’s letter."},
+     {t:"The Native people who sold corn",k:0,res:"Their trade was their choice. Roger Clap remembered their baskets decades later; none of their words survive."},
+     {t:"The poorer sort, who lay long in tents",k:2,res:"Winthrop names them only as a sort. Dudley counts the year’s dead “by estimation”, with no list of names."},
+     {t:"Roger Clap, a settler of 1630",k:1,res:"He told of the hunger decades later, in a memoir. He decided nothing; he tells what he saw."}],
+  3:[{t:"A freeman who was a church member",k:0,res:"By his vote, and from May 1634 through his town’s deputies. The court’s own records, 1631 and 1634."},
+     {t:"A woman who was a church member",k:2,res:"She could join a church, but women were never made freemen, and only freemen voted. The court’s own records."},
+     {t:"A servant",k:2,res:"Not a freeman, so no vote. Dudley’s letter counts servants by what they cost."},
+     {t:"A man outside the churches",k:2,res:"From May 1631 “noe man” was made a freeman unless a church member. The court’s own records."},
+     {t:"A Massachusett man",k:2,res:"Not a freeman, and never in the court’s lists. No Native voice is recorded at the General Court."},
+     {t:"Watertown’s pastor and elder",k:1,res:"They warned of “bondage” over a tax; summoned, “they acknowledged their fault”. Winthrop’s journal is the only account."},
+     {t:"Governor Winthrop, in May 1634",k:0,res:"He had a say by office, and the court chose Thomas Dudley instead. Having a say is not the same as winning."}],
+  4:[{t:"The magistrates of the General Court",k:0,res:"They ordered him to “depte out of this jurisdiccon within sixe weekes”. The court’s own record."},
+     {t:"Roger Williams",k:1,res:"His opinions survive in his judges’ record and Winthrop’s journal. His own account came decades later."},
+     {t:"The ministers, all but one",k:1,res:"Winthrop: the court sentenced him, “all the ministers, save one, approving”. The ministers advised; the court sentenced."},
+     {t:"Salem’s deputies, in 1635",k:2,res:"“their deputies were not received” until Salem gave satisfaction for its church’s letter. Winthrop’s journal."},
+     {t:"The Native owners of the land",k:2,res:"Williams said the English needed their agreement. The court’s order never mentions them."}],
+  5:[{t:"The Massachusetts magistrates",k:0,res:"They sent Endecott with a commission. Winthrop’s journal copies it, August 1636."},
+     {t:"Lion Gardener, at Saybrook",k:1,res:"He warned them, and was not asked. He wrote it in 1660, from old papers."},
+     {t:"John Eliot, a minister",k:1,res:"He preached against a Pequot treaty made “without consent of the people”, and was brought to agree. Winthrop’s journal."},
+     {t:"Connecticut’s General Court",k:0,res:"It ordered “an offensiue warr agt the Pequoitt”, 1 May 1637. Its order is printed in Orr’s 1897 edition."},
+     {t:"The Narragansett sachems",k:0,res:"They chose the English side. Bradford guesses why; no Narragansett reasons from 1637 survive in their own words."},
+     {t:"The people of Block Island",k:2,res:"Endecott’s men found them gone, and burned their wigwams and corn. Winthrop’s journal."}],
+  6:[{t:"The English who divided the captives",k:0,res:"Winthrop’s letter: “The prisoners were devided”. Bradford copied it into his history."},
+     {t:"Mononotto’s wife",k:1,res:"She asked that her children not be taken from her. Only Winthrop, who held her, wrote it down."},
+     {t:"The boys shipped on the Desire",k:2,res:"Fifteen boys and two women, Winthrop’s journal says, carried to Providence Isle in the Caribbean."},
+     {t:"The allies who cried “Mach it”",k:1,res:"Underhill heard them judge the English way of war “too furious”. He wrote it in 1638."},
+     {t:"Miantonomi and Uncas, at Hartford",k:0,res:"Each signed the treaty by his mark. It survives in later copies; read here in modern spelling."},
+     {t:"The Pequot, at Hartford",k:2,res:"Not a party to the treaty. It says the survivors “shall no more be called Pequots”."}],
+  7:[{t:"The magistrates of the court",k:0,res:"All but three raised their hands to banish her. The trial’s unknown reporter wrote it down; it was printed in 1767."},
+     {t:"Anne Hutchinson",k:1,res:"She spoke at length, and asked why. “Say no more”, the governor answered. Her words survive only as the reporter took them down."},
+     {t:"Coddington and Colborn, who voted against",k:0,res:"They voted, and lost. Having a say is not the same as winning, or as being right."},
+     {t:"The women who came to her meetings",k:2,res:"No woman could vote for the court. What they said at her meetings is not recorded."},
+     {t:"William Aspinwall, after he signed a petition",k:2,res:"The same court “disfranchized & banished” him for signing. The court’s own book."},
+     {t:"Pequot captives in the towns",k:2,res:"Divided among the towns by the English. Winthrop’s letter says so; none of their words survive."}]};
+/* Young p. 319; the Pequot Museum booklet (2023); Body of Liberties (1641) */
+const BAY_CLOSE={
+  2:"<p>Dudley: from April to December 1630 “there died by estimation about two hundred at the least: so low hath the Lord brought us!”</p>",
+  6:"<p>The Pequot Museum, run by the Mashantucket Pequot Tribal Nation: the Pequots “kept alive their identity as an independent people”.</p>",
+  7:"<p>The Body of Liberties, 1641: “Every man whether Inhabitant or fForreiner, free or not free shall have libertie to come to any publique Court”, to petition it.</p>"};
+
+function bayDone(id){
+  const w=bayW();
+  if(!w.did[id]){w.did[id]=true;S.ink+=6;updateInk();checkpoint("ch12-"+id);}
+  for(let i=interactables.length-1;i>=0;i--){
+    const it=interactables[i];
+    if(it.action==="bay"&&it.data&&it.data.kind===id){if(it.el)it.el.style.display="none";interactables.splice(i,1);}
+  }
+  for(let i=BAY.later.length-1;i>=0;i--)if(BAY.later[i].data.after===id){
+    const it=BAY.later[i], el=document.createElement("div");el.className="lbl";
+    el.innerHTML="<b>"+it.label+"</b><i></i>";$("labels").appendChild(el);it.el=el;
+    interactables.push(it);BAY.later.splice(i,1);}
+  const nx=interactables.filter(function(it){return it.id==="next";})[0];
+  if(nx)nx.data.verb=bayNeed()?"Not yet":"Go on";
+  updateGuide();
+}
+function bayQuiz(kick,title,body,opts,id,after){
+  sickSheet(kick,title,body,shuffle(opts.map(function(o){return {t:o[0],fn:function(){
+    bayDone(id);
+    if(o===opts[0])fortResult(o[1],o[2],["+6 Ink"],after||null);
+    else{result(false,o[1],"",["+6 Ink"],after||null);$("resBody").innerHTML=o[2];}}};})));
+}
+/* a sheet of rows, each marked with one of `keys`; marks kept in w.marks[id] */
+function bayRows(kick,title,intro,rows,keys,id,done){
+  const w=bayW();
+  w.marks[id]=(w.marks[id]&&w.marks[id].length===rows.length)?w.marks[id]:rows.map(function(){return null;});
+  let h=intro;
+  rows.forEach(function(r,i){
+    h+="<div class=\"captRow\"><span>"+r.t+"</span> <div class=\"captBtns\">"+keys.map(function(v,k){
+      return "<button class=\"btn small\" data-lr=\""+i+"\" data-v=\""+k+"\">"+v+"</button>";}).join(" ")+" <b class=\"captMark\" id=\"lr"+i+"\"></b></div></div>";});
+  sickSheet(kick,title,h,[{t:"Done",fn:function(){
+    const m=w.marks[id];
+    if(m.some(function(x){return x==null;})){toast("Mark every row first.");setTimeout(function(){bayRows(kick,title,intro,rows,keys,id,done);},50);return;}
+    done(m.filter(function(x,i){return x===rows[i].k;}).length);}}]);
+  rows.forEach(function(r,i){if(w.marks[id][i]!=null)$("lr"+i).textContent=keys[w.marks[id][i]];});
+  document.querySelectorAll("#sickBody [data-lr]").forEach(function(b){
+    b.onclick=function(){const i=+b.dataset.lr;w.marks[id][i]=+b.dataset.v;$("lr"+i).textContent=keys[w.marks[id][i]];saveGame();};});
+}
+/* a duty that is work first: the player does it, then the page */
+function bayWork(d,task,secs,narr,opt,then){
+  d.worked=true;priceFace(d,d.reach||2.6);
+  playerDoes(task,secs,narr,Object.assign({},opt||{},d.cam?{cam:d.cam}:{}),function(){if(then)then();bayAct(d);});
+}
+
+function bayAct(d){
+  const w=bayW();
+  if(d.kind==="next"){bayNext();return;}
+  if(d.kind==="record"){if(w.done)showEnding("ch12");else openReckoning();return;}
+  if(d.kind==="look"){
+    const L=(BAY_LOOKS[w.day]||[]).filter(function(a){return a[0]===d.id;})[0];
+    if(L){w.did["look_"+L[0]]=true;saveGame();fortResult(L[4],L[5],[]);}
+    return;
+  }
+  /* 0 · england */
+  if(d.kind==="agreement"){
+    /* Young pp. 281-282; the charter (Avalon) */
+    bayQuiz("Cambridge · 26 August 1629","Provided always",
+      leafCard("The Cambridge Agreement","26 August 1629, in Young’s modernised text","Twelve men promise to sail by 1 March, “Provided always” that “the whole government, together with the patent” is first “legally transferred” to New England.")+
+      "<p>Why make that the condition?</p>",
+      [["To govern themselves, not from London","Self-government","<p>The Company’s government would sail with them. Virginia’s was run from London until 1624; this one would sit in New England.</p>"],
+       ["To leave the King’s rule","Not that","<p>The charter still forbade laws “repugnant to the Lawes” of England. They went as the King’s subjects.</p>"],
+       ["To keep the voyage secret","Not secret","<p>The Company debated it openly, and voted on it three days later with hands raised.</p>"]],"agreement");
+    return;
+  }
+  if(d.kind==="charter"){
+    /* MBR i p. 51, re-read on the page image */
+    bayQuiz("London · 29 August 1629","Hold vp yor hands",
+      priceCard("The Company’s records","29 August 1629","“As many of yow as desire to haue the pattent and the goũnmt of the plantacon to bee transferred to New England, soe as it may bee done legally, hold vp yor hands”")+
+      "<p>Who decided?</p>",
+      [["The Company’s members, by vote","By vote","<p>“by ereccon of hands, it appeared by the geñall consent of the Company”. Its members decided, in London.</p>"],
+       ["King Charles, by order","Not the King","<p>The King had granted the charter in March. Moving it was the Company’s own vote.</p>"],
+       ["The settlers at Salem","Not them","<p>The vote was taken in London. Salem’s settlers were across the ocean, and not asked.</p>"]],"charter");
+    return;
+  }
+  if(d.kind==="stores"&&!d.worked){
+    bayWork(d,"lift",3,"Casks for the fleet, tallied and marked. The charter itself will sail with them.",{load:"cask"});
+    return;
+  }
+  if(d.kind==="stores"){
+    bayDone("stores");
+    /* the charter of 4 March 1628/9 (Avalon) */
+    fortResult("The Charter Sails","<p>The charter of March 1629 made a trading company: a governor, a deputy and eighteen assistants, chosen by the “Freemen”, its voting members.</p><p>It named no place where the Company must meet.</p>",["+6 Ink"]);
+    return;
+  }
+  /* 1 · the arbella */
+  if(d.kind==="rope"&&!d.worked){
+    bayWork(d,"haul",4,"Winthrop, 12 April: the sick children sway the rope up and down, till they are warm.",{},function(){
+      BAY.rope.forEach(function(e){workRemove(e);});BAY.rope.length=0;});
+    return;
+  }
+  if(d.kind==="rope"){
+    bayDone("rope");
+    /* WJ i p. 31 */
+    fortResult("Well and Merry","<p>Winthrop’s journal, in modern spelling: “we made them stand, some of one side and some of the other, and sway it up and down till they were warm, and by this means they soon grew well and merry.”</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="modell"){
+    /* MHS Coll. 3:VII p. 47; McGann 2019 (record) for the attribution and place */
+    bayQuiz("1630 · a sermon","A citty upon a hill",
+      leafCard("A Modell of Christian Charity","a sermon of 1630, usually credited to Winthrop; where it was preached is not known","“wee shall be as a citty upon a hill. The eies of all people are uppon us.” If they “deale falsely with our God”, they will be “a by-word through the world”.")+
+      "<p>A boast, or a warning?</p>",
+      [["A warning: failure would be seen","A warning","<p>Everyone will watch, so failure will show. It goes on to “curses upon us”. The word “shining” is not in it.</p>"],
+       ["A boast: their colony was special","Not a boast","<p>It warns: if they “deale falsely”, all will see, and “curses” follow. The word “shining” is not in it.</p>"],
+       ["A law for the colony","Not a law","<p>A sermon, not an order. It told the rich to help the poor, and warned that failure would be seen.</p>"]],"modell");
+    return;
+  }
+  if(d.kind==="landfall"){
+    playCutscene({skippable:true,steps:BAY_LANDFALL()},function(){bayDone("landfall");
+      /* Young p. 311 */
+      fortResult("A Sad and Unexpected Condition",leafCard("Thomas Dudley","1631, in Young’s modernised text","They found Salem “in a sad and unexpected condition, above eighty of them being dead the winter before … all the corn and bread amongst them all hardly sufficient to feed them a fortnight”."),["+6 Ink"]);});
+    return;
+  }
+  /* 2 · boston, the first year */
+  if(d.kind==="clams"&&!d.worked){
+    bayWork(d,"dig",4,"Low tide on the flats. Clams and mussels, for want of bread.",{});
+    return;
+  }
+  if(d.kind==="clams"){
+    bayDone("clams");
+    /* Young p. 352 */
+    fortResult("Clams, and Muscles",leafCard("Roger Clap","remembered decades later, in Young’s modernised text","“Oh the hunger that many suffered, and saw no hope in an eye of reason to be supplied, only by clams, and muscles, and fish.”"),["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="corn"){
+    /* Young p. 352 */
+    bayQuiz("Boston · 1630 and 1631","Baskets of corn",
+      leafCard("Roger Clap","decades later","God “sent not only poor ravenous Indians, which came with their baskets of corn on their backs to trade with us, (which was a good supply unto many,) but also sent ships”.")+
+      "<p>“poor ravenous Indians” is Clap’s phrase for the sellers. What does his own sentence show?</p>",
+      [["Native sellers chose to trade, and fed many","Their trade","<p>They came “to trade with us”, and it was “a good supply unto many”. Clap thanks God; the sellers made the trade.</p>"],
+       ["The English grew all their own corn","Not so","<p>Clap says corn came on Native sellers’ backs, and by ship from Holland, Ireland and Virginia.</p>"],
+       ["The corn was taken by force","Not here","<p>Clap says they came “to trade with us”. No taking is told in this passage.</p>"]],"corn");
+    return;
+  }
+  if(d.kind==="lyon"){
+    /* WJ i p. 58 */
+    bayQuiz("Boston · February 1631","Juice of lemons",
+      leafCard("John Winthrop","his journal, in modern spelling","The poorer sort, “who lay long in tents”, had scurvy, “but when this ship came and brought store of juice of lemons, many recovered speedily.”")+
+      priceCard("The next sentence","the same page","“such as fell into discontent, and lingered after their former conditions in England, fell into the scurvy and died.”")+
+      "<p>Two causes. Which can be tested?</p>",
+      [["The lemon juice","Testable","<p>Who drank it, and who recovered, can be counted. “Discontent” is a judgement on the dead.</p>"],
+       ["The discontent","A judgement","<p>Nobody can measure discontent. The lemon juice, and the recoveries, can be counted.</p>"],
+       ["Neither: they are the same","Two causes","<p>One is food, the other a mood. Winthrop puts them side by side, one sentence apart.</p>"]],"lyon");
+    return;
+  }
+  /* 3 · the general court */
+  if(d.kind==="hands"){
+    /* MBR i p. 79; MBR i p. 87, re-read on the page image */
+    bayQuiz("Boston · 1630 and 1631","Hands raised",
+      priceCard("The court’s records","19 October 1630","the Assistants to “haue the power of makeing lawes”: “fully assented vnto by the geñall vote of the people, & ereccon of hands”")+
+      priceCard("The court’s records","18 May 1631","“noe man shalbe admitted to the freedome of this body polliticke, but such as are members of some of the churches”")+
+      "<p>Who could vote after 1631?</p>",
+      [["Men who were church members","Members","<p>Freemen only, and from 1631 only church members. The church decided who was a member.</p>"],
+       ["Every man in the colony","Not every man","<p>From 1631 a man had to be a church member to be made a freeman, and only freemen voted.</p>"],
+       ["Every member, men and women","Not women","<p>Women could be church members. They were never made freemen, and only freemen voted.</p>"]],"hands");
+    return;
+  }
+  if(d.kind==="oath"){
+    /* MBR i p. 117; the Compact (MS p. 54, Chapter XI) */
+    bayQuiz("Boston · May 1634","The freeman’s oath",
+      priceCard("The freeman’s oath","1634","“I will giue my vote & suffrage, as I shall iudge in myne owne conscience may best conduce & tend to the publique weale of the body”")+
+      priceCard("The Mayflower Compact","1620","“all due submission and obedience”")+
+      "<p>What does the oath add that the Compact did not?</p>",
+      [["A vote, cast by conscience","A vote","<p>The Compact promised obedience. The Bay’s freeman swore to vote “in myne owne conscience”, for the public good.</p>"],
+       ["Obedience, and nothing more","More than that","<p>It gives him a vote, to cast “in myne owne conscience”. The Compact promised obedience only.</p>"],
+       ["A vote for every settler","Freemen only","<p>Only freemen took it. Other men of twenty and over swore a residents’ oath, with no vote.</p>"]],"oath");
+    return;
+  }
+  if(d.kind==="stakes"&&!d.worked){
+    bayWork(d,"hammer",4.5,"Stakes for the palisade at the new town. Watertown said the rate for it meant “bondage”.",{},function(){
+      if(BAY.stakes)BAY.stakes.visible=true;});
+    return;
+  }
+  if(d.kind==="stakes"){
+    bayDone("stakes");
+    /* WJ i pp. 74-75 */
+    fortResult("Bondage",leafCard("John Winthrop","his journal, in modern spelling, February 1632","Watertown’s pastor and elder said paying a £60 rate “for the fortifying of the new town” risked “bringing themselves and posterity into bondage”. Summoned, “they acknowledged their fault”."),["+6 Ink"]);
+    return;
+  }
+  /* 4 · salem */
+  if(d.kind==="treatise"){
+    /* WJ i pp. 116-117 */
+    bayQuiz("Boston · December 1633","No title",
+      leafCard("John Winthrop","his journal, in modern spelling","Williams’s treatise “disputes their right to the lands they possessed here”: claiming by the king’s grant, “they could have no title … except they compounded with the natives”.")+
+      "<p>In Williams’s view, what would give the English a title?</p>",
+      [["An agreement with the Native owners","Agreement","<p>“compounded with the natives”: an agreement, and payment. A king’s grant was not enough.</p>"],
+       ["The King’s patent","Not enough","<p>That is what he denied. He charged King James with “a solemn public lie” for claiming the land.</p>"],
+       ["Being first to arrive","Not that","<p>He disputed any title “claiming by the king’s grant”, unless the natives agreed.</p>"]],"treatise");
+    return;
+  }
+  if(d.kind==="opinions"){
+    /* WJ i pp. 154-155 */
+    bayQuiz("Boston · July 1635","Their deputies were not received",
+      leafCard("John Winthrop","his journal, in modern spelling","Williams held “that the magistrate ought not to punish the breach of the first table” except to keep the civil peace. Salem’s church made him its teacher, and wrote to protest.")+
+      "<p>What did Salem lose?</p>",
+      [["Its voice at the court, for a time","Its voice","<p>Its land petition was refused, and at the next court “their deputies were not received” until Salem gave satisfaction.</p>"],
+       ["Its church","Not its church","<p>The church stood. The court refused Salem’s petition, and turned away its deputies.</p>"],
+       ["Nothing at all","Something","<p>Its land petition was refused, and its deputies were not received at the next court.</p>"]],"opinions");
+    return;
+  }
+  if(d.kind==="order"&&!d.worked){
+    bayWork(d,"write",4,"Copy the court’s order into the book, word for word, as the Secretary did.",{});
+    return;
+  }
+  if(d.kind==="order"){
+    /* MBR i pp. 160-161, re-read on the page images; WJ i p. 163 dates the sentence October */
+    bayQuiz("The General Court · 3 September 1635","Newe & dangerous opinions",
+      leafCard("The court’s records","entered under 3 September 1635","Williams “hath broached & dyvulged dyvers newe & dangerous opinions, against the aucthoritie of magistrates, as also writt lres of defamacon”, and “shall depte out of this jurisdiccon within sixe weekes”.",
+        "“Whereas Mr Roger Williams, one of the elders of the church of Salem, hath broached & dyvulged dyvers newe & dangerous opinions, against the aucthoritie of magistrates, as also writt lres of defamacon, both of the magistrates & churches here, & that before any conviccon, & yet mainetaineth the same without retraccon, it is therefore ordered, that the said Mr Williams shall depte out of this jurisdiccon within sixe weekes nowe nexte ensueing”.")+
+      "<p>What grounds does the order give?</p>",
+      [["His opinions on magistrates, and his letters","The order’s own","<p>Opinions “against the aucthoritie of magistrates”, and letters “of defamacon”. The land is in Winthrop’s journal, not in the order.</p>"],
+       ["His treatise on the land","Not in the order","<p>Winthrop’s journal records the treatise in 1633. The order names magistrates’ authority, and his letters.</p>"],
+       ["Breaking the Sabbath","Not that","<p>He said magistrates should not punish such breaches. The order names his opinions on magistrates, and his letters.</p>"]],"order",
+      function(){playCutscene({skippable:true,steps:BAY_FLIGHT()},function(){bayFleeOff();});});
+    return;
+  }
+  /* 5 · saybrook */
+  if(d.kind==="watch"&&!d.worked){
+    bayWork(d,"lift",4,"Night watch at the gate, the match alight. Gardener: “this caused me to keep watch and ward”.",{load:"piece"});
+    return;
+  }
+  if(d.kind==="watch"){
+    bayDone("watch");
+    /* Orr p. 126 */
+    fortResult("Watch and Ward",leafCard("Lion Gardener","written in 1660, in a partly modernised text","“this caused me to keep watch and ward, for I saw they plotted our destruction.”")+"<p>He wrote it twenty-three years later, from “some old papers”.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="parley"){
+    /* Orr p. 132 */
+    bayQuiz("Saybrook · winter 1636–37","The parley",
+      leafCard("Lion Gardener","1660, from what Thomas Stanton interpreted","The Pequot men “asked if we did use to kill women and children? We said they should see that hereafter.” Then: “We are Pequits, and have killed Englishmen, and can kill them as mosquetoes”.")+
+      "<p>Who threatened women and children?</p>",
+      [["Both sides, in one exchange","Both","<p>The English answered “they should see that hereafter”; the Pequot men threatened to kill “men, women, and children”. Gardener wrote both down, 23 years later.</p>"],
+       ["Only the Pequot men","Both","<p>The English answer came first: “they should see that hereafter”. Gardener records both threats.</p>"],
+       ["Only the English","Both","<p>The Pequot men said they would “kill men, women, and children”. Gardener records both threats.</p>"]],"parley");
+    return;
+  }
+  if(d.kind==="appeal"){
+    /* MS p. 222 */
+    bayQuiz("Narragansett country · winter 1636–37","Their owne overthrow",
+      leafCard("William Bradford","at Plymouth; he did not hear it","The Pequot told the Narragansett “that ye English were stranegers and begane to overspred their countrie, and would deprive them therof in time”.")+
+      "<p>Bradford adds a guess at Narragansett feeling: “revenge was so sweete unto them”. How do we know what the Pequot said?</p>",
+      [["Through Bradford, who heard it by report","By report","<p>Bradford was at Plymouth. The argument reached him by report. No Pequot or Narragansett account of it survives.</p>"],
+       ["From a Pequot letter","No letter","<p>No Pequot wrote anything that survives from these years. Bradford heard it by report.</p>"],
+       ["From the Narragansett’s own record","Not theirs","<p>No Narragansett reasons from 1637 survive in their own words. Bradford heard it by report.</p>"]],"appeal");
+    return;
+  }
+  /* 6 · the march */
+  if(d.kind==="march"){
+    playCutscene({skippable:true,steps:BAY_MARCH()},function(){bayDone("march");
+      /* Orr p. 27; Underhill (Orr pp. 80-81); MS p. 223; Pequot Museum (2023); Prince (Orr p. 31 n.) */
+      fortResult("Owanux!",leafCard("John Mason","about 1670; he was there","Nearing the fort he “heard a Dog bark and an Indian crying Owanux! Owanux! which is Englishmen! Englishmen!”",
+          "John Underhill, 1638, who was there, in a partly modernised text: “Sometimes the Scripture declareth women and children must perish with their parents. Sometimes the case alters; but we will not dispute it now. We had sufficient light from the word of God for our proceedings.” William Bradford, who was not there: “It was conceived they thus destroyed about 400. at this time. It was a fearfull sight to see them thus frying in ye fyer”.")+
+        "<p>On 26 May 1637 the English and their allies burned the Pequot fort at Mystic. Men, women and children died. The Pequot Museum calls it a massacre; Prince, in 1736, “Mistick Fight”.</p>",["+6 Ink"]);});
+    return;
+  }
+  if(d.kind==="wounded"&&!d.worked){
+    bayWork(d,"lift",4,"Four men to one wounded man, Mason wrote. Down to the pinnaces.",{});
+    return;
+  }
+  if(d.kind==="wounded"){
+    bayDone("wounded");
+    /* Orr pp. 31-32 */
+    fortResult("Four to One Man",leafCard("John Mason","he was there","Four or five men were “so wounded that they must be carried … we were constrained to put four to one Man … at length we hired several Indians, who eased us of that Burthen”.")+"<p>He counts two English killed, and about twenty wounded.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="captives"){
+    /* MS p. 225 (Winthrop's letter of 28 July 1637); WJ i pp. 227-228, 260 */
+    bayQuiz("Boston · July 1637 to February 1638","The prisoners were devided",
+      priceCard("Winthrop’s letter, copied by Bradford","28 July 1637","“The prisoners were devided … we send ye male children to Bermuda … & ye women & maid children are disposed aboute in ye townes.”")+
+      priceCard("Winthrop’s journal, modern spelling","26 February 1638","the <i>Desire</i> “returned from the West Indies … and brought some cotton, and tobacco, and negroes, etc.”")+
+      "<p class=\"note\">“negroes” is Winthrop’s word.</p><p>What does the record say of the <i>Desire</i>’s two voyages?</p>",
+      [["Both cargoes; no trade stated","As written","<p>The same ship took Pequot boys and women out, and brought enslaved Africans back. The record does not say one was traded for the other.</p>"],
+       ["Captives traded for Africans","Not stated","<p>The record gives both cargoes, and no exchange. Do not write “traded for”: no source read here says so.</p>"],
+       ["The captives came home again","Not so","<p>Winthrop: the boys and two women were carried to Providence Isle, in the Caribbean. None is recorded coming back.</p>"]],"captives");
+    return;
+  }
+  /* 7 · newtown */
+  if(d.kind==="meetings"){
+    /* Adams pp. 78-79 */
+    bayQuiz("Boston · 1636 and 1637","Fifty, sixty, or eighty",
+      leafCard("A Short Story","Winthrop’s account, London, 1644","Her “double weekely-lecture … to which resorted sundry of Boston, and other Townes about, to the number of fifty, sixty, or eighty at once”, where she “would make her comment” on the sermon.")+
+      "<p>Who wrote down how many came?</p>",
+      [["The side that banished her","Her judges","<p>Winthrop’s book, written to defend the court. Even so, it counts fifty to eighty people coming to hear a woman explain sermons.</p>"],
+       ["Anne Hutchinson herself","Not her","<p>Nothing she wrote survives. The count is from Winthrop’s book, which defends the court that banished her.</p>"],
+       ["The women who came","Not them","<p>None of their words survive. The count is from Winthrop’s book, written for the court’s side.</p>"]],"meetings");
+    return;
+  }
+  if(d.kind==="examination"&&!d.worked){
+    bayWork(d,"write",4.5,"Take down the examination, word for word, as the court’s unnamed reporter did.",{});
+    return;
+  }
+  if(d.kind==="examination"){
+    /* Hutchinson ii pp. 483, 520; MBR i p. 207, re-read on the page image */
+    bayQuiz("Newtown · 2 November 1637","Two records",
+      priceCard("The trial’s reporter, name unknown","printed 1767","“Mrs. H. I desire to know wherefore I am banished? Gov. Say no more, the court knows wherefore and is satisfied.”")+
+      priceCard("The court’s own book","2 November 1637","banished for “traduceing the ministers & their ministery”, having declared “her revelations for her ground”")+
+      "<p>What does the court’s book leave out?</p>",
+      [["Her questions, and the vote","Left out","<p>The book gives charge and sentence in one paragraph. The transcript keeps her words, the vote, and “Say no more”.</p>"],
+       ["Her sentence","It is there","<p>The book records that she “was banished”. What it leaves out is her side, and the vote.</p>"],
+       ["Her revelations","They are there","<p>The book names “her revelations”. What it leaves out is her questions, and the vote.</p>"]],"examination");
+    return;
+  }
+  if(d.kind==="sentence"){
+    /* Hutchinson ii p. 520 */
+    bayQuiz("Newtown · 2 November 1637","A woman not fit for our society",
+      leafCard("The trial’s reporter","printed 1767","“All but three.” Against: “Mr. Coddington and Mr. Colborn, only.” Mr. Jennison: “I cannot hold up my hand one way or the other”. Then: banished “as being a woman not fit for our society”.")+
+      "<p>Did the whole court decide together?</p>",
+      [["Most did; two against, one would not","Not all","<p>All but three raised their hands. Coddington and Colborn voted against; Jennison would not vote. Why, the record does not say.</p>"],
+       ["Yes, every one of them","Not all","<p>Two voted against her banishment, and Jennison would not hold up his hand.</p>"],
+       ["She had a vote as well","No vote","<p>She stood before the court, and had no vote in it. No woman was a freeman.</p>"]],"sentence");
+    return;
+  }
+}
+
+/* the board: the way out of a scene */
+function bayNext(fromBoard){
+  const w=bayW(), need=bayNeed();
+  if(need){toast("Not yet: "+BAY_DUTY[need].charAt(0).toLowerCase()+BAY_DUTY[need].slice(1)+".");return;}
+  const rows=BAY_BOARD[w.day];
+  if(rows&&!fromBoard&&w.board[w.day]==null){
+    const last=w.day===BAY_DAYS.length-1;
+    bayRows(last?"Freedom for whom?":"Who had a say?",last?"Freedom for whom?":"Who had a say?",
+      "<p>For this scene’s decision: who had a say, by vote, office, covenant or arms? Who spoke, but did not decide? Who had no say?</p>",
+      rows,BAY_K,"board"+w.day,function(right){
+        w.board[w.day]=right;checkpoint("ch12-board"+w.day);
+        /* only the rows placed differently are explained, each by its own fixed sentence under
+           the column it belongs in, so every line said has a recording */
+        const m=w.marks["board"+w.day]||[], off=rows.filter(function(r,i){return m[i]!==r.k;});
+        fortResult(last?"Freedom for whom?":"Who had a say?","<p>You placed "+right+" of "+rows.length+".</p>"+
+          (off.length?"<ul>"+off.map(function(r){return "<li><b>"+BAY_K[r.k]+"</b>. "+r.res+"</li>";}).join("")+"</ul>":"")+(BAY_CLOSE[w.day]||""),
+          [],function(){bayNext(true);});});
+    return;
+  }
+  if(w.day>=BAY_DAYS.length-1){w.did.closed=true;checkpoint("ch12-closed");enterWorld("ch12");return;}
+  w.day++;
+  checkpoint("ch12-day"+w.day);
+  const o=BAY_OPEN[w.day];
+  fortResult(o.t,"<p class=\"sickDate\">"+BAY_DAYS[w.day].date+"</p>"+o.b,[],function(){enterWorld("ch12");});
+}
+
+/* ---- THE CUTSCENES ---- */
+/* the Arbella comes in off Salem, 12 June 1630 (WJ i pp. 49-50): the bow, the shore ahead */
+function BAY_LANDFALL(){
+  return [
+    {fade:"in",cam:{to:[8,LVL_Y[LVL.MAIN]+22,-4],look:[-6,6,-160],cut:true},t:4.5,
+     narrate:"Saturday, 12 June 1630. The Arbella comes in off Salem."},
+    {cam:{to:[-22,LVL_Y[LVL.MAIN]+20,-14],look:[-70,4,-170]},t:4.5,
+     narrate:"Endecott’s settlers had wintered here, since 1628."},
+    {fade:"out",t:1}];
+}
+/* Williams gone, January 1636: a figure in the snow, far off, walking away (WJ i p. 168).
+   No source gives the flight's detail, so it is a silhouette and nothing more */
+function BAY_FLIGHT(){
+  return [
+    {do:function(){if(BAY.flee){BAY.flee.f.visible=true;BAY.flee.s=0;BAY.walk.push(BAY.flee);}},fade:"in",cam:{to:[-56,7,-8],look:[-90,5,-90],cut:true},t:5,
+     narrate:"January 1636. Captain Underhill came to take him to a ship for England."},
+    {cam:{to:[-62,8,-20],look:[-110,5,-130]},t:5,
+     narrate:"Winthrop: “they found he had been gone three days before”."},
+    {fade:"out",t:1}];
+}
+function bayFleeOff(){if(BAY.flee){BAY.flee.f.visible=false;const i=BAY.walk.indexOf(BAY.flee);if(i>=0)BAY.walk.splice(i,1);}}
+/* the night march: the column through the woods, the smoke far off over the trees. The fort is
+   never shown (record, "Content and framing", 6) */
+function BAY_MARCH(){
+  return [
+    {do:function(){BAY.column.forEach(function(c){c.s=0;c.f.visible=true;if(BAY.walk.indexOf(c)<0)BAY.walk.push(c);});},fade:"in",cam:{to:[16,7,-28],look:[0,4,-80],cut:true},t:5,
+     narrate:"May 1637. Connecticut’s men, with Mohegan and Narragansett allies, march toward the Pequot fort."},
+    {cam:{to:[14,9,-64],look:[-4,4,-130]},t:5,
+     narrate:"Mason, years later: a dog barked, and a man cried “Owanux! Owanux!”, which is “Englishmen! Englishmen!”"},
+    {cam:{to:[10,14,10],look:[-60,40,-240]},t:5,
+     narrate:"Smoke rises over the trees. What happened at the fort is told only in words."},
+    {fade:"out",t:1}];
+}
+
+/* ---- NEW THINGS IN THE WORLD ---- */
+/* a figure walking a line of points; it stops at the end (the deer-carry's walk, generalised) */
+function bayWalker(root,f,pts,speed,hidden){
+  root.add(f);
+  let L=0;for(let i=1;i<pts.length;i++)L+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);
+  const W={f:f,pts:pts,L:L,s:0,ph:Math.random()*6,v:speed||2.2};
+  if(hidden)f.visible=false;
+  bayWalkAt(W,0);
+  return W;
+}
+function bayWalkAt(W,dt){
+  const moving=W.s<W.L, G=WORLD.ground||function(){return 0;};
+  if(moving){W.s=Math.min(W.L,W.s+W.v*dt);W.ph+=W.v*dt*figWalkRate(W.f,0.7);}
+  let s=W.s, i=1;
+  for(;i<W.pts.length;i++){const a=W.pts[i-1], b=W.pts[i], d=Math.hypot(b[0]-a[0],b[1]-a[1]);if(s<=d||i===W.pts.length-1)break;s-=d;}
+  const a=W.pts[i-1], b=W.pts[i], d=Math.hypot(b[0]-a[0],b[1]-a[1])||1, u=Math.min(1,s/d);
+  const x=a[0]+(b[0]-a[0])*u, z=a[1]+(b[1]-a[1])*u;
+  W.f.position.set(x,G(x,z),z);W.f.rotation.y=Math.atan2(b[0]-a[0],b[1]-a[1]);
+  const p=W.f.userData.parts;if(p)figWalk(p,moving?W.ph:0,moving?0.7:0);
+}
+/* a right hand raised, for a vote "by ereccon of hands" (MBR i pp. 51, 79) */
+function bayHand(f){
+  const p=f.userData.parts;
+  if(p&&p.shoulderR){p.shoulderR.rotation.set(-2.9,0,0.18);if(p.elbowR)p.elbowR.rotation.set(-0.3,0,0);}
+  return f;
+}
+/* smoke over the trees, far off: a column of opaque grey lumps (no new transparency), turned
+   slowly so it seems to roll */
+function baySmoke(root,G,x,z,h){
+  const g=new Geo(), n=18, gy=G(x,z);
+  for(let i=0;i<n;i++){const t=i/(n-1), y0=gy+h*0.2+t*h*0.8, w=8+t*26, dx=t*t*30+Math.sin(i*2.3)*3*t, dz=Math.cos(i*1.9)*3*t;
+    const c0=RGB(mixHex(0x262422,0x4e4b48,t)), c1=RGB(mixHex(0x302d2a,0x5a5754,t));
+    g.oct(dx,dz,y0,y0+h*0.09+w*0.3,w,w*0.85,w*0.8,w*0.7,0.85,c0,c1);
+    g.oct(dx+w*0.35,dz-w*0.2,y0+h*0.03,y0+h*0.07+w*0.25,w*0.7,w*0.6,w*0.55,w*0.5,0.85,c0,c1);}
+  const m=g.mesh(false,false);m.position.set(x,0,z);root.add(m);BAY.smoke.push(m);return m;
+}
+/* a line of palisade stakes, set along a run; part of it hidden until the work is done */
+function bayStakes(root,G,x0,z0,x1,z1,n,hideFrom){
+  const a=new Geo(), b=new Geo(), stake=RGB(0x6a543a), top=RGB(0x8a7050);
+  for(let i=0;i<n;i++){const u=i/(n-1), x=x0+(x1-x0)*u, z=z0+(z1-z0)*u, gy=G(x,z), h=8+srand(i*1.9)*0.8;
+    (i>=hideFrom?b:a).beam8([x,gy-0.3,z],[x,gy+h,z],0.7,0.55,stake,top);}
+  root.add(a.mesh(false,false));const m=b.mesh(false,false);root.add(m);return m;
+}
+/* a litter: two poles and a wounded man under a cover, on the ground */
+function bayLitter(root,G,x,z,yaw,i){
+  const g=new Geo(), pole=RGB(0x6a5038), cov=RGB([0x6e5236,0x8a8272][i%2]), gy=G(x,z), c=Math.cos(yaw), s=Math.sin(yaw);
+  const P=function(a,b,y){return [x+a*c+b*s,gy+y,z-a*s+b*c];};
+  for(const a of [-1.3,1.3])g.beam8(P(a,-5,0.5),P(a,5,0.5),0.25,0.25,pole,pole);
+  g.oct(x,z,gy+0.5,gy+1.2,2.4*Math.abs(c)+5.6*Math.abs(s),2.4*Math.abs(s)+5.6*Math.abs(c),1.4*Math.abs(c)+4.6*Math.abs(s),1.4*Math.abs(s)+4.6*Math.abs(c),0.4,shadeRGB(cov,0.8),cov);
+  root.add(g.mesh(false,false));solid(x,z,2.4,2.4,LVL.MAIN,0);
+}
+/* the court room at Newtown: a meetinghouse of boards inside, benches, the governor's table.
+   Opaque walls and a ceiling of beams; windows are pale boards of daylight, not glass */
+function bayCourtRoom(root,G){
+  const g=new Geo(), wall=RGB(0x8a7050), wallD=RGB(0x5e4a34), floor=RGB(0x7a6448), beam=RGB(0x4e3c2a), win=RGB(0xe8e4d4), bench=RGB(0x6a5038);
+  const X=30, Z0=-30, Z1=26, H=15, gy=G(0,0);
+  /* the floor, boards running across */
+  for(let z=Z0;z<Z1;z+=2)g.box(0,gy+0.05,z+1,2*X,0.1,1.9,shadeRGB(floor,0.92+srand(z)*0.12));
+  /* four walls, darker low down; windows on the long walls */
+  const wallBox=function(cx,cz,w,d){const B=new Geo();B.box(cx,gy+H/2,cz,w,H,d,wall);
+    B.shade(function(px,py){return 0.62+0.38*smooth01(gy,gy+H,py);});g.p.push.apply(g.p,B.p);g.c.push.apply(g.c,B.c);};
+  wallBox(-X,(Z0+Z1)/2,0.8,Z1-Z0);wallBox(X,(Z0+Z1)/2,0.8,Z1-Z0);wallBox(0,Z0,2*X,0.8);wallBox(0,Z1,2*X,0.8);
+  for(const z of [-18,-4,10])for(const sx of [-1,1])g.box(sx*(X-0.45),gy+8.5,z,0.2,4,3.2,win);
+  /* the ceiling: boards and beams */
+  g.box(0,gy+H+0.2,(Z0+Z1)/2,2*X,0.4,Z1-Z0,wallD);
+  for(let z=Z0+4;z<Z1;z+=7)g.box(0,gy+H-0.4,z,2*X,0.8,0.8,beam);
+  /* the benches, facing the bench of magistrates */
+  for(let r=0;r<4;r++)for(const sx of [-1,1]){const z=2+r*5.5, cx=sx*13;
+    g.box(cx,gy+1.5,z,14,0.3,1.4,bench);for(const k of [-6,6])g.box(cx+k,gy+0.75,z,0.4,1.5,1.2,wallD);
+    solid(cx,z,7.4,1.1,LVL.MAIN,0);}
+  /* the magistrates' bench: a raised platform at the far end */
+  g.box(0,gy+0.6,-23,36,1.2,8,wallD);solid(0,-23,18,4,LVL.MAIN,0);
+  root.add(g.mesh(false,false));
+  /* walls as colliders */
+  solid(-X,(Z0+Z1)/2,1,(Z1-Z0)/2,LVL.MAIN,0);solid(X,(Z0+Z1)/2,1,(Z1-Z0)/2,LVL.MAIN,0);
+  solid(0,Z0,X,1,LVL.MAIN,0);solid(0,Z1,X,1,LVL.MAIN,0);
+}
+
+/* ---- THE TERRAIN ---- */
+/* Boston's shore: tide flats wide at the water (the "wet" band), no hill */
+SITE_TERRAIN.boston={sea:64,shore:40,flat:-30,deep:-1.6,fall:0.02,rise:1.8,inland:1.6,roll:0.6,
+  sky:0xa8c2d2,fog:0xbccfda,water:0x3e5e66,near:0x828c54,far:0x6c7846,back:0x525c38,wet:0x8a826a,
+  trees:0,treeZ:-40,treeH:46,seed:241};
+/* Salem in winter: the ground under snow, pale */
+SITE_TERRAIN.salem={sea:66,shore:42,flat:-30,deep:-1.8,fall:0.02,rise:1.8,inland:1.6,roll:0.8,
+  sky:0xc2ccd4,fog:0xd4dade,water:0x46606a,near:0xd8dcda,far:0xcfd4d2,back:0xbcc2c0,wet:0x9a9c94,
+  trees:0,treeZ:-40,treeH:44,seed:251};
+/* Saybrook: the river's mouth, the fort on its point */
+SITE_TERRAIN.saybrook={sea:56,shore:34,flat:-24,deep:-2.2,fall:0.03,rise:1.6,inland:1.4,roll:0.6,
+  sky:0x6a7a8a,fog:0x2a3240,water:0x2e4650,near:0x6c7448,far:0x5c6640,back:0x4a5234,wet:0x6a6a52,
+  trees:0,treeZ:-40,treeH:46,seed:263};
+/* the Pequot country: woods to the shore, pinnaces lying off */
+SITE_TERRAIN.march={sea:70,shore:46,flat:-20,deep:-2.0,fall:0.03,rise:2.0,inland:1.8,roll:1.2,
+  sky:0xa6bccc,fog:0xb8c8d2,water:0x3a5a62,near:0x76804e,far:0x627044,back:0x4a5634,wet:0x7c7a58,
+  trees:0,treeZ:-30,treeH:50,seed:271};
+/* Newtown: flat ground for the meetinghouse */
+SITE_TERRAIN.newtown={sea:120,shore:90,flat:-60,deep:-1.0,fall:0.01,rise:0.6,inland:0.5,roll:0.1,
+  sky:0xb0c0cc,fog:0xc2ccd2,water:0x3e5e66,near:0x7c8452,far:0x6a7444,back:0x525c38,wet:0x7c7a56,
+  trees:0,treeZ:-60,treeH:46,seed:281};
+
+registerWorld("ch12",function(root){
+  const w=bayW(), sd=bayDay(), where=sd.where, day=w.day;
+  BAY.later=[];BAY.walk=[];BAY.smoke=[];BAY.ship=null;BAY.flee=null;BAY.stakes=null;BAY.rope=[];BAY.column=[];
+  BLAZE.fires.length=0;
+  let G, spots={}, at=[0,42], face=Math.PI, nextAt=null, look0=0, pitch0=0.30, ship=false;
+  const duty=function(id,label,x,z,data){
+    if(data.kind&&BAY_DUTY[data.kind]&&w.did[data.kind])return;
+    const lvl=data.lvl!==undefined?data.lvl:LVL.MAIN;
+    const it={id:id,label:label,x:x,z:z,y:ship?LVL_Y[lvl]:G(x,z),lvl:lvl,r:ship?6:8,action:"bay",data:data};
+    if(data.after&&!w.did[data.after]){BAY.later.push(it);return;}
+    interactables.push(it);};
+  /* figures who are drawn and never voiced */
+  const stand=function(eq,x,z,yaw,live){
+    const f=buildFigure(eq);f.position.set(x,G(x,z),z);f.rotation.y=yaw;root.add(live?f:bakeFigure(f));solid(x,z,1,1,LVL.MAIN,0);return f;};
+  const native=function(x,z,yaw,over,live){
+    const f=tidewaterFigure(plyWampLook(over));f.position.set(x,G(x,z),z);f.rotation.y=yaw;root.add(live?f:bakeFigure(f));solid(x,z,1,1,LVL.MAIN,0);return f;};
+  /* a crowd of men with right hands raised: the vote */
+  const hands=function(list,yr){list.forEach(function(a,i){const f=bayHand(buildFigure(crowdEq(i%3?"planter":"gent",a[3]||(500+i),yr)));
+    f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));solid(a[0],a[1],1,1,LVL.MAIN,0);});};
+
+  if(where==="england"){
+    /* London: town houses, a church, the fleet's stores going down to a ship (MBR i p. 51) */
+    G=captLand(root,"thames",{trees:30,winter:false,clear:function(x,z){return Math.hypot(x,z)<140;}});
+    for(let k=0;k<5;k++){leafHouse(root,G,-56+k*26,-22,0,"eng");leafHouse(root,G,-43+k*26,-52,0,"eng");}
+    leafChurch(root,G,-88,10,Math.PI/2,true);
+    placeShip(root,"mayflower",1,-10,112,Math.PI/2);
+    priceLanding(root,G,-4,56,98);
+    const pile=workStack(root,6,33,"cask",9);for(let i=0;i<6;i++)pile.drop();
+    solid(6.9,33,3.4,1.3,LVL.MAIN,0);
+    const foot=workStack(root,-11,50,"cask",9);
+    workMan(root,crowdEq("hand",510,1630),10,39,0,"carry",{from:[10,39],to:[-3,52],load:"cask",speed:2.6,drop:foot.drop});
+    workMan(root,crowdEq("hand",511,1630),14,41,0,"carry",{from:[13,40.5],to:[0,53.5],load:"cask",speed:2.9});
+    workMan(root,crowdEq("hand",512,1630),-25,-21.2,Math.PI,"hammer");
+    presTable(root,G,-18,20.5);duty("agreement","The Cambridge Agreement",-18,24,{kind:"agreement",verb:"Read it"});
+    /* the Company's members, hands raised for the vote; Winthrop and Dudley among them */
+    presTable(root,G,24,8);duty("charter","The Company’s Vote",24,12,{kind:"charter",after:"agreement",verb:"Read it"});
+    hands([[18,2,0.4,520],[30,2,-0.4,521],[16,-3,0.6,522],[32,-3,-0.6,523],[24,-5,0,524]],1629);
+    stand(personEq("winthrop",1629),20,-1,0.3);stand(personEq("dudley",1629),28,-1,-0.3);
+    duty("stores","The Fleet’s Stores",6,38,{kind:"stores",verb:"Carry a cask",face:[6,33],stand:[6,37.6],
+      cam:[[13,6.5,43],[5.5,2.4,35]]});
+    starveChest(root,G,-50,40);starveChest(root,G,-34,20.5);starveChest(root,G,26,20.5);starveChest(root,G,44,20.5);
+    nextAt=[44,4];starveChest(root,G,44,0.5);
+    at=[-8,42];
+  }
+  if(where==="ship"){
+    /* the Arbella: Chapter I's ship, built by the same routines (as Chapter XI's Mayflower) */
+    ship=true;
+    buildRiver(root);
+    SHIPV="mayflower";
+    const sg=new THREE.Group(), n0=interactables.length;
+    buildHull(sg);buildDecks(sg);buildBeakAndRig(sg);buildFittings(sg);
+    buildInnerShell(sg);buildHoldLevel(sg);buildTweenLevel(sg);buildCabins(sg);buildPoop(sg);
+    root.add(sg);buildLadders(sg);
+    SHIPV="susan";
+    for(let i=interactables.length-1;i>=n0;i--)if(interactables[i].action!=="ladder")interactables.splice(i,1);
+    G=function(){return LVL_Y[LVL.MAIN];};
+    const y=LVL_Y[LVL.MAIN];
+    /* the New England shore ahead, low and wooded, for the landfall off Salem */
+    {const L=new Geo(), land=RGB(0x56603e), landD=RGB(0x3e4830), tree=RGB(0x2e3a26);
+     for(let i=0;i<14;i++){const x=-700+i*100, z=-560-srand(i*3.1)*60;
+       L.oct(x,z,-2,10+srand(i*1.7)*10,130,70,90,40,0.35,landD,land);
+       for(let k=0;k<5;k++){const tx=x-40+k*20+srand(i*7+k)*8, tz=z+srand(k*5+i)*20-10;
+         L.oct(tx,tz,8,30+srand(i+k*2)*10,9,9,0.6,0.6,0.2,tree,tree);}}
+     root.add(L.mesh(false,false));}
+    /* the rope from the steerage to the mainmast (WJ i p. 31), and the sick children at it,
+       some of one side and some of the other */
+    {const r=new Geo(), rope=RGB(0xbfb094);r.beam8([-8.5,y+4.2,17],[-0.9,y+4.4,0.9],0.12,0.12,rope,rope);root.add(r.mesh(false,false));}
+    /* at the two ends of it: the middle of the deck is the capstan's (bars to 6.6 ft from z=10.8) */
+    [[0.14,-1],[0.24,1],[0.86,-1],[0.96,1]].forEach(function(a,i){
+      const u=a[0], x=-0.9+(-8.5+0.9)*u, z=0.9+(17-0.9)*u, nx=0.9*a[1], nz=0.43*a[1];
+      const c=(i%2)?buildFigure(Object.assign(crowdEq("boy",530+i,1630),{look:Object.assign(crowdLook("boy",530+i,1630),{age:"child"})}),{lod:1})
+        :englishWoman(false,{age:"child"});
+      c.position.set(x+nx*1.3,y,z+nz*1.3);c.rotation.y=Math.atan2(-nx,-nz);root.add(c);BAY.rope.push(workAdd(c,"haul",{}));});
+    duty("rope","The Rope",-10.4,13,{kind:"rope",verb:"Take hold",face:[-7.9,14.4],stand:[-9.6,13.6],reach:1.6});
+    plyDeckChest(root,LVL.MAIN,6.5,-2);duty("modell","The Sermon",6.5,1.5,{kind:"modell",after:"rope",verb:"Read it"});
+    plyDeckChest(root,LVL.MAIN,9.5,-15.5);plyDeckChest(root,LVL.MAIN,-9.5,-15.5);plyDeckChest(root,LVL.MAIN,9.5,13);
+    duty("landfall","The Bow",4,-24,{kind:"landfall",after:"modell",verb:"Look ahead"});
+    const put=function(f,lvl,x,z,yaw){f.position.set(x,LVL_Y[lvl],z);f.rotation.y=yaw;root.add(bakeFigure(f));solid(x,z,0.5*K,0.5*K,lvl,0);};
+    put(buildFigure(personEq("dudley",1630)),LVL.MAIN,9,7,-2.4);
+    put(buildFigure(crowdEq("planter",540,1630)),LVL.MAIN,-8,-4,1.2);
+    put(englishWoman(false),LVL.TWEEN,5,-3,-1.8);put(englishWoman(true),LVL.TWEEN,-8.5,-6,1.0);
+    spots={winthrop:[-11,5]};
+    nextAt=[-9,26];plyDeckChest(root,LVL.MAIN,-9,22.5);
+    at=[6,-5];look0=0.15;
+  }
+  if(where==="boston"||where==="court"){
+    G=captLand(root,"boston",{trees:120,winter:day===2,clear:function(x,z){return Math.hypot(x,z+10)<110;}});
+    const HOUSES=day===2?[[-18,-30],[18,-34]]:[[-40,-12],[40,-14],[-24,-56],[24,-58],[-46,-40],[46,-42]];
+    HOUSES.forEach(function(h){plyHouse(root,G,h[0],h[1],0,"thatch");});
+  }
+  if(where==="boston"){
+    /* the first year: lean-tos for the sick, fires, the tide flats, the Lyon at anchor (Young
+       pp. 312-319; WJ i pp. 51-58). No death or burial is drawn */
+    placeShip(root,"godspeed",1,40,200,Math.PI/2);
+    plyShed(root,G,-36,8,0);
+    [1.5,5.5,9.5,13.5].forEach(function(z,i){plySick(root,G,-33.6,z,Math.PI/2,i);});
+    {const s=buildFigure(crowdEq("hand",545,1630),{lod:1});s.position.set(-35.6,G(-35.6,16.4)+0.24,16.4);s.rotation.y=1.4;root.add(s);figReact(s,"sitSick",{instant:true});}
+    {const ring=new Geo(), stone=RGB(0x6a6458), gy=G(-25,8);for(let i=0;i<8;i++){const a=i/8*Math.PI*2;ring.box(-25+Math.sin(a)*1.4,gy+0.2,8+Math.cos(a)*1.4,0.7,0.4,0.6,stone);}root.add(ring.mesh(false,false));
+     blazeAt(root,-25,gy+0.3,8,2.6,2.2).smoke=false;solid(-25,8,1.6,1.6,LVL.MAIN,0);}
+    workMan(root,crowdEq("hand",546,1630),-30.8,3.5,-Math.PI/2,"tend",{hero:true});
+    /* the flats at low tide: wet mud down to the water, dark beds of mussels; gatherers digging */
+    {const g=new Geo(), shell=RGB(0x2e3038);
+     for(let x=-70;x<70;x+=4)for(let z=50;z<66;z+=2){const a=G(x,z), b=G(x+4,z), c=G(x+4,z+2), d=G(x,z+2);
+       if(Math.min(a,b,c,d)<-0.5)continue;
+       const col=RGB(mixHex(0x6a6048,0x4e4a3c,smooth01(50,64,z+1)));
+       g.quad([x,a+0.07,z],[x,d+0.07,z+2],[x+4,c+0.07,z+2],[x+4,b+0.07,z],col);}
+     for(let i=0;i<40;i++){const x=-60+srand(i*2.3)*120, z=54+srand(i*4.1)*8, gy=G(x,z);if(gy<-0.4)continue;
+       g.oct(x,z,gy+0.05,gy+0.22,1.4+srand(i)*1.2,0.9,1.0,0.6,0.2,shell,shell);}
+     root.add(g.mesh(false,false));}
+    {const f=englishWoman(false);f.position.set(-14,G(-14,58),58);f.rotation.y=0.4;root.add(f);workAdd(f,"dig",{});}
+    workMan(root,crowdEq("hand",547,1630),18,60,-0.5,"dig");
+    workMan(root,crowdEq("boy",548,1630),26,57,0.8,"dig");
+    skyBaskets(root,G,-4,54,3);
+    /* Massachusett men bringing corn in baskets to trade (Clap, Young p. 352) */
+    [[70,-6],[76,-2]].forEach(function(p,i){const f=tidewaterFigure(plyWampLook({mantle:true}));
+      f.position.set(p[0],G(p[0],p[1]),p[1]);root.add(f);workAdd(f,"carry",{from:p,to:[34,4+i*3],load:"basket",speed:2.2});});
+    skyBaskets(root,G,30,10,4);
+    duty("clams","The Flats",6,58,{kind:"clams",verb:"Gather them",face:[6,62],stand:[6,59]});
+    starveChest(root,G,30,16.5);duty("corn","The Corn Sellers",30,20,{kind:"corn",after:"clams",verb:"Read it"});
+    starveChest(root,G,14,40.5);duty("lyon","The Lyon’s Lemons",14,44,{kind:"lyon",after:"corn",verb:"Read it"});
+    starveChest(root,G,-30,26.5);starveChest(root,G,30,26.5);starveChest(root,G,-40,0.5);
+    spots={dudley:[16,24],winthrop:[-8,28]};
+    nextAt=[-6,36];starveChest(root,G,-6,32.5);
+    at=[0,42];
+  }
+  if(where==="court"){
+    /* Boston, 1630-1635: the meetinghouse, freemen with hands raised (MBR i pp. 79, 87), the
+       oath (MBR i p. 117), and the palisade stakes the disputed rate paid for (WJ i p. 74) */
+    leafChurch(root,G,0,-20,0,false);
+    hands([[-10,-2,3.0,560],[-4,0,3.1,561],[4,0,-3.1,562],[10,-2,-3.0,563],[-7,4,3.0,564],[7,4,-3.0,565]],1631);
+    presTable(root,G,-24,6);duty("hands","Who May Vote",-24,10,{kind:"hands",verb:"Read it"});
+    starveChest(root,G,24,6.5);duty("oath","The Freeman’s Oath",24,10,{kind:"oath",after:"hands",verb:"Read it"});
+    priceLogs(root,G,[[46,26,0.3,8],[52,18,1.2,7]]);
+    BAY.stakes=bayStakes(root,G,40,0,76,0,44,30);BAY.stakes.visible=!!w.did.stakes;solid(58,0,18,0.8,LVL.MAIN,0);
+    workMan(root,crowdEq("hand",566,1631),54,-3,0,"hammer");
+    workMan(root,crowdEq("hand",567,1631),46,10,0,"carry",{from:[46,12],to:[56,4],load:"board",speed:2.4});
+    duty("stakes","The Palisade Stakes",62,4,{kind:"stakes",after:"oath",verb:"Drive a stake",face:[62,0.5],stand:[62,3.2]});
+    starveChest(root,G,-30,26.5);starveChest(root,G,30,26.5);starveChest(root,G,-40,0.5);
+    spots={winthrop:[8,32]};
+    nextAt=[-6,36];starveChest(root,G,-6,32.5);
+    at=[0,42];
+  }
+  if(where==="salem"){
+    /* Salem in winter: houses, the meetinghouse, an empty wigwam frame far off (the smallpox of
+       1633), and, for the flight, a figure in the snow (WJ i pp. 114-115, 154-168) */
+    G=captLand(root,"salem",{trees:140,winter:true,clear:function(x,z){return Math.hypot(x,z+10)<100;}});
+    [[-34,-44],[34,-46],[-40,-12],[40,-14],[-14,-62],[18,-66]].forEach(function(h){plyHouse(root,G,h[0],h[1],0,"thatch");});
+    leafChurch(root,G,0,-20,0,false);
+    plyFrame(root,G,-60,-40,0.8,true);plyFrame(root,G,-76,-58,2.1,false);
+    stand(personEq("endecott",1635),-6,-6,plyFace(-6,-6,[0,42]));
+    [[6,-6,2.8],[-12,2,2.2]].forEach(function(a,i){stand(crowdEq("planter",570+i,1634),a[0],a[1],a[2]);});
+    starveChest(root,G,-24,6.5);duty("treatise","The Treatise",-24,10,{kind:"treatise",verb:"Read it"});
+    starveChest(root,G,24,6.5);duty("opinions","Salem’s Letter",24,10,{kind:"opinions",after:"treatise",verb:"Read it"});
+    presTable(root,G,0,14);duty("order","The Court’s Order",0,18,{kind:"order",after:"opinions",verb:"Copy it",face:[0,14],stand:[0,16.6]});
+    starveChest(root,G,-40,-23.5);starveChest(root,G,30,26.5);starveChest(root,G,-30,26.5);
+    {const f=buildFigure(personEq("williams",1636));BAY.flee=bayWalker(root,f,[[-84,-70],[-120,-150]],1.6,true);BAY.flee.s=BAY.flee.L;}
+    spots={williams:[16,24]};
+    nextAt=[-6,36];starveChest(root,G,-6,32.5);
+    at=[0,42];
+  }
+  if(where==="saybrook"){
+    /* Saybrook fort at night: a palisade on the point, a house, guns, the watch fire; far off,
+       empty wigwams burning down the coast (WJ i pp. 188-189; nobody is drawn there) */
+    G=captLand(root,"saybrook",{trees:120,winter:true,clear:function(x,z){return Math.hypot(x,z)<70||(x>120&&z>-40&&z<40);}});
+    skyPale(root,G,0,0,34,0.32);
+    leafHouse(root,G,-10,-14,0,"eng");leafHouse(root,G,14,-16,0.2,"thatch");
+    skyGun(root,G,-20,22,0);skyGun(root,G,20,22,0);
+    {const gy=G(-4,4);blazeAt(root,-4,gy+0.3,4,2.2,2.0).smoke=false;solid(-4,4,1.4,1.4,LVL.MAIN,0);}
+    [[-26,10,1.2],[26,8,-1.2],[10,-28,0.0]].forEach(function(a,i){stand(crowdEq("soldier",580+i,1636),a[0],a[1],a[2]);});
+    /* down the coast: empty frames, a fire among them, far off */
+    {const fx=170, fz=8;plyFrame(root,G,fx,fz,0.6,false);plyFrame(root,G,fx+16,fz-10,1.4,true);
+     blazeAt(root,fx+6,G(fx+6,fz)+0.3,fz-2,6,5).smoke=false;}
+    duty("watch","The Gate",0,30,{kind:"watch",verb:"Stand watch",face:[0,40],stand:[0,30]});
+    starveChest(root,G,-14,6.5);duty("parley","The Parley",-14,10,{kind:"parley",after:"watch",verb:"Read it"});
+    starveChest(root,G,14,6.5);duty("appeal","The Pequot Appeal",14,10,{kind:"appeal",after:"parley",verb:"Read it"});
+    starveChest(root,G,-24,-9.5);starveChest(root,G,24,-7.5);starveChest(root,G,12,22.5);starveChest(root,G,-12,22.5);starveChest(root,G,0,-29.5);
+    spots={gardener:[8,-4],endecott:[-10,-2]};
+    nextAt=[-4,18];starveChest(root,G,-4,14.5);
+    at=[0,22];look0=0;
+  }
+  if(where==="march"){
+    /* the Pequot country, 1637-38: the woods, the shore, the pinnaces; smoke far off over the
+       trees; the wounded on litters; captives walking under guard far off; the Desire sailing.
+       The fort is never shown (record, "Content and framing", 6) */
+    G=captLand(root,"march",{trees:260,winter:false,clear:function(x,z){return (Math.abs(x)<26&&z<20)||Math.hypot(x,z-30)<70||(x>40&&x<110&&z>-10&&z<60);}});
+    baySmoke(root,G,-80,-300,120);
+    placeShip(root,"discovery",1,-50,170,Math.PI/2);placeShip(root,"discovery",1,60,185,Math.PI/2);
+    BAY.ship=placeShip(root,"godspeed",1,200,260,Math.PI/2);
+    captBarge(root,G,-6,68,0.3);
+    bayLitter(root,G,-16,36,0.2,0);bayLitter(root,G,-6,40,-0.3,1);
+    [[-19,33,0.4],[-13,41,-2.6],[-3,37,0.2]].forEach(function(a,i){stand(crowdEq("soldier",590+i,1637),a[0],a[1],a[2]);});
+    /* the column, ready for the march (hidden until it moves) */
+    for(let i=0;i<6;i++){const f=i%3===2?tidewaterFigure(plyWampLook({mantle:false})):buildFigure(crowdEq("soldier",600+i,1637));
+      BAY.column.push(bayWalker(root,f,[[i*0.6-1,-40-i*5],[-2,-150-i*5]],2.2,true));}
+    /* Uncas and Mohegan men, by the shore */
+    stand(personEq("uncas",1637),34,30,plyFace(34,30,[0,42]));
+    [[38,34],[30,36],[40,26]].forEach(function(a,i){native(a[0],a[1],plyFace(a[0],a[1],[0,42])+(i-1)*0.3,{mantle:i===1});});
+    /* captives walking under guard, far off along the shore: women and children, two soldiers */
+    [[-190,58],[-196,60],[-202,57],[-208,61],[-214,58]].forEach(function(p,i){
+      const look=Object.assign(twCrowdLook(true),{hair:"loose",hairColor:HAIR.black,paint:false,ear:null},i%2?{age:"child"}:{});
+      BAY.walk.push(bayWalker(root,tidewaterFigure(look),[p,[p[0]+120,p[1]+4]],0.9));});
+    [[-186,54],[-218,63]].forEach(function(p,i){BAY.walk.push(bayWalker(root,buildFigure(crowdEq("soldier",610+i,1637)),[p,[p[0]+120,p[1]+4]],0.9));});
+    /* Hartford, September 1638: a table, and the two sachems who signed by their marks */
+    presTable(root,G,70,16);stand(personEq("miantonomi",1638),64,14,plyFace(64,14,[70,30]));stand(personEq("uncas",1638),76,14,plyFace(76,14,[70,30]));
+    duty("march","The Path",0,-20,{kind:"march",verb:"March"});
+    duty("wounded","The Wounded",-10,30,{kind:"wounded",after:"march",verb:"Lift",face:[-6,40],stand:[-8,36.5],reach:1.4});
+    starveChest(root,G,8,48.5);duty("captives","The Captives",8,52,{kind:"captives",after:"wounded",verb:"Read it"});
+    starveChest(root,G,-34,42.5);starveChest(root,G,-12,48.5);starveChest(root,G,40,44.5);
+    spots={mason:[-24,20],underhill:[16,20]};
+    nextAt=[-26,52];starveChest(root,G,-26,48.5);
+    /* Mononotto's wife and her children, by the look that carries her request */
+    {const mw=buildFigure(personEq("mononottowife",1637));mw.position.set(44,G(44,51),51);mw.rotation.y=Math.PI;root.add(bakeFigure(mw));solid(44,51,1,1,LVL.MAIN,0);
+     [[42.6,50.4],[45.4,50.6]].forEach(function(p){const c=tidewaterFigure(Object.assign(twCrowdLook(true),{hair:"loose",hairColor:HAIR.black,paint:false,ear:null,age:"child"}));c.position.set(p[0],G(p[0],p[1]),p[1]);c.rotation.y=Math.PI;root.add(bakeFigure(c));});}
+    at=[0,14];
+  }
+  if(where==="newtown"){
+    /* the court at Newtown, 2 November 1637: the magistrates' bench, the benches, Anne
+       Hutchinson standing before the court; the reporter's table (Hutchinson ii pp. 482-520) */
+    const G0=captLand(root,"newtown",{trees:60,winter:true,clear:function(x,z){return Math.hypot(x,z)<90;}});
+    let top=-1e9;for(const x of [-31,0,31])for(const z of [-31,0,27])top=Math.max(top,G0(x,z));
+    const fy=top+0.3;G=function(){return fy;};WORLD.ground=G;WORLD.hull=false;
+    bayCourtRoom(root,G);
+    presTable(root,G,0,-16);
+    [[-14,-24],[-8,-24.5],[8,-24.5],[14,-24],[-20,-23]].forEach(function(a,i){
+      const f=buildFigure(crowdEq("gent",620+i,1637));f.position.set(a[0],fy+1.2,a[1]);f.rotation.y=0;root.add(bakeFigure(f));});
+    {const f=buildFigure(personEq("cotton",1637));f.position.set(20,fy+1.2,-23.5);f.rotation.y=-0.3;root.add(bakeFigure(f));}
+    /* the audience, standing by the benches */
+    [[-16,4.7,3.0],[-9,10.2,3.1],[9,4.7,-3.1],[16,10.2,-3.0],[-12,15.8,3.1],[12,15.8,-3.1]].forEach(function(a,i){
+      const f=i%3===1?englishWoman(i%2===0):buildFigure(crowdEq(i%2?"planter":"hand",630+i,1637));
+      f.position.set(a[0],fy,a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));solid(a[0],a[1],1,1,LVL.MAIN,0);});
+    presTable(root,G,-22,-8);duty("meetings","Her Meetings",-22,-4,{kind:"meetings",verb:"Read it"});
+    presTable(root,G,22,-8);duty("examination","The Reporter’s Table",22,-4,{kind:"examination",after:"meetings",verb:"Write",face:[22,-8],stand:[22,-5.4]});
+    starveChest(root,G,6,-6.5);duty("sentence","The Vote",6,-3,{kind:"sentence",after:"examination",verb:"Read it"});
+    spots=w.did.closed?{winthrop:[0,-23]}:{winthrop:[0,-23],hutchinson:[0,-11.5]};
+    starveChest(root,G,-25,4.5);starveChest(root,G,25,4.5);starveChest(root,G,-25,-15.5);starveChest(root,G,25,-15.5);
+    nextAt=[0,20];
+    if(w.did.closed){nextAt=null;
+      duty("record","The Secretary",-24,18,{kind:"record",verb:"Close the chapter’s record"});
+      presTable(root,G,-24,22);
+      const sc=buildFigure(personEq("secretary",1638));sc.position.set(-24,fy,24.6);sc.rotation.y=Math.PI;root.add(sc);solid(-24,24.6,1,1,LVL.MAIN,0);}
+    else starveChest(root,G,0,23.5);
+    at=[0,18];
+  }
+
+  const LOOK_AFTER={james0:"agreement",objection:"agreement",henry:"landfall",garrett:"corn",james3:"hands",coggeshall:"oath",
+    james4:"treatise",book:"treatise",oldham:"watch",river:"parley",wethersfield:"appeal",counts:"march",machit:"march",
+    wife:"wounded",hartford:"captives",aspinwall:"meetings",jesabel:"sentence",witch:"sentence"};
+  (BAY_LOOKS[day]||[]).forEach(function(L){duty("look_"+L[0],L[1],L[2],L[3],{kind:"look",id:L[0],verb:"Look",after:LOOK_AFTER[L[0]]||null});});
+  for(const id in spots){
+    const d=baySpeaker(id);
+    if(!d)continue;
+    const a=spots[id], x=a[0], z=a[1], gy=G(x,z)+((where==="newtown"&&z<-20)?1.2:0);
+    const f=d.id==="hutchinson"?englishWoman(false,"hutchinson@1637"):buildFigure(d.eq);
+    f.position.set(x,gy,z);f.rotation.y=where==="newtown"?(z<-20?0:Math.PI):plyFace(x,z,at);root.add(f);
+    npcMeshes.push({npc:d,mesh:f});solid(x,z,ship?0.5*K:1,ship?0.5*K:1,LVL.MAIN,0);
+    interactables.push({id:id,label:d.name,x:x,z:z+3,y:G(x,z),lvl:LVL.MAIN,r:ship?6:7,action:"talk",data:d});
+  }
+  if(nextAt&&sd.next)duty("next",sd.next,nextAt[0],nextAt[1],{kind:"next",verb:bayNeed()?"Not yet":"Go on"});
+
+  if(day===0&&!w.did.open0){
+    w.did.open0=true;
+    setTimeout(function(){if(CURRENT_WORLD==="ch12")
+      fortResult(BAY_OPEN[0].t,"<p class=\"sickDate\">"+BAY_DAYS[0].date+"</p>"+BAY_OPEN[0].b,[]);},500);
+  }
+  player=buildFigure(S.equip);root.add(player);playerParts=player.userData.parts;dressCarried(player);
+  player.position.set(at[0],G(at[0],at[1]),at[1]);player.rotation.y=face;
+  camYaw=look0;camPitch=pitch0;
+});
+
+function updateBay(dt){
+  if(CURRENT_WORLD!=="ch12")return;
+  BAY.t+=dt;
+  /* the fires; the light of each scene is SCENE_LOOK.ch12, via applyLook */
+  updateBlaze(dt);
+  for(const W of BAY.walk)bayWalkAt(W,dt);
+  for(const m of BAY.smoke)m.rotation.y+=dt*0.03;
+  /* the Desire stands out to sea */
+  if(BAY.ship&&BAY.ship.position.x<600)BAY.ship.position.x+=dt*1.4;
+}
+
+/* ---- CHAPTER XII'S CONTENT, AND ITS MUSTER ----
+   Sat with the Secretary of the General Court, entering the year's orders into the records
+   (the record's MBR); he is not named, because the record does not name him. Every item is
+   ungated. Written off CH12-RECORD.md §Teaching hooks and §Disputes; keyed a:0, shuffled at
+   runtime, and no keyed option is the longest of its four. */
+CONTENT.ch12={
+  people:BAY_PEOPLE,
+  npcs:BAY_NPCS,
+  charter:{insight:{b:"As a Citty upon a Hill"}},
+  reck:{seal:"records",kick:"The Secretary of the General Court",title:"Who Had a Say?",
+    frame:"Boston, 1638. The Secretary of the General Court is entering the year’s orders into the records. “Whose say did each of these carry? Six questions; I’ll bear two wrong, no more.”",
+    lockLine:"Not yet. The Secretary will sit with you after the court at Newtown.",
+    pass:{title:"Entered in the Records",body:"The Secretary blots the page. “Who decided, who spoke, and who was never asked. The book keeps only the first.”"},
+    fail:{title:"Not Yet Entered",body:"“You took the speaking for the deciding,” says the Secretary. “Ask who voted, and who wrote it down.”"},
+    onPass:function(){bayW().done=true;},
+    q:[
+      {stim:"Cambridge, 1629: twelve men promise to sail “Provided always” that the government and the patent go with them.",
+       q:"What were they insisting on?",
+       o:["Governing the colony themselves","Leaving the King’s rule behind","A larger share of the profits","Free land for all of their servants"],a:0},
+      {stim:"London, 29 August 1629: the vote to move the patent and government to New England is taken “by ereccon of hands”.",
+       q:"Who had a say in that vote?",
+       o:["The Company’s members","Every settler who sailed","The Massachusett","The King’s council"],a:0},
+      {stim:"The charter of 1629 names converting “the Natives” as the “principall Ende” of the plantation.",
+       q:"What say did the Massachusett have in the charter?",
+       o:["None","A vote in its courts","A seat among its assistants","The right to refuse it"],a:0},
+      {stim:"The General Considerations of 1629 give eight reasons for going: the gospel, a refuge, crowding, debt, schools, land and more.",
+       q:"What does the list show?",
+       o:["Religion among other reasons","Religious freedom, and nothing else","Gold and silver to be found","A way to escape the law"],a:0},
+      {stim:"Objection 5 calls the land “possessed of others”. The same answer calls it “void of inhabitants”.",
+       q:"What is “void” doing in the argument?",
+       o:["Justifying taking the land","Reporting a careful count","Quoting the Massachusett","Praising the Native farmers’ work"],a:0},
+      {stim:"The Modell, 1630: “wee shall be as a citty upon a hill. The eies of all people are uppon us.” Failure would make them “a by-word”.",
+       q:"How should we read the passage?",
+       o:["As a warning","As a boast","As a law","As a peace treaty"],a:0},
+      {stim:"Dudley, 1631: “necessity enforced us, to our extreme loss, to give them all liberty, who had cost us about £16 or £20 a person.”",
+       q:"Who decided that the servants went free?",
+       o:["The masters who paid for them","The servants, by petition","The Massachusett sachems","King Charles, by a royal letter"],a:0},
+      {stim:"Roger Clap remembered “poor ravenous Indians, which came with their baskets of corn on their backs to trade with us”.",
+       q:"Whose choice was the corn trade?",
+       o:["The sellers’ and the buyers’","The English governor’s alone","Nobody’s; the corn was taken","The King’s, by his charter"],a:0},
+      {stim:"Winthrop: when the Lyon brought “juice of lemons, many recovered speedily”. In the next sentence, those who “fell into discontent … died”.",
+       q:"Which cause of the scurvy can be tested?",
+       o:["The lemon juice","The discontent","Both, equally","Neither of them"],a:0},
+      {stim:"October 1630: the freemen gave the Assistants “the power of makeing lawes”. May 1634: only the General Court may “make and establishe lawes”.",
+       q:"What changed in 1634?",
+       o:["The freemen took lawmaking back","Women were given the vote at last","The King took control","The Assistants made more laws"],a:0},
+      {stim:"Watertown, 1632: paying the rate risked “bondage”. Winthrop answered that the government was “rather in the nature of a parliament”.",
+       q:"What were Watertown’s men claiming?",
+       o:["No tax without their consent","No tax on church members","No tax for ten years","No tax to be sent to England"],a:0},
+      {stim:"May 1634: “The court chose a new governor, viz., Thomas Dudley.” Winthrop had been governor since 1630.",
+       q:"What does 1634 show about having a say?",
+       o:["It can be lost at a vote","It lasts for life","It belongs to the richest","It comes from the King"],a:0},
+      {stim:"The court’s order, 1635: Williams banished for “newe & dangerous opinions, against the aucthoritie of magistrates, as also writt lres of defamacon”.",
+       q:"What does the order leave out that Winthrop’s journal has?",
+       o:["His view of the land","His view of magistrates","His letters","The six weeks"],a:0},
+      {stim:"Salem’s church wrote to protest the court’s treatment of Williams. At the next court, Winthrop writes, “their deputies were not received”.",
+       q:"What does Salem’s case show?",
+       o:["A town could lose its voice","Towns could ignore the court","Deputies were chosen by lot","Salem left the colony"],a:0},
+      {stim:"Gardener, 1660: Endecott’s men came “without acquainting any of us in the River”. Winthrop’s journal copies the commission they carried.",
+       q:"Who decided on the raid of 1636?",
+       o:["The Massachusetts magistrates","Lion Gardener, at Saybrook","The Narragansett sachems","The Pequot envoys of the year before"],a:0},
+      {stim:"The Pequot envoys, 1634: Stone “took two of their men and bound them”. Plymouth’s news: the sachem “knocked him on the head” as he slept.",
+       q:"How should a historian treat Stone’s death?",
+       o:["Two accounts, both via Winthrop","The Pequot account is proven","The Plymouth account is proven","Neither account was ever written down"],a:0},
+      {stim:"Winthrop, 1636: Narragansett sachems were “the contrivers of Mr. Oldham’s death”. Prince, 1736: “In 1635, they killed Capt. Oldham”, meaning the Pequot.",
+       q:"What does Prince’s retelling do?",
+       o:["Moves the blame, a century on","Corrects Winthrop’s mistake","Repeats Winthrop exactly","Blames the English settlers instead"],a:0},
+      {stim:"Counts of the dead at Mystic: Winthrop about 300; Bradford “about 400.”; Mason “six or seven Hundred”; the Pequot Museum about 600.",
+       q:"What should a historian write?",
+       o:["The range, and who counted","The highest count","The earliest count","An average of all of the counts"],a:0},
+      {stim:"The Treaty of Hartford, 1638, is signed for Connecticut and by the marks of Miantonomi and Uncas. The survivors “shall no more be called Pequots”.",
+       q:"Who had no say at Hartford?",
+       o:["The Pequot","The Narragansett","The Mohegan","Connecticut’s English"],a:0},
+      {stim:"Mononotto’s wife asked “that her children might not be taken from her”. Her words survive in Winthrop’s letter.",
+       q:"What kind of say did she have?",
+       o:["She spoke; others decided","She voted at Hartford","She commanded the captives","She wrote her own account"],a:0},
+      {stim:"The Desire took Pequot boys and women out in 1637. In 1638 it came back with “cotton, and tobacco, and negroes”.",
+       q:"What does the record say of an exchange?",
+       o:["It does not say there was one","Captives were traded for Africans","The captives bought their freedom","The Africans were set free"],a:0},
+      {stim:"Anne Hutchinson: “I desire to know wherefore I am banished?” The governor: “Say no more, the court knows wherefore and is satisfied.”",
+       q:"How does she appear in the court’s own book?",
+       o:["Only in the charge and sentence","Word for word, as she spoke","In a letter she wrote","Not at all; she is never named in it"],a:0},
+      {stim:"The Body of Liberties, 1641: “There shall never be any bond slaverie … unles it be lawfull Captives taken in just warres”.",
+       q:"Who could that “unles” cover?",
+       o:["Captives such as the Pequot","English debtors in prison","Church members who sinned","No one at all, whoever they were"],a:0},
+      {stim:"12 October 1637: a day of thanksgiving “for our victories against the Pequods, and for the success of the assembly”.",
+       q:"What does this entry show about the modern holiday?",
+       o:["Nothing either way","That it began on this day","That it honours Plymouth","That it was a harvest feast"],a:0}]},
+  ready:function(){
+    const w=bayW();
+    return (w.day>=BAY_DAYS.length-1&&w.did.closed)?{ok:true,missing:[]}:{ok:false,missing:["the court at Newtown"]};
+  },
+  targets:collectInsights(BAY_NPCS), unlocks:[]
+};
+
 const CHAPTERS=[
   /* Percy: "The six and twentieth day of Aprill, about foure a clocke in the
      morning, wee descried the Land of Virginia." The ships stand into the bay at
@@ -36746,11 +38003,40 @@ const CHAPTERS=[
      return null; },
    /* Robinson to Bradford, 19 Dec. 1623 (MS p. 114); Winthrop, "Modell" (MHS Coll. 3:VII p. 47);
       Bradford on the Pequot fort, 1637 (MS p. 223), the rest of his sentence behind the link */
-   end:{head:"Plimoth Plantation — Complete",yr:"Chapter XI · summer 1623",nextWorld:null,
+   end:{head:"Plimoth Plantation — Complete",yr:"Chapter XI · summer 1623",nextWorld:"ch12",nextLabel:"As a Citty upon a Hill — Chapter XII",
      body:"<p>John Robinson, from Leiden, December 1623: “if you had converted some, before you had killed any”.</p>"+
        "<p>John Winthrop, 1630: “wee shall be as a citty upon a hill. The eies of all people are uppon us”.</p>"+
        "<p>In 1637 the English burned a Pequot fort: about four hundred Pequot people, many burned in their houses, by Bradford’s report.</p>"+
        "<details><summary>Read the source in full <small>(teachers: graphic)</small></summary><p>Bradford, who was not there: “It was conceived they thus destroyed about 400. at this time. It was a fearfull sight to see them thus frying in ye fyer”.</p></details>"}},
+  {n:"XII",yr:"1629–37",t:"As a Citty upon a Hill",d:"London, the Arbella, Boston, Salem, Saybrook, the Pequot country and Newtown — August 1629 to November 1637",
+   ready:true,world:"ch12",pace:2.5,near:9,
+   /* the content note (record, "Content and framing"): disease, killings on both sides, a town
+      burned with its people, remains as trophies, captives enslaved, period words */
+   intro:function(){ return "In 1630 a company carried its charter to New England. You may know “a city upon a hill” and “religious freedom”: here is who decided. Disease, killings on both sides, a town burned with its people, remains sent as trophies, captives enslaved, period words: in the sources’ words, none of it shown."; },
+   obj:function(){ return "Live eight scenes, 1629 to 1637. After each, sort the people: who had a say, who spoke but did not decide, who had none? Then sit with the Secretary of the General Court."; },
+   goals:function(){
+     const w=bayW(), need=bayNeed();
+     return [
+       {t:"Live the eight years ("+(w.day+1)+" of "+BAY_DAYS.length+")",done:w.day>=BAY_DAYS.length-1&&!!w.did.closed},
+       {t:need?BAY_DUTY[need]:"Go on",done:!need},
+       {t:"Ask John Winthrop, Roger Williams and Lion Gardener what they know",done:BAY_NPCS.every(function(n){return npcDone(n.id);}),opt:true},
+       {t:"Sit with the Secretary of the General Court",done:!!w.done,goal:true,locked:!(w.day>=BAY_DAYS.length-1&&w.did.closed)}
+     ]; },
+   status:function(){ const w=bayW(), sd=bayDay(), need=bayNeed();
+     if(w.done)return "Chapter complete";
+     if(w.did.closed)return "1638 · the Secretary is waiting";
+     return sd.date.split(" — ")[0]+" · "+(need?BAY_DUTY[need].charAt(0).toLowerCase()+BAY_DUTY[need].slice(1):"go on when you are ready"); },
+   next:function(){ const w=bayW(), need=bayNeed();
+     if(need){const c=findSpot(function(it){return it.action==="bay"&&it.data&&it.data.kind===need;});if(c)return {it:c,why:"what the day asks"};}
+     const o=findSpot(function(it){return it.id==="next"||it.id==="record";});
+     if(o)return {it:o,why:w.did.closed?"the chapter ends here":"the next date"};
+     return null; },
+   /* the Treaty of Hartford (CT lesson's modern-spelling text); the Pequot Museum booklet (2023);
+      the Body of Liberties (Whitmore 1889); MBR i p. 253; WJ ii p. 138 (modern spelling) */
+   end:{head:"As a Citty upon a Hill — Complete",yr:"Chapter XII · November 1637",nextWorld:null,
+     body:"<p>Hartford, 1638: the Pequot “shall no more be called Pequots”. The Pequot Museum names Robin Cassasinnamon “the Pequot’s first leader following the 1637 massacre”.</p>"+
+       "<p>The Body of Liberties, 1641: “There shall never be any bond slaverie … unles it be lawfull Captives taken in just warres”.</p>"+
+       "<p>In 1639 the court named its college Harvard. In 1643 Anne Hutchinson was killed.</p>"}},
 ];
 /* The title screen is shown before any world begins, so it needs painting once here.
    Safe at this point and not one line earlier: CHAPTERS is closed above. */
@@ -36842,6 +38128,17 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"27 November 2026 · latest",
+   head:"Chapter XII: As a Citty upon a Hill",
+   lines:[
+     "<b>A new chapter: Massachusetts Bay, 1629 to 1637</b>",
+     "A company that took its charter across the ocean, the Arbella and Winthrop’s sermon, Boston’s first hungry year, the General Court, Roger Williams, the Pequot War, and Anne Hutchinson’s trial.",
+     "<b>A note for teachers</b>",
+     "This chapter includes deaths from disease, including children, killings on both sides, including of women and children, a town burned with its people, remains sent as trophies, captives enslaved and shipped away, and period words. All of it is told in words, with the writer named, and none of it is drawn. The fort at Mystic is never shown.",
+     "<b>Who had a say?</b>",
+     "After each scene you sort the people of its decision: who had a say, who spoke but did not decide, and who had no say at all.",
+     "<b>Where to find it</b>",
+     "Pass Chapter XI’s muster and its ending leads on to Chapter XII. If you passed it before today, Chapter XII is already open in the chapter list."]},
+  {when:"27 November 2026",
    head:"Chapter XI: Plimoth Plantation",
    lines:[
      "<b>A new chapter: Plymouth, 1620 to 1623</b>",
@@ -38290,7 +39587,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1715";
+const BUILD="20261127-2107";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
