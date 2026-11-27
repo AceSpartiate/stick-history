@@ -49,6 +49,9 @@ VOICES = {
     "wyatt": (24, 0.96), "pace": (27, 0.99), "nuce": (26, 0.93), "gsandys": (25, 0.95), "frethorne": (25, 1.08),
     # Chapter XI
     "bradford": (27, 0.95), "winslow": (24, 1.04), "cushman": (26, 0.97), "weston": (25, 1.02), "carver": (24, 0.93),
+    # Chapter XII (Hutchinson is voice:"female", so FEMALE is used for her whatever this says)
+    "winthrop": (26, 0.94), "dudley": (27, 0.93), "williams": (24, 1.05), "endecott": (25, 1.00),
+    "gardener": (27, 0.99), "mason": (26, 0.96), "underhill": (25, 1.04), "hutchinson": (21, 1.0),
 }
 FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 
