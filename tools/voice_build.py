@@ -54,6 +54,8 @@ SAY = [(r"\bKecoughtan\b", "Kick-oh-tan"), (r"\bPaspahegh\b", "Pass-pa-hay"),
 
 
 def fnv1a(s):
+    # a stop after a closing quote is a pause, not a new sentence: index.html voiceKey() ignores it too
+    s = re.sub(r'([”’)\]])\.$', r'\1', s)
     h = 0x811C9DC5
     for b in s.encode("utf-8"):
         h ^= b

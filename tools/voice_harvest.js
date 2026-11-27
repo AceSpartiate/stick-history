@@ -45,6 +45,29 @@
      sentences were never recorded (found 2026-11-26). Read them out of the source text. */
   for(const m of src.matchAll(/\b(?:narrate|say|line):\s*("(?:[^"\\\n]|\\.)*")/g)){
     try{const s=JSON.parse(m[1]).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();if(prose(s))add(s,'narrator');}catch(e){}}
+  /* ---- EVERY STRING IN THE CODE, NOT ONLY THE TABLES ----
+     Chapters VI-VIII keep quizzes, sheet rows and results inside the functions that open
+     them (leafQuiz("...", ...)), where no top-level name reaches: 37 of 52 lines spoken in
+     one Chapter VIII run had no recording and fell back to the browser's robotic voice
+     (owner, 27 Nov). So every double-quoted literal in the script is read, prose-filtered. */
+  const script=src.slice(src.indexOf('<script'));
+  const lit=s=>{try{return JSON.parse(s);}catch(e){return null;}};
+  const clean=v=>String(v).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+  const LIT=/"(?:[^"\\\n]|\\.)*"/g;
+  for(const m of script.matchAll(LIT)){
+    const v=lit(m[0]);if(v==null)continue;const c=clean(v);
+    if(prose(c)&&(/\s/.test(c)||/^[A-Z][a-z]{3,}[.!?]?$/.test(c)))add(c,'narrator');
+    if(/<b>|<p>|<br>/i.test(v))for(const p of v.split(/<\/?(?:b|p|br)\s*\/?>/i)){const q=clean(p);if(prose(q)&&/\s/.test(q))add(q,'narrator');}}
+  /* counts said aloud: "You answered "+right+" of "+n+"..." for every count a paper can give */
+  const TPL=/("(?:[^"\\\n]|\\.)*")\s*\+\s*[\w.$()\[\]]+\s*\+\s*("(?:[^"\\\n]|\\.)*")(?:\s*\+\s*[\w.$()\[\]]+\s*\+\s*("(?:[^"\\\n]|\\.)*"))?/g;
+  for(const m of script.matchAll(TPL)){
+    const tg=x=>x==null?null:x.replace(/<[^>]*>/g,'');
+    const a=tg(lit(m[1])),b=tg(lit(m[2])),c=m[3]?tg(lit(m[3])):null;if(a==null||b==null)continue;
+    if(!/^(?:You|Asked|It passed)\b/.test(a)||!/^ of\b| of $/.test(b))continue;
+    for(let i=0;i<=8;i++){if(c==null){add(clean(a+i+b),'narrator');continue;}
+      for(let j=1;j<=8;j++)if(i<=j)add(clean(a+i+b+j+c),'narrator');}}
+  /* and whatever this session actually spoke without a recording (sayPump writes VO_MISS) */
+  try{for(const t of (window.VO_MISS||[]))add(clean(t),'narrator');}catch(e){}
   const panels=[];
   closeAllModals();const nb=document.getElementById('btnNotes');if(nb){nb.click();await new Promise(r=>setTimeout(r,300));}
   for(const el of document.querySelectorAll('[data-read]')){try{const t=readableText(el);if(t)panels.push(t);}catch(e){}}

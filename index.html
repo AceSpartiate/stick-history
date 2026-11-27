@@ -10257,6 +10257,10 @@ const VO_CAN=(function(){try{return /^https?:$/.test(location.protocol)&&!!windo
 const SPEECH_OK=SYNTH_OK||VO_CAN;
 let VO_IDS=null, VO_EL=null, VO_PRE=null, VO_TOK=0;
 function voiceKey(t){
+  /* a stop added after a closing quote (readableText, below) is a pause, not a different
+     sentence: the key ignores it, so the data's line and the panel's line share one recording.
+     tools/voice_build.py fnv1a() does the same. */
+  t=String(t).replace(/([”’)\]])\.$/,"$1");
   const b=new TextEncoder().encode(t);let h=0x811c9dc5;
   for(let i=0;i<b.length;i++){h^=b[i];h=Math.imul(h,0x01000193)>>>0;}
   return ("0000000"+h.toString(16)).slice(-8);
@@ -10264,6 +10268,7 @@ function voiceKey(t){
 if(VO_CAN)fetch("assets/voice/index.json",{cache:"no-cache"})
   .then(function(r){return r.ok?r.json():null;})
   .then(function(j){if(j&&j.ids)VO_IDS=new Set(j.ids);}).catch(function(){});
+const VO_MISS=[];   /* spoken lines that had no recording this session (see sayPump) */
 function voPlaying(){return !!(VO_EL&&!VO_EL.paused&&!VO_EL.ended);}
 /* the token retires every callback of a recording that has been stopped or replaced */
 function voStop(){VO_TOK++;if(VO_EL){try{VO_EL.onended=VO_EL.onerror=null;VO_EL.pause();}catch(e){}}}
@@ -10429,6 +10434,11 @@ function sayPump(){
         return;
       }catch(e){item.noRec=true;}
     }
+    /* ---- A LINE WITH NO RECORDING IS A BUG, SO IT IS WRITTEN DOWN ----
+       Owner, 27 Nov: some voices sounded "like a computer, very robotic". They were the
+       browser's own voice, standing in for lines the harvest never found: 37 of 52 in one
+       run of Chapter VIII. Every miss lands here, and tools/voice_harvest.js records them. */
+    else if(VO_MISS.length<2000&&VO_MISS.indexOf(item.text)<0)VO_MISS.push(item.text);
   }
   /* no recording and no speech engine: this piece is skipped rather than stalling */
   if(!SYNTH_OK){sayPump();return;}
@@ -10582,7 +10592,10 @@ function readableText(el){
              into the next sentence: "Patch Notes 9 November 2026 latest Every line...", one
              breath. A stop gives the voice its pause, and gives every sentence the same
              edges it has in the data, which is what lets the recorded narration find it. */
-          if(!/[.!?:;,”’)\]]$/.test(t)){
+          /* ...and a block that ENDS on a closing quote with no stop inside it (a sheet row:
+             Smith: “as not seeming well contented”) ran into the next row the same way; one
+             breath across three rows is a line no recording can match (27 Nov) */
+          if(!/[.!?:;,”’)\]]$/.test(t)||(/[”’)\]]$/.test(t)&&!/[.!?,;:][”’)\]]+$/.test(t))){
             let b=node;
             try{while(b&&b!==el&&getComputedStyle(b).display==="inline")b=b.parentNode;}catch(e){}
             if(b&&(b.textContent||"").replace(/\s+/g," ").trim()===t)t+=".";
@@ -31902,7 +31915,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0518";
+const BUILD="20261127-0530";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
