@@ -26575,7 +26575,10 @@ const WORK_PROP={
   bar:function(){const g=new Geo(), iron=RGB(0x4e5154);g.beam8([0,0.15,0],[0,-0.75,0.1],0.04,0.03,iron,iron);return g.mesh(false,false);},
   trowel:function(){const g=new Geo(), wood=RGB(0x7a5a3a), steel=RGB(0x9a9da0);
     g.beam8([0,0,0],[0,-0.16,0.02],0.03,0.03,wood,wood);g.box(0,-0.22,0.06,0.09,0.02,0.14,steel);return g.mesh(false,false);},
-  bailer:function(){const g=new Geo(), wood=RGB(0x6a4c30);g.oct(0,0.05,-0.25,-0.1,0.14,0.18,0.16,0.2,0.02,wood,wood);return g.mesh(false,false);}};
+  bailer:function(){const g=new Geo(), wood=RGB(0x6a4c30);g.oct(0,0.05,-0.25,-0.1,0.14,0.18,0.16,0.2,0.02,wood,wood);return g.mesh(false,false);},
+  /* play-test, 27 Nov: a quill, for entering a book at a table */
+  quill:function(){const g=new Geo(), vane=RGB(0xe8e2d0), ink=RGB(0x1c1a18);
+    g.beam8([0,-0.02,0],[0,-0.3,0.05],0.012,0.008,ink,ink);g.beam8([0,0.02,0],[0,0.32,-0.05],0.05,0.015,vane,vane);return g.mesh(false,false);}};
 /* what a carrier carries, held against the chest: in the body's own space */
 const WORK_LOAD={
   cask:function(){const g=new Geo(), st=RGB(0x7a5a3a), hp=RGB(0x3e3a34);
@@ -26595,7 +26598,7 @@ function workMan(root,eq,x,z,yaw,task,opt){
   return workAdd(f,task,opt||{});
 }
 const WORK_TILT={pan:1.2,spade:0.95,hammer:0.25,paddle:0.7,bar:0.8,trowel:0.9,bailer:1.0};
-const WORK_TOOL={dig:"spade",chop:"axe",hammer:"hammer",pan:"pan",stir:"paddle",bail:"bailer",trowel:"trowel",row:"paddle",pry:"bar"};
+const WORK_TOOL={dig:"spade",chop:"axe",hammer:"hammer",pan:"pan",stir:"paddle",bail:"bailer",trowel:"trowel",row:"paddle",pry:"bar",write:"quill"};
 function workAdd(f,task,opt){
   const p=f.userData.parts;
   const e={f:f,p:p,task:task,opt:opt,seed:srand(f.position.x*1.7+f.position.z*3.1)*6.28,t:0,last:0,n:0,
@@ -26693,6 +26696,12 @@ function workPose(e,t){
     const sc=Math.sin(t*2.4+sd);
     S("shoulderR",-0.9+sc*0.25);S("elbowR",-0.6-Math.abs(sc)*0.2);S("shoulderL",-0.6);
     if(p.neck)p.neck.rotation.x=0.35;
+  } else if(task==="write"){
+    /* bent over a table: the pen hand moves along a line in small strokes, and back for the next */
+    const ph=(t*0.45+sd/6.28)%1, sc=Math.sin(t*11+sd)*0.05;
+    if(p.body)p.body.rotation.x=0.24;
+    S("shoulderR",-0.85+ph*0.22+sc);S("elbowR",-1.0+sc);S("shoulderL",-0.55);S("elbowL",-0.7);
+    if(p.neck)p.neck.rotation.x=0.4;
   } else if(task==="row"){
     const sw=Math.sin(t*1.7+sd);
     if(p.body)p.body.rotation.x=0.25*sw;
@@ -26784,7 +26793,12 @@ function updateWork(dt){
 function playerDoes(task,secs,narr,opt,after){
   if(!player){if(after)after();return;}
   const e=workAdd(player,task,opt||{});
-  const a=player.rotation.y+0.9, px=player.position.x, py=player.position.y, pz=player.position.z;
+  const px=player.position.x, py=player.position.y, pz=player.position.z;
+  /* play-test, 27 Nov: barring Pace's door, the shot over the player's shoulder stood inside the
+     house and showed a wall. The first side whose line to the player is clear is taken */
+  let a=player.rotation.y+0.9;
+  if(WORLD.blocked)for(const o of [0.9,-0.9,2.0,-2.0,Math.PI]){const t=player.rotation.y+o;
+    if(![0.4,0.7,1].some(function(k){return WORLD.blocked(px+Math.sin(t)*7*k,pz+Math.cos(t)*7*k);})){a=t;break;}}
   playCutscene({skippable:true,steps:[
     {cam:{to:[px+Math.sin(a)*7,py+5.5,pz+Math.cos(a)*7],look:[px,py+2.6,pz],cut:true},t:secs,narrate:narr}]},
     function(){workRemove(e);if(after)after();});
@@ -31124,7 +31138,7 @@ const SKY_OPEN=[
   /* GH, Tyler p. 357 */
   {t:"Jack of the Feather",b:"<p>Early March 1622. Word comes that Nemattanew, whom the English call Jack of the Feather, has been shot.</p><p>Nothing of it is shown.</p>"},
   /* Waterhouse (Kingsbury III:555); 22 March 1622 OS was a Friday */
-  {t:"Pace’s house",b:"<p class=\"note\">This scene is the night before a day of killing, 22 March 1622. The killing is not shown. It is told in documents.</p><p>Thursday 21 March, at night. Richard Pace’s house, across the James from James City.</p>"},
+  {t:"Pace’s house",b:"<p class=\"note\">This scene is the night before a day of killing, 22 March 1622. The killing is not shown. It is told in documents.</p>"},   /* play-test, 27 Nov: a second paragraph repeated the date line */
   /* GH, Tyler pp. 369, 377-378 */
   {t:"Drawing in",b:"<p>Spring 1622. The outlying plantations are abandoned. “For want of Boats” their cattle and goods are left.</p><p>At Elizabeth City, Captain Nuce takes his neighbours in.</p>"},
   /* the Company, 1 Aug. 1622 (Kingsbury III:672); GH, Tyler pp. 385-386 */
@@ -31265,6 +31279,12 @@ function skyAct(d){
        ["The Council in Virginia","Not its word","<p>The Council wrote of placing them with no supplies. “Sold” is Tyler’s word, in 1907.</p>"]],"chests");
     return;
   }
+  /* play-test, 27 Nov: "Write it in" opened the sheet with nothing written; the entry is made first */
+  if(d.kind==="book"&&!d.worked){
+    d.worked=true;priceFace(d,3.1);   /* the table's collider runs 2.75 out from its centre */
+    playerDoes("write",3,"Each husband owes 120 pounds of the best leaf for her passage.",{},function(){skyAct(d);});
+    return;
+  }
   if(d.kind==="book"){
     /* Kingsbury III:494, 505 */
     skyQuiz("James City · the tobacco book","120 pounds of leaf",
@@ -31299,7 +31319,8 @@ function skyAct(d){
   if(d.kind==="youths"){
     playCutscene({skippable:true,steps:SKY_YOUTHS()},function(){skyDone("youths");
       /* GH, Tyler p. 357 */
-      fortResult("Two things","<p>Smith’s book: Nemattanew’s people thought him “immortall from any hurt could bee done him by the English”.</p><p>That is the English report of what they believed.</p>",["+6 Ink"]);});
+      /* play-test, 27 Nov: was titled "Two things", which the card below did not explain */
+      fortResult("Why he asked","<p>Smith’s book: his people thought him “immortall from any hurt could bee done him by the English”.</p><p>That is an English report of what they believed.</p>",["+6 Ink"]);});
     return;
   }
   if(d.kind==="sky"){
@@ -31353,7 +31374,7 @@ function skyAct(d){
   }
   if(d.kind==="well"&&!d.worked){
     d.worked=true;priceFace(d,2);
-    playerDoes("dig",4.5,"A well for fresh water. The river and creeks here are brackish.",{},function(){
+    playerDoes("dig",4.5,"A well for fresh water. The river and creeks here are brackish.",{heap:workHeap(worldRoot,9.5,14.5,0x5e4a32,8)},function(){
       if(SKY.plot)SKY.plot.visible=true;skyAct(d);});
     return;
   }
@@ -31530,9 +31551,10 @@ function SKY_CROSSING(){
     {spawn:{id:"boat",make:function(){return skyBoat([SKY_PEOPLE[2].eq,me]);},at:[18,0,84],face:0}},
     {fade:"in",cam:{to:[-4,8,60],look:[18,1,100],cut:true},t:4.5,move:{id:"boat",to:[18,0,120],face:0},
      narrate:"Before day, Pace rowed over the river to James City."},
-    {cam:{to:[30,9,110],look:[18,1,160]},t:5,move:{id:"boat",to:[18,0,180],face:0},
+    /* play-test, 27 Nov: these two shots were from astern, where the oars cannot be seen; now abeam */
+    {cam:{to:[0,5,146],look:[18,1,156]},t:5,move:{id:"boat",to:[18,0,180],face:0},
      narrate:"Waterhouse: the river there is “neere three miles in bredth”."},
-    {cam:{to:[2,7,170],look:[18,1,230]},t:5,move:{id:"boat",to:[18,0,240],face:0},
+    {cam:{to:[36,5,212],look:[18,1,222]},t:5,move:{id:"boat",to:[18,0,240],face:0},
      narrate:"He gave notice to the Governor. Places that got word in time stood on guard."},
     {fade:"out",t:1,do:function(){skyRowersOff();}}];
 }
@@ -31540,10 +31562,12 @@ function SKY_CROSSING(){
 function SKY_BOAT(){
   const me=Object.assign({},S.equip);
   return [
-    {spawn:{id:"boat",make:function(){return skyBoat([crowdEq("hand",52),me,crowdEq("hand",53),crowdEq("boy",54)]);},at:[20,0,78],face:Math.PI/2}},
-    {fade:"in",cam:{to:[2,8,58],look:[30,1,78],cut:true},t:4.5,move:{id:"boat",to:[70,0,78],face:Math.PI/2},
+    {do:function(){if(SKY.moor)SKY.moor.visible=false;},
+     spawn:{id:"boat",make:function(){return skyBoat([crowdEq("hand",52),me,crowdEq("hand",53),crowdEq("boy",54)]);},at:[24,0,86],face:Math.PI/2}},
+    /* play-test, 27 Nov: it started at (20,78), lying across the end of the landing */
+    {fade:"in",cam:{to:[2,8,64],look:[30,1,86],cut:true},t:4.5,move:{id:"boat",to:[70,0,86],face:Math.PI/2},
      narrate:"Up to James Town by night, load the next day, home in the afternoon."},
-    {cam:{to:[70,8,60],look:[110,1,80]},t:5,move:{id:"boat",to:[140,0,78],face:Math.PI/2},
+    {cam:{to:[70,8,66],look:[110,1,86]},t:5,move:{id:"boat",to:[140,0,86],face:Math.PI/2},
      narrate:"Then away again in the night. Rain or wind, they lie in the boat."},
     {fade:"out",t:1,do:function(){skyRowersOff();}}];
 }
@@ -31628,7 +31652,7 @@ SITE_TERRAIN.nuce={sea:58,shore:30,flat:-12,deep:-1.4,fall:0.015,rise:1.4,inland
 
 registerWorld("ch10",function(root){
   const w=skyW(), sd=skyDay(), where=sd.where;
-  SKY.lit=false;SKY.night=!!sd.night;SKY.later=[];SKY.plot=null;SKY.cut=null;BLAZE.fires.length=0;
+  SKY.lit=false;SKY.night=!!sd.night;SKY.later=[];SKY.plot=null;SKY.cut=null;SKY.moor=null;BLAZE.fires.length=0;
   skyRowersOff();
   let G, spots={}, at=[0,20], face=Math.PI, nextAt=null, look0=0, pitch0=0.30;
   const duty=function(id,label,x,z,data){
@@ -31640,9 +31664,15 @@ registerWorld("ch10",function(root){
   if(where==="fort"){
     const view=Object.assign({},fortW(),{epi:true,stretch:4,attack:null});
     buildFortWorld(root,view,{ships:["discovery"],people:false,record:false,winter:w.day===6});
-    G=fortGround;nextAt=[-44,23];at=[0,-2];presTable(root,G,-44,19.5);
-    /* the 1607 tents go and framed houses stand on their sites, as in Chapter IX */
-    SKY.cut={tents:STARVE_TENTS.slice()};
+    /* play-test, 27 Nov: "Whose Account?" and the commissioner's spot were between the table and
+       the river wall, so the camera behind a player facing the table stood outside the palisade
+       and showed only stakes. The player now comes to the table from inside the fort, and the
+       commissioner sits on the wall side of it */
+    G=fortGround;nextAt=[-44,14.5];at=[0,-2];presTable(root,G,-44,19.5);
+    /* the 1607 tents go and framed houses stand on their sites, as in Chapter IX.
+       play-test, 27 Nov: two of the camp's eight tents are not among STARVE_TENTS and stood on in
+       1621-24, one over the start and one behind Wyatt; they go too, with nothing built there */
+    SKY.cut={tents:STARVE_TENTS.concat([[0.8,-10.5],[-14.6,5.1]])};
     STARVE_TENTS.filter(function(t){return !(t[0]===22&&t[1]===-22);}).forEach(function(t){leafHouse(root,G,t[0],t[1],0);});
     if(w.day===0){
       spots={wyatt:[-20,-2,2.6],yeardley:[-36,-2,2.4]};
@@ -31651,13 +31681,23 @@ registerWorld("ch10",function(root){
       captBarge(root,G,10,80,0.2);
       [[4,60,3.0,1],[7,61.5,-2.9,0],[1,62,2.8,0],[10,59.5,-2.6,1]].forEach(function(a,i){
         const f=englishWoman(!!a[3]);f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));});
-      workMan(root,crowdEq("hand",260),0,40,Math.PI,"carry",{from:[0,46],to:[0,15],load:"chest",speed:2.8,drop:workStack(root,-3.4,13.6,"chest",6).drop});
+      /* play-test, 27 Nov: the carrier took each chest up from bare sand; the landed chests wait at the shore */
+      [[0.4,47.2,0.25],[3.1,47.8,-0.3],[1.6,49.6,0.1]].forEach(function(a){const m=WORK_LOAD.chest();m.scale.setScalar(FIG_SCALE);
+        m.position.set(a[0],G(a[0],a[1])+0.5,a[1]);m.rotation.y=a[2];root.add(m);});
+      /* play-test, 27 Nov: workStack's cask spacing ran the chests together into two long benches, the
+         upper one floating; each chest is set down on its own, the second row resting on the first */
+      const pile=[[-4.6,13.2,0.1,0],[-2.4,13.9,-0.2,0],[-3.5,15.6,0.3,0],[-4.6,13.2,0.25,1],[-2.4,13.9,-0.1,1],[-3.5,15.6,0.15,1]];
+      let piled=0;
+      const drop=function(){if(piled>=pile.length)return;const a=pile[piled++], m=WORK_LOAD.chest();m.scale.setScalar(FIG_SCALE);
+        m.position.set(a[0],G(a[0],a[1])+0.5+a[3]*1.08,a[1]);m.rotation.y=a[2];root.add(m);};
+      workMan(root,crowdEq("hand",260),0,40,Math.PI,"carry",{from:[0,46],to:[0,15],load:"chest",speed:2.8,drop:drop});
       starveChest(root,G,5,16);
       duty("chests","The Women’s Chests",5,19.5,{kind:"chests",verb:"Carry one",face:[5,16]});
-      duty("book","The Tobacco Book",-30,8,{kind:"book",verb:"Write it in"});presTable(root,G,-30,4);
+      duty("book","The Tobacco Book",-30,8,{kind:"book",verb:"Write it in",face:[-30,4]});presTable(root,G,-30,4);
       duty("muster","The Muster Roll",14,11.5,{kind:"muster",after:"book",verb:"Read it"});starveChest(root,G,14,8);
       starveChest(root,G,-44,2.5);
-      workMan(root,crowdEq("hand",261),20,-20,0.4,"hammer");
+      /* play-test, 27 Nov: he hammered at the air at (20,-20); he works at the front wall of the house at (27,-41) */
+      workMan(root,crowdEq("hand",261),30.5,-35.3,Math.PI,"hammer");
     }
     if(w.day===1){
       spots={wyatt:[-20,-2,2.6]};
@@ -31665,7 +31705,7 @@ registerWorld("ch10",function(root){
       duty("youths","The River Gate",3,34,{kind:"youths",after:"cap",verb:"Look"});
       duty("sky","Two Reports",-44,6,{kind:"sky",after:"youths",verb:"Read them"});starveChest(root,G,-44,2.5);
       starveChest(root,G,14,8);presTable(root,G,-30,4);
-      workMan(root,crowdEq("hand",262),34,-26,-0.6,"dig");
+      workMan(root,crowdEq("hand",262),34,-26,-0.6,"dig",{heap:workHeap(root,32,-23,0x5e4a32,26)});   /* play-test, 27 Nov: the earth goes somewhere */
       workMan(root,crowdEq("hand",263),0,40,Math.PI,"carry",{from:[0,46],to:[0,15],load:"wood",speed:3});
     }
     if(w.day===6){
@@ -31677,8 +31717,8 @@ registerWorld("ch10",function(root){
       workMan(root,crowdEq("hand",264),20,-20,0.4,"chop",{target:[21.5,-17]});
       priceLogs(root,G,[[22,-16.5,0.3,6]]);
       if(w.did.closed){nextAt=null;
-        duty("record","The King’s Commissioner",-44,23,{kind:"record",verb:"Close the chapter’s record"});
-        const cm=buildFigure(crowdEq("gent",48));cm.position.set(-44,G(-44,16.6),16.6);cm.rotation.y=0;root.add(cm);solid(-44,16.6,1,1,LVL.MAIN,0);}
+        duty("record","The King’s Commissioner",-44,14.5,{kind:"record",verb:"Close the chapter’s record"});
+        const cm=buildFigure(crowdEq("gent",48));cm.position.set(-44,G(-44,22.4),22.4);cm.rotation.y=Math.PI;root.add(cm);solid(-44,22.4,1,1,LVL.MAIN,0);}
     }
   }
   if(where==="pace"){
@@ -31710,8 +31750,10 @@ registerWorld("ch10",function(root){
     presTable(root,G,-30,14);duty("list","The List of the Dead",-30,18,{kind:"list",verb:"Read it"});
     starveChest(root,G,16,30.5);duty("count","Three Counts",16,34,{kind:"count",after:"list",verb:"Weigh them"});
     starveChest(root,G,-14,30.5);
-    workMan(root,crowdEq("hand",270),8,-18,Math.PI,"hammer");
-    workMan(root,crowdEq("hand",271),-34,4,0,"carry",{from:[-34,4],to:[-4,-14],load:"wood",speed:2.6});
+    /* play-test, 27 Nov: the hammerer stood five paces short of the house at (6,-28) and the wood
+       vanished at the far end; he is at its wall, and the wood is stacked by it */
+    workMan(root,crowdEq("hand",270),10,-22.3,Math.PI,"hammer");
+    workMan(root,crowdEq("hand",271),-34,4,0,"carry",{from:[-34,4],to:[-4,-14],load:"wood",speed:2.6,drop:workStack(root,-4,-16.5,"wood",9).drop});
     at=[0,28];nextAt=[26,22];starveChest(root,G,26,18.5);
   }
   if(where==="pamunkey"){
@@ -31734,7 +31776,8 @@ registerWorld("ch10",function(root){
     starveChest(root,G,22,42.5);duty("chauco","Chauco’s Message",22,46,{kind:"chauco",after:"letters",verb:"Read it"});
     starveChest(root,G,-28,42.5);
     at=[8,52];nextAt=[-20,30];starveChest(root,G,-20,26.5);
-    face=Math.atan2(-258,-82);look0=Math.atan2(258,82);pitch0=0.12;
+    /* play-test, 27 Nov: at 0.12 the far fires sat at the top edge, under the objective line */
+    face=Math.atan2(-258,-82);look0=Math.atan2(258,82);pitch0=-0.08;
   }
   if(where==="martins"){
     /* Martin's Hundred in 1623: "of all theyr houses there is butt 2 lefte and a peece of a Church"
@@ -31744,8 +31787,14 @@ registerWorld("ch10",function(root){
     leafHouse(root,G,-16,-18,0);leafHouse(root,G,16,-22,0);
     skyRuin(root,G,0,-34);
     leafCorn(root,G,18,-2,3,3);
-    workMan(root,crowdEq("hand",290),29,2,-1.57,"dig");
+    workMan(root,crowdEq("hand",290),29,2,-1.57,"dig",{heap:workHeap(root,29,5,0x5e4a32,26)});
     priceLanding(root,G,6,52,82);
+    /* play-test, 27 Nov: "Load the boat" had no boat at the landing, and the cask came from bare
+       planks. The boat lies at the landing's end, where the crossing begins, and the casks wait on
+       the planks; the cutscene's boat takes its place */
+    {const B=new Geo();buildShallop(B,0,-0.3,0,0,0.02);SKY.moor=new THREE.Group();SKY.moor.add(B.mesh(false,false));
+     SKY.moor.position.set(24,0,86);SKY.moor.rotation.y=Math.PI/2;root.add(SKY.moor);
+     const casks=workStack(root,9.5,50.5,"cask",3);casks.drop();casks.drop();}
     spots={frethorne:[2,12,2.8]};
     duty("boat","The Boat",6,49,{kind:"boat",verb:"Load it",face:[6,53]});
     starveChest(root,G,-6,16.5);skyLoaf(root,G,-6,16.5);
@@ -33865,7 +33914,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1039";
+const BUILD="20261127-1059";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
