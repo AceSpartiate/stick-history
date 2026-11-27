@@ -2846,6 +2846,7 @@ const FIG_FT=1/FIG_SCALE;
        height: 1                       multiplier on top of the age's own scale
        face:  "oval" | "round" | "long" | "square" | "narrow"      the shape of the head
        hair:  "short" | "long" | "cropped" | "receding" | "bald" | "loose" | "bun" | "powhatan"
+              | "plait" | "maid"     (a Powhatan woman, and a maid: see figHead and the look book)
        hairColor: hex                  (HAIR.* for the usual ones; an old man greys by himself)
        beard: "none" | "stubble" | "short" | "full" | "pointed" | "forked" | "moustache"
        beardColor: hex                 defaults to the hair
@@ -2900,7 +2901,7 @@ function lookOf(eq){
   if(own){
     for(const k in own)if(own[k]!==undefined&&own[k]!==null)L[k]=own[k];
     /* a Powhatan woman's hair is not the men's half-shaved fashion */
-    if(L.sex==="f"&&eq.skin==="tidewater"&&!own.hair)L.hair="loose";
+    if(L.sex==="f"&&eq.skin==="tidewater"&&!own.hair)L.hair="plait";
   }
   if(L.age==="old"&&!(own&&own.hairColor))L.hairColor=mixHex(L.hairColor,HAIR.grey,0.72);
   if(L.beardColor===null)L.beardColor=L.hairColor;
@@ -3015,25 +3016,41 @@ function figHead(HD,ex,h,exprKey){
   const hat=h.hat;
   const covered=!!hat&&hat!=="none";
   const H=L.hair;
-  if(H!=="bald"&&H!=="powhatan"&&!(covered&&hat==="coif")){
+  if(H!=="bald"&&H!=="powhatan"&&H!=="maid"&&!(covered&&hat==="coif")){
     if(!covered&&H!=="receding")                                             /* the crown */
       HD.oct(0,-0.012,1.795,1.878,cw*1.04,0.412,cw*0.88,0.36,0.36,hcD,hc);
-    const low=(H==="long"||H==="loose")?1.43:(H==="cropped")?1.64:(H==="receding")?1.57:1.56;
+    const low=(H==="long"||H==="loose"||H==="plait")?1.43:(H==="cropped")?1.64:(H==="receding")?1.57:1.56;
     const top=(H==="receding")?1.74:1.815;
-    const wb=(H==="long")?1.10:(H==="cropped")?1.0:1.04;
-    HD.oct(0,-0.072,low,top,cw*wb,0.33,cw*1.04,0.345,0.40,hcD,hc,0.92);       /* back and sides */
+    /* drawn in toward the nape, so long hair falls behind the neck instead of standing out
+       from it like a board (the first capture of a gentleman from behind) */
+    const wb=(H==="long"||H==="loose"||H==="plait")?0.90:(H==="cropped")?0.98:0.98;
+    const db=(H==="long"||H==="loose"||H==="plait")?0.26:0.33;
+    HD.oct(0,-0.072-(0.33-db)/2,low,top,cw*wb,db,cw*1.04,0.345,0.40,hcD,hc,0.92);       /* back and sides */
     if(!covered&&H!=="receding"&&H!=="cropped")                              /* the hairline */
       HD.box(0,1.808,0.170,cw*0.80,0.045,0.070,hc);
     if(H==="bun")HD.oct(0,-0.235,1.62,1.75,0.15,0.10,0.13,0.09,0.4,hcD,hc);
   }
+  if(H==="maid"){
+    /* a Powhatan maid: "the fore part of their head and sides shauen close; the hinder part
+       very long, which they tie in a pleate hanging downe to their hips" (Percy). The back
+       of the head only; the plait hangs from the chest (below). */
+    HD.oct(0,-0.110,1.520,1.800,cw*0.96,0.250,cw*0.90,0.260,0.40,hcD,hc,0.92);
+  }
   if(H==="powhatan"){
     /* Percy at Kecoughtan: "they shave the right side of their heads with a shell, the
-       left side they weare of an ell long tied up with an artificiall knot". Asymmetric,
-       shaved RIGHT and long LEFT; the roach runs over the crown between them. */
-    HD.oct(-0.03,-0.02,1.790,1.880,0.28,0.38,0.22,0.32,0.40,hcD,hc);
-    HD.box(-0.178,1.640,-0.030,0.060,0.360,0.300,hcD);
-    HD.oct(-0.192,-0.085,1.330,1.470,0.120,0.120,0.135,0.135,0.40,hc,hc);       /* the knot */
-    HD.fine(function(){HD.box(0.186,1.70,-0.03,0.018,0.16,0.28,RGB(mixHex(skinHex,HAIR.black,0.30)));});
+       left side they weare of an ell long tied up with an artificiall knot, with a many of
+       Foules feathers sticking in it". Asymmetric: shaved on HIS right, long on HIS left.
+       A figure faces +Z, so his own left is +X - which is NOT the side the old rig names
+       "L" (la/shoulderL hang at -X, his right; see the parts note in buildFigureRaw). The
+       knot used to be at -X, on his right; it is on his left now, as Percy saw it. */
+    HD.oct(0.03,-0.02,1.790,1.880,0.28,0.38,0.22,0.32,0.40,hcD,hc);
+    HD.box(0.178,1.640,-0.030,0.060,0.360,0.300,hcD);
+    HD.oct(0.192,-0.085,1.330,1.470,0.120,0.120,0.135,0.135,0.40,hc,hc);       /* the knot */
+    HD.fine(function(){                                                       /* its feathers */
+      HD.beam8([0.20,1.44,-0.10],[0.27,1.66,-0.20],0.040,0.016,RGB(0x5a4a3a),RGB(0xd8cfbf));
+      HD.beam8([0.19,1.45,-0.06],[0.23,1.70,-0.08],0.034,0.014,RGB(0x3a2e24),RGB(0x8a6a4a));
+    });
+    HD.fine(function(){HD.box(-0.186,1.70,-0.03,0.018,0.16,0.28,RGB(mixHex(skinHex,HAIR.black,0.30)));});
   }
 
   /* ---- beard ---- flat-faced and a shade proud of the jaw, so it reads as hair over it */
@@ -3092,7 +3109,8 @@ function figHead(HD,ex,h,exprKey){
     HD.box(0,1.798,0.178,0.300,0.034,0.040,hc);                              /* hair at the front */
     HD.fine(function(){for(let s=-1;s<=1;s+=2)HD.box(s*0.205,1.585,0.03,0.026,0.15,0.10,LN);});
   }
-  if(L.paint&&!covered)HD.box(0,1.866,-0.01,0.34,0.03,0.36,RGB(0x9a3a24));   /* the crown painted red */
+  /* the crown painted red: a thin plate over the top of the hair, not a cap on it */
+  if(L.paint&&!covered)HD.oct(0,-0.012,1.872,1.886,cw*0.80,0.32,cw*0.70,0.28,0.45,RGB(0x8a3420),RGB(0x9a3a24));
 }
 
 /* ========== THE BODY ==========
@@ -3346,14 +3364,22 @@ function buildFigureRaw(eq,opt){
   }
   /* long hair falls down the back of the CHEST, not the head, so it stays on the back when
      the head turns; behind the back, or the mantle if there is one */
-  if(L.hair==="loose"&&!(L.hat&&L.hat==="coif")){
+  if((L.hair==="loose"||L.hair==="plait"||L.hair==="maid")&&!(L.hat&&L.hat==="coif")){
     const zb=-(L.mantle?0.205:0.140)*bd-0.022;
-    C.box(0,1.21,zb,0.30,0.50,0.045,RGB(shadeHex(L.hairColor,0.85)));
+    if(L.hair==="loose")C.box(0,1.21,zb,0.30,0.50,0.045,RGB(shadeHex(L.hairColor,0.85)));
+    else{
+      /* the plait, to the hips */
+      const pc=RGB(shadeHex(L.hairColor,0.85));
+      C.box(0,1.12,zb,0.075,0.68,0.050,pc);
+      C.fine(function(){for(let i=0;i<6;i++)C.box(0,1.40-i*0.11,zb-0.004,0.090,0.040,0.050,RGB(shadeHex(L.hairColor,0.70)));});
+    }
   }
   /* Newport lost his RIGHT arm in 1590 off Cuba - "strooken off". He commanded this fleet
-     with one arm, and the stump is part of the chest so it bends with it. */
+     with one arm, and the stump is part of the chest so it bends with it. HIS right is -X
+     (see LEFT AND RIGHT below): the stump used to be built at +X, on his left, with the arm
+     the rig calls la kept - so the game showed the wrong arm missing. Corrected 27 Nov. */
   if(eq.arm==="no_right"||eq.arm==="no_left"){
-    const s=eq.arm==="no_right"?1:-1;
+    const s=eq.arm==="no_right"?-1:1;
     C.box(s*shoX,1.30,0,0.145,0.30,0.145,sleeveCol);
     C.box(s*shoX,1.13,0,0.165,0.06,0.165,cuffCol||sleeveCol);
   }
@@ -3483,14 +3509,20 @@ function buildFigureRaw(eq,opt){
   H.mesh=hdMesh;H.fx=fx;H.cur=H.base;
   g.userData.head=H;
   /* only the surviving limb is added, so nothing swings where nothing is */
-  if(eq.arm==="no_right")spine.add(la);
-  else if(eq.arm==="no_left")spine.add(ra);
+  if(eq.arm==="no_right")spine.add(ra);
+  else if(eq.arm==="no_left")spine.add(la);
   else {spine.add(la);spine.add(ra);}
   g.add(ll);g.add(rl);
   /* an old man stands a little bent; the movement pass reads rest.spine as his upright */
   if(age.stoop){spine.rotation.x=age.stoop;neck.rotation.x=-age.stoop*0.6;}
   /* Every joint is named. la/ra/ll/rl are the four the old code knows (the shoulder and hip
-     nodes, so rotating one still swings the whole limb); the rest are what a gesture needs. */
+     nodes, so rotating one still swings the whole limb); the rest are what a gesture needs.
+     LEFT AND RIGHT, SAID PLAINLY: a figure faces +Z, so his own right hand is at -X - and
+     that is the arm this rig has always called la / shoulderL. Every pose in the file is
+     written against these names, so they stay; but "L" here is the -X side, which is HIS
+     RIGHT. It matters wherever the record says which side: Newport's lost right arm
+     (eq.arm "no_right" removes the -X arm, la, and keeps ra), a bow hand, the side a Powhatan man
+     wears his knot (figHead puts it on his left, +X, as Percy describes). */
   g.userData.parts={
     la:la, ra:ra, ll:ll, rl:rl,
     neck:neck, look:neck, spine:spine, chest:spine,
@@ -3559,9 +3591,10 @@ function setExpression(fig,key){
    Chapter I runs 191 draw calls of a 600 ceiling and Chapter II ran 14. So there is
    one kind of person in this game now, and this is how he is put to work.
 
-   NO SPINE, so a stoop is made by tipping the whole man forward and bending his
-   knees under him - which is what a man lifting a boat timber does anyway. When the
-   torso can bend, this is the function that gets better. */
+   A stoop is made by tipping the whole man forward and bending his knees under him -
+   which is what a man lifting a boat timber does anyway. The torso CAN bend now
+   (parts.spine, 27 Nov), and these poses do not use it yet: that is the movement pass,
+   and this is the function that gets better when it comes. */
 function bakeFigure(fig){
   /* A crowd figure is posed once and never moves again, so it has no use for its
      joints afterwards. This walks the finished, POSED figure and merges every mesh
@@ -27551,12 +27584,14 @@ function captCompare(){
    is drawn as a child, in a child's mantle, and nothing else is made of her. */
 /* 27 Nov: the mantle, hair, paint and beads used to be one mesh hung off the NECK joint, so
    the whole deerskin swung round whenever she turned her head. They are the figure's own
-   now - the deerskin wrap and knee-length skirt in the body, the hair down the back of the
-   chest, the paint on the crown - and the head turns on its own. */
+   now - the deerskin wrap and knee-length skirt in the body, the plait down the back of the
+   chest, the paint on the crown - and the head turns on its own. The hair follows Percy and
+   the look book (1.10): a married woman wears it all one length tied in a plait; a maid has
+   the front and sides shaved close and the plait behind. */
 function tidewaterWoman(girl,look){
   const eq={skin:"tidewater",palette:"ink",cloak:"none_cloak",torso:"torso_bare",
             accessory:"none_acc",head:"none_head",build:"build_normal",face:"plain",boy:!!girl,
-            look:Object.assign({sex:"f",hair:"loose",hairColor:0x33251a,paint:!girl,beads:!girl},look||{})};
+            look:Object.assign({sex:"f",hair:girl?"maid":"plait",hairColor:0x33251a,paint:!girl,beads:!girl},look||{})};
   return buildFigure(eq);
 }
 
@@ -35509,7 +35544,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1403";
+const BUILD="20261127-1415";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
