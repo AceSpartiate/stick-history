@@ -3132,9 +3132,13 @@ const PEOPLE_LOOK={
   bradford:{born:1590,face:"long",hair:"long",hairColor:HAIR.brown,beard:"short",
     hat:"capotain",dress:"doublet",mood:"keen",eqx:{accessory:"acc_satchel"},
     colors:{torso:WOOL.tawny,breech:WOOL.russet,stock:WOOL.grey,hat:0x2e2a24}},
-  /* LIFE: the 1651 portrait, the only likeness from life of any of them - long hair, a
-     moustache and a small beard, dark clothes and a white band (from the portrait as
-     remembered, not re-read). Twenty-six in 1621, bare-headed as painted */
+  /* LIFE: the 1651 portrait, painted in London by an unknown artist of the school of Robert
+     Walker, Pilgrim Hall Museum: "the only portrait of a Pilgrim (Edward Winslow) painted from
+     life"; he wears black and white (Pilgrim Hall; Wikimedia catalogue entry, both read 27 Nov).
+     review, 27 Nov: the hair, moustache, small beard and white band are UNVERIFIED - no catalogue
+     text describing them could be read (Pilgrim Hall's portrait handout no longer loads); they
+     were written from memory. Black in 1651 London is fashion, so the 1621 colours stay dark,
+     not black. Twenty-six in 1621, bare-headed as painted */
   winslow:{born:1595,face:"oval",hair:"long",hairColor:HAIR.brown,beard:"pointed",
     hat:"none",dress:"doublet",mood:"keen",
     colors:{torso:0x34303a,breech:0x2e2a2e,stock:WOOL.grey}},
@@ -34973,7 +34977,7 @@ const PLY_DUTY={
   beam:"Raise the cracked beam",speeches:"Read why the Compact was made",compact:"Read the Compact",
   corn:"Read what they took",encounter:"Look at the barricade",sound:"Sound the harbour",
   wood:"Fetch wood for the fires",water:"Carry water for the sick",sick:"Tend the sick",
-  samoset:"Hear who Samoset was",tisquantum:"Read Tisquantum’s story",terms:"Sort the seven terms",plant:"Set the corn, with fish",
+  samoset:"Hear who Samoset was",tisquantum:"Read Tisquantum’s story",terms:"Sort the terms",plant:"Set the corn, with fish",
   harvest:"Bring in the corn",fowling:"Carry in the fowl",winslow:"Read Winslow’s letter",
   snakeskin:"Read the snakeskin’s message",fort:"Square a timber for the fort",plague:"Weigh two accounts",
   court:"Read what the court did",return:"Read two accounts of Wessagusset",plot:"Set corn in your own plot"};
@@ -35027,7 +35031,8 @@ const PLY_NPCS=[
       /* MS pp. 28-29, 37 */
       {t:"What did you change?",wise:true,ink:8,
        reply:"The houses and lands kept at the end, and two days a week for their own work. Both given up, “by necessitie, other wise all had bene dasht”.",
-       insight:{g:"known",b:"Theeves & Bondslaves",s:"Cushman agreed new conditions in London in 1620: no private days, everything shared after seven years. Leiden called them fit “for theeves & bondslaves”."}},
+       /* review, 27 Nov: was "everything shared after seven years"; the change was houses and lands divided with the investors (conditions 5, MS pp. 28-29) */
+       insight:{g:"known",b:"Theeves & Bondslaves",s:"Cushman agreed new conditions in London in 1620: no private days, and houses and lands divided with the investors after seven years. Leiden called them fit “for theeves & bondslaves”."}},
       {t:"What is the common stock?",fair:true,ink:3,
        reply:"His own words: “not giveing almes, but furnishing a store house; no one shall be porer then another for 7. years”."},
       {t:"So the settlers chose to share everything.",wise:false,
@@ -35120,7 +35125,8 @@ const PLY_LOOKS=[
      "“ther sculs and bones were found in many places lying still above ground, where their houses & dwellings had been; a very sad spectackle to behould.”")],
    ["massasoit","Ousamequin (Massasoit)",150,-60,"A very lustie man","<p>Ousamequin, the Massasoit. <i>Mourt’s Relation</i>: “a very lustie man, in his best yeares … graue of countenance”, his face painted “a sad red”.</p><p>It adds that he “trembled for feare”: the writer’s guess.</p>"]],
   /* MS p. 64; Mourt p. [50]; Dexter n. 417; Pilgrim Hall, "National Day of Mourning" (re-read 27 Nov) */
-  [["corbitant","News from Namasket",-30,30,"In ye night","<p>Bradford, August 1621: told Corbitant had threatened Tisquantum, the governor sent Standish’s men “in ye night”, to “cut of Corbitants head” if Tisquantum was dead.</p><p>He lived. Three wounded were “drest & cured”.</p>"],
+  [["corbitant","News from Namasket",-30,30,"In ye night",/* review, 27 Nov: was "Three wounded were"; the raiders wounded them (MS p. 64), and the passive hid who - equal words */
+     "<p>Bradford, August 1621: told Corbitant had threatened Tisquantum, the governor sent Standish’s men “in ye night”, to “cut of Corbitants head” if Tisquantum was dead.</p><p>He lived. Three hurt in the raid were “drest & cured”.</p>"],
    ["woman","At Cummaquid",30,30,"Three sons","<p><i>Mourt’s Relation</i>, July 1621: at Cummaquid an old woman wept when she saw them. Through interpreters: Hunt had carried off her “three sons”.</p><p>She is not named.</p>"],
    ["later","Two Later Voices",-40,4,"Long after",priceCard("Henry Dexter, an editor","1865","on Winslow’s “reioyce together”: “Here began that peculiar New-England festival, — the annual autumnal Thanksgiving”.")+
      priceCard("Wamsutta James, Wampanoag","Plymouth, 1970","“This action by Massasoit was perhaps our biggest mistake.”")]],
@@ -35146,7 +35152,8 @@ const PLY_BOARD={
      {t:"The Compact was America’s first democracy",k:1,res:"It promises “all due submission and obedience”, and never uses the word. A telling that praises the founders."},
      {t:"The forty-one names of the signers",k:1,res:"First printed by Nathaniel Morton in 1669, 49 years later. The signed paper is lost."},
      {t:"Who the “strangers” were who spoke",k:2,res:"Neither Bradford nor <i>Mourt’s Relation</i> names them."}],
-  2:[{t:"They found an empty wilderness",k:1,res:"Bradford found graves, a house, stored corn, and “5. or 6. persons with a dogg”, who ran. A telling that excuses the taking."},
+  /* review, 27 Nov: was "Bradford found graves, a house"; MS p. 48 has Standish's sixteen and "the ruin of a house" (MS p. 49) */
+  2:[{t:"They found an empty wilderness",k:1,res:"Bradford records graves, a ruined house, stored corn, and “5. or 6. persons with a dogg”, who ran. A telling that excuses the taking."},
      {t:"They landed on Plymouth Rock",k:1,res:"Pointed out in 1741 by Elder Thomas Faunce, then ninety-five, from his father’s story. No 1620s source names a rock."},
      {t:"They took the corn, “purposing to give them full satisfaction”: Bradford",k:0,res:"Bradford says they paid the Nauset “about some 6. months afterward”."},
      {t:"They dug up a grave and took things from it",k:0,res:"<i>Mourt’s Relation</i>, 1622. Bradford leaves it out. In 1970 Wamsutta James, Wampanoag, called it robbing graves."}],
@@ -35156,31 +35163,37 @@ const PLY_BOARD={
      {t:"How Bradford’s wife Dorothy died",k:2,res:"Bradford wrote only that she “dyed soone after their arivall”. The drowning story comes from later writers."}],
   4:[{t:"Tisquantum was “a spetiall instrument sent of God”: Bradford",k:0,res:"Bradford’s words, about 1645. The same Bradford tells of his kidnapping, and later says he “plaid his owne game”."},
      {t:"Hunt took him to sell “for slaves in Spaine”: Bradford",k:0,res:"<i>Mourt’s Relation</i>, 1622, counts twenty taken from Patuxet and seven from Nauset."},
-     {t:"He learned English in order to help the Pilgrims",k:1,res:"He learned it as a captive, and in London with the merchant John Slany, years before 1620. A telling that makes him a helper."},
+     {t:"He learned English in order to help the Pilgrims",k:1,res:/* review, 27 Nov: was "He learned it as a captive, and in London with"; the record has only that he "dwelt in Cornehill with master Iohn Slanie" (Mourt p. [36]) */"He had lived in London with the merchant John Slany, years before 1620. A telling that makes him a helper."},
      {t:"What Massasoit understood the terms to mean",k:2,res:"The terms survive only in English. <i>Mourt</i> says the interpreters “did not well expresse” the speech."}],
   5:[{t:"About ninety Wampanoag men with Massasoit, for three days: Winslow",k:0,res:"Winslow’s letter of 11 December 1621, one of only two sources, and the only one to describe the gathering."},
      {t:"Five deer, brought by the Wampanoag: Winslow",k:0,res:"The Wampanoag men “killed fiue Deere” and gave them to the governor, the captain and others."},
      {t:"“great store of wild Turkies” that autumn: Bradford",k:0,res:"In Bradford, years later, as the season’s food, not at the gathering. Winslow says only “fowle”."},
      {t:"Turkey on the table at the gathering",k:2,res:"Winslow writes “fowle”: ducks, geese or turkeys. Nobody can say which."},
-     {t:"The English invited the Wampanoag",k:2,res:"Winslow writes “many of the Indians coming amongst vs”. Some Wampanoag tellings say the guns brought them. Neither is recorded."},
+     {t:"The English invited the Wampanoag",k:2,res:"Winslow writes “many of the Indians coming amongst vs”. A modern telling made with Wampanoag advisers says the guns drew them. Neither is recorded."},
+     /* review, 27 Nov: was "Some Wampanoag tellings say"; the source is the NMAI resource Wampanoag advisers consulted on (record, "Invited, or came because of the guns?") */
      {t:"It was “the First Thanksgiving”",k:1,res:"Henry Dexter, an editor, in 1865, made it the start of the yearly Thanksgiving. A telling that makes a holiday."}],
   6:[{t:"The snakeskin “was a threatening & a chaleng”: Bradford",k:0,res:"Bradford, as “their interpretours” told it: Tisquantum and Hobbamock."},
-     {t:"“the God of the English had it in store”: Winslow, 1624",k:0,res:"Winslow was there. An Englishman told Hobbamock that God held the plague."},
-     {t:"The sachem begged the governor to let out the plague: Morton, 1637",k:1,res:"Thomas Morton, Plymouth’s enemy, not there, fifteen years later. A telling that mocks Plymouth."},
+     {t:"“the God of the English had it in store”: Winslow, 1624",k:0,res:"Winslow lived at Plymouth then. An Englishman told Hobbamock that God held the plague."},
+     {t:"The sachem begged the governor to let out the plague: Morton, 1637",k:1,res:"First told in 1637 by Thomas Morton, Plymouth’s enemy, not there. In Winslow’s 1624 account Hobbamock asks, and nobody begs. A telling that mocks Plymouth."},
+     /* review, 27 Nov: res said only "fifteen years later"; Bradford's rows (c. 1645) are later still, so the line now says why this one is a later addition: its version first appears in 1637 (record, "Morton's version") */
      {t:"An unbroken friendship from 1621",k:1,res:"A softening. The alliance held, “this 24. years”, Bradford wrote, through a palisade, a fort and a demand for a man’s head."},
      {t:"Why Tisquantum stirred fear among his own people",k:2,res:"“plaid his owne game” is Bradford’s judgement. No source has his reasons in his own words."}],
   7:[{t:"Standish “cut of some few of ye cheefe conspirators”: Bradford",k:0,res:"Bradford ordered it, and wrote of it briefly, about 1645, because Winslow had printed it."},
      {t:"Seven Massachusett killed, and the head set up at the fort: Winslow, 1624",k:0,res:"Winslow helped decide it and was not there. He wrote in London, to defend it."},
      {t:"A “pretended” feast, with pork: Morton, 1637",k:1,res:"Thomas Morton, Plymouth’s enemy, who was not there. He calls it “a Massacre”. A telling against Plymouth."},
-     {t:"A plot to destroy Wessagusset",k:2,res:"Two Native informants, a frightened Englishman, and a confession made beside a head. It cannot now be settled."},
+     /* review, 27 Nov: was "A plot to destroy Wessagusset"; the plot IS in the record (Winslow reports it), so the row now asks the open question (record, Disputes 12) */
+     {t:"Whether the Massachusett really plotted against Wessagusset",k:2,res:"Two Native informants, a frightened Englishman, and a confession made beside a head. It cannot now be settled."},
      {t:"“Socialism failed at Plymouth”",k:1,res:"A modern telling. Bradford ended a common field the investors’ contract had set; Winslow blamed hunger."},
      {t:"“a shining city upon a hill”: Winthrop, 1630",k:1,res:"Winthrop wrote “a citty upon a hill”, a warning that failure would be seen. “Shining” is not in his text."}]};
 /* Pilgrim Hall, "The 'First Thanksgiving'"; Smithsonian Torch, 25 Nov. 2021 (both re-read 27 Nov) */
 const PLY_CLOSE={
   5:"<p>Pilgrim Hall Museum: “There are two – and only two – primary source descriptions”. Linda Coombs, Wampanoag, 2021: “In the written record, there’s just a single paragraph that describes it.”</p>",
-  7:"<p>No Wampanoag, Nauset or Massachusett person wrote anything in these years. Every Native sentence here reached us through an English writer.</p>"};
+  7:"<p>No Wampanoag, Nauset or Massachusett person wrote anything in these years. Every Native sentence from those years reached us through an English writer.</p>"};
+/* review, 27 Nov: was "Every Native sentence here"; Wamsutta James's 1970 words are on screen too, in his own voice */
 
-/* ---- THE SEVEN TERMS, SORTED ---- c: 0 the English, 1 the Wampanoag, 2 both (Mourt pp. [37]-[38]) */
+/* ---- THE SEVEN TERMS, SORTED ---- c: 0 the English, 1 the Wampanoag, 2 both (Mourt pp. [37]-[38])
+   review, 27 Nov: the duty said "Sort the seven terms" over six rows; the seventh (King James's "Friend and
+   Alie") is the result card's, so the labels now say "the terms" */
 const PLY_TERMS_K=["The English","The Wampanoag","Both"];
 const PLY_TERMS=[
   {t:"Not “iniure or doe hurt to any of our people”",c:1},
@@ -35355,7 +35368,7 @@ function plyAct(d){
     return;
   }
   if(d.kind==="sick"&&!d.worked){
-    plyWork(d,"tend",4,"Some days two or three die. In three months, half the company.",{});
+    plyWork(d,"tend",4,"Some days two or three die. In two or three months, half the company.",{});/* review, 27 Nov: was "In three months"; Bradford: "in 2. or 3. moneths time" (MS p. 54) */
     return;
   }
   if(d.kind==="sick"){
@@ -35367,10 +35380,11 @@ function plyAct(d){
   /* 4 · patuxet */
   if(d.kind==="samoset"){
     /* Mourt p. [32]; MS p. 56 */
+    /* review, 27 Nov: was "at Monhegan, off Maine, where he came from"; the record has only that he "belonged to ye eastrene parts" (MS p. 56), not Monhegan as his home */
     plyQuiz("Plymouth · 16 March 1621","Well-come",
       priceCard("<i>Mourt’s Relation</i>","1622","Samoset “saluted vs in English, and bad vs well-come, for he had learned some broken English amongst the English men that came to fish at Monchiggon”")+
       "<p>What does his English tell us?</p>",
-      [["English ships had come for years","Fishermen","<p>He learned it from fishermen at Monhegan, off Maine, where he came from. That coast knew English ships long before 1620.</p>"],
+      [["English ships had come for years","Fishermen","<p>He learned it from English fishermen at Monhegan, off Maine. He came from those eastern parts. That coast knew English ships long before 1620.</p>"],
        ["Tisquantum taught him","Not him","<p><i>Mourt</i> says the fishermen at Monhegan taught him. He “belonged to ye eastrene parts”, Bradford says.</p>"],
        ["He had lived in England","Not recorded","<p>Not recorded. <i>Mourt</i> says he learned it from fishermen at Monhegan.</p>"]],"samoset");
     return;
@@ -35460,12 +35474,15 @@ function plyAct(d){
   }
   if(d.kind==="plague"){
     /* GN 1624 pp. 10-11 (re-read on the archive.org text, 27 Nov); NEC pp. 104-105 */
+    /* review, 27 Nov: was "he was there" / "who was there" / "Winslow was present" (here, board 6 and the muster);
+       Winslow went north to the fishing ships after Huddleston's letter in May 1622 (MS pp. 89-90) and the
+       episode is "about the end of May" (Arber p. 528), so his presence at it is not certain. "Lived there" holds */
     plyQuiz("Plymouth · May 1622","The plague buried",
-      priceCard("Edward Winslow","1624; he was there","Hobbamock asked an Englishman if the plague was buried in the store-house. “Who answered no; But the God of the English had it in store, and could send it at his pleasure”")+
+      priceCard("Edward Winslow","1624; he lived there","Hobbamock asked an Englishman if the plague was buried in the store-house. “Who answered no; But the God of the English had it in store, and could send it at his pleasure”")+
       priceCard("Thomas Morton","1637; he was not","the sachem himself asked, and begged the governor to let the plague out on his enemies")+
       "<p>Which is the better witness?</p>",
-      [["Winslow, who was there","Closer","<p>Winslow was there in 1622. Morton wrote fifteen years later, as Plymouth’s enemy. Winslow’s Englishman claims that God holds the plague.</p>"],
-       ["Morton, who disliked Plymouth","Further away","<p>Morton was not there, and wrote in 1637 against Plymouth. Winslow was present.</p>"],
+      [["Winslow, who lived there","Closer","<p>Winslow lived at Plymouth in 1622. Morton wrote fifteen years later, as Plymouth’s enemy. Winslow’s Englishman claims that God holds the plague.</p>"],
+       ["Morton, who disliked Plymouth","Further away","<p>Morton was not there, and wrote in 1637 against Plymouth. Winslow lived there.</p>"],
        ["Neither: they agree","They differ","<p>In Winslow, Hobbamock asks and an Englishman boasts. In Morton, the sachem asks, and begs.</p>"]],"plague");
     return;
   }
@@ -35484,7 +35501,7 @@ function plyAct(d){
     /* GN 1624 pp. 38, 45 (re-read 27 Nov); NEC p. 111 */
     plyQuiz("Plymouth · March 1623","Two words for it",
       leafCard("Edward Winslow","London, 1624; he was not there","Standish came home “and brought the head of Wituwamat with him”. He had orders to, “that hee might be a warning and terrour”. Winslow calls it an “execution”.",
-        "Winslow’s count: seven Massachusett killed. Four of them died in a shut room, taken by deception, and a youth of about eighteen, Wituwamat’s brother, was hanged.")+
+        "Winslow’s count: seven Massachusett killed. Three died in a shut room, taken by deception, and a youth of about eighteen, Wituwamat’s brother, was hanged.")/* review, 27 Nov: was "Four of them died in a shut room ... and a youth ... was hanged" (five); Winslow's four in the room include the youth (Arber pp. 568-569; record, "More deaths") */+
       priceCard("Thomas Morton","Amsterdam, 1637; he was not there","his chapter: “Of a Massacre made upon the Salvages at Wessaguscus”")+
       "<p>Why do their words differ?</p>",
       [["Each wrote for a side","For a side","<p>Winslow helped decide it, and defended it in London. Morton was Plymouth’s enemy. Bradford, who ordered it, wrote of it briefly.</p>"],
@@ -35560,7 +35577,7 @@ function PLY_SOUND(){
     {cam:{to:[-8,6,80],look:[0,1,106]},t:5,move:{id:"boat",to:[-30,0,106],face:Math.PI/2},
      narrate:"Bradford: they found it “fitt for shipping”."},
     {cam:{to:[-20,10,56],look:[-40,2,20]},t:5,
-     narrate:"Ashore were cleared fields and running brooks. Nobody was living there."},
+     narrate:"Ashore were cornfields and running brooks: Patuxet’s, emptied by sickness."},/* review, 27 Nov: was "cleared fields ... Nobody was living there", which reads as the empty-wilderness telling board 2 corrects; MS p. 53 "cornfeilds", Patuxet's (record) */
     {fade:"out",t:1,do:function(){plyRowersOff();}}];
 }
 
@@ -35921,7 +35938,7 @@ registerWorld("ch11",function(root){
     [[160,-62],[150,-72],[164,-72],[146,-64],[158,-78]].forEach(function(a,i){wamp(a[0],a[1],-2.2+(i%3)*0.3,{mantle:true});});
     duty("samoset","Samoset",40,33.5,{kind:"samoset",verb:"Hear who he is"});
     starveChest(root,G,72,22.5);duty("tisquantum","Tisquantum’s Story",72,26,{kind:"tisquantum",after:"samoset",verb:"Read it"});
-    presTable(root,G,112,18);duty("terms","The Seven Terms",112,22,{kind:"terms",after:"tisquantum",verb:"Sort them"});
+    presTable(root,G,112,18);duty("terms","The Terms of Peace",112,22,{kind:"terms",after:"tisquantum",verb:"Sort them"});
     duty("plant","The Planting",88,12,{kind:"plant",after:"terms",verb:"Set the corn",face:[88,6]});
     starveChest(root,G,104,22.5);
     spots={bradford:[60,36],winslow:[80,38]};
@@ -36030,7 +36047,9 @@ function updatePly(dt){
    Sat with Nathaniel Morton, Bradford's nephew and the colony's secretary, compiling New
    Englands Memoriall (1669) - itself a retelling, and the source of the Compact's list of
    signers. Every item is ungated. Written off CH11-RECORD.md §Teaching hooks and §Disputes;
-   keyed a:0, shuffled at runtime, and no keyed option is the longest of its four. */
+   keyed a:0, shuffled at runtime, and no keyed option is the longest of its four.
+   review, 27 Nov: items 1, 9, 10, 14, 21 and 22 had the key as the longest option; a distractor in each was
+   lengthened or replaced. */
 CONTENT.ch11={
   people:PLY_PEOPLE,
   npcs:PLY_NPCS,
@@ -36043,8 +36062,10 @@ CONTENT.ch11={
     onPass:function(){plyW().done=true;},
     q:[
       {stim:"Bradford: in Holland they had “this libertie”. They left “Not out of any newfanglednes”, but for hardship, old age, their children and the gospel.",
-       q:"Why did they leave Holland, by Bradford’s account?",
-       o:["Hardship, age, children, the gospel","Their worship was banned in Leiden","King James ordered them home","The Dutch expelled them"],a:0},
+       /* review, 27 Nov: was "Why did they leave Holland?", answered word for word by the stim, and the keyed
+          option was the longest; now it asks what the passage shows (record, "What the list does not say") */
+       q:"What does the passage show about religious freedom?",
+       o:["They had it already in Holland","They sailed to America to find it","The Dutch had taken it away","Bradford never mentions religion"],a:0},
       {stim:"Bradford: the investors chose New England “cheefly for ye hope of present profite to be made by ye fishing”.",
        q:"What did the investors want?",
        o:["Profit, from fish","A church in America","New land for the King","Gold, as Spain had found"],a:0},
@@ -36059,7 +36080,7 @@ CONTENT.ch11={
        o:["Order: obeying laws","Freedom from the King","Rights for every person","Votes for women"],a:0},
       {stim:"The list of the Compact’s forty-one signers first appears in your own book, sir, the Memoriall of 1669. The signed paper is lost.",
        q:"How should a historian treat the list?",
-       o:["As written 49 years later","As the signed paper itself","As Bradford’s 1620 notes","As the King’s copy"],a:0},
+       o:["As printed 49 years later","As the signed paper itself","As Bradford’s 1620 notes","As the King’s copy"],a:0},
       {stim:"Jamestown’s Assembly of 1619 was called by the Virginia Company in London. The Compact was made aboard ship by the settlers.",
        q:"What is the main difference?",
        o:["Who started each","Only one was loyal to the King","Only Plymouth had any laws","Neither had a governor"],a:0},
@@ -36068,28 +36089,31 @@ CONTENT.ch11={
        o:["Taken, then paid for","A gift from the Nauset","A trade made on the spot","Corn they grew themselves"],a:0},
       {stim:"Mourt’s Relation, printed in 1622, tells of a grave dug up and things taken. Bradford’s later history leaves it out.",
        q:"What does that difference teach?",
-       o:["Writers choose what to keep","Mourt invented the grave","Nothing was taken","Bradford never heard of it"],a:0},
+       o:["Writers choose what to keep","Mourt invented the grave","Nothing was taken","Bradford’s account came out first"],a:0},
+       /* review, 27 Nov: was "Bradford never heard of it", which the record cannot rule out; and the key was the longest */
       {stim:"Neither Bradford nor Mourt mentions a rock. In 1741 Elder Thomas Faunce, ninety-five, pointed one out, from his father’s story.",
        q:"When does Plymouth Rock enter the record?",
-       o:["1741, 121 years on","1620, in Bradford","1622, in Mourt","1630, in Winthrop"],a:0},
+       o:["1741, 121 years on","1620, in Bradford","1622, in Mourt","1630, in Winthrop’s sermon"],a:0},
       {stim:"Bradford: half the company died in two or three months. John Smith, in London, 1622: “fortie of them died”.",
        q:"Whose count is the better evidence?",
        o:["Bradford’s; he was there","Smith’s; it was printed first","An average of the two","Neither; both guessed"],a:0},
       {stim:"Bradford: Tisquantum was carried off by Hunt, “who thought to sell them for slaves in Spaine”, got to England, lived with a merchant, went to Newfoundland.",
        q:"What does “Squanto the helper” leave out?",
-       o:["His kidnapping and slavery","That he spoke English","His help with the corn","His name"],a:0},
+       o:["His kidnapping and slavery","That he spoke English","His help with the corn","His years among the English"],a:0},
+       /* review, 27 Nov: was "His name"; arguable, since "Squanto" is not the name Tisquantum */
       {stim:"Bradford calls Tisquantum “a spetiall instrument sent of God”, and later says he “plaid his owne game”.",
        q:"What do the two lines show?",
        o:["One writer, two judgements","Two different men","That Bradford never met him","That he wrote his own story"],a:0},
       {stim:"Term 2 of the 1621 agreement: Massasoit should “send the offender, that we might punish him”.",
        q:"Who could be sent for punishment?",
-       o:["Only Wampanoag offenders","Only English offenders","Offenders on both sides","Nobody, ever"],a:0},
+       o:["Only Wampanoag offenders","Only English offenders","Offenders on both sides","Nobody: it set no punishment"],a:0},
       {stim:"Mourt calls Massasoit King James’s “Friend and Alie”. Cushman, months later: the King is “his Master and Commander”.",
        q:"What is missing from the record?",
        o:["Massasoit’s own reading","The English reading","The year of the meeting","The number of his men"],a:0},
       {stim:"Cushman, 1621: “their land is spatious and void”. In the same pages he names Massasoit, whose land it was.",
        q:"What is “void” doing in his argument?",
-       o:["Justifying taking land","Describing an empty country","Reporting a careful survey","Quoting Massasoit"],a:0},
+       o:["Justifying taking land","Praising Massasoit’s rule","Reporting a careful survey","Quoting Massasoit"],a:0},
+       /* review, 27 Nov: was "Describing an empty country"; arguable, since the epidemic had emptied much of it (MS p. 63) */
       {stim:"Winslow’s letter: “many of the Indians coming amongst vs … with some ninetie men, whom for three dayes we entertained”.",
        q:"What does the record say of an invitation?",
        o:["Nothing either way","They were invited","They were turned away","They sent word ahead"],a:0},
@@ -36099,15 +36123,15 @@ CONTENT.ch11={
       {stim:"Bradford: “great store of wild Turkies” that autumn. Winslow: four men killed “fowle” for the gathering.",
        q:"Were turkeys eaten at the gathering?",
        o:["Not known","Yes: Winslow says so","No: Bradford says so","Only at Christmas"],a:0},
-      {stim:"Winslow, there in 1622: an Englishman said “the God of the English had it in store”. Morton, 1637, not there: the sachem begged for the plague.",
+      {stim:"Winslow, at Plymouth in 1622: an Englishman said “the God of the English had it in store”. Morton, 1637, not there: the sachem begged for the plague.",
        q:"Which account is closer to the event?",
        o:["Winslow’s","Morton’s","Both equally","Neither was written"],a:0},
       {stim:"Bradford, who ordered it: “cut of some few”. Winslow: seven dead, an “execution”. Morton: “a Massacre”. Robinson, in Leiden: “so many”.",
        q:"What explains the different words?",
-       o:["Each writer’s place and purpose","A printer’s mistake","They tell of four events","All four were there"],a:0},
+       o:["Each writer’s place and purpose","A printer’s mistake","They tell of four different events","All four were there"],a:0},
       {stim:"Bradford ended the common field in 1623. The investors’ contract had set it; Winslow blamed hunger. A modern telling: “socialism failed at Plymouth”.",
        q:"What does that telling leave out?",
-       o:["The contract and the hunger","Bradford’s own words","The year it happened","The corn"],a:0},
+       o:["The contract and the hunger","Bradford’s own words on Plato","The year it happened","Which crop was planted"],a:0},
       {stim:"John Winthrop, 1630: “wee shall be as a citty upon a hill. The eies of all people are uppon us”.",
        q:"Is it a boast, or a warning?",
        o:["A warning: failure shows","A boast of a shining city","A law of the colony","A treaty with Massasoit"],a:0}]},
@@ -36704,7 +36728,7 @@ const PATCH_NOTES=[
      "<b>A new chapter: Plymouth, 1620 to 1623</b>",
      "The Leiden congregation and its investors, the Mayflower’s cracked beam and the Compact, Cape Cod, the first winter, Samoset, Tisquantum and Massasoit, the harvest of 1621, the fort, Wessagusset, and the end of the common field.",
      "<b>A note for teachers</b>",
-     "This chapter includes deaths from disease, including children, a grave opened, kidnapping and sale into slavery, killings on both sides, including by deception, a head displayed, and period words for Native people. All of it is in the writers’ own words, with the writer named, and none of it is drawn.",
+     "This chapter includes deaths from disease, including children, a grave opened, kidnapping and sale into slavery, killings on both sides, including by deception, a head displayed, and period words for Native people. All of it is told in words, with the writer named, and none of it is drawn.",
      "<b>Record or retelling?</b>",
      "After each scene you sort the famous stories: in the record, added later, or not known? The First Thanksgiving, Plymouth Rock and “Squanto the helper” are among them.",
      "<b>Where to find it</b>",
@@ -38147,7 +38171,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1624";
+const BUILD="20261127-1635";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
