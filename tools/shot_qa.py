@@ -22,18 +22,17 @@ import requests
 sys.path.insert(0, r'E:\VN-Tools\asset-toolkit')
 OLLAMA = 'http://127.0.0.1:11434'
 
-PROMPT = """You are checking a frame rendered by a low-poly 3D history game for middle-school students.
-Simple blocky stick figures, flat colours and plain textures are the intended art style: do NOT report them.
-Report only HARD FAULTS:
-- black, blank or nearly empty frame;
-- the camera is inside or right against geometry, so a wall, planks, a roof or a trunk fills most of the view;
-- the obvious subject (people, a building, an object) is cut off by the frame edge or hidden behind something close;
-- a person floats above the ground or is sunk into it to the knees or more;
-- a person or object passes through a wall, a building or another object;
-- something clearly broken: stretched shards, a surface rendered black because it faces the wrong way, flickering stripes.
+PROMPT = """This is a frame from a low-poly 3D history game. Blocky simple figures, flat colours and plain textures are
+the intended style and are not faults. Look at the picture and answer each question with true or false.
 {expect}
-Answer with JSON only: {{"verdict": "ok" | "doubt" | "fault", "faults": ["short description", ...], "subject": "what the frame shows, in under 12 words"}}.
-"ok" means no hard fault. Use "doubt" if you are not sure."""
+Return JSON only, with exactly these keys:
+{{"wall_fills_view": does one flat surface (a wall, planks, a roof, the ground) fill more than half of the picture?,
+ "person_sunk": is any person cut off by the ground, so that their legs or waist are missing below the ground line?,
+ "person_floating": is any person standing in the air, clearly above the ground?,
+ "cut_by_edge": is the main subject (a person or object the picture is about) sliced off by the picture's edge?,
+ "blank": is the picture black, blank, or almost empty?,
+ "broken": are there stretched shards, black faces, or stripes that look like a rendering error?,
+ "subject": "what the picture shows, in under 12 words"}}"""
 
 
 def loaded():
@@ -72,12 +71,15 @@ def ask(model, path, expect):
     r.raise_for_status()
     txt = r.json()['message']['content']
     try:
-        d = json.loads(txt)
+        q = json.loads(txt)
     except Exception:
-        d = {'verdict': 'doubt', 'faults': ['unparsed answer: ' + txt[:120]], 'subject': ''}
-    if d.get('verdict') not in ('ok', 'doubt', 'fault'):
-        d['verdict'] = 'doubt'
-    return d
+        return {'verdict': 'doubt', 'faults': ['unparsed answer: ' + txt[:120]], 'subject': ''}
+    names = {'wall_fills_view': 'a surface fills the view (camera against or inside geometry)',
+             'person_sunk': 'a person sunk into the ground', 'person_floating': 'a person floating',
+             'cut_by_edge': 'the subject cut off by the frame edge', 'blank': 'blank or black frame',
+             'broken': 'broken geometry'}
+    faults = [v for k, v in names.items() if q.get(k) is True]
+    return {'verdict': 'fault' if faults else 'ok', 'faults': faults, 'subject': q.get('subject', '')}
 
 
 def main():

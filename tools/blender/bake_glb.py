@@ -3,7 +3,7 @@ asset in this game's own look: few triangles, colour baked into the vertices, no
 
     blender -b --factory-startup --python tools/blender/bake_glb.py -- <in.glb|gltf> <out.glb> <report.json> \
         --tris N [--height FT | --scale S] [--voxel FT] [--node name] [--keep a,b] [--yaw DEG] [--render <dir>]
-        [--largest] [--pale-top NZ]
+        [--largest] [--pale-top NZ] [--centre X,Y]
 
 Why: TRELLIS.2 writes 58-65 MB GLBs with PBR texture maps, and a Poly Haven model comes with 2k maps. A Chromebook
 loads neither well, and texture-mapped realism would sit wrongly beside this game's vertex-coloured, low-poly world.
@@ -116,6 +116,11 @@ if opt('--height'):
     s = float(opt('--height')) / max(hi[2] - lo[2], 1e-6)
 yaw = math.radians(float(opt('--yaw', 0)))
 c = (lo + hi) / 2
+# --centre X,Y (animals, 27 Nov): centre every frame of a flipbook on the SAME point, the first frame's, so a leg
+# swinging out past the body does not shift the whole animal between frames; the report gives each run's centre
+if opt('--centre'):
+    c[0], c[1] = (float(t) for t in opt('--centre').split(','))
+rep['centre'] = [float(c[0]), float(c[1])]
 me.transform(Matrix.Translation(Vector((-c[0], -c[1], -lo[2]))))
 me.transform(Matrix.Rotation(yaw, 4, 'Z') @ Matrix.Scale(s, 4))
 me.update()

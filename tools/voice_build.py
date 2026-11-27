@@ -42,6 +42,9 @@ VOICES = {
     "scrivener": (24, 1.02), "todkill": (27, 0.98), "russell": (26, 0.96),
     # Chapter VII
     "spelman": (25, 1.10), "davis": (27, 1.03), "strachey": (24, 0.98), "gates": (26, 0.92), "digger": (25, 1.04),
+    # Chapter VIII
+    "delawarr": (24, 0.90), "hamor": (25, 1.01), "dale": (27, 0.93), "rolfe": (26, 1.02), "argall": (27, 1.05),
+    "yeardley": (25, 0.97), "pory": (24, 1.04), "persey": (26, 0.99), "spence": (27, 0.92),
 }
 FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 
@@ -52,6 +55,8 @@ SAY = [(r"\bKecoughtan\b", "Kick-oh-tan"), (r"\bPaspahegh\b", "Pass-pa-hay"),
 
 
 def fnv1a(s):
+    # a stop after a closing quote is a pause, not a new sentence: index.html voiceKey() ignores it too
+    s = re.sub(r'([”’)\]])\.$', r'\1', s)
     h = 0x811C9DC5
     for b in s.encode("utf-8"):
         h ^= b
