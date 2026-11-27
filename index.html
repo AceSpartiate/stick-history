@@ -31911,8 +31911,29 @@ function skyBurnt(root,G,x,z,cols,rows){
 }
 /* "a peece of a Church" at Martin's Hundred (Frethorne, Kingsbury IV:41): an end wall standing */
 function skyRuin(root,G,x,z){
-  const g=new Geo(), wall=RGB(0x8a6c48), wallD=RGB(0x5e4a32), gy=G(x,z);
-  g.box(x,gy+4.5,z,12,9,0.8,wall);g.box(x-3.5,gy+10.5,z,4,3,0.8,wallD);g.box(x+5.8,gy+2,z+3,0.8,4,6,wallD);
+  /* "a peece of a Church" (Frethorne): what the fire left of a board end wall and a stub of its
+     side. look pass, 27 Nov: it was three boxes; it is upright boards now, the top ragged where
+     they burnt, charred black for the last foot and a half, dark at the ground. Same envelope
+     (12 ft wide, the gable stub to 12 ft, the side stub 6 ft along) and the same collider */
+  const g=new Geo(), board=RGB(0x8a6c48), gy=G(x,z), soot=RGB(0x1e1814);
+  const plank=function(cx,cz,w,d,top,i){
+    const m=0.86+srand(x*3.1+i*1.7)*0.22, c=shadeRGB(board,m), lo=Math.max(0.4,top-1.6);
+    const A=new Geo();
+    A.box(cx,gy+lo/2-0.2,cz,w,lo+0.4,d,c);
+    A.shade(function(px,py){return 0.58+0.42*smooth01(gy,gy+2.6,py);});
+    const B=new Geo();
+    B.box(cx,gy+(lo+top)/2,cz,w,top-lo,d,c);
+    B.shade(function(px,py){return py>gy+lo+0.01?[soot[0]/c[0],soot[1]/c[1],soot[2]/c[2]]:1;});
+    g.p.push.apply(g.p,A.p);g.c.push.apply(g.c,A.c);g.p.push.apply(g.p,B.p);g.c.push.apply(g.c,B.c);
+  };
+  const tops=[8.6,9.2,11.4,12,10.6,8.4,7.2,8.6,6.6,7.8,5.6,6.4];
+  for(let i=0;i<12;i++)plank(x-5.5+i,z+(i%2?0.06:-0.06),1.0,0.8,tops[i],i);
+  const side=[4.4,3.6,4.0,2.6,3.2,1.8];
+  for(let i=0;i<6;i++)plank(x+5.8+(i%2?0.06:-0.06),z+0.5+i,0.8,1.0,side[i],20+i);
+  /* the frame the boards were nailed to - sill and girt - so it reads as a wall, not the pale */
+  const tim=RGB(0x4e3a28);
+  g.box(x+0.2,gy+0.15,z,12.6,0.7,1.1,shadeRGB(tim,0.7));g.box(x,gy+4.9,z,12.2,0.55,1.05,tim);
+  g.box(x+5.8,gy+0.15,z+3,1.1,0.7,6.2,shadeRGB(tim,0.7));
   root.add(g.mesh(false,false));solid(x,z,6.2,0.8,LVL.MAIN,0);
 }
 /* a penny loaf cut four ways, on a chest */
@@ -34200,7 +34221,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1312";
+const BUILD="20261127-1313";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
