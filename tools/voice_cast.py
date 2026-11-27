@@ -113,6 +113,17 @@ CAST = {
               f"and a little defensive, a plain clipped voice, {ENG}.",
     'spence': f"An English farmer and old soldier in his forties, one of the first settlers: weathered, "
               f"plain-spoken and slow, a rough country voice, {ENG}.",
+    # Chapter X, 27 Nov. Ages are not recorded for Pace, Nuce or Frethorne; these are what their parts call for.
+    'wyatt': f"An English gentleman and new governor in his early thirties, of an old knightly family: courteous, "
+             f"composed and official, a smooth educated voice, {ENG}.",
+    'pace': f"An English planter in his thirties, woken in the night with terrible news: urgent, low and steady, "
+            f"a plain working man's voice, {ENG}.",
+    'nuce': f"An English captain in his forties commanding a small settlement, kind and worn out: fatherly, "
+            f"practical and tired, a warm low voice, {ENG}.",
+    'gsandys': f"An English gentleman and poet in his forties, the colony's treasurer: cool, cultivated and "
+               f"precise, a dry measured voice, {ENG}.",
+    'frethorne': f"A young English servant boy in his teens, starving and homesick, begging his parents for "
+                 f"help: thin, pleading and earnest, a young country voice, {ENG}.",
 }
 REEL_GAP = 0.6
 

@@ -45,13 +45,16 @@ VOICES = {
     # Chapter VIII
     "delawarr": (24, 0.90), "hamor": (25, 1.01), "dale": (27, 0.93), "rolfe": (26, 1.02), "argall": (27, 1.05),
     "yeardley": (25, 0.97), "pory": (24, 1.04), "persey": (26, 0.99), "spence": (27, 0.92),
+    # Chapter X
+    "wyatt": (24, 0.96), "pace": (27, 0.99), "nuce": (26, 0.93), "gsandys": (25, 0.95), "frethorne": (25, 1.08),
 }
 FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 
 # Pronunciation only: the key stays the original text. Respellings for names espeak
 # has never heard; each is how the place is said locally today.
 SAY = [(r"\bKecoughtan\b", "Kick-oh-tan"), (r"\bPaspahegh\b", "Pass-pa-hay"),
-       (r"\bweroance(s?)\b", r"wero-ance\1"), (r"\bPowhatan\b", "Pow-a-tan")]
+       (r"\bweroance(s?)\b", r"wero-ance\1"), (r"\bPowhatan\b", "Pow-a-tan"),
+       (r"\b([Cc])orne\b", r"\1orn")]   # "theire Corne" was read "Kornay" (Whisper, 27 Nov)
 
 
 def fnv1a(s):
