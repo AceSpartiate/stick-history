@@ -24359,9 +24359,9 @@ function fortAttackOver(){
   /* Archer has "aboue. 200.", above not about; and it was the President who "was contented the
      Fort should be pallisadoed" (Proceedings), not the council */
   fortResult("The Twenty-Sixth of May",
-    "<p><b>What the accounts say.</b> Archer says more than two hundred came; Smith says four hundred. It “indured hott about an hower”. A boy was killed in the pinnace. Archer counts eleven hurt, Smith thirteen or fourteen, the <i>Proceedings</i> seventeen. Four of the council were hurt, and the President “had one shott cleane through his bearde”. It ended when “a crosse barre shot from the ships strooke down a bough from a tree amongst them”.</p>"+
+    "<p><b>What the accounts say.</b> Over two hundred came, says Archer; four hundred, says Smith. A boy was killed in the pinnace. Archer counts eleven hurt, Smith thirteen or fourteen, the <i>Proceedings</i> seventeen. It ended when “a crosse barre shot from the ships strooke down a bough from a tree amongst them”.</p>"+
     "<p><b>What your fortnight changed.</b> "+yours.join(" ")+"</p>"+
-    "<p class='note'>After it, the President agreed the fort “should be pallisadoed, the ordinance mounted, his men armed and exercised”. Newport came back the next day and set his seamen to help.</p>",
+    "<p class='note'>After it, the President agreed the fort “should be pallisadoed, the ordinance mounted, his men armed and exercised”.</p>",
     ["26 May 1607"],function(){
       fortEpilogue();
     });
@@ -24372,7 +24372,7 @@ function fortEpilogue(){
   fortResult("Twenty Days Later",            /* 26 May to 15 June; it said fifteen */
     "<p>“The fifteenth of June we had built and finished our Fort, which was triangle wise, having three Bulwarkes, at every corner, like a halfe Moone, and foure or five pieces of Artillerie mounted in them.” — George Percy</p>"+
     "<p>They built it under arrows. On the thirty-first of May Eustace Clovill, “vnarmed stragling without the ffort”, was shot with six arrows. He died on the eighth of June.</p>"+
-    "<p class='note'>The fort you walk is a reconstruction. It follows William Strachey’s measurements of 1610, which archaeologists have matched to the post lines of 1607.</p>",
+    "<p class='note'>The fort you walk follows William Strachey’s measurements of 1610, matched by archaeologists to the post lines of 1607.</p>",
     ["15 June 1607"],function(){w.epi=true;w.day=32;checkpoint("fort-epi");if(renderer)enterWorld("ch3");});
 }
 
@@ -24406,7 +24406,7 @@ function fortResult(title,body,pills,after){
    not theirs, in a camp of a hundred; and Smith said "I have no quarrel with the President",
    when Wingfield names "Master Smyths quarrell" with him (Discourse) and Smith had been kept
    a prisoner since the Canaries on the chief men's word (Proceedings). */
-const FORT_SAYS={"wingfield": [["“The council hath set us to work: trees for tents, clapboard for the ships, gardens.”", "“I will not have men running about with muskets. They are to watch, ward and work. That is the order.”", "“The Company’s charge is plain: we are not to offend the naturals.”"], ["“The werowance of Paspahegh came with a hundred armed men and made signs for us to lay our arms away. We would not trust him so far.”", "“On the twentieth, forty of them brought a deer and would have lain in our fort all night. We would not suffer them.”"], ["“Newport is gone upriver with the best hands: five gentlemen, four mariners, fourteen sailors.”", "“The work goes on without them. The arms stay in their casks. That does not change.”"], ["“The men are setting corn. The half moon stands. The casks stay sealed.”", "“Until Newport is back, I will not have the men armed and running about.”"], ["“On the twenty-sixth an arrow went clean through my beard, and I escaped hurt.”", "“Two hundred, some say four hundred. Eleven hurt, or fourteen, or seventeen. Nobody counted them the same way.”", "“Now the fort is done: a triangle, three bulwarks, guns mounted.”"]], "kendall": [["“That half moon of boughs by the water is all the fort we have. My hands are split from it.”", "“I would have the muskets out of those casks and the men drilled. The President holds otherwise.”"], ["“A hundred armed men in our camp, and our arms still in the casks.”", "“On the twentieth one of their arrows went a foot through our target. Against steel it burst to pieces. And we have no wall to shoot from.”", "“I asked the President to let me drill the men. He will not have it.”"], ["“The best hands are upriver. The boughs are the same, but there are fewer men to hold them.”", "“The President still says no drill. So I keep the men at work and my eye on the treeline.”"], ["“They are setting corn. Good. I am at the boughs. A half moon is a thin thing.”", "“When Newport comes back I will say it again: the men need their arms.”"], ["“I stood in front with the council, behind nothing but boughs. Four of us were hurt.”", "“A few gentlemen had their weapons ready. The rest of the arms were in the casks, as I had warned for a fortnight.”", "“Now the triangle is done. I will not raise boughs again.”"]], "gosnold": [["“We lade the clapboard, and the ships go home. The Company must see we have landed safe.”", "“The guns are aboard the ships. When the ships sail, we are left here with boughs.”"], ["“A hundred men came to our quarter, and the ships were in the river with their guns. That is a comfort.”", "“Forty came with a deer. A gift, or a test, I cannot say.”"], ["“Newport took the best hands up the river in the boat. The ships lie here at the trees, with fewer men to work their guns.”", "“If something comes while he is away, we have boughs, and the ships’ guns at our backs.”"], ["“The guns are on those ships, not on this ground. If they come from the woods, the ships must answer. I do not like the arithmetic of it.”", "“It is a camp, not a fort. I have said it before.”"], ["“I have heard a cross-bar shot from the ships brought a bough down among them, and they retired.”", "“Now the guns are mounted ashore. It took arrows to get us a wall.”", "“A boy is dead in the pinnace. The accounts disagree on how many were hurt. I do not need them to agree to know the cost.”"]], "laydon": [["“I have been at the axe since dark. Trees for tents, trees for clapboard. My shoulders are on fire.”", "“The gentlemen sit in council. I am the one with the axe and the sap in my eyes.”"], ["“A hundred of them came up armed while I was felling. I put the axe down. I did not know what to do.”", "“I saw their arrow go a foot into the target. And I am out in the trees with an axe.”"], ["“The good hands are gone upriver. The trees do not care who is President.”", "“That half moon of boughs is our wall. I helped put it up. It is not much.”"], ["“I have set corn since sunup. My back is a knot.”", "“The half moon is boughs and mud. I would not call it a fort.”"], ["“I was setting corn when the arrows came. I ran to the boughs. I had no musket, only my hands.”", "“Clovill went out of the fort unarmed. Six arrows. He cried ‘Arme, Arme.’ He is dead.”", "“Now the palisade is up. I carried the timbers. I will not set corn in the open again.”"]], "laxon": [["“Four carpenters, and the whole island to build. There is not timber enough to spare.”", "“You want a wall? A roof? You want hands. Hands are what we lack.”"], ["“A hundred men walked past, and I am still dressing clapboard. The ships need lading.”", "“Their arrow went a foot into a wooden target and broke on steel. I can make boards. I cannot make steel.”"], ["“Newport is upriver. I am here with three other carpenters and a pile of green timber.”", "“Fewer hands, same work.”"], ["“I have done what four carpenters can do, and it is not enough.”", "“I add to the half moon where I can. It is not a wall. It is a suggestion of a wall.”"], ["“I held my place at the boughs. I was watching the arrows, not counting the men.”", "“Now the triangle is finished. I dressed the timber and set the palisade. My hands know every inch of it.”", "“A boy is dead. The fort is done. God keep us inside it.”"]], "hunt": [["“An old sail hung to three trees for shade, a bar of wood for a pulpit. God hears us plain enough.”", "“Men quarrel over who is above whom. I would have them remember they are one company.”"], ["“The hatchet was stolen, and a man struck in anger. Two wrongs do not make a peace.”", "“Forty men came with a deer and we turned them away. A door shut is not the same as a door broken.”"], ["“The best hands are upriver. I see fewer faces under the sail.”", "“The werowance has been angry since the hatchet. I pray for Newport’s safe return.”"], ["“The men are setting corn. A man with work in his hands is less likely to quarrel.”", "“Our half moon, our sail for a pulpit, our corn in the ground. I would have them see it as God’s provision.”"], ["“I saw men fall. A boy was killed in the pinnace. I have no words for it.”", "“Clovill went out unarmed and took six arrows. He lived eight days. He was a man, not a number in a ledger.”", "“The triangle is done. I will hold my services within its walls now.”"]], "smith": [["“They made an oration on why I was not admitted of the council. London named me to it. Here I am told to stand aside.”", "“A half moon of boughs, called a fort. I would call it the beginning of a start.”", "“The arms sit in casks while we swing axes. A man with a musket is not a man with an axe.”"], ["“A hundred armed men, and the President keeps our muskets in casks. I would trust a loaded musket.”", "“Forty men and a deer, wanting the night. I would have said yes, and set a watch. But I am not of the council.”"], [], [], []]};
+const FORT_SAYS={"wingfield": [["“The council hath set us to work: trees for tents, clapboard for the ships, gardens.”", "“I will not have men running about with muskets. They are to watch, ward and work. That is the order.”", "“The Company’s charge is plain: we are not to offend the naturals.”"], ["“The werowance of Paspahegh came with a hundred armed men and made signs for us to lay our arms away. We would not trust him so far.”", "“On the twentieth, forty of them brought a deer and would have lain in our fort all night. We would not suffer them.”"], ["“Newport is gone upriver with the best hands: five gentlemen, four mariners, fourteen sailors.”", "“The work goes on without them. The arms stay in their casks. That does not change.”"], ["“The men are setting corn. The half moon stands. The casks stay sealed.”", "“Until Newport is back, I will not have the men armed and running about.”"], ["“On the twenty-sixth an arrow went clean through my beard, and I escaped hurt.”", "“Now the fort is done: a triangle, three bulwarks, guns mounted.”"]], "kendall": [["“That half moon of boughs by the water is all the fort we have. My hands are split from it.”", "“I would have the muskets out of those casks and the men drilled. The President holds otherwise.”"], ["“A hundred armed men in our camp, and our arms still in the casks.”", "“On the twentieth one of their arrows went a foot through our target. Against steel it burst to pieces. And we have no wall to shoot from.”", "“I asked the President to let me drill the men. He will not have it.”"], ["“The best hands are upriver. The boughs are the same, but there are fewer men to hold them.”", "“The President still says no drill. So I keep the men at work and my eye on the treeline.”"], ["“They are setting corn. Good. I am at the boughs. A half moon is a thin thing.”", "“When Newport comes back I will say it again: the men need their arms.”"], ["“I stood in front with the council, behind nothing but boughs. Four of us were hurt.”", "“A few gentlemen had their weapons ready. The rest of the arms were in the casks, as I had warned for a fortnight.”"]], "gosnold": [["“We lade the clapboard, and the ships go home. The Company must see we have landed safe.”", "“The guns are aboard the ships. When the ships sail, we are left here with boughs.”"], ["“A hundred men came to our quarter, and the ships were in the river with their guns. That is a comfort.”", "“Forty came with a deer. A gift, or a test, I cannot say.”"], ["“Newport took the best hands up the river in the boat. The ships lie here at the trees, with fewer men to work their guns.”", "“If something comes while he is away, we have boughs, and the ships’ guns at our backs.”"], ["“The guns are on those ships, not on this ground. If they come from the woods, the ships must answer. I do not like the arithmetic of it.”", "“It is a camp, not a fort. I have said it before.”"], ["“Now the guns are mounted ashore. It took arrows to get us a wall.”", "“A boy is dead in the pinnace. The accounts disagree on how many were hurt. I do not need them to agree to know the cost.”"]], "laydon": [["“I have been at the axe since dark. Trees for tents, trees for clapboard. My shoulders are on fire.”", "“The gentlemen sit in council. I am the one with the axe and the sap in my eyes.”"], ["“A hundred of them came up armed while I was felling. I put the axe down. I did not know what to do.”", "“I saw their arrow go a foot into the target. And I am out in the trees with an axe.”"], ["“The good hands are gone upriver. The trees do not care who is President.”", "“That half moon of boughs is our wall. I helped put it up. It is not much.”"], ["“I have set corn since sunup. My back is a knot.”", "“The half moon is boughs and mud. I would not call it a fort.”"], ["“I was setting corn when the arrows came. I ran to the boughs. I had no musket, only my hands.”", "“Clovill went out of the fort unarmed. Six arrows. He cried ‘Arme, Arme.’ He is dead.”"]], "laxon": [["“Four carpenters, and the whole island to build. There is not timber enough to spare.”", "“You want a wall? A roof? You want hands. Hands are what we lack.”"], ["“A hundred men walked past, and I am still dressing clapboard. The ships need lading.”", "“Their arrow went a foot into a wooden target and broke on steel. I can make boards. I cannot make steel.”"], ["“Newport is upriver. I am here with three other carpenters and a pile of green timber.”", "“Fewer hands, same work.”"], ["“I have done what four carpenters can do, and it is not enough.”", "“I add to the half moon where I can. It is not a wall. It is a suggestion of a wall.”"], ["“I held my place at the boughs. I was watching the arrows, not counting the men.”", "“Now the triangle is finished. I dressed the timber and set the palisade. My hands know every inch of it.”", "“A boy is dead. The fort is done. God keep us inside it.”"]], "hunt": [["“An old sail hung to three trees for shade, a bar of wood for a pulpit. God hears us plain enough.”", "“Men quarrel over who is above whom. I would have them remember they are one company.”"], ["“The hatchet was stolen, and a man struck in anger. Two wrongs do not make a peace.”", "“Forty men came with a deer and we turned them away. A door shut is not the same as a door broken.”"], ["“The best hands are upriver. I see fewer faces under the sail.”", "“The werowance has been angry since the hatchet. I pray for Newport’s safe return.”"], ["“The men are setting corn. A man with work in his hands is less likely to quarrel.”", "“Our half moon, our sail for a pulpit, our corn in the ground. I would have them see it as God’s provision.”"], ["“I saw men fall. A boy was killed in the pinnace. I have no words for it.”", "“Clovill went out unarmed and took six arrows. He lived eight days. He was a man, not a number in a ledger.”"]], "smith": [["“They made an oration on why I was not admitted of the council. London named me to it. Here I am told to stand aside.”", "“The arms sit in casks while we swing axes. A man with a musket is not a man with an axe.”"], ["“A hundred armed men, and the President keeps our muskets in casks. I would trust a loaded musket.”", "“Forty men and a deer, wanting the night. I would have said yes, and set a watch. But I am not of the council.”"], [], [], []]};
 
 /* ---- CHAPTER III'S CONTENT, AND ITS MUSTER ----
    The muster is sat at "Close the Record" on 15 June, so everyone who sits it has given
@@ -24432,156 +24432,102 @@ CONTENT.ch3={
     /* the chapter's outcome lives in S.works.ch3, not in the global chapterDone */
     onPass:function(){fortW().done=true;},
     q:[
-    {stim:"The 1612 Proceedings: “the Councell contriue the Fort, the rest cut downe trees to make place to pitch their Tents …”",
-     q:"What does this show about how the company was organised?",
-     o:["A few men decided; the rest did the heavy work",
-        "Every man voted on where the fort should stand",
-        "The labourers drew up the fort’s plan themselves",
-        "The work was shared evenly among all ranks"],a:0},
+    {stim:"The 1612 Proceedings: “the Councell contriue the Fort, the rest cut downe trees …”",
+     q:"What does this show about the company?",
+     o:["A few decided; the rest laboured", "Every man voted on the fort", "Labourers drew the fort’s plan", "All ranks shared the heavy work evenly"],a:0},
 
-    {stim:"While others cut trees and made gardens, some men split clapboard “to relade the ships” for the voyage home.",
-     q:"Clapboard for the ships shows the colony was ALSO expected to -",
-     o:["send goods home to show the Company a return",
-        "build houses for the Powhatan towns nearby",
-        "repair the ships for a voyage up the river",
-        "store timber for a winter months away"],a:0},
+    {stim:"Some men split clapboard “to relade the ships” for the voyage home.",
+     q:"This shows the colony was ALSO expected to -",
+     o:["send home goods that paid", "build houses for Powhatan towns", "repair the ships for a new voyage", "store timber for the winter"],a:0},
 
-    {stim:"The 1612 Proceedings blame “The Presidents overweening iealousie”, which “would admit no exercise at armes, or fortification but the boughs of trees …”. Wingfield, defending himself later, wrote that he “held them to watching, warding, and workeing.”",
-     q:"A careful historian should treat the Proceedings’ charge as -",
-     o:["his opponents’ view, to weigh against his defence",
-        "settled fact, because it was printed in a book",
-        "worthless, because Wingfield denied every word",
-        "proof that Wingfield wrote an order to pack the arms"],a:0},
+    {stim:"The Proceedings blame “The Presidents overweening iealousie”. Wingfield, in his defence, says he “held them to watching, warding, and workeing.”",
+     q:"A historian should treat the Proceedings’ charge as -",
+     o:["his opponents’ view, to weigh", "settled fact, since it was printed", "worthless, since Wingfield denied it", "proof of a written order"],a:0},
 
-    {stim:"On 26 May the men were “busied in setting Corne”, and “their armes beeing then in driefats”, packed in casks (True Relation, 1608).",
-     q:"Packed arms mattered MOST on the twenty-sixth because -",
-     o:["men working in the open could not arm quickly",
-        "the powder in the casks was spoiled by the sea",
-        "the Paspahegh had been told where the casks were",
-        "the casks had already been laded aboard the ships"],a:0},
+    {stim:"On 26 May the men were “busied in setting Corne”, “their armes beeing then in driefats”: packed in casks.",
+     q:"Packed arms mattered MOST that day because -",
+     o:["working men could not arm quickly", "the sea had spoiled the powder", "the Paspahegh knew where they were", "the casks were already aboard ship"],a:0},
 
-    {stim:"Two accounts say the arms were still in casks on 26 May. Neither quotes an order keeping them there; the Proceedings blame the President’s “iealousie” in general.",
-     q:"What can a careful historian conclude about the packed arms?",
-     o:["The packing is recorded; who ordered it is judgement","Wingfield signed an order keeping them in casks","The Paspahegh asked the English to pack their arms","Newport took the arms upriver and left empty casks"],a:0},
+    {stim:"Two accounts say the arms were in casks on 26 May. Neither quotes an order keeping them there.",
+     q:"What can a historian conclude?",
+     o:["Packing is fact; the order is judgement", "Wingfield signed a written order to pack them", "The Paspahegh asked for the arms packed", "Newport took the arms upriver"],a:0},
 
-    {stim:"Percy, 18 May: the werowance of Paspahegh came “with one hundred Savages armed” and made signs, as the English read them, “that he would give us as much land as we would desire.”",
-     q:"Percy’s report of this offer needs care because -",
-     o:["it is the English reading of signs, not shared words","Percy had already gone up the river by that day","the werowance spoke to the council in plain English","the werowance later set the offer down in writing"],a:0},
+    {stim:"Percy, 18 May: the werowance made signs, as the English read them, “that he would give us as much land as we would desire.”",
+     q:"Why does this offer need care?",
+     o:["It is the English reading of signs", "Percy was upriver that day", "The werowance spoke to them in fluent English", "The werowance put it in writing"],a:0},
 
-    {stim:"Percy, 18 May: “one of them stole a Hatchet”; an Englishman “tooke it from him by force, and also strooke him over the arme”, and the werowance “went suddenly away … in great anger.”",
-     q:"The hatchet quarrel is BEST used as evidence that -",
-     o:["small incidents strained relations before the attack",
-        "the English and Paspahegh traded without dispute",
-        "the English punished every theft with death",
-        "the werowance approved of what his man had done"],a:0},
+    {stim:"Percy, 18 May: over a stolen hatchet an Englishman “strooke him over the arme”, and the werowance “went suddenly away … in great anger.”",
+     q:"The hatchet quarrel BEST shows that -",
+     o:["small incidents strained relations", "the two sides traded without dispute", "the English hanged every thief", "the werowance approved the theft"],a:0},
 
-    {stim:"Percy, 20 May: an English target was shot “a foote thorow” by a Paspahegh arrow, but against steel the arrow “burst … all to pieces”.",
-     q:"The trial of the target suggests the English learned that -",
-     o:["steel stopped an arrow that wood would not",
-        "Paspahegh arrows could not pierce wood at all",
-        "the Paspahegh would not show what their bows could do",
-        "their muskets could not reach as far as a bow"],a:0},
+    {stim:"Percy, 20 May: an arrow went “a foote thorow” a wooden target, but on steel it “burst … all to pieces”.",
+     q:"The English learned that -",
+     o:["steel stopped what wood did not", "their arrows could not pierce wood", "the Paspahegh hid their bows’ power", "muskets could not outrange a bow"],a:0},
 
-    {stim:"Percy, 20 May: forty of the werowance’s men came with a deer and “would have layne in our Fort all night, but wee would not suffer them.”",
-     q:"Turning the forty men away shows the English were -",
-     o:["accepting gifts while refusing to trust the givers",
-        "at open war with the Paspahegh by the twentieth",
-        "short of food and unable to feed guests",
-        "obeying a Paspahegh custom about strangers"],a:0},
+    {stim:"Percy, 20 May: forty men with a deer “would have layne in our Fort all night, but wee would not suffer them.”",
+     q:"This shows the English were -",
+     o:["taking gifts but not trusting", "at open war by the twentieth", "too short of food to feed guests", "following a Paspahegh custom"],a:0},
 
-    {stim:"Percy, 24 May: a werowance answers his own people’s complaints about the English: “They take but a litle waste ground, which doth you nor any of us any good.”",
+    {stim:"Percy, 24 May: a werowance tells his own people the English “take but a litle waste ground”.",
      q:"This line shows that among the Powhatan -",
-     o:["people disagreed about how to answer the English",
-        "everyone agreed to drive the English off at once",
-        "the island was prized as their best farmland",
-        "the English had paid for the island in trade goods"],a:0},
+     o:["people disagreed about the English", "all agreed to drive the English off", "the island was their best farmland", "the English had paid for the island"],a:0},
 
     {stim:"Percy calls the place “our seating place in Paspihas Countrey”.",
-     q:"Percy’s own words show that the English -",
-     o:["knew the island lay in Paspahegh land",
-        "believed the island had never had an owner",
-        "had bought the island from Powhatan before landing",
-        "thought the Paspahegh lived far down the bay"],a:0},
+     q:"Percy’s words show the English -",
+     o:["knew it was Paspahegh land", "thought the island unowned", "had bought it from Powhatan", "thought the Paspahegh lived far off"],a:0},
 
-    {stim:"On 21 May Newport took “5. gentlemen. 4. Maryners and. 14. Saylours” up the river, Archer, Smith and Percy among them. They came back on the twenty-seventh.",
-     q:"Newport’s journey matters to the story of 26 May because it -",
-     o:["left the fort short-handed, and took the men who wrote of it","carried all of the colony’s guns and powder up the river","brought the werowance’s warriors down the river behind it","stopped all work on the fort until the boat came back"],a:0},
+    {stim:"On 21 May Newport took “5. gentlemen. 4. Maryners and. 14. Saylours” upriver, Archer, Smith and Percy among them.",
+     q:"Why does this trip matter to 26 May?",
+     o:["It took hands, and the writers", "It took all the guns and powder", "It led warriors down the river", "It stopped all work on the fort"],a:0},
 
-    {stim:"Archer, Smith and Percy were up the river on 26 May. Archer and Smith wrote what they were told on their return. Wingfield was at the fort, but his account begins on 22 June.",
-     q:"The surviving English accounts of the attack are BEST described as -",
-     o:["reports by men who were not there, from what others told them",
-        "eyewitness accounts by men standing in the half moon",
-        "Paspahegh accounts written down by English clerks",
-        "a report Wingfield sent to London on the day itself"],a:0},
+    {stim:"Archer, Smith and Percy were upriver on 26 May and wrote what they were told. Wingfield’s account begins on 22 June.",
+     q:"The English accounts of the attack are BEST described as -",
+     o:["secondhand reports", "eyewitness accounts from the boughs", "Paspahegh accounts in English", "Wingfield’s report of the day"],a:0},
 
-    {stim:"Archer counts “aboue. 200.” attackers. The True Relation says “400. Indians”. Neither writer was there.",
-     q:"The difference between the numbers is BEST explained by -",
-     o:["each passing on an estimate by men who did not count",
-        "a second attack on another day that doubled it",
-        "a printer copying one figure twice by mistake",
-        "the Paspahegh bringing more men after an hour"],a:0},
+    {stim:"Archer: “aboue. 200.” attackers. The True Relation: “400. Indians”. Neither writer was there.",
+     q:"The gap is BEST explained by -",
+     o:["passed-on guesses, not counts", "a second attack on another day", "a printer’s copying mistake", "more men coming after an hour"],a:0},
 
-    {stim:"Wounded on 26 May: Archer, “11. men”; the True Relation, “thirteene or fourteene”; the Proceedings, “17 men”. All three agree a boy was killed.",
-     q:"With three counts of the wounded, a historian should -",
-     o:["give the range and say plainly that the sources disagree",
-        "use the largest, since the latest must be best",
-        "average the three and call that the true figure",
-        "leave the attack out, since none of it can be trusted"],a:0},
+    {stim:"Wounded: Archer, “11. men”; the True Relation, “thirteene or fourteene”; the Proceedings, “17 men”.",
+     q:"A historian should -",
+     o:["give the range; say they disagree", "use the largest, since it is latest", "average the three", "leave the attack out"],a:0},
 
-    {stim:"Archer: “the Shippes ordinance with their small shott”. The Proceedings: “a crosse barre shot from the ships strooke down a bough from a tree amongst them, that caused them to retire.”",
-     q:"According to the record, what made the attackers draw off?",
-     o:["Fire from the ships, when a shot brought a bough down","A charge by the gentlemen from behind the boughs","The sight of Newport’s boat coming down the river","The guns in the fort’s three bulwarks firing together"],a:0},
+    {stim:"The Proceedings: “a crosse barre shot from the ships strooke down a bough from a tree amongst them, that caused them to retire.”",
+     q:"What made the attackers draw off?",
+     o:["The ships’ fire", "A charge from the boughs", "Newport’s returning boat", "The bulwark guns"],a:0},
 
-    {stim:"Afterwards, says the Proceedings, Wingfield agreed the fort “should be pallisadoed, the ordinance mounted, his men armed and exercised.”",
-     q:"This agreement tells us that BEFORE 26 May -",
-     o:["there was no palisade, no guns ashore, and no drill",
-        "guns stood ashore already but had no powder",
-        "the men drilled daily but had no palisade",
-        "the triangle fort stood already, but unmanned"],a:0},
+    {stim:"Afterwards Wingfield agreed the fort “should be pallisadoed, the ordinance mounted, his men armed and exercised.”",
+     q:"So BEFORE 26 May there was -",
+     o:["no palisade, guns ashore or drill", "a palisade but no guns", "drill but no palisade", "a finished fort with nobody to man it"],a:0},
 
-    {stim:"Archer: “ffoure of the Counsell that stood in front were hurt”, and Wingfield “had one shott cleane through his bearde, yet scaped hurte.”",
-     q:"These details suggest that during the attack the council -",
-     o:["stood in the front of the defence with the others",
-        "sheltered aboard the ships until it was over",
-        "were away up the river with Captain Newport",
-        "watched from the woods behind the Paspahegh"],a:0},
+    {stim:"Archer: “ffoure of the Counsell that stood in front were hurt”.",
+     q:"During the attack the council -",
+     o:["stood at the front", "hid aboard the ships", "were upriver with Newport", "watched from the woods"],a:0},
 
     /* "Clovill's death, five days after": he was SHOT five days after, on 31 May, and "lyved.
        8. Dayes" (Archer) - dead on 8 June, thirteen days after the attack */
-    {stim:"31 May: Eustace Clovill, “vnarmed stragling without the ffort”, was shot with six arrows and came in “crying Arme Arme”. He died on 8 June.",
-     q:"Clovill’s wounding, five days after the attack, shows that -",
-     o:["the danger did not end on the twenty-sixth, least of all outside","the attack went on without a pause for five days","Clovill was wounded inside the fort on the twenty-sixth","the English had made peace and stopped keeping watch"],a:0},
+    {stim:"31 May: Eustace Clovill, “vnarmed stragling without the ffort”, was shot with six arrows. He died on 8 June.",
+     q:"His wounding, five days after the attack, shows -",
+     o:["the danger went on, worst outside", "the attack lasted five days without a pause", "he was hit inside the fort", "peace had been made"],a:0},
 
-    {stim:"Before: “the boughs of trees cast together in the forme of a halfe moone”. By 15 June, Percy: “triangle wise, having three Bulwarkes, at every corner, like a halfe Moone, and foure or five pieces of Artillerie mounted in them.”",
-     q:"The change from boughs to the triangle is BEST explained as -",
-     o:["a response to the attack, which showed the camp could not hold",
-        "an order from London that came back with Newport’s boat",
-        "a permission the Paspahegh gave after the attack",
-        "a plan from England, finished on the day it was due"],a:0},
+    {stim:"Before: boughs “in the forme of a halfe moone”. By 15 June, Percy: “triangle wise, having three Bulwarkes”.",
+     q:"The change is BEST explained as -",
+     o:["a response to the attack", "an order from London", "a Paspahegh permission", "a plan from England, on schedule"],a:0},
 
     /* The five were the English's enemies, not his: the kings of Pamunkey, Arrohattoc and others
        "would either assist vs or make vs peace with" them (Archer). The keyed answer said the
        English were helped "against enemies of their own". */
-    {stim:"14 June: the guide Navirans named five peoples as “our Contracted Enemyes” and “counselled vs to Cutt Downe the long weedes rounde about our fforte”.",
+    {stim:"14 June: the guide Navirans named five peoples as “our Contracted Enemyes” and advised cutting the weeds round the fort.",
      q:"Navirans’s advice BEST shows that -",
-     o:["some Powhatan people helped the English against other towns",
-        "the English had already cleared the ground round the fort",
-        "Navirans wanted the English to plant corn round the walls",
-        "every Powhatan town was now at war with the English"],a:0},
+     o:["some Powhatan sided with the English", "the ground was already cleared", "he wanted corn round the walls", "every Powhatan town was at war with the English"],a:0},
 
-    {stim:"Historian Helen Rountree reads 26 May as the work of a local alliance, perhaps prompted by Newport going up the river. Virtual Jamestown finds “little doubt that Chief Powhatan authorized and coordinated the attack.”",
-     q:"Historians can disagree about who ordered the attack because -",
-     o:["no source records the Powhatan leaders’ own decision",
-        "Powhatan wrote a letter that they read in different ways",
-        "the English accounts name two different war leaders",
-        "no English account mentions the attack at all"],a:0},
+    {stim:"Historian Helen Rountree sees 26 May as a local alliance’s attack. Virtual Jamestown finds “little doubt that Chief Powhatan authorized and coordinated the attack.”",
+     q:"Historians disagree about who ordered it because -",
+     o:["no source records the decision", "Powhatan’s letter is unclear", "the English name two leaders", "no English account mentions it at all"],a:0},
 
-    {stim:"13 May: “an oration made, whie Captaine Smith was not admitted of the Councell”, though the Company had named him to it. He was sworn on 10 June.",
-     q:"Keeping Smith off the council suggests that, on the spot, the council -",
-     o:["could set aside one of London’s own choices for a time",
-        "had no power over who sat among its members",
-        "was elected by the whole company at the landing",
-        "followed the Company’s list exactly as written"],a:0}
+    {stim:"13 May: “an oration made, whie Captaine Smith was not admitted of the Councell”, though London had named him. He was sworn on 10 June.",
+     q:"This suggests the council on the spot -",
+     o:["could set London’s choice aside", "had no say over its members", "was elected by everyone", "followed the Company’s list exactly"],a:0}
     ]},
   ready:function(){
     return fortW().epi?{ok:true,missing:[]}:{ok:false,missing:["the finished fort, on the fifteenth of June"]};
@@ -24700,76 +24646,76 @@ const SICK_PEOPLE=[
    and nobody says a thing the record does not let him know. */
 const SICK_SAYS={
   "wingfield":[
-    ["“Captain Newport is gone. The governing of this place is mine now, and the store with it.”", "“Every man gets the same allowance. That is the only justice a short store can do.”"],
-    ["“Powhatan himself hath sent to us. He desires our friendship.”", "“I will not have the salvages within our town. They need not see how many of us lie sick.”"],
+    ["“The governing is mine now, and the store. Every man gets the same allowance.”"],
+    ["“Powhatan hath sent to us. He desires our friendship. But the salvages shall not see how many of us lie sick.”"],
     [],
-    ["“The Council would have more for themselves and their sick. Give it, and I starve the whole company before the supply.”", "“I will not do it without their own warrant.”"],
+    ["“More for the Council and their sick, and I starve the whole company before the supply. Not without their own warrant.”"],
     [],
-    ["“To put a President down needs the greater number of the Council’s voices. They are but three.”", "“I will answer every word of it, in England.”"],
+    ["“To put a President down needs the greater number of the Council’s voices. They are but three.”"],
     []],
   "studley":[
-    ["“Store for thirteen weeks and a half, at the Council’s allowance. The supply is promised in twenty.”"],
-    ["“It lay in the ship’s hold all the voyage. I will not tell you what is in it besides grain.”"],
+    ["“Store for thirteen weeks and a half. The supply is promised in twenty.”"],
+    ["“It lay in the hold all the voyage. Do not ask what is in it besides grain.”"],
     ["“The figures do not change because a man watches them.”"],
     ["“Give more from that kettle today, and it comes out of September.”"],
     [],
     [],
     []],
   "smith":[
-    ["“The fort is palisadoed and every man in health. I would we had used May to plant, and not to argue.”"],
-    ["“The sturgeon run thick. The men eat it till they are sick of it, and some till they are sick of worse.”"],
+    ["“The fort is palisadoed and every man in health. I would we had used May to plant.”"],
+    ["“The men eat sturgeon till they are sick of it, and some till they are sick of worse.”"],
     [],
     [],
-    ["“I was down with it myself. They tell me Gosnold went in three weeks.”"],
+    ["“I was down with it myself. Gosnold went in three weeks.”"],
     ["“He called me a liar to my face. Let the court weigh that.”"],
-    ["“The President and Martin are too sick to stir, and the cape merchant is dead. The store is mine now.”", "“The Indians have brought corn. I mean to go down the river and trade for more.”"]],
+    ["“The President and Martin are too sick to stir, and the cape merchant is dead. The store is mine now.”"]],
   "gosnold":[
-    ["“We have a fort. I do not like how quiet this river is in the heat.”"],
-    ["“A fever, no more. I have been sick at sea and come up again.”"],
+    ["“I do not like how quiet this river is in the heat.”"],
+    ["“A fever, no more. I have been sick at sea before.”"],
     [],
     [],
     [],
     [],
     []],
   "kendall":[
-    ["“Had we had this triangle in May, there would be men alive who are not.”"],
-    ["“The watch is every third night now. The men come off it fit for nothing.”"],
-    ["“Five on their feet for all three bulwarks, if we are lucky.”"],
+    ["“Had we had this triangle in May, men would be alive who are not.”"],
+    ["“The watch is every third night. The men come off it fit for nothing.”"],
+    ["“Five on their feet for three bulwarks, if we are lucky.”"],
     [],
     [],
-    ["“Let out of the pinnace this morning. I may walk where I like, but I may not carry arms.”"],
+    ["“Out of the pinnace, but I may not carry arms.”"],
     []],
   "hunt":[
     [],
     [],
     [],
     [],
-    ["“He was the first of us to move this voyage, and he will not see the end of it. We commit him to the ground.”"],
+    ["“He was the first of us to move this voyage. We commit him to the ground.”"],
     [],
     []],
   "percy":[
-    ["“The two and twentieth of June, Captain Newport departed for England. I have written it down.”"],
-    ["“Our drink is river water. At a flood it is very salt; at a low tide, full of slime and filth.”"],
+    ["“Newport departed this morning. I have written it down.”"],
+    ["“Our drink is river water: very salt at a flood, slime and filth at low tide.”"],
     ["“Every third night on the bare cold ground. It makes the men most feeble wretches.”"],
     [],
     ["“I set down each name as it comes. A great many this month.”"],
     ["“Whatever the court finds, I shall write that there was a court.”"],
-    ["“God sent those people which were our mortal enemies to relieve us with victuals.”"]],
+    ["“God sent our mortal enemies to relieve us with victuals.”"]],
   "ratcliffe":[
     [],
     [],
     [],
     ["“The President sits on the store like a hen, and men die of the kettle.”"],
-    ["“Two gallons of sack, kept back the whole summer. Is that the man to govern us?”"],
-    ["“He denied me a penny whittle, a chicken, a spoonful of beer, and served me with foul corn. Look at it.”", "“If we do him wrong, we must answer it.”"],
-    ["“President, they call me, and I can scarce stand. Things abroad I leave to Captain Smith.”"]],
+    ["“Two gallons of sack, kept back all summer. Is that the man to govern us?”"],
+    ["“He denied me a penny whittle, a chicken, a spoonful of beer, and served me foul corn. Look at it.”"],
+    ["“President, they call me, and I can scarce stand. Smith manages things abroad.”"]],
   "martin":[
     [],
     [],
     [],
-    ["“My son is sick, and the President will not give him a spoonful of beer above his allowance.”"],
+    ["“My son is sick, and the President will not give him a spoonful of beer more.”"],
     [],
-    ["“He hath starved my son. I will say it before the court.”"],
+    ["“He hath starved my son.”"],
     []],
   "archer":[
     [],
@@ -24786,77 +24732,77 @@ const SICK_SAYS={
    insight, and the wise route weighs the evidence, not the man. */
 const SICK_NPCS=[
   {id:"percy",name:"Master Percy",voice:"male",role:"keeps an account",at:3,eq:SICK_PEOPLE[6].eq,
-   done:"“I have no more to tell you than what I write. Read it, if it is printed.”",
+   done:"“Read it, if it is ever printed.”",
    beats:[
-    {npc:"“You look at the graves as if they owed you an answer. Ask, then.”",
+    {npc:"“Ask, then. I keep the account.”",
      choices:[
       {t:"What do you put the sickness down to?",wise:true,ink:8,
-       reply:"“The water, as much as anything. At a flood it is very salt, at a low tide full of slime and filth. And for the most part they die of mere famine.”",
-       insight:{g:"known",b:"The River Water",s:"Percy blamed the river water: “verie salt” at high tide, “full of slime and filth” at low tide. The fort had no well until 1609. Historians argue the water carried typhoid and dysentery."}},
-      {t:"Is it God's judgement on us for quarrelling?",fair:true,ink:3,
-       reply:"“Captain Smith would say so. But I know what I drink every morning.”"},
-      {t:"Is it the Indians poisoning the river?",wise:false,
-       reply:"“Nobody here says that. Men are dying of the flux and the swelling. Look at them.”"}]},
-    {npc:"“You have read my list. Twelve names since the sixth. What do you make of it?”",
+       reply:"“The water. Very salt at a flood, slime and filth at low tide. And mere famine.”",
+       insight:{g:"known",b:"The River Water",s:"Percy blamed the river water: “verie salt” at high tide, “full of slime and filth” at low. Historians think the water carried typhoid and dysentery."}},
+      {t:"Is it God's judgement on our quarrels?",fair:true,ink:3,
+       reply:"“Captain Smith would say so. I know what I drink.”"},
+      {t:"Are the Indians poisoning the river?",wise:false,
+       reply:"“Nobody says that. Men die of the flux and the swelling.”"}]},
+    {npc:"“Twelve names on my list since the sixth. What do you make of it?”",
      choices:[
-      {t:"There are no names before August. Did nobody die in July?",wise:true,ink:8,
-       reply:"“Men were sick in July. My first name is Asbie, on the sixth of August. Captain Smith and the President count more dead than I name. My list is not every man who died.”",
-       insight:{g:"known",b:"A List Is Not a Count",s:"Percy names 24 men who died from 6 August to 19 September 1607. Wingfield says “aboue fforty” died before September, Smith about 46, the Proceedings 50. A list of names is a floor, not a total."}},
-      {t:"Twelve men. That is not so many, out of a hundred.",wise:false,
+      {t:"No names before August. Did nobody die in July?",wise:true,ink:8,
+       reply:"“Men were sick in July. My list is not every man who died.”",
+       insight:{g:"known",b:"A List Is Not a Count",s:"Percy names 24 dead from 6 August to 19 September 1607. Wingfield says “aboue fforty”, Smith about 46, the Proceedings 50. A list of names is a floor, not a total."}},
+      {t:"Twelve is not so many, out of a hundred.",wise:false,
        reply:"“Twelve in twelve days. Count again in September.”"},
       {t:"Who will read it?",fair:true,ink:3,
-       reply:"“Men in London who were not here, deciding what it was like. That is why I write the days.”"}]}]},
+       reply:"“Men in London who were never here.”"}]}]},
   {id:"wingfield",name:"President Wingfield",voice:"male",role:"President of the council",at:4,eq:SICK_PEOPLE[0].eq,
-   done:"“I have answered you. I shall answer it all again in England.”",
+   done:"“I shall answer it all again in England.”",
    beats:[
-    {npc:"“They say I kept the sack for myself. Ask me. The others only whisper.”",
+    {npc:"“They say I kept the sack for myself. Ask me.”",
      choices:[
-      {t:"Why was the sack kept back from the common store?",wise:true,ink:8,
-       reply:"“The common store was spent, saving two gallons of each: the sack for the Communion table, the rest for extremities. That is not hoarding. That is keeping something back for worse.”",
-       insight:{g:"known",b:"Two Gallons for the Communion Table",s:"Smith says the President kept the sack and aqua vitae “onely in the Presidents hands, for his owne diet.” Wingfield says two gallons of each were left, kept for Communion and emergencies. Both were writing to win an argument."}},
+      {t:"Why was the sack kept back?",wise:true,ink:8,
+       reply:"“Only two gallons of each were left: the sack for Communion, the rest for worse days. That is not hoarding.”",
+       insight:{g:"known",b:"Two Gallons for the Communion Table",s:"Smith says the sack and aqua vitae were kept “onely in the Presidents hands, for his owne diet.” Wingfield says two gallons were saved for Communion and emergencies. Both wrote to win an argument."}},
       {t:"Did you drink it?",fair:true,ink:3,
-       reply:"“It is all still there, bunged up. Ask whether Smith or I gain more by the telling.”"},
+       reply:"“It is all still there. Ask whether Smith or I gain more by the telling.”"},
       {t:"Everyone knows you hoarded it.",wise:false,
-       reply:"“Everyone? Name me one man who saw it. You are repeating what is noised about the fort.”"}]},
-    {npc:"“And the allowance. They call me a tyrant for not feeding the council more. What do you think?”",
+       reply:"“Name one man who saw it.”"}]},
+    {npc:"“They call me a tyrant for not feeding the council more. Well?”",
      choices:[
-      {t:"If you gave the council more, how long would the store last?",wise:true,ink:8,
-       reply:"“Not till the supply. Thirteen weeks and a half of store, and the ships promised in twenty. Enlarge one man’s share and you take it from another man’s September.”",
-       insight:{g:"known",b:"The Equal Allowance",s:"Wingfield refused the council a larger ration. The store held 13½ weeks of food, he wrote, and Percy says supply was promised within 20. More for some meant starving the rest sooner. His enemies called it meanness; he called it arithmetic."}},
+      {t:"If the council got more, how long would the store last?",wise:true,ink:8,
+       reply:"“Not till the supply. Thirteen and a half weeks of store, and twenty till the ships.”",
+       insight:{g:"known",b:"The Equal Allowance",s:"Wingfield refused the council a larger ration: the store held 13½ weeks, and supply was due in 20. More for some meant all starving sooner. He called it arithmetic."}},
       {t:"A sick man needs more than a well one.",fair:true,ink:3,
-       reply:"“He does. And today’s well man is next week’s sick man. Where does it end?”"},
-      {t:"The council outranks you. You should obey them.",wise:false,
-       reply:"“I am the President, chosen by them. They may depose me. They may not starve the company through me.”"}]}]},
+       reply:"“And today’s well man is next week’s sick man.”"},
+      {t:"The council outranks you.",wise:false,
+       reply:"“They may depose me. They may not starve the company through me.”"}]}]},
   {id:"archer",name:"Master Archer",voice:"male",role:"Recorder of Virginia",at:5,eq:SICK_PEOPLE[9].eq,
-   done:"“That is the court’s record, as far as I can make it one. The rest is for England.”",
+   done:"“That is the court’s record. The rest is for England.”",
    beats:[
-    {npc:"“Captain Ratcliffe’s charge: the President denied him a penny whittle, a chicken, a spoonful of beer, and served him with foul corn. He shows us grain from a bag. How shall I set it down?”",
+    {npc:"“Ratcliffe says the President denied him a penny whittle, a chicken, a spoonful of beer, and served him foul corn. How shall I set it down?”",
      choices:[
-      {t:"Ask whether that corn differs from what the whole company eats.",wise:true,ink:8,
-       reply:"He is refused time to answer in writing. In his later defence he says the corn was “of the same which wee all liued vpon”, and that he ate one of his chickens, Ratcliffe four or five. No other account survives.",
-       insight:{g:"known",b:"Charge and Answer",s:"At the hearing on 11 September 1607 the charges were small: a knife, a chicken, a spoonful of beer, bad corn. Wingfield answered each in his own Discourse. For most, no third account survives: one man’s word against another’s."}},
-      {t:"Write that the grain in his hand proves it.",wise:false,
-       reply:"The grain proves only that the corn is foul, which everyone knows. Not that the President served Ratcliffe worse than himself."},
+      {t:"Ask if that corn differs from what everyone eats.",wise:true,ink:8,
+       reply:"Wingfield answered later that the corn was “of the same which wee all liued vpon”. No other account survives.",
+       insight:{g:"known",b:"Charge and Answer",s:"At the hearing on 11 September 1607 the charges were small: a knife, a chicken, a spoonful of beer, bad corn. Wingfield answered each in his Discourse. Mostly it is one man’s word against another’s."}},
+      {t:"Write that his grain proves it.",wise:false,
+       reply:"The grain proves only that the corn is foul, which everyone knows."},
       {t:"Ask Ratcliffe how many chickens he ate.",fair:true,ink:3,
-       reply:"Ratcliffe does not answer. Archer writes nothing down, which is its own kind of record."}]},
-    {npc:"“Then what is noised about the fort: that he hid the common store in the ground. Men swear they heard it.”",
+       reply:"Ratcliffe does not answer. Archer writes nothing down."}]},
+    {npc:"“And the talk that he buried the common store. Men swear they heard it.”",
      choices:[
       {t:"Ask what was actually dug up.",wise:true,ink:8,
-       reply:"Two glasses of his own salad oil, Wingfield wrote later, buried against the heat. Nobody produces anything else. He set this charge among the ones that begin “It is noysed”.",
-       insight:{g:"known",b:"Heard Is Not Seen",s:"Wingfield listed the rumours against him under “It is noysed”: that he buried the common store, was an atheist, plotted with Spain. He said he buried only two glasses of his own salad oil. No witness is named. Rumour repeated by many is still rumour."}},
-      {t:"So many men heard it. It must be true.",wise:false,
-       reply:"They may all have heard it from each other. One rumour told twenty times is not twenty witnesses."},
-      {t:"Ask him why he would bury anything at all.",fair:true,ink:3,
-       reply:"“Against the heat,” says Wingfield. “Oil turns in this sun. Ask any cook.”"}]},
-    {npc:"“Last, the President says three councillors cannot depose him. What is the law of it?”",
+       reply:"Two glasses of his own salad oil, Wingfield wrote later. He listed this charge under “It is noysed”.",
+       insight:{g:"known",b:"Heard Is Not Seen",s:"Wingfield listed the rumours against him under “It is noysed”: that he buried the store, plotted with Spain, was an atheist. No witness is named. Rumour repeated by many is still rumour."}},
+      {t:"So many heard it. It must be true.",wise:false,
+       reply:"One rumour told twenty times is not twenty witnesses."},
+      {t:"Ask why he would bury anything.",fair:true,ink:3,
+       reply:"“Oil turns in this heat,” says Wingfield."}]},
+    {npc:"“Last, he says three councillors cannot depose him. What is the law of it?”",
      choices:[
-      {t:"Ask what authority the three are acting on.",wise:true,ink:8,
-       reply:"Yesterday at his tent he said removing a president needs “the greater number of xiij voyces”, and “that they were but three”. The deposition stands. He appeals to the King, and goes back to the pinnace a prisoner.",
-       insight:{g:"known",b:"Three Voices",s:"Three councillors, Ratcliffe, Smith and Martin, deposed Wingfield on 10 September 1607 by a signed warrant. He argued it needed a majority of the council. Nobody in Virginia stood above the council to decide."}},
-      {t:"Three is a majority of what is left. It is lawful.",fair:true,ink:3,
-       reply:"“Of what is left,” says Archer. “Gosnold dead, Kendall put off. A thinned council. I shall write that.”"},
+      {t:"Ask what authority the three act on.",wise:true,ink:8,
+       reply:"He says removing him needs “the greater number of xiij voyces”, and “that they were but three”. The deposition stands.",
+       insight:{g:"known",b:"Three Voices",s:"Ratcliffe, Smith and Martin deposed Wingfield on 10 September 1607 by a signed warrant. He said it needed a council majority. Nobody in Virginia stood above the council to decide."}},
+      {t:"Three is a majority of what is left.",fair:true,ink:3,
+       reply:"“Of a thinned council,” says Archer. “Gosnold dead, Kendall put off. I shall write that.”"},
       {t:"He is a tyrant; the law does not matter.",wise:false,
-       reply:"“The law is all there is between this tent and the woods,” says Archer. “It matters.”"}]}]}];
+       reply:"“The law is all that stands between this tent and the woods,” says Archer."}]}]}];
 
 /* WHO HOLDS WHAT, BY DATE. Chapter III's titles came across with its people, so Smith was
    still "kept off the council" (he was sworn of it on 10 June), and on the eleventh of
@@ -24883,13 +24829,13 @@ function sickSpeaker(id){
 
 /* ---- THE RECORD THAT OPENS EACH SCENE, in the sources' words ---- */
 const SICK_OPEN=[
-  {t:"Newport sails",b:"<p>“Munday the two and twentieth of June … Captaine Newport in the Admirall departed from James Port for England.” <i>— Percy</i></p><p>He takes two ships, the clapboard and the letters. He leaves the Discovery, about a hundred men, and the promise of a supply “within twentie weekes”.</p><p>The fort, Smith wrote, was “palisadoed round, and all our men in good health and comfort”.</p>"},
-  {t:"The heat",b:"<p>On the twenty-fifth of June Powhatan sent word that “he desired greatly our freindshipp … that wee should sowe and reape in peace”. <i>— Wingfield</i></p><p>Today Tapahanah sends word that his new corn “was not at full groath by a foote”. He will bring some as soon as any is ripe.</p><p>“About this tyme, diuers of our men fell sick.” <i>— Wingfield</i></p>"},
-  {t:"The watch",b:"<p>“Wee watched every three nights, lying on the bare cold ground … which brought our men to bee most feeble wretches.” <i>— Percy</i></p><p>“Continuall watching, foure or fiue each night at three Bulwarkes.” <i>— Smith</i></p><p>Nobody dated this night. It stands for the nights of early August. Tonight the watch is yours.</p>"},
-  {t:"The kettle",b:"<p>Since the sixth of August, a burial almost every day: twelve names in Percy’s account.</p><p>“Our food was but a small Can of Barlie sod in water, to five men a day.” <i>— Percy</i></p><p>The council asked the President for more, for themselves and “for some sick their fauorites”. He refused. Today you serve the kettle.</p>"},
-  {t:"Captain Gosnold",b:"<p>“The two and twentieth day of August, there died Captaine Bartholomew Gosnold, one of our Councell.” <i>— Percy</i></p><p>He “fell sicke, and within three weekes died” (Smith). He is buried this morning outside the west wall.</p>"},
-  {t:"The President deposed",b:"<p>Yesterday Ratcliffe, Smith and Martin “came to the Presidentes Tennt with a warrant … to depose the President”. Today he answers them at their court, with Archer as Recorder.</p><p>Percy dates the deposition the eleventh; Wingfield, the tenth.</p>"},
-  {t:"The corn",b:"<p>“It pleased God (in our extremity) to moue the Indians to bring vs Corne, ere it was halfe ripe … when we rather expected when they would destroy vs.” <i>— Smith</i></p><p>Tapahanah kept his promise, wrote Wingfield. Three more died since yesterday: twenty-four names in Percy’s account.</p>"}];
+  {t:"Newport sails",b:"<p>“Munday the two and twentieth of June … Captaine Newport in the Admirall departed from James Port for England.” <i>— Percy</i></p><p>He leaves the Discovery, about a hundred men, and a promise of supply “within twentie weekes”.</p>"},
+  {t:"The heat",b:"<p>On 25 June Powhatan sent word that “he desired greatly our freindshipp”. Today Tapahanah says his new corn “was not at full groath by a foote”.</p><p>“About this tyme, diuers of our men fell sick.” <i>— Wingfield</i></p>"},
+  {t:"The watch",b:"<p>“Wee watched every three nights, lying on the bare cold ground … which brought our men to bee most feeble wretches.” <i>— Percy</i></p><p>Nobody dated this night. Tonight the watch is yours.</p>"},
+  {t:"The kettle",b:"<p>Since the sixth of August, a burial almost every day.</p><p>“Our food was but a small Can of Barlie sod in water, to five men a day.” <i>— Percy</i></p><p>The council asked the President for more, for themselves and “for some sick their fauorites”. He refused.</p>"},
+  {t:"Captain Gosnold",b:"<p>“The two and twentieth day of August, there died Captaine Bartholomew Gosnold, one of our Councell.” <i>— Percy</i></p><p>He is buried this morning outside the west wall.</p>"},
+  {t:"The President deposed",b:"<p>Yesterday Ratcliffe, Smith and Martin came “with a warrant … to depose the President”. Today is their court.</p><p>Percy dates it the eleventh; Wingfield, the tenth.</p>"},
+  {t:"The corn",b:"<p>“It pleased God (in our extremity) to moue the Indians to bring vs Corne, ere it was halfe ripe …” <i>— Smith</i></p><p>Twenty-four names in Percy’s account now.</p>"}];
 
 /* ---- THE DUTY SHEET: one modal for every choice the summer asks ---- */
 function sickSheet(kick,title,body,opts){
@@ -24918,8 +24864,8 @@ function sickDone(id,toastText){
 function sickYourStore(){
   const w=sickW();
   const rec=sickWeeks(sickStoreLeft(false)), yours=sickWeeks(sickStoreLeft(true));
-  return "<p><b>The store, by the record:</b> "+rec+" left at the Council’s allowance."+
-    (w.kettle&&w.kettle!=="equal"?" <b>Your summer:</b> "+yours+", because of how you served the kettle.":"")+
+  return "<p><b>Store left, by the record:</b> "+rec+"."+
+    (w.kettle&&w.kettle!=="equal"?" <b>After your kettle:</b> "+yours+".":"")+
     "</p>";
 }
 
@@ -24930,34 +24876,34 @@ function sickAct(d){
   if(d.kind==="record"){if(w.done)showEnding("ch4");else openReckoning();return;}
   if(d.kind==="store"){
     sickSheet("The storehouse · with the cape merchant","Reckon the store",
-      "<p>Studley opens the ledger. At the Council’s allowance, half a pint of wheat and half a pint of barley a man a day, he makes it “xiij weekes and a half”.</p>"+
-      "<p>Newport promised a supply “within twentie weekes”. How long must the company go with an empty store?</p>",
+      "<p>At the Council’s allowance, Studley makes the store “xiij weekes and a half”. Newport promised a supply “within twentie weekes”.</p>"+
+      "<p>How long will the store be empty?</p>",
       [{t:"About six and a half weeks",fn:function(){sickDone("store");
-         fortResult("Six and a half weeks short","<p>Thirteen and a half from twenty. “If the ships are on time,” says Studley. “If nothing spoils.”</p><p>Wingfield and Smith were enemies, yet both give the same store: “xiij weekes and a half”, and “13. or 14 weeks”. A fact both enemies give is hard to argue with.</p>",["+6 Ink"]);}},
-       {t:"None — the store reaches the supply",fn:function(){toast("Count it again: thirteen and a half weeks of store, twenty until the supply.");}},
-       {t:"Twenty weeks",fn:function(){toast("Twenty is when the supply is promised. The store runs out first.");}}]);
+         fortResult("Six and a half weeks short","<p>“If the ships are on time,” says Studley.</p><p>Enemies Wingfield and Smith give the same figure: “xiij weekes and a half”, and “13. or 14 weeks”. Two enemies agreeing is hard to argue with.</p>",["+6 Ink"]);}},
+       {t:"None — the store reaches the supply",fn:function(){toast("Count again: thirteen and a half weeks of store, twenty to the supply.");}},
+       {t:"Twenty weeks",fn:function(){toast("Twenty is when the supply is due. The store runs out first.");}}]);
     return;
   }
   if(d.kind==="water"){
     const well=fortW().prog&&fortW().prog.well>=1;
     const opts=[
       {t:"Draw it at the flood",fn:function(){sickDone("water");
-        fortResult("Salt","<p>The tide is in. The water tastes of the sea.</p><p>“Our drinke cold water taken out of the River, which was at a floud verie salt …” <i>— Percy</i></p><p>The fort stood where the river turns from salt to fresh, historians argue. In a dry summer the salt stayed, and so did the fort’s own filth.</p>",["+6 Ink"]);}},
+        fortResult("Salt","<p>The water tastes of the sea.</p><p>“… at a floud verie salt …” <i>— Percy</i></p><p>Historians argue the fort stood where salt water meets fresh. In a dry summer, salt and filth stayed put.</p>",["+6 Ink"]);}},
       {t:"Wait for the ebb and draw it then",fn:function(){sickDone("water");
-        fortResult("Slime and filth","<p>The tide is out. The water is fresher, brown, and smells of mud.</p><p>“… at a low tide full of slime and filth …” <i>— Percy</i></p><p>Tree rings show 1606 to 1612 were the driest seven years here in about 770 years. There was no clean choice at the river.</p>",["+6 Ink"]);}}];
+        fortResult("Slime and filth","<p>The water is brown and smells of mud.</p><p>“… at a low tide full of slime and filth …” <i>— Percy</i></p><p>Tree rings show 1606 to 1612 were the driest seven years here in about 770 years. There was no clean choice.</p>",["+6 Ink"]);}}];
     if(well)opts.push({t:"Draw it from the well your fortnight dug",fn:function(){sickDone("water");
-      fortResult("Your well","<p>You draw from the well your orders dug in May. It is sweet.</p><p><b>The record:</b> the real fort had no well until 1609, when Smith’s men dug one “of excellent sweete water”. Your well is not what happened.</p>",["+6 Ink"]);}});
+      fortResult("Your well","<p>Your well’s water is sweet.</p><p><b>The record:</b> the fort had no well until 1609. Your well is not what happened.</p>",["+6 Ink"]);}});
     sickSheet("The landing · a bucket and a rope","Draw the day’s water",
-      "<p>The fort drinks from the river. There is no spring and no well. Draw at the flood, or wait for the ebb.</p>",opts);
+      "<p>The fort drinks from the river. Draw at the flood, or wait for the ebb?</p>",opts);
     return;
   }
   if(d.kind==="bulwark"){
     if(w.watch.indexOf(d.b)<0)w.watch.push(d.b);
-    const NOTE={sw:"Two men at the south-west bulwark. One sits against the timber, and gets up slowly when he sees you.",
-      se:"One man at the south-east bulwark, shaking with fever. The other went to lie down an hour ago and has not come back.",
-      n:"Two men at the north bulwark, facing the woods. A fire burns somewhere out in the dark. They watch it and say nothing."};
+    const NOTE={sw:"Two men at the south-west bulwark. One sits slumped against the timber.",
+      se:"One man at the south-east bulwark, shaking with fever. The other has gone to lie down.",
+      n:"Two men at the north bulwark watch a fire out in the dark."};
     if(w.watch.length>=3){sickDone("watch");
-      fortResult("Five men","<p>"+NOTE[d.b]+"</p><p>Five men on their feet at three bulwarks, guarding about a hundred. Percy, later that summer: “not having five able men to man our Bulwarkes upon any occasion.”</p><p>Nobody came out of the woods. Wingfield: “gods onely mercy did now watch and warde for us.” Historians point to Powhatan’s own plans.</p>",["+6 Ink"]);}
+      fortResult("Five men","<p>"+NOTE[d.b]+"</p><p>Five men guard about a hundred. Percy: “not having five able men to man our Bulwarkes upon any occasion.”</p><p>Nobody attacked. Wingfield thanked “gods onely mercy”. Historians point to Powhatan’s own plans.</p>",["+6 Ink"]);}
     else toast(NOTE[d.b]);
     updateGuide();return;
   }
@@ -24966,28 +24912,28 @@ function sickAct(d){
       fortResult(title,body+sickYourStore(),["+6 Ink"]);};};
     sickSheet("The common kettle · 18 August","Serve the kettle",
       "<p>“Halfe a pinte of wheat, and as much barly, boyled with water, for a man a day … contained as many wormes as graines.” <i>— the Proceedings</i></p>"+
-      "<p>The President orders the same allowance for every man. Ratcliffe stands at your elbow with a bowl for his sick, and Martin with one for his son.</p>",
-      [{t:"Every man the same measure, as the President orders",fn:pick("equal","The same measure","<p>You fill every bowl alike. “A spoonful more, for a sick man,” says Ratcliffe. You give him the same.</p><p>In September he will charge the President over “a spoonfull of beere”. He could have charged you.</p>")},
-       {t:"More for every man who is sick",fn:pick("sick","More for the sick","<p>The sick get fuller bowls, the well men thinner. Some of the well will be sick next week.</p><p>Wingfield warned that a larger allowance “had starued the whole Company” before the supply came.</p>")},
-       {t:"More for the council and the sick they name",fn:pick("council","More for the council’s sick","<p>Ratcliffe’s bowl, Martin’s son’s, and the men they point to come away full. Men with nobody to point for them get what is left.</p><p>This is what the council asked of the President, and he refused.</p>")}]);
+      "<p>The President orders equal shares. Ratcliffe wants more for his sick, Martin for his son.</p>",
+      [{t:"Equal shares, as the President orders",fn:pick("equal","The same measure","<p>Every bowl alike. “A spoonful more, for a sick man,” says Ratcliffe. You refuse.</p><p>In September he will charge the President over “a spoonfull of beere”.</p>")},
+       {t:"More for every man who is sick",fn:pick("sick","More for the sick","<p>The sick get more, the well less. Some of the well will be sick next week.</p><p>Wingfield warned that more food now “had starued the whole Company” before the supply.</p>")},
+       {t:"More for the council’s favourites",fn:pick("council","More for the council’s sick","<p>The council’s men eat well. Men with nobody to speak for them get what is left.</p><p>The President refused the council exactly this.</p>")}]);
     return;
   }
   if(d.kind==="burial"){sickBurial();return;}
   if(d.kind==="court"){
     sickDone("court");
     const k=w.kettle;
-    fortResult("The court day","<p>Yesterday’s deposition stands. Archer reads articles against Wingfield until the President asks: “Will you appeale to the King, or no?” Wingfield does, and is sent to the pinnace: “Looke to him well: he is now the kinges prisoner.”</p>"+
-      "<p>Ratcliffe is President of a council of three. In six days Jehu Robinson will sue Wingfield for slander, and later Smith; a jury will give them a hundred pounds and two hundred.</p>"+
-      (k==="equal"?"<p><b>Your summer:</b> you held the kettle to the President’s measure. Ratcliffe’s charge could have stood against you too.</p>":
-       k?"<p><b>Your summer:</b> you gave some men more at the kettle, as the council wanted. Your store is "+SICK_KETTLE[k]+" days shorter than the record’s.</p>":"")+
-      "<p>All of this day comes from one man: Wingfield, writing in his own defence.</p>",["+6 Ink"]);
+    fortResult("The court day","<p>Wingfield appeals to the King and is sent to the pinnace: “Looke to him well: he is now the kinges prisoner.”</p>"+
+      "<p>Ratcliffe is President of a council of three.</p>"+
+      (k==="equal"?"<p><b>Your summer:</b> Ratcliffe’s charge could have been made against you.</p>":
+       k?"<p><b>Your summer:</b> you fed some men more, as the council wanted. Your store is "+SICK_KETTLE[k]+" days shorter.</p>":"")+
+      "<p>All of this comes from Wingfield’s own defence.</p>",["+6 Ink"]);
     return;
   }
   if(d.kind==="corn"){
     sickDone("corn");
-    fortResult("Corn ere it was half ripe","<p>The bearers set down baskets of green corn, and bread made from it. This is what a dry summer grew.</p>"+
-      "<p><b>How the English explained it.</b> Smith: God moved “the Indians to bring vs Corne”. Percy: God sent “those people which were our mortall enemies to releeve us”.</p>"+
-      "<p><b>What Powhatan said.</b> Only Wingfield wrote down his message, in June: he desired “our freindshipp”. No Powhatan account of why they fed the fort survives. Historians read it as policy: a weak English town that needed his corn was worth more to Powhatan than a burned one.</p>",["+6 Ink"]);
+    fortResult("Corn ere it was half ripe","<p>Baskets of green corn, and bread made from it.</p>"+
+      "<p>Percy: God sent “those people which were our mortall enemies to releeve us”.</p>"+
+      "<p>No Powhatan account survives. Wingfield recorded only Powhatan’s wish for “our freindshipp”. Historians call it policy: a weak, dependent town served Powhatan better than a burned one.</p>",["+6 Ink"]);
     return;
   }
 }
@@ -24995,10 +24941,10 @@ function sickAct(d){
 function sickList(){
   const sd=sickDay();
   const rows=SICK_DEAD.filter(function(r){return r.d<=sd.d;});
-  let h="<p>George Percy’s account, as Purchas printed it in 1625:</p><ul class=\"sickList\">";
+  let h="<p>Percy’s account, printed in 1625:</p><ul class=\"sickList\">";
   rows.forEach(function(r){h+="<li><b>"+r.day+"</b> · "+r.who+(r.of?" — <i>"+r.of+"</i>":"")+"</li>";});
-  h+="</ul><p>"+rows.length+" named. Wingfield: “aboue fforty” dead before September. Smith: “about 46” by the tenth of September. The Proceedings: “50”. Purchas cut Percy off at the nineteenth of September.</p>";
-  if(!rows.length)h="<p>Percy has named no dead yet. Men are sick. His list begins on the sixth of August.</p>";
+  h+="</ul><p>"+rows.length+" named. Wingfield: “aboue fforty” dead before September. Smith: “about 46”. The Proceedings: “50”.</p>";
+  if(!rows.length)h="<p>Percy has named no dead yet. His list begins on the sixth of August.</p>";
   fortResult("The dead",h,[]);
   sickW().did.list=true;
 }
@@ -25020,19 +24966,17 @@ function sickBurial(){
   const g=SICK_GRAVE, y=fortGround(g[0],g[1]);
   playCutscene({skippable:true,steps:[
     {cam:{to:[g[0]-36,y+14,g[1]+16],look:[g[0],y+2,g[1]],cut:true},t:4,
-     narrate:"They carry Captain Gosnold out and round the west wall, to where the others lie."},
+     narrate:"They carry Captain Gosnold round the west wall, to where the others lie."},
     {cam:{to:[g[0]-18,y+7,g[1]-12],look:[g[0],y+1,g[1]]},t:4,
-     narrate:"Master Hunt reads the service. Most of the men who can stand are here."},
-    {cam:{to:[g[0]-60,y+34,g[1]+30],look:[0,y+6,FORT_O[1]-90]},t:2.6,sfx:"boom",gain:0.6,shake:0.4,
-     narrate:"Then the ordnance in the bulwarks, every piece, one after another."},
+     narrate:"Master Hunt reads the service."},
+    {cam:{to:[g[0]-60,y+34,g[1]+30],look:[0,y+6,FORT_O[1]-90]},t:2.6,sfx:"boom",gain:0.6,shake:0.4},
     {t:1.6,sfx:"boom",gain:0.55,shake:0.3},
     {t:1.6,sfx:"boom",gain:0.5,shake:0.3},
-    {cam:{to:[g[0]-22,y+6,g[1]+14],look:[g[0],y+2,g[1]]},t:1.4,sfx:"crack",gain:0.5,
-     narrate:"And the small shot, volley after volley."},
+    {cam:{to:[g[0]-22,y+6,g[1]+14],look:[g[0],y+2,g[1]]},t:1.4,sfx:"crack",gain:0.5},
     {t:1.2,sfx:"crack",gain:0.5},{t:1.2,sfx:"crack",gain:0.5},
     {t:4.5,narrate:"“He was honourably buried,” Percy wrote. Anyone in the woods would have heard it."}]},
     function(){sickDone("burial");fortDrop("grave");   /* or using it again buries him twice */
-      fortResult("Honourably buried","<p>In 2003 archaeologists found a coffin just outside the fort’s west wall, a captain’s leading staff on its lid. It may be Gosnold’s. Nobody has proved it.</p><p>After his death, Percy wrote, “the Councell could hardly agree”.</p>",["+6 Ink"]);});
+      fortResult("Honourably buried","<p>In 2003 archaeologists found a coffin with a captain’s staff outside the west wall. It may be Gosnold’s; nobody has proved it.</p><p>After his death, Percy wrote, “the Councell could hardly agree”.</p>",["+6 Ink"]);});
 }
 
 /* ---- THE WORLD: Chapter III's finished fort, forced to its 15 June state, with the
@@ -25250,72 +25194,72 @@ CONTENT.ch4={
   npcs:SICK_NPCS,
   charter:{insight:{b:"The Sickly Season"},counted:false},
   reck:{seal:"records",kick:"Master Percy’s Account",title:"Set Down the Summer",
-    frame:"“My account goes home with the next ship,” says Master Percy, “to men in London who were never here. Six questions about this summer; I’ll bear two wrong, no more.”",
+    frame:"“My account goes to men in London who were never here,” says Master Percy. “Six questions; I’ll bear two wrong.”",
     lockLine:"Not yet. The account is closed on the nineteenth of September, when the corn has come.",
-    pass:{title:"The Account Holds",body:"Percy dips his pen. “Then I shall leave it so: the dead by name and day, the water, the store, the quarrel, the corn, and that every one of us who wrote it had a side.”"},
-    fail:{title:"The Account Does Not Hold",body:"Percy shakes his head. “London will read this as gospel. It must say whose word each thing is. Walk the fort, and ask again.”"},
+    pass:{title:"The Account Holds",body:"Percy dips his pen. “The dead by name and day, and every writer’s side. So I shall leave it.”"},
+    fail:{title:"The Account Does Not Hold",body:"“London will read this as gospel,” says Percy. “It must say whose word each thing is. Ask again.”"},
     onPass:function(){sickW().done=true;},
     q:[
-      {stim:"Wingfield wrote his Discourse after he was deposed, for the Company in London. Smith’s True Relation (1608) and the Proceedings (1612) were written by his enemies.",
-       q:"Why must a reader be careful with ALL the accounts of this summer?",
-       o:["Every writer was on one side of the quarrel", "They were all written in Latin, then translated", "None of the writers was in Virginia that summer", "They were written two hundred years afterwards"],a:0},
-      {stim:"Wingfield: the store was “but for xiij weekes and a half, under the Cap Merchaunts hand.” Smith: Newport left “prouision for 13. or 14 weeks.”",
-       q:"Wingfield and Smith were bitter enemies. Why does it matter that they give the same number for the store?",
-       o:["Two enemies agreeing is hard to explain away", "It proves that one of them copied the other", "It shows the store was larger than both said", "It means the number was only a rough guess"],a:0},
-      {stim:"Percy names 24 men who died between 6 August and 19 September. Wingfield: “aboue fforty” before September. Smith: “about 46” by 10 September. The Proceedings: “50”.",
-       q:"What is the best way to understand Percy’s 24 names?",
-       o:["As a floor: at least 24 died, likely more", "As the exact total, since Percy gave names", "As an exaggeration, being the largest count", "As proof that the other writers were lying"],a:0},
-      {stim:"Percy’s list begins on 6 August. Wingfield: “About this tyme [early July], diuers of our men fell sick.”",
-       q:"Percy names nobody who died in July. What can a historian safely conclude?",
-       o:["Only that Percy recorded no July deaths", "That nobody at the fort died in July", "That Wingfield invented the July sickness", "That the sickness began on 6 August"],a:0},
-      {stim:"Percy: “our drinke cold water taken out of the River, which was at a floud verie salt, at a low tide full of slime and filth, which was the destruction of many of our men.”",
-       q:"What did Percy himself blame for many of the deaths?",
-       o:["The drinking water from the river", "Poison put in the food by enemies", "The cold of the coming winter", "Wounds left from the May attack"],a:0},
-      {stim:"From Percy’s “verie salt … slime and filth”, historians argue the fort stood where the river turns from salt to fresh, so in a dry summer salt and filth stayed by the island. Tree rings show 1606–1612 was the worst drought in about 770 years.",
+      {stim:"Wingfield wrote his Discourse after he was deposed. Smith’s True Relation and the Proceedings were written by his enemies.",
+       q:"Why be careful with ALL these accounts?",
+       o:["Every writer took a side", "They were translated from Latin", "No writer was in Virginia", "They were written centuries later"],a:0},
+      {stim:"Wingfield: the store was “but for xiij weekes and a half”. Smith: Newport left “prouision for 13. or 14 weeks.”",
+       q:"Why does it matter that these two enemies agree?",
+       o:["Enemies agreeing is hard to doubt", "It proves one copied the other", "It shows the store was much larger", "It means the figure was a guess"],a:0},
+      {stim:"Percy names 24 dead from 6 August to 19 September. Wingfield: “aboue fforty”. Smith: “about 46”. The Proceedings: “50”.",
+       q:"How should we read Percy’s 24 names?",
+       o:["As a floor: at least 24 died", "As the exact total of the dead", "As an exaggeration of the toll", "As proof the others were lying"],a:0},
+      {stim:"Percy’s list begins on 6 August. Wingfield, of early July: “diuers of our men fell sick.”",
+       q:"Percy names nobody who died in July. What can we safely conclude?",
+       o:["Only that Percy recorded none", "That nobody at all died in July", "That Wingfield invented it", "That sickness began in August"],a:0},
+      {stim:"Percy: the river water was “at a floud verie salt, at a low tide full of slime and filth, which was the destruction of many of our men.”",
+       q:"What did Percy blame for many deaths?",
+       o:["The river water", "Poisoned food", "The winter cold", "Wounds from the May attack"],a:0},
+      {stim:"From Percy’s “verie salt … slime and filth”, historians argue salt and filth stayed by the island in a dry summer. Tree rings show 1606–1612 was the worst drought in about 770 years.",
        q:"What is this explanation built on?",
-       o:["Percy’s words and modern evidence like tree rings", "A letter from Powhatan describing the drought", "Smith’s statement that God was angry with them", "The ship’s log kept aboard the Susan Constant"],a:0},
-      {stim:"Three explanations of the deaths: God was “angrie with vs” (True Relation); the water (Percy); “the fault of our going was our owne … we weare at sea 5. monthes” and missed the season to plant (Proceedings).",
-       q:"Which of these can a historian test against other evidence?",
-       o:["The water and the lateness; not God’s anger", "Only God’s anger, since all three mention it", "None of them, since all the writers are dead", "Only the explanation that Smith wrote down"],a:0},
-      {stim:"Ratcliffe’s charge: the President “denyed him a penny whitle, a chickyn, a spoonfull of beere, and served him with foule corne.” Wingfield’s answer: “The corne was of the same which wee all liued vpon.”",
-       q:"Both the charge and the answer come to us from Wingfield’s own Discourse. What does that mean?",
-       o:["It is his version, so weigh it as a defence", "The charge must be false, since he wrote it", "It shows Ratcliffe agreed with the answer", "It makes it a neutral record of the court"],a:0},
-      {stim:"Smith: the sack and aqua vitae were kept “onely in the Presidents hands, for his owne diet.” Wingfield: two gallons of each were left, “the sack reserued for the Comunion table, the rest for such extreamityes as might fall upon us.”",
-       q:"What is the most careful conclusion?",
-       o:["They tell it differently; neither is neutral", "Wingfield certainly drank all of it himself", "There never was any sack left in the store", "Smith saw Wingfield drinking it every night"],a:0},
-      {stim:"Wingfield set down the rumours against him under the words “It is noysed”: that he hid the common store in the ground, plotted with Spain, was an atheist. What had been buried, he said, was “2 glasses with sallet oyle … for my private stoare.”",
+       o:["Percy’s words and tree rings", "A letter from Powhatan", "Smith’s claim that God was angry", "The Susan Constant’s log"],a:0},
+      {stim:"Three explanations: God was “angrie with vs” (True Relation); the water (Percy); “we weare at sea 5. monthes” and missed the planting (Proceedings).",
+       q:"Which can a historian test against evidence?",
+       o:["The water and the lateness", "Only God’s anger", "None of them", "Only the one Smith wrote down"],a:0},
+      {stim:"Ratcliffe: the President “denyed him a penny whitle, a chickyn, a spoonfull of beere …” Wingfield: “The corne was of the same which wee all liued vpon.” Both come from Wingfield’s Discourse.",
+       q:"What does that mean for a reader?",
+       o:["It is his version: a defence", "The charge must be false", "Ratcliffe agreed with it", "It is a neutral record of the court"],a:0},
+      {stim:"Smith: the sack was kept “onely in the Presidents hands, for his owne diet.” Wingfield: it was “reserued for the Comunion table”.",
+       q:"What is the careful conclusion?",
+       o:["They differ; neither is neutral", "Wingfield drank all of it", "There never was any sack", "Smith watched him drinking it nightly"],a:0},
+      {stim:"Wingfield listed rumours under “It is noysed”: that he buried the common store, plotted with Spain, was an atheist.",
        q:"What is wrong with “It is noysed” as evidence?",
-       o:["It is rumour: said, not seen by anyone named", "It was written down in the wrong language", "It was said only by Wingfield’s friends", "Nothing; so many saying it proves it true"],a:0},
-      {stim:"The Proceedings chapter about this summer, including the deposition on 10 September, is signed “Thomas Studley”. Percy: “The eight and twentieth day died Thomas Stoodie, Cape Merchant.”",
+       o:["It is rumour, seen by no one named", "It is in the wrong language", "Only his friends said it", "Nothing: so many said it, it is true"],a:0},
+      {stim:"The Proceedings chapter on this summer is signed “Thomas Studley”. Percy: “The eight and twentieth day died Thomas Stoodie, Cape Merchant.”",
        q:"What problem does this raise?",
-       o:["He was dead, so someone else wrote that part", "It proves that Percy’s list of names is wrong", "It proves that the deposition never happened", "Nothing; dead men often signed such accounts"],a:0},
-      {stim:"Smith: God moved “the Indians to bring vs Corne.” Percy: God sent “those people which were our mortall enemies to releeve us.” Wingfield (25 June): Powhatan “desired greatly our freindshipp … that wee should sowe and reape in peace.”",
-       q:"Which source gives a reason that came from Powhatan himself?",
-       o:["Wingfield’s note of Powhatan’s message", "Smith’s account in the True Relation", "Percy’s Observations, as Purchas printed it", "The Proceedings, signed by Thomas Studley"],a:0},
-      {stim:"Wingfield: Tapahanah’s new corn “was not at full groath by a foote.” Smith: the corn came “ere it was halfe ripe.” Tree rings show this was a drought year.",
-       q:"What do these details suggest about the corn the Powhatan gave?",
-       o:["Green corn from a short harvest: a real cost", "Corn left over from a huge, easy surplus", "English corn that had been taken in May", "Corn given only because they were paid gold"],a:0},
-      {stim:"Wingfield: the President “hidd this our weakenes carefully from the salvages; neuer suffring them, in all his tyme, to come into our Towne.” Percy: there were “not … five able men to man our Bulwarkes.”",
-       q:"Why did Wingfield keep the Powhatan out of the fort?",
-       o:["So they would not see how few men could fight", "Because the Powhatan refused to come inside", "Because the fort was built without a gate", "Because Powhatan himself had asked him to"],a:0},
-      {stim:"Wingfield refused the council a larger allowance: enlarging it “he had starued the whole Company.” The store held 13½ weeks; the supply was promised in 20.",
-       q:"What was Wingfield’s reason for keeping the allowance equal?",
-       o:["More for some meant less, sooner, for all", "He wanted the council to be the first to die", "The Company in London forbade any change", "He had no idea how much food was left"],a:0},
-      {stim:"Ratcliffe, Smith and Martin deposed Wingfield “with a warrant, subscribed vnder their handes.” He answered that removing him needed “the greater number of xiij voyces”, and “that they were but three”.",
-       q:"What was Wingfield’s argument against his deposition?",
-       o:["Three councillors were too few to remove him", "The King had appointed him President for life", "Smith had never been sworn of the council", "He had already resigned the week before"],a:0},
-      {stim:"Percy: Newport sailed on “the two and twentieth of June.” Wingfield and the True Relation agree. The Proceedings says “the 15 of Iune 1607.”",
-       q:"How should a historian date Newport’s departure?",
-       o:["22 June: three accounts agree on that date", "15 June: the Proceedings is the most official", "Neither: the date cannot be known at all", "Halfway between them, on the 18th of June"],a:0},
-      {stim:"London, 18 August 1607, in a letter: “Captaine Newport is come … They write much commendations of the aire and the soile.” That week, Percy was writing a name in his list almost every day.",
-       q:"Why did people in London think the colony was doing well?",
-       o:["Their only news left Virginia in June", "Newport lied to hide deaths he had seen", "Percy’s list was sent on a faster ship", "The colony really was thriving in August"],a:0},
-      {stim:"Percy: Ellis Kinistone “was starved to death with cold” on 18 September. In 1607 to “starve” could mean simply to die, whether of cold or hunger.",
-       q:"What does this teach about reading old sources?",
-       o:["Words change meaning; check what they meant then", "Percy made a mistake about the September weather", "September in Virginia is usually freezing cold", "Old sources cannot be trusted about anything"],a:0},
-      {stim:"Wingfield: “in three weekes, the President had reared vpp xx men able to worke,” fed on Powhatan corn. The Proceedings credits Smith: Martin and Ratcliffe, sick, were “by his care, preserved and relieued.”",
-       q:"Who does each account give the credit to, and why might that be?",
-       o:["Each credits his own side, as rivals would", "Both give all the credit to the Powhatan", "Both give the credit to Captain Newport", "Both agree that it was Captain Gosnold"],a:0}]},
+       o:["He died, so someone else wrote it", "Percy’s list must be wrong", "The deposition never happened", "Nothing; dead men often signed such accounts"],a:0},
+      {stim:"Smith and Percy say God moved the Indians to bring corn. Wingfield (25 June): Powhatan “desired greatly our freindshipp”.",
+       q:"Which source gives a reason from Powhatan himself?",
+       o:["Wingfield’s note of his message", "Smith’s True Relation", "Percy’s Observations", "The Proceedings, signed by Studley"],a:0},
+      {stim:"Wingfield: Tapahanah’s corn “was not at full groath by a foote.” Smith: it came “ere it was halfe ripe.” It was a drought year.",
+       q:"What does this suggest about the corn they gave?",
+       o:["Green corn from a short harvest", "Spare corn from a huge surplus", "English corn taken in May", "Corn the English paid for in gold"],a:0},
+      {stim:"Wingfield never let the Powhatan “come into our Towne.” Percy: “not … five able men to man our Bulwarkes.”",
+       q:"Why keep the Powhatan out of the fort?",
+       o:["To hide how few could fight", "They refused to come in", "The fort had no gate", "Powhatan himself had asked him to"],a:0},
+      {stim:"Wingfield refused the council more food: it “had starued the whole Company.” The store held 13½ weeks; supply was due in 20.",
+       q:"Why keep the allowance equal?",
+       o:["More for some meant less for all", "He wanted the council to die first", "London forbade any change", "He did not know the store’s size"],a:0},
+      {stim:"Ratcliffe, Smith and Martin deposed him “with a warrant, subscribed vnder their handes.” He said it needed “the greater number of xiij voyces”, and “that they were but three”.",
+       q:"What was Wingfield’s argument?",
+       o:["Three were too few to remove him", "The King made him President for life", "Smith was never sworn of the council", "He had already resigned"],a:0},
+      {stim:"Percy, Wingfield and the True Relation date Newport’s sailing 22 June. The Proceedings: “the 15 of Iune 1607.”",
+       q:"How should a historian date it?",
+       o:["22 June: three accounts agree", "15 June: the official book", "It cannot be known at all", "Halfway between, on the 18th of June"],a:0},
+      {stim:"London, 18 August 1607: “Captaine Newport is come … They write much commendations of the aire and the soile.” That week Percy wrote a name almost daily.",
+       q:"Why did London think the colony was doing well?",
+       o:["Its news had left in June", "Newport hid the deaths he saw", "Percy’s list came by a fast ship", "The colony was thriving in August"],a:0},
+      {stim:"Percy: Ellis Kinistone “was starved to death with cold.” In 1607 “starve” could mean simply to die.",
+       q:"What does this teach about old sources?",
+       o:["Words change meaning", "Percy got the weather wrong", "Virginia Septembers are freezing", "Old sources are never reliable"],a:0},
+      {stim:"Wingfield: “the President had reared vpp xx men able to worke.” The Proceedings credits Smith: the sick were “by his care, preserved and relieued.”",
+       q:"Who gets the credit, and why?",
+       o:["Each credits his own side", "Both credit the Powhatan", "Both credit Captain Newport", "Both credit Captain Gosnold"],a:0}]},
   ready:function(){
     const w=sickW();
     return (w.day>=SICK_DAYS.length-1&&w.did.corn)?{ok:true,missing:[]}:{ok:false,missing:["the corn at the gate, on the nineteenth of September"]};
@@ -29076,14 +29020,14 @@ const CHAPTERS=[
        "<p>By the end of summer about half of them will be dead, of the water and the heat more than of arrows.</p>"}},
   {n:"IV",yr:"1607",t:"The Sickly Season",d:"The fort on Jamestown Island — 22 June to 19 September 1607",
    ready:true,world:"ch4",pace:2.5,near:9,
-   intro:function(){ return "On the twenty-second of June Captain Newport sails for England with two ships. He leaves the Discovery, about a hundred men in a finished fort, store for thirteen weeks and a half, and a promise of supply within twenty. Every account of Jamestown remembers the summer that follows."; },
-   obj:function(){ return "Live the summer one dated day at a time: do the day’s duty, hear who is still on their feet, then turn the ledger. No one the record says died can be saved. On the nineteenth of September, close Master Percy’s account."; },
+   intro:function(){ return "On the twenty-second of June Newport sails for England. He leaves about a hundred men in the fort, store for thirteen and a half weeks, and a promise of supply within twenty."; },
+   obj:function(){ return "Live the summer one dated day at a time: do the day’s duty, then turn the ledger. No one the record says died can be saved."; },
    goals:function(){
      const w=sickW(), sd=sickDay();
      return [
        {t:"Live the summer ("+(w.day+1)+" of "+SICK_DAYS.length+" days)",done:w.day>=SICK_DAYS.length-1&&!!w.did.corn},
        {t:sd.dutyName,done:!!w.did[sd.duty]},
-       {t:"Ask Master Percy, the President and the Recorder what they know",done:SICK_NPCS.every(function(n){return npcDone(n.id);}),opt:true},
+       {t:"Ask Percy, the President and the Recorder",done:SICK_NPCS.every(function(n){return npcDone(n.id);}),opt:true},
        {t:"Close Master Percy’s account, 19 September",done:!!w.done,goal:true,locked:!(w.day>=SICK_DAYS.length-1&&w.did.corn)}
      ]; },
    status:function(){ const w=sickW(), sd=sickDay();
@@ -29100,8 +29044,8 @@ const CHAPTERS=[
      if(o)return {it:o,why:w.day>=SICK_DAYS.length-1?"the chapter ends here":"the next date"};
      return null; },
    end:{head:"The Sickly Season — Complete",yr:"Chapter IV · 19 September 1607",nextWorld:"ch5",nextLabel:"Smith’s Relation — Chapter V",
-     body:"<p>About half of the hundred and four men Newport left are dead: twenty-four named by Percy, “about 46” by Smith, “50” in the Proceedings. Wingfield, deposed, is a prisoner in the pinnace. The fort is eating Powhatan corn.</p>"+
-       "<p>Smith, cape merchant now, takes a boat down the river to Kecoughtan to trade for more.</p>"}},
+     body:"<p>About half of the hundred and four men are dead: twenty-four named by Percy, “about 46” by Smith, “50” in the Proceedings. Wingfield is a prisoner. The fort eats Powhatan corn.</p>"+
+       "<p>Smith, cape merchant now, goes downriver to Kecoughtan to trade for more.</p>"}},
   {n:"V",yr:"1607–08",t:"Smith’s Relation",d:"The rivers, Werowocomoco and the fort — autumn 1607 to 7 January 1608",
    ready:true,world:"ch5",pace:2.5,near:9,
    intro:function(){ return "Smith is cape merchant now, and the fort has eighteen days of food. Through the autumn he takes the barge out to trade for corn; in December he goes up the Chickahominy and does not come back. When he does, twenty-three days later, he has a story to tell. He told it more than once, and it changed."; },
@@ -30660,7 +30604,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0542";
+const BUILD="20261127-0548";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
