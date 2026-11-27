@@ -28045,7 +28045,7 @@ registerWorld("ch6",function(root){
        tents stood on: from Spring 1609 the tents and the sail-awning go and framed houses stand on
        five of their sites, so the change shows from one day to the next */
     if(w.day>=6){PRES.cut={tents:CAMP_TENTS.slice()};
-      STARVE_TENTS.filter(function(t){return t[0]!==22;}).forEach(function(t){leafHouse(root,G,t[0],t[1],0);});}
+      STARVE_TENTS.filter(function(t){return t[0]!==22;}).forEach(function(t){leafHouse(root,G,t[0],t[1],0,"thatch");});}
     if(w.day===0){
       spots={smith:[6,10,3.2],scrivener:[-30,0,2.6],newport:[-96,40,1.4],wingfield:[-104,46,1.0],archer:[-88,46,2.2]};
       /* Newport's ship, moored below the fort until she sails */
@@ -29179,7 +29179,7 @@ registerWorld("ch7",function(root){
       if(!STARVE.cut)STARVE.cut={tents:[],gaps:[],gate:false};
       STARVE.cut.tents=CAMP_TENTS.slice();
       STARVE.hide=(STARVE.hide||[]).concat(["awning"]);   /* as in Chapter VI from spring 1609 */
-      STARVE_TENTS.filter(function(t){return ruined.indexOf(t)<0;}).forEach(function(t){leafHouse(root,G,t[0],t[1],0);});
+      STARVE_TENTS.filter(function(t){return ruined.indexOf(t)<0;}).forEach(function(t){leafHouse(root,G,t[0],t[1],0,"thatch");});
     }
   }
   if(where==="fort"){
@@ -30046,50 +30046,276 @@ function LEAF_WEDDING(){
 function G8(x,z){return WORLD.ground?WORLD.ground(x,z):0;}
 
 /* ---- NEW THINGS IN THE WORLD ---- */
+/* ---- ENGLISH BUILDINGS: the house and the church share one shell ----
+   look pass, 27 Nov: both were plain boxes under a lid - four flat walls, a roof with no
+   thickness, a black door - and read as crates. They are built of what they were built of
+   now, in geometry and per-vertex colour only (no texture, nothing transparent):
+   - walls of riven boards in courses, each board's foot standing proud of the one below
+     (sawtooth, so the courses read at any distance), on a ground sill, with corner boards;
+     in England, plaster between dark studs, and the churches' stone in courses;
+   - a roof with thickness, eaves and verges that overhang, and a ridge;
+   - a framed door of planks with strap hinges, and window openings with wooden shutters,
+     open or shut (there is no glass in the fort's houses; the London casements are drawn
+     as dark openings with a mullion, still nothing transparent);
+   - an end chimney, which stands INSIDE the footprint: the body is shortened by the
+     chimney's depth, so the footprint and the collider callers clear against do not change.
+   Occlusion is baked in the vertex colour, as everywhere else in the file: dark at the
+   ground line, under the eaves and verges, in the corner a chimney makes with its gable,
+   and on the soffits; boards facing the sun are a touch lighter up high, where the weather
+   bleaches them. The sun's bearing is read from sunLight, not typed.
+
+   What the record supports, and so what each roof is:
+   - "thatch": the fort of 1608-10. Smith's Proceedings on the fire of January 1608, the
+     quarters "being but thatched with reeds" (CH5-RECORD); the houses Chapter VI raises in
+     spring 1609 and Chapter VII's winter fort are the same kind. A storey and a loft.
+   - "bark": Virginia from 1610. Strachey's True Reportory (letter of July 1610; Purchas
+     4:1753, quoted from memory, not checked against a page in this repo): the houses have
+     "wide and large Country Chimnies" and are now covered "(as the Indians) with barkes of
+     Trees", where before they were "pargetted and plaistered" with clay. Hamor, 1614:
+     "two rowes of houses of framed timber, and some of them two stories and a garret
+     higher" (CH8-RECORD), so two storeys are allowed from here on. A country chimney is
+     timber daubed with clay; it is drawn clay-coloured with darker bands where the
+     framing shows. Nothing later in the record (1617-23) says the roofs changed, so the
+     later Virginia scenes keep bark; riven boards would look nearly the same.
+   - "eng": England - London and Gravesend. Tile roofs, timber frames with plaster, brick
+     stacks: ordinary for the towns of the Thames in 1617-18, not a claim about any house.
+   No label in the game names any of this; it is drawing, and these notes are its sources. */
+function smooth01(e0,e1,v){const t=Math.max(0,Math.min(1,(v-e0)/(e1-e0)));return t*t*(3-2*t);}
+function engShell(g,P,sp){
+  const hw=sp.hw, H=sp.H, rise=sp.rise, k=rise/hw, a0=sp.a0, a1=sp.a1, ac=(a0+a1)/2, Y0=0.45;
+  const R=function(n){return srand(sp.seed+n*1.618);};
+  const IN=P(ac,0,H*0.5);
+  let sx=0.83,sz=0.55;
+  try{if(sunLight){const v=sunLight.position, m=Math.hypot(v.x,v.z)||1;sx=v.x/m;sz=v.z/m;}}catch(e){}
+  const sA=sp.c*sx-sp.s*sz, sB=sp.s*sx+sp.c*sz;
+  const C=sp.chim;
+  const chimHalf=function(y){
+    if(!C||y>C.top)return 0;if(y<=C.hb)return C.w/2;if(y>=C.hb+C.sh)return C.sw/2;
+    return C.w/2+(C.sw/2-C.w/2)*(y-C.hb)/C.sh;};
+  /* baked occlusion and weather at a point on a face whose outward normal is (nA,nB) */
+  const ao=function(b,y,nA,nB){
+    let f=0.56+0.44*smooth01(0,2.6,y);
+    if(nB!==0)f*=1-0.32*smooth01(H-2.4,H,y);
+    else if(nA!==0){const yr=H+(hw-Math.abs(b))*k;f*=1-0.2*smooth01(yr-1.4,yr,y);
+      if(C&&nA===C.end){const ch=chimHalf(y);if(ch>0)f*=0.66+0.34*smooth01(ch,ch+1.8,Math.abs(b));}}
+    return f*(1+0.09*Math.max(0,nA*sA+nB*sB)*smooth01(2.5,H,y));
+  };
+  const col=function(base,m){return [base[0]*m,base[1]*m,base[2]*m];};
+  /* a face: a long wall (nB=+-1, t runs along a) or a gable (nA=+-1 at aE, t runs along b) */
+  const F=function(f,t,y,off){return f.nA?P(f.aE+f.nA*off,t,y):P(t,f.nB*(hw+off),y);};
+  const fb=function(f,t){return f.nA?t:f.nB*hw;};
+  const sh=function(f,t,y,base,m){return col(base,m*ao(fb(f,t),y,f.nA,f.nB));};
+  /* a flat piece standing `off` proud of a face: trim, door planks, shutters, openings */
+  const flat=function(f,tA,tB,yA,yB,off,base,m){
+    quadOut4(g,F(f,tA,yA,off),F(f,tB,yA,off),F(f,tB,yB,off),F(f,tA,yB,off),
+      sh(f,tA,yA,base,m),sh(f,tB,yA,base,m),sh(f,tB,yB,base,m),sh(f,tA,yB,base,m),F(f,(tA+tB)/2,(yA+yB)/2,off-1));};
+  /* one course: bottom edge t0..t1 at y0 stands `st` proud, top edge u0..u1 at y1 lies on
+     the wall, where the next course's foot covers it. The foot's underside is drawn only
+     above eye height, the only place it can be seen from */
+  const course=function(f,t0,t1,u0,u1,y0,y1,st,base,m,lap){
+    quadOut4(g,F(f,t0,y0,st),F(f,t1,y0,st),F(f,u1,y1,0),F(f,u0,y1,0),
+      sh(f,t0,y0,base,m),sh(f,t1,y0,base,m),sh(f,u1,y1,base,m*lap),sh(f,u0,y1,base,m*lap),IN);
+    if(st>0&&y0>4.2){const d=col(base,0.42*m);
+      quadOut4(g,F(f,t0,y0,0),F(f,t1,y0,0),F(f,t1,y0,st),F(f,t0,y0,st),d,d,d,d,F(f,(t0+t1)/2,y0+1,-1));}
+  };
+  const faces=[{nA:0,nB:1,t0:a0,t1:a1},{nA:0,nB:-1,t0:a0,t1:a1},{nA:-1,nB:0,aE:a0,t0:-hw,t1:hw},{nA:1,nB:0,aE:a1,t0:-hw,t1:hw}];
+  const half=function(y){return y<=H?hw:Math.max(0,hw*(1-(y-H)/rise));};
+  const wb=sp.wallCol;
+  /* ---- WALLS ---- */
+  const cH=sp.wall==="stone"?1.25:sp.wall==="plaster"?99:0.8, st=sp.wall==="board"?0.09:0;
+  faces.forEach(function(f,fi){
+    const top=f.nA?H+rise:H;
+    if(sp.wall==="plaster"){
+      /* plaster in three bands for the occlusion to ride on, then studs, rails and plate */
+      const ys=[Y0,2.6,H*0.55,H];if(f.nA)ys.push(H+rise*0.5,H+rise);
+      for(let i=0;i<ys.length-1;i++){const lo=half(ys[i]),hi=half(ys[i+1]);
+        course(f,f.nA?-lo:a0,f.nA?lo:a1,f.nA?-hi:a0,f.nA?hi:a1,ys[i],ys[i+1],0,wb,0.97+R(fi*9+i)*0.06,1);}
+      const tim=sp.timCol, n=Math.max(2,Math.round((f.t1-f.t0)/2.3));
+      for(let i=0;i<=n;i++){const t=f.t0+0.25+(f.t1-f.t0-0.5)*i/n;
+        const yt=f.nA?H+rise*(1-Math.abs(t)/hw)-0.3:H;
+        if(yt>Y0+1)flat(f,t-0.25,t+0.25,Y0,yt,0.07,tim,0.95+R(fi*31+i)*0.1);}
+      flat(f,f.t0,f.t1,H*0.55-0.25,H*0.55+0.25,0.09,tim,0.9);
+      flat(f,f.t0,f.t1,H-0.5,H,0.09,tim,0.85);
+      return;
+    }
+    let y=Y0,i=0;
+    while(y<top-0.01){
+      let y1=Math.min(top,y+cH);if(y<H-0.01&&y1>H)y1=H;if(top-y1<0.3)y1=top;
+      const m=0.9+R(fi*17+i)*0.18, lap=sp.wall==="board"?0.8:0.94;
+      if(!f.nA)course(f,a0,a1,a0,a1,y,y1,st,wb,m,lap);
+      else{
+        const lo=half(y),hi=half(y1),cut=(C&&f.nA===C.end)?chimHalf((y+y1)/2):0;
+        if(cut<=0)course(f,-lo,lo,-hi,hi,y,y1,st,wb,m,lap);
+        else if(lo>cut){
+          course(f,-lo,-Math.min(cut,lo),-hi,-Math.min(cut,hi),y,y1,st,wb,m,lap);
+          course(f,Math.min(cut,lo),lo,Math.min(cut,hi),hi,y,y1,st,wb,m,lap);}
+      }
+      y=y1;i++;
+    }
+  });
+  /* the sill the walls stand on, and the boards that close the corners */
+  const sill=sp.sillCol;
+  faces.forEach(function(f){
+    const ta=f.nA?-hw-0.2:a0-0.2, tb=f.nA?hw+0.2:a1+0.2;
+    flat(f,ta,tb,-0.4,Y0,0.2,sill,0.9);
+    quadOut4(g,F(f,ta,Y0,0),F(f,tb,Y0,0),F(f,tb,Y0,0.2),F(f,ta,Y0,0.2),col(sill,0.8),col(sill,0.8),col(sill,0.8),col(sill,0.8),F(f,(ta+tb)/2,Y0-1,0.1));
+    /* corner boards run 0.14 past the corner, so the pair closes the open ends of both walls'
+       boards (each course is one slanted quad, its end a sawtooth notch with sky behind it) */
+    if(sp.wall==="board"){flat(f,f.t0-0.14,f.t0+0.45,Y0,H,0.14,wb,0.82);flat(f,f.t1-0.45,f.t1+0.14,Y0,H,0.14,wb,0.82);}
+  });
+  /* ---- ROOF ---- */
+  const ra0=a0-sp.vo[0], ra1=a1+sp.vo[1], trv=sp.tr*Math.sqrt(1+k*k), rb=sp.roofCol;
+  const yU=function(b){return H+(hw-Math.abs(b))*k;};
+  /* thatch is laid in courses too, but reads as streaks, not steps: few soft butts, many strips */
+  const RS=sp.roof==="thatch"?{n:3,st:0.18,seg:11,j:0.34,bt:0.78}:sp.roof==="bark"?{n:6,st:0.13,seg:4,j:0.24,bt:0.5}:{n:10,st:0.07,seg:1,j:0.1,bt:0.5};
+  for(const s of [-1,1]){
+    const be=s*(hw+sp.ov), bU=function(u){return be*(1-u);}, yT=function(u){return yU(bU(u))+trv;};
+    const sun=1+0.07*Math.max(0,s*sB);
+    for(let j=0;j<RS.n;j++){
+      const u0=j/RS.n,u1=(j+1)/RS.n, low=0.74+0.26*smooth01(0,0.7,u0), low1=0.74+0.26*smooth01(0,0.7,u1);
+      for(let q=0;q<RS.seg;q++){
+        const aA=ra0+(ra1-ra0)*q/RS.seg, aB=ra0+(ra1-ra0)*(q+1)/RS.seg, m=sun*(1-RS.j/2+RS.j*R(s*40+j*7+q));
+        quadOut4(g,P(aA,bU(u0),yT(u0)+RS.st),P(aB,bU(u0),yT(u0)+RS.st),P(aB,bU(u1),yT(u1)),P(aA,bU(u1),yT(u1)),
+          col(rb,m*low),col(rb,m*low),col(rb,m*low1*0.9),col(rb,m*low1*0.9),P(ac,0,H));
+      }
+      /* the course's butt; the first is the eave's whole edge */
+      const yb=j===0?yU(be):yT(u0), d=col(rb,(j===0?(sp.roof==="thatch"?0.74:0.6):RS.bt)*sun);   /* thatch's cut edge is straw too */
+      quadOut4(g,P(ra0,bU(u0),yb),P(ra1,bU(u0),yb),P(ra1,bU(u0),yT(u0)+RS.st),P(ra0,bU(u0),yT(u0)+RS.st),d,d,d,d,P(ac,bU(u0)-s,yT(u0)));
+    }
+    /* soffit: the underside of the eave, in the shade */
+    const so=col(rb,0.34), so2=col(rb,0.22);
+    quadOut4(g,P(ra0,be,yU(be)),P(ra1,be,yU(be)),P(ra1,s*hw,H),P(ra0,s*hw,H),so,so,so2,so2,P(ac,s*hw,H+3));
+    /* the verges: the slab's cut end, and its underside out past the gable */
+    for(const e of [-1,1]){
+      const ra=e<0?ra0:ra1, aw=e<0?a0:a1, de=col(rb,0.55);
+      quadOut4(g,P(ra,be,yU(be)),P(ra,be,yT(0)+RS.st),P(ra,0,yU(0)+trv),P(ra,0,yU(0)),de,de,de,de,P(ac,be/2,yU(be/2)+trv/2));
+      if(Math.abs(ra-aw)>0.05)quadOut4(g,P(ra,be,yU(be)),P(aw,be,yU(be)),P(aw,0,yU(0)),P(ra,0,yU(0)),so,so2,so2,so,P((ra+aw)/2,be/2,yU(be/2)+3));
+    }
+  }
+  const yr=H+rise+trv;
+  if(sp.roof==="thatch")g.beam8(P(ra0-0.1,0,yr-0.15),P(ra1+0.1,0,yr-0.15),1.1,1.1,col(rb,0.8),col(rb,0.8),0.7,0.7);
+  else g.beam8(P(ra0,0,yr-0.05),P(ra1,0,yr-0.05),sp.roof==="tile"?0.6:0.7,sp.roof==="tile"?0.6:0.7,col(rb,0.7),col(rb,0.7),0.55,0.55);
+  /* ---- CHIMNEY, at an end, inside the footprint ---- */
+  if(C){
+    const aE=C.end<0?a0:a1, e=C.end, cc=C.col;
+    const prism=function(dA0,dA1,w0,w1,y0,y1,m0,m1,back){
+      const A=function(d){return aE+e*d;}, IC=P(A((dA0+dA1)/2),0,(y0+y1)/2);
+      const v=function(d,b,y,m){return col(cc,m*(0.6+0.4*smooth01(0,2.2,y))*(d<0.05?0.84:1));};
+      /* outer face */
+      quadOut4(g,P(A(dA0),-w0/2,y0),P(A(dA0),w0/2,y0),P(A(dA1),w1/2,y1),P(A(dA1),-w1/2,y1),
+        v(dA0,-w0/2,y0,m0),v(dA0,w0/2,y0,m0),v(dA1,w1/2,y1,m1),v(dA1,-w1/2,y1,m1),IC);
+      for(const sg of [-1,1])quadOut4(g,P(aE,sg*w0/2,y0),P(A(dA0),sg*w0/2,y0),P(A(dA1),sg*w1/2,y1),P(aE,sg*w1/2,y1),
+        v(0,0,y0,m0),v(dA0,0,y0,m0),v(dA1,0,y1,m1),v(0,0,y1,m1),IC);
+      if(back)quadOut4(g,P(aE,-w0/2,y0),P(aE,w0/2,y0),P(aE,w1/2,y1),P(aE,-w1/2,y1),v(1,0,y0,m0*0.8),v(1,0,y0,m0*0.8),v(1,0,y1,m1*0.8),v(1,0,y1,m1*0.8),IC);
+    };
+    prism(C.d,C.d,C.w,C.w,-0.4,C.hb,0.95,1,false);
+    prism(C.d,C.sd,C.w,C.sw,C.hb,C.hb+C.sh,1,0.9,false);
+    /* the stack in bands: darker at each joint, where a country chimney's timbers show
+       through the clay and a brick one has its courses */
+    const n=3, y0=C.hb+C.sh;
+    for(let i=0;i<n;i++){const ya=y0+(C.top-y0)*i/n, yb=y0+(C.top-y0)*(i+1)/n;
+      prism(C.sd,C.sd,C.sw,C.sw,ya,yb,0.8+R(70+i)*0.1,1.02,yb>H);}
+    if(C.brick)prism(C.sd+0.2,C.sd+0.2,C.sw+0.4,C.sw+0.4,C.top-0.1,C.top+0.5,0.9,0.95,true);
+    const ct=C.top+(C.brick?0.5:0), sd2=C.sd+(C.brick?0.2:0), sw2=C.sw/2+(C.brick?0.2:0), soot=RGB(0x1c1814);
+    quadOut4(g,P(aE,-sw2,ct),P(aE+e*sd2,-sw2,ct),P(aE+e*sd2,sw2,ct),P(aE,sw2,ct),soot,soot,soot,soot,P(aE+e*sd2/2,0,ct-1));
+  }
+  /* ---- DOOR, WINDOWS ---- */
+  const tim=sp.timCol, plank=sp.doorCol, dark=RGB(0x241a12), iron=RGB(0x2a2420);   /* an unlit room, not a hole */
+  const front=faces[0];
+  if(sp.door){
+    const da=sp.door.a, dw=sp.door.w, dh=Y0+sp.door.h, f=front;
+    flat(f,da-dw/2-0.4,da-dw/2,Y0,dh+0.4,0.16,tim,0.9);flat(f,da+dw/2,da+dw/2+0.4,Y0,dh+0.4,0.16,tim,0.9);
+    flat(f,da-dw/2-0.5,da+dw/2+0.5,dh,dh+0.45,0.2,tim,0.85);
+    const np=Math.max(3,Math.round(dw/0.8));
+    for(let i=0;i<np;i++)flat(f,da-dw/2+dw*i/np,da-dw/2+dw*(i+1)/np,Y0,dh,0.12,plank,0.85+R(90+i)*0.22);
+    for(const hy of [Y0+1.1,dh-1.1])flat(f,da-dw/2,da+dw*0.25,hy-0.08,hy+0.08,0.14,iron,1);
+  }
+  (sp.wins||[]).forEach(function(w,i){
+    const f=faces[w.face], ww=w.w, wh=w.h, t=w.t, yb=w.y, z=0.14;
+    flat(f,t-ww/2-0.25,t+ww/2+0.25,yb-0.25,yb+wh+0.25,z,tim,0.85);
+    flat(f,t-ww/2,t+ww/2,yb,yb+wh,z+0.02,dark,1);
+    if(w.kind==="casement"){flat(f,t-0.09,t+0.09,yb,yb+wh,z+0.04,tim,0.9);flat(f,t-ww/2,t+ww/2,yb+wh*0.62,yb+wh*0.62+0.14,z+0.04,tim,0.9);}
+    else if(w.kind==="shut"){flat(f,t-ww/2,t,yb,yb+wh,z+0.04,plank,0.9+R(110+i)*0.15);flat(f,t,t+ww/2,yb,yb+wh,z+0.04,plank,0.8+R(120+i)*0.15);}
+    else{flat(f,t-ww/2-0.3-ww/2,t-ww/2-0.3,yb,yb+wh,z,plank,0.9+R(130+i)*0.15);flat(f,t+ww/2+0.3,t+ww+0.3,yb,yb+wh,z,plank,0.85+R(140+i)*0.15);}
+  });
+}
 function leafChurch(root,G,x,z,yaw,stone){
-  /* a plain church: a long nave with a pitched roof and, at Gravesend, a stone tower */
-  const g=new Geo(), wall=RGB(stone?0x8a8478:0x8a6c48), wallD=RGB(stone?0x6a655c:0x6b5236), roof=RGB(stone?0x5a4a3e:0x7a6a4c);
-  const gy=G(x,z), L=26, W=12, H=11;
+  /* a plain church: a long nave with a pitched roof and, at Gravesend, a stone tower.
+     look pass, 27 Nov: the shell is engShell's. Jamestown's church of 1610 had "faire broad
+     windowes, to shut and open, as the weather shall occasion, of the same wood" (Strachey,
+     True Reportory, quoted from memory, as above) - wooden shutters, so shutters it has;
+     the size and the collider are unchanged */
+  const g=new Geo(), gy=G(x,z), L=26, W=12, H=11;
   const c=Math.cos(yaw), s=Math.sin(yaw), P=function(a,b,y){return [x+a*c+b*s,gy+y,z-a*s+b*c];};
-  const Q=function(a,b,c2,d,col){g.quad(a,b,c2,d,col);g.quad(d,c2,b,a,col);};
-  Q(P(-L/2,-W/2,-0.5),P(L/2,-W/2,-0.5),P(L/2,-W/2,H),P(-L/2,-W/2,H),wallD);
-  Q(P(-L/2,W/2,-0.5),P(L/2,W/2,-0.5),P(L/2,W/2,H),P(-L/2,W/2,H),wall);
-  Q(P(-L/2,-W/2,-0.5),P(-L/2,W/2,-0.5),P(-L/2,W/2,H),P(-L/2,-W/2,H),wall);
-  Q(P(L/2,-W/2,-0.5),P(L/2,W/2,-0.5),P(L/2,W/2,H),P(L/2,-W/2,H),wall);
-  Q(P(-L/2,-W/2-0.8,H),P(L/2,-W/2-0.8,H),P(L/2,0,H+6),P(-L/2,0,H+6),roof);
-  Q(P(-L/2,W/2+0.8,H),P(L/2,W/2+0.8,H),P(L/2,0,H+6),P(-L/2,0,H+6),roof);
-  g.quad(P(-L/2,-W/2,H),P(-L/2,W/2,H),P(-L/2,0,H+6),P(-L/2,0,H+6),wall);g.quad(P(-L/2,0,H+6),P(-L/2,0,H+6),P(-L/2,W/2,H),P(-L/2,-W/2,H),wall);
-  g.quad(P(L/2,-W/2,H),P(L/2,0,H+6),P(L/2,0,H+6),P(L/2,W/2,H),wall);g.quad(P(L/2,W/2,H),P(L/2,0,H+6),P(L/2,0,H+6),P(L/2,-W/2,H),wall);
-  /* the door, on the long side */
-  Q(P(-2,W/2+0.05,0),P(2,W/2+0.05,0),P(2,W/2+0.05,7),P(-2,W/2+0.05,7),RGB(0x3a2c20));
+  const wins=[];
+  for(const t of [-8.5,8.5])wins.push({face:0,t:t,y:3.2,w:3.2,h:3.0,kind:stone?"casement":"open"});
+  for(const t of [-8.5,0,8.5])wins.push({face:1,t:t,y:3.2,w:3.2,h:3.0,kind:stone?"casement":(t===0?"shut":"open")});
+  engShell(g,P,{c:c,s:s,seed:x*0.731+z*1.917,a0:-L/2,a1:L/2,hw:W/2,H:H,rise:6,
+    wall:stone?"stone":"board",roof:stone?"tile":"bark",
+    wallCol:RGB(stone?0x8a8478:0x8f7454),roofCol:RGB(stone?0x5e5048:0x6a5c4a),timCol:RGB(0x5e4630),
+    sillCol:RGB(stone?0x6a655c:0x5a4128),doorCol:RGB(0x5a4128),ov:0.9,vo:[0.6,0.6],tr:0.35,chim:null,
+    door:{a:0,w:4,h:7},wins:wins});
   if(stone){
-    /* a square tower at the west end */
-    const tx=-L/2-4;
-    for(const f of [[-4,-4,4,-4],[4,-4,4,4],[4,4,-4,4],[-4,4,-4,-4]])
-      Q(P(tx+f[0],f[1],-0.5),P(tx+f[2],f[3],-0.5),P(tx+f[2],f[3],H+12),P(tx+f[0],f[1],H+12),wallD);
-    Q(P(tx-4,-4,H+12),P(tx+4,-4,H+12),P(tx+4,4,H+12),P(tx-4,4,H+12),roof);
+    /* a square tower at the west end, in coursed stone, with a belfry and a parapet */
+    const tx=-L/2-4, th=H+12, sc=RGB(0x857f73), dk=RGB(0x1a1612);
+    const TW=function(a,b,y){return P(tx+a,b,y);}, IN=P(tx,0,th/2);
+    for(const f of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const pt=function(t,y,off){return f[0]?TW(f[0]*(4+off),t,y):TW(t,f[1]*(4+off),y);};
+      for(let i=0,y=-0.5;y<th-0.01;i++){const y1=Math.min(th,y+1.5), m=(0.9+srand(i*3.1+f[0]+f[1]*2+x)*0.16), a0=(0.56+0.44*smooth01(0,2.6,y)), a1=(0.56+0.44*smooth01(0,2.6,y1));
+        quadOut4(g,pt(-4,y,0),pt(4,y,0),pt(4,y1,0),pt(-4,y1,0),shadeRGB(sc,m*a0),shadeRGB(sc,m*a0),shadeRGB(sc,m*a1*0.92),shadeRGB(sc,m*a1*0.92),IN);y=y1;}
+      quadOut4(g,pt(-1.2,th-5,0.05),pt(1.2,th-5,0.05),pt(1.2,th-1.6,0.05),pt(-1.2,th-1.6,0.05),dk,dk,dk,dk,IN);
+      quadOut4(g,pt(-4.3,th-0.2,0.3),pt(4.3,th-0.2,0.3),pt(4.3,th+1.4,0.3),pt(-4.3,th+1.4,0.3),shadeRGB(sc,0.95),shadeRGB(sc,0.95),shadeRGB(sc,1.05),shadeRGB(sc,1.05),IN);
+      quadOut4(g,pt(-4.3,th-0.2,0.3),pt(4.3,th-0.2,0.3),pt(4.3,th-0.2,0),pt(-4.3,th-0.2,0),shadeRGB(sc,0.4),shadeRGB(sc,0.4),shadeRGB(sc,0.4),shadeRGB(sc,0.4),TW(0,0,th+2));
+    }
+    const lead=RGB(0x5a5a58);
+    quadOut4(g,TW(-4,-4,th+0.6),TW(4,-4,th+0.6),TW(4,4,th+0.6),TW(-4,4,th+0.6),lead,lead,lead,lead,TW(0,0,th-2));
   }
   /* play-test, 27 Nov: the collider ignored the yaw (Henrico's church is turned) and ran the
      tower's eight feet out of both ends */
   root.add(g.mesh(false,false));
   {const a0=stone?-4:0;leafSolid(x+a0*c,z-a0*s,L/2+(stone?4:0),W/2,yaw);}
 }
-function leafHouse(root,G,x,z,yaw){
-  /* a framed English house of the new towns: weatherboarded, two storeys */
-  const g=new Geo(), board=RGB(0x9a7a52), boardD=RGB(0x7a5c3c), roof=RGB(0x6a5a44);
-  const gy=G(x,z), L=14, W=9, H=12;
+function leafHouse(root,G,x,z,yaw,kind){
+  /* a framed English house of the new towns. kind: "thatch" (the fort, 1609-10), "bark"
+     (Virginia from 1610; the default) or "eng" (London, Gravesend) - see engShell.
+     The footprint is 14 by 9 whatever the variant: the chimney stands inside it at one end,
+     and the variants (body length, height, pitch, chimney end, door place, shutters,
+     colour) are drawn from a seed on the position, so a street is not one house twelve
+     times and the same house is the same house every visit */
+  kind=kind||"bark";
+  const g=new Geo(), gy=G(x,z), L=14, W=9, eng=kind==="eng", seed=x*0.731+z*1.917;
+  const R=function(n){return srand(seed+n*2.414);};
   const c=Math.cos(yaw), s=Math.sin(yaw), P=function(a,b,y){return [x+a*c+b*s,gy+y,z-a*s+b*c];};
-  const Q=function(a,b,c2,d,col){g.quad(a,b,c2,d,col);g.quad(d,c2,b,a,col);};
-  Q(P(-L/2,-W/2,-0.5),P(L/2,-W/2,-0.5),P(L/2,-W/2,H),P(-L/2,-W/2,H),boardD);
-  Q(P(-L/2,W/2,-0.5),P(L/2,W/2,-0.5),P(L/2,W/2,H),P(-L/2,W/2,H),board);
-  Q(P(-L/2,-W/2,-0.5),P(-L/2,W/2,-0.5),P(-L/2,W/2,H),P(-L/2,-W/2,H),board);
-  Q(P(L/2,-W/2,-0.5),P(L/2,W/2,-0.5),P(L/2,W/2,H),P(L/2,-W/2,H),board);
-  Q(P(-L/2,-W/2-0.6,H),P(L/2,-W/2-0.6,H),P(L/2,0,H+5),P(-L/2,0,H+5),roof);
-  Q(P(-L/2,W/2+0.6,H),P(L/2,W/2+0.6,H),P(L/2,0,H+5),P(-L/2,0,H+5),roof);
-  /* play-test, 27 Nov: the gable ends were open - two black triangles on every house */
-  Q(P(-L/2,-W/2,H),P(-L/2,W/2,H),P(-L/2,0,H+5),P(-L/2,0,H+5),boardD);
-  Q(P(L/2,-W/2,H),P(L/2,W/2,H),P(L/2,0,H+5),P(L/2,0,H+5),boardD);
-  Q(P(-1.2,W/2+0.05,0),P(1.2,W/2+0.05,0),P(1.2,W/2+0.05,6),P(-1.2,W/2+0.05,6),RGB(0x3a2c20));
+  const H=kind==="thatch"?9.5+R(1)*1.5:eng?12+R(1)*1.5:10.5+R(1)*2.2;
+  const rise=kind==="thatch"?6.5+R(2)*1.0:eng?5.6+R(2)*1.0:5.0+R(2)*1.4;
+  const end=R(3)<0.5?-1:1;
+  /* the chimney's depth out from its gable, counted inside the footprint */
+  const cd=eng?2.0:2.6, slack=R(4)*0.8, tr=kind==="thatch"?0.9:0.32, trv=tr*Math.hypot(1,rise/(W/2));
+  const a0=end<0?-L/2+cd:-L/2+slack, a1=end<0?L/2-slack:L/2-cd, bl=a1-a0;
+  const chim=eng?{end:end,d:cd,w:4.4,sw:2.6,sd:1.8,hb:5.5,sh:1.2,top:H+rise+trv+1.6,brick:true,col:RGB(0x8a4a36)}
+                :{end:end,d:cd,w:5.6,sw:3.0,sd:2.0,hb:6.0,sh:1.6,top:H+rise+trv+1.4,brick:false,col:RGB(R(5)<0.5?0xa89474:0x9c8a6c)};
+  /* the door at one of three places along the front; a window where the door is not */
+  const dp=[0.3,0.5,0.7][Math.floor(R(6)*3)], da=a0+bl*dp;
+  const kw=function(n){return eng?"casement":R(n)<0.45?"shut":"open";};
+  const wins=[], tall=H>=11;
+  const wa=a0+bl*(dp<0.5?0.76:0.24);
+  if(Math.abs(wa-da)>4.6)   /* an open shutter reaches 2.5 ft from its window's middle */
+    wins.push({face:0,t:wa,y:2.9,w:2.2,h:1.9,kind:kw(10)});
+  wins.push({face:1,t:a0+bl*0.5,y:2.9,w:2.2,h:1.9,kind:kw(11)});
+  if(tall){wins.push({face:0,t:a0+bl*0.25,y:H-3.2,w:2.0,h:1.7,kind:kw(12)});
+    wins.push({face:0,t:a0+bl*0.75,y:H-3.2,w:2.0,h:1.7,kind:kw(13)});
+    wins.push({face:1,t:a0+bl*0.5,y:H-3.2,w:2.0,h:1.7,kind:kw(14)});}
+  const gface=end<0?3:2;
+  wins.push({face:gface,t:0,y:2.9,w:2.0,h:1.8,kind:kw(15)});
+  if(rise>=5.4)wins.push({face:gface,t:0,y:H+0.7,w:1.5,h:1.4,kind:kw(16)});
+  const wallCol=eng?RGB([0xcdb994,0xd6c7a4,0xc2ad88][Math.floor(R(7)*3)])
+                   :RGB([0x9a7a52,0x8f7556,0xa08462,0x8a7462][Math.floor(R(7)*4)]);
+  const roofCol=kind==="thatch"?RGB(R(8)<0.5?0xaa9668:0x9e8c64):eng?RGB(R(8)<0.5?0x8e4a34:0x7e4632):RGB(R(8)<0.5?0x6a5c4a:0x5e5446);
+  engShell(g,P,{c:c,s:s,seed:seed,a0:a0,a1:a1,hw:W/2,H:H,rise:rise,
+    wall:eng?"plaster":"board",roof:kind==="thatch"?"thatch":eng?"tile":"bark",
+    wallCol:wallCol,roofCol:roofCol,timCol:RGB(eng?0x3e2c1e:0x5e4630),sillCol:RGB(0x5a4128),doorCol:RGB(0x5f4630),
+    ov:kind==="thatch"?1.1:eng?0.6:0.8,vo:end<0?[0.15,0.5]:[0.5,0.15],tr:tr,
+    chim:chim,door:{a:da,w:3,h:6.2},wins:wins});
   /* play-test, 27 Nov: a 14 by 14 square collider on a 14 by 9 house was an invisible wall
      two and a half feet in front of the door, and Rolfe and Dale stood inside two of them */
   root.add(g.mesh(false,false));leafSolid(x,z,L/2,W/2,yaw);
@@ -30293,7 +30519,7 @@ registerWorld("ch8",function(root){
     G=captLand(root,"thames",{trees:50,winter:true,clear:function(x,z){return Math.hypot(x,z)<120;}});
     leafChurch(root,G,-10,-30,0,true);
     LEAF.ship=placeShip(root,"susan",1,-40,110,Math.PI/2);
-    [[30,-10],[50,-30],[-60,-10]].forEach(function(a,i){leafHouse(root,G,a[0],a[1],i*0.4);});
+    [[30,-10],[50,-30],[-60,-10]].forEach(function(a,i){leafHouse(root,G,a[0],a[1],i*0.4,"eng");});
     /* Smith was in London, not at Gravesend: his book is here, not the man */
     spots={};
     /* play-test, 27 Nov: "Smith's Book", "A Notched Stick", "Whose Words?" and Purchas's record
@@ -31143,7 +31369,7 @@ registerWorld("ch9",function(root){
   }
   if(where==="london"){
     G=captLand(root,"thames",{trees:30,winter:true,clear:function(x,z){return Math.hypot(x,z)<140;}});
-    for(let k=0;k<5;k++){leafHouse(root,G,-56+k*26,-22,0);leafHouse(root,G,-43+k*26,-52,0);}
+    for(let k=0;k<5;k++){leafHouse(root,G,-56+k*26,-22,0,"eng");leafHouse(root,G,-43+k*26,-52,0,"eng");}
     leafChurch(root,G,-70,10,Math.PI/2,true);
     placeShip(root,"susan",1,-40,110,Math.PI/2);
     captBarge(root,G,30,72,0.3);
@@ -31974,8 +32200,29 @@ function skyBurnt(root,G,x,z,cols,rows){
 }
 /* "a peece of a Church" at Martin's Hundred (Frethorne, Kingsbury IV:41): an end wall standing */
 function skyRuin(root,G,x,z){
-  const g=new Geo(), wall=RGB(0x8a6c48), wallD=RGB(0x5e4a32), gy=G(x,z);
-  g.box(x,gy+4.5,z,12,9,0.8,wall);g.box(x-3.5,gy+10.5,z,4,3,0.8,wallD);g.box(x+5.8,gy+2,z+3,0.8,4,6,wallD);
+  /* "a peece of a Church" (Frethorne): what the fire left of a board end wall and a stub of its
+     side. look pass, 27 Nov: it was three boxes; it is upright boards now, the top ragged where
+     they burnt, charred black for the last foot and a half, dark at the ground. Same envelope
+     (12 ft wide, the gable stub to 12 ft, the side stub 6 ft along) and the same collider */
+  const g=new Geo(), board=RGB(0x8a6c48), gy=G(x,z), soot=RGB(0x1e1814);
+  const plank=function(cx,cz,w,d,top,i){
+    const m=0.86+srand(x*3.1+i*1.7)*0.22, c=shadeRGB(board,m), lo=Math.max(0.4,top-1.6);
+    const A=new Geo();
+    A.box(cx,gy+lo/2-0.2,cz,w,lo+0.4,d,c);
+    A.shade(function(px,py){return 0.58+0.42*smooth01(gy,gy+2.6,py);});
+    const B=new Geo();
+    B.box(cx,gy+(lo+top)/2,cz,w,top-lo,d,c);
+    B.shade(function(px,py){return py>gy+lo+0.01?[soot[0]/c[0],soot[1]/c[1],soot[2]/c[2]]:1;});
+    g.p.push.apply(g.p,A.p);g.c.push.apply(g.c,A.c);g.p.push.apply(g.p,B.p);g.c.push.apply(g.c,B.c);
+  };
+  const tops=[8.6,9.2,11.4,12,10.6,8.4,7.2,8.6,6.6,7.8,5.6,6.4];
+  for(let i=0;i<12;i++)plank(x-5.5+i,z+(i%2?0.06:-0.06),1.0,0.8,tops[i],i);
+  const side=[4.4,3.6,4.0,2.6,3.2,1.8];
+  for(let i=0;i<6;i++)plank(x+5.8+(i%2?0.06:-0.06),z+0.5+i,0.8,1.0,side[i],20+i);
+  /* the frame the boards were nailed to - sill and girt - so it reads as a wall, not the pale */
+  const tim=RGB(0x4e3a28);
+  g.box(x+0.2,gy+0.15,z,12.6,0.7,1.1,shadeRGB(tim,0.7));g.box(x,gy+4.9,z,12.2,0.55,1.05,tim);
+  g.box(x+5.8,gy+0.15,z+3,1.1,0.7,6.2,shadeRGB(tim,0.7));
   root.add(g.mesh(false,false));solid(x,z,6.2,0.8,LVL.MAIN,0);
 }
 /* a penny loaf cut four ways, on a chest */
