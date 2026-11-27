@@ -29227,6 +29227,14 @@ const TASK_ANIM={
     eR:[0,-0.50, 0.40,-0.60, 0.55,-0.25, 0.80,-0.50],
     ta:[0,-0.35, 0.40,-0.40, 0.55,-0.95, 0.80,-0.35],
     h:[0,-0.30, 0.55,-0.45], k:[0,0.30, 0.55,0.55], nk:[0,0.30], grip:1},
+  /* play-test, 27 Nov: a bar through a screw's nut, pushed round: leaning into it, both hands
+     on the bar at the waist, a short driving step (the path round the screw is plyWindAt's) */
+  wind:{T:0.95,
+    pel:[0,0.16], sp:[0,0.24, 0.5,0.30], spy:[0,0.06, 0.5,-0.06], nk:[0,-0.20],
+    sR:[0,-1.30, 0.5,-1.20], eR:[0,-0.35, 0.5,-0.45], sRz:[0,0.16],
+    sL:[0,-1.20, 0.5,-1.30], eL:[0,-0.45, 0.5,-0.35], sLz:[0,-0.16],
+    hL:[0,-0.75, 0.5,-0.05], hR:[0,-0.05, 0.5,-0.75],
+    kL:[0,0.55, 0.25,0.70, 0.5,0.25], kR:[0,0.25, 0.5,0.55, 0.75,0.70]},
   /* bowls: a backswing, the step and the underhand delivery, held to watch it run */
   bowl:{T:3.1,
     pel:[0,0.06, 0.12,0.02, 0.25,0.30, 0.55,0.28, 0.80,0.06],
@@ -29559,8 +29567,12 @@ function playerDoes(task,secs,narr,opt,after){
   let a=player.rotation.y+0.9;
   if(WORLD.blocked)for(const o of [0.9,-0.9,2.0,-2.0,Math.PI]){const t=player.rotation.y+o;
     if(![0.4,0.7,1].some(function(k){return WORLD.blocked(px+Math.sin(t)*7*k,pz+Math.cos(t)*7*k);})){a=t;break;}}
-  playCutscene({skippable:true,steps:[
-    {cam:{to:[px+Math.sin(a)*7,py+5.5,pz+Math.cos(a)*7],look:[px,py+2.6,pz],cut:true},t:secs,narrate:narr}]},
+  /* play-test, 27 Nov (Chapter XI): a scene that knows its own room passes the shot, as
+     opt.cam [[x, height above ground, z], [x, height, z]] */
+  const C=opt&&opt.cam, G=WORLD.ground;
+  const shot=C?{to:[C[0][0],G(C[0][0],C[0][2])+C[0][1],C[0][2]],look:[C[1][0],G(C[1][0],C[1][2])+C[1][1],C[1][2]],cut:true}
+              :{to:[px+Math.sin(a)*7,py+5.5,pz+Math.cos(a)*7],look:[px,py+2.6,pz],cut:true};
+  playCutscene({skippable:true,steps:[{cam:shot,t:secs,narrate:narr}]},
     function(){workRemove(e);if(after)after();});
 }
 /* a heap that grows as a digger throws earth on it */
@@ -35072,7 +35084,9 @@ function plySpeaker(id){
 /* ---- THE RECORD THAT OPENS EACH SCENE ---- */
 const PLY_OPEN=[
   /* MS pp. 33-37 */
-  {t:"This Libertie",b:"<p class=\"note\">Deaths from disease, including children; a grave opened; kidnapping into slavery; killings on both sides, by deception too; a head displayed; period words. None of it shown.</p><p>Southampton, 1620. The Leiden congregation meets its ship.</p>"},
+  /* play-test, 27 Nov: the content note here repeated, word for word in substance, the one on
+     the chapter's own card a moment before; it is kept there */
+  {t:"This Libertie",b:"<p>Southampton, 1620. The Leiden congregation meets its ship.</p>"},
   /* MS p. 45; the Compact, MS p. 54 */
   {t:"The Mayflower",b:"<p>6 September 1620. The <i>Mayflower</i> puts to sea from Plymouth in England, with “100. & odd persons”.</p><p>Bound, the Compact will say, for “ye Northerne parts of Virginia”.</p>"},
   /* MS pp. 48-53 */
@@ -35188,7 +35202,10 @@ const PLY_TERMS=[
   {t:"Tools taken restored; “if ours did any harme … wee should doe the like”",c:2},
   {t:"“If any did vniustly warre against him, we would ayde him”; and he us",c:2},
   {t:"Tell his “neighbour Confederates” of the peace",c:1},
-  {t:"Leave “Bowes and Arrowes behind”, “as wee should doe our Peeces”",c:2}];
+  {t:"Leave “Bowes and Arrowes behind”, “as wee should doe our Peeces”",c:2},
+  /* play-test, 27 Nov: the duty says seven and the sheet had six; Mourt's seventh is the one
+     that binds the English (the King) - without it "The English" was never the answer */
+  {t:"“King Iames would esteeme of him as his friend and Alie”",c:0}];
 
 function plyDone(id){
   const w=plyW();
@@ -35230,7 +35247,7 @@ function plyRows(kick,title,intro,rows,keys,id,done){
 /* a duty that is work first: the player does it, then the page */
 function plyWork(d,task,secs,narr,opt,then){
   d.worked=true;priceFace(d,d.reach||2.6);   /* blocked() adds a foot of body to every collider */
-  playerDoes(task,secs,narr,opt||{},function(){if(then)then();plyAct(d);});
+  playerDoes(task,secs,narr,Object.assign({},opt||{},d.cam?{cam:d.cam}:{}),function(){if(then)then();plyAct(d);});
 }
 
 function plyAct(d){
@@ -35275,10 +35292,7 @@ function plyAct(d){
     return;
   }
   /* 1 · the mayflower */
-  if(d.kind==="beam"&&!d.worked){
-    plyWork(d,"pry",4.5,"The great iron screw from Holland. Turn by turn, the beam goes back into its place.",{},function(){if(PLY.post)PLY.post.visible=true;});
-    return;
-  }
+  if(d.kind==="beam"&&!d.worked){plyTurnScrew(d);return;}
   if(d.kind==="beam"){
     plyDone("beam");
     /* MS pp. 45-46 */
@@ -35635,7 +35649,9 @@ function plySick(root,G,x,z,yaw,i){
      by yaw (as Chapter I's sleeper): the cover runs from the feet to the chest, the head out */
   const cx=x-s*2.0, cz=z-c*2.0;
   g.box(x-s*2.8,gy+0.08,z-c*2.8,2.8*Math.abs(c)+6.4*Math.abs(s),0.16,2.8*Math.abs(s)+6.4*Math.abs(c),straw);
-  g.oct(cx,cz,gy+0.1,gy+1.15,2.2*Math.abs(c)+4.6*Math.abs(s),2.2*Math.abs(s)+4.6*Math.abs(c),1.8*Math.abs(c)+4.2*Math.abs(s),1.8*Math.abs(s)+4.2*Math.abs(c),0.4,shadeRGB(cov,0.8),cov);
+  /* play-test, 27 Nov: the cover was a near-upright box 1.15 high, and four in a row read as
+     coffins. It is now low and drawn in toward its top, as a blanket over a body */
+  g.oct(cx,cz,gy+0.1,gy+0.85,2.3*Math.abs(c)+4.7*Math.abs(s),2.3*Math.abs(s)+4.7*Math.abs(c),1.1*Math.abs(c)+3.6*Math.abs(s),1.1*Math.abs(s)+3.6*Math.abs(c),0.5,shadeRGB(cov,0.8),cov);
   root.add(g.mesh(false,false));
 }
 /* old corn hills gone to grass, the ground of an emptied town */
@@ -35701,6 +35717,17 @@ function plyTimbers(root,G,x,z){
   for(let i=0;i<4;i++)g.box(x+(i%2)*0.3,gy+0.45+Math.floor(i/2)*0.9,z+4+(i%2)*1.0,11,0.85,0.85,i%3?hewn:bark);
   root.add(g.mesh(false,false));solid(x,z,5.2,1.2,LVL.MAIN,0);solid(x,z+4.5,5.6,1.2,LVL.MAIN,0);
 }
+/* play-test, 27 Nov: the sawyer sawed the air. A board on two trestles across his front,
+   (x,z) his feet, yaw his facing, the board's top at h above the ground */
+function plySawBench(root,G,x,z,yaw,h){
+  const g=new Geo(), wood=RGB(0x6a5038), hewn=RGB(0xb8986a), gy=G(x,z);
+  const fx=Math.sin(yaw), fz=Math.cos(yaw), rx=Math.cos(yaw), rz=-Math.sin(yaw), d=1.75;
+  const P=function(f,r,y){return [x+fx*f+rx*r,gy+y,z+fz*f+rz*r];};
+  for(const r of [-2.6,2.4]){
+    g.beam8(P(d-0.7,r,-0.1),P(d,r,h-0.35),0.22,0.2,wood,wood);g.beam8(P(d+0.7,r,-0.1),P(d,r,h-0.35),0.22,0.2,wood,wood);}
+  g.beam8(P(d,-3.6,h-0.3),P(d,3.4,h-0.3),0.6,0.6,hewn,hewn);
+  root.add(g.mesh(false,false));solid(x+fx*d,z+fz*d,1.6,1.6,LVL.MAIN,0);
+}
 /* the opened sand heaps and the corn baskets in them; the kettle beside (MS p. 49) */
 function plyCornHeaps(root,G,x,z){
   const g=new Geo(), sand=RGB(0xc8b48a), sandD=RGB(0xa89470), iron=RGB(0x2e2c2a), gy=G(x,z);
@@ -35742,20 +35769,55 @@ function plyDeckChest(root,lvl,x,z){
 }
 /* the cracked main beam under the deck above, the great iron screw under it, and the post
    (hidden until it is set). On the 'tween deck, whose deckhead is the main deck's beams */
-function plyBeam(root,x,z){
+/* play-test, 27 Nov: the screw was turned with a downward bar stroke, which read as prying.
+   It is now a jack: the nut with its long bar through it turns (PLY.nut), the player pushes
+   the bar round in quarter turns (task "wind"), and the thread, its cap and the bowed beam rise
+   together (PLY.ram) until the beam is back in its place; then the post goes under it */
+const PLY_SAG=0.6;
+function plyBeam(root,x,z,done){
   const g=new Geo(), oak=RGB(0x6a5236), crack=RGB(0x1e1610), iron=RGB(0x3a3a3e), ironL=RGB(0x5a5a5e);
   const y0=LVL_Y[LVL.TWEEN], yT=LVL_Y[LVL.MAIN]-0.35, hb=halfBeam(z,yT)-0.6;
-  g.box(0,yT-0.55,z,hb*2,1.1,1.0,oak);
-  g.box(x+0.2,yT-0.75,z,0.5,0.7,1.04,crack);g.box(x+0.9,yT-0.95,z,0.9,0.12,1.04,crack);
-  /* the screw: a foot, the iron thread, the nut with its bar through it, a cap under the beam */
+  /* the ram: beam, crack, the iron thread and the cap under the beam, raised as one */
+  const r=new Geo();
+  r.box(0,yT-0.55,z,hb*2,1.1,1.0,oak);
+  r.box(x+0.2,yT-0.75,z,0.5,0.7,1.04,crack);r.box(x+0.9,yT-0.95,z,0.9,0.12,1.04,crack);
+  r.beam8([x,y0-0.4,z],[x,yT-1.6,z],0.42,0.42,iron,iron);
+  for(let k=0;k<10;k++)r.box(x,y0+0.9+k*0.62,z,0.52,0.08,0.52,ironL);
+  r.box(x,yT-1.4,z,1.0,0.4,1.0,iron);
+  const ram=r.mesh(false,false);ram.position.y=done?0:-PLY_SAG;root.add(ram);
+  /* the foot it stands on */
   g.box(x,y0+0.15,z,1.6,0.3,1.6,oak);
-  g.beam8([x,y0+0.3,z],[x,yT-1.6,z],0.42,0.42,iron,iron);
-  for(let k=0;k<10;k++)g.box(x,y0+0.9+k*0.62,z,0.52,0.08,0.52,ironL);
-  g.box(x,y0+3.3,z,0.9,0.5,0.9,iron);g.beam8([x-1.9,y0+3.3,z],[x+1.9,y0+3.3,z],0.14,0.14,ironL,ironL);
-  g.box(x,yT-1.4,z,1.0,0.4,1.0,iron);
   root.add(g.mesh(false,false));solid(x,z,1.0,1.0,LVL.TWEEN,0);
+  /* the nut and its bar, turned about the thread */
+  const n=new Geo();n.box(0,0,0,0.9,0.5,0.9,iron);n.beam8([-2.7,0,0],[2.7,0,0],0.14,0.14,ironL,ironL);
+  const nut=n.mesh(false,false);nut.position.set(x,y0+2.9,z);nut.rotation.y=0.7;root.add(nut);
   const p=new Geo();p.box(x+1.6,(y0+yT-1.1)/2,z,0.85,yT-1.1-y0,0.85,RGB(0x8a6c48));
-  const m=p.mesh(false,false);root.add(m);return m;
+  const m=p.mesh(false,false);root.add(m);
+  PLY.ram=ram;PLY.nut=nut;PLY.screwAt=[x,z];
+  return m;
+}
+/* the bar is pushed a quarter turn along the open side of the 'tween deck (bunks to one
+   side, chests to the other, so not walked all the way round), then drawn and set in the
+   nut's next hole - the nut is square, so the bar goes back to where it started - twice */
+function plyTurnScrew(d){
+  d.worked=true;
+  const c=PLY.screwAt, y0=LVL_Y[LVL.TWEEN], e=workAdd(player,"wind",{});
+  PLY.wind={e:e,t:0,T:4.6,push:1.9,back:0.4,a0:-0.26};
+  plyWindAt(0);
+  playCutscene({skippable:true,steps:[
+    {cam:{to:[c[0]+8.6,y0+6.6,c[1]-1.6],look:[c[0]+0.4,y0+4.6,c[1]+1.2],cut:true},t:PLY.wind.T,
+     narrate:"The great iron screw from Holland. Turn by turn, the beam goes back into its place."}]},
+    function(){workRemove(e);plyWindAt(PLY.wind.T);PLY.wind=null;if(PLY.post)PLY.post.visible=true;plyAct(d);});
+}
+function plyWindAt(t){
+  const W=PLY.wind, c=PLY.screwAt;
+  if(!W||!c)return;
+  const cyc=W.push+W.back, r=t>=W.T?W.push:t%cyc, pushing=r<W.push;
+  const f=pushing?r/W.push:1-(r-W.push)/W.back, th=W.a0+Math.PI/2*fmS(f), rh=2.3, back=1.4;
+  if(PLY.nut)PLY.nut.rotation.y=(pushing?th:W.a0)-Math.PI/2;
+  if(PLY.ram)PLY.ram.position.y=-PLY_SAG*(1-Math.min(1,t/W.T));
+  const x=c[0]+Math.sin(th)*rh-Math.cos(th)*back, z=c[1]+Math.cos(th)*rh+Math.sin(th)*back;
+  player.position.set(x,LVL_Y[LVL.TWEEN],z);player.rotation.y=th+Math.PI/2;
 }
 
 /* ---- THE TERRAIN ---- */
@@ -35770,6 +35832,36 @@ SITE_TERRAIN.plymouth={sea:62,shore:44,flat:-30,deep:-2.0,fall:0.03,rise:2.2,inl
   sky:0xa8c2d2,fog:0xbccfda,water:0x3e5e66,near:0x828c54,far:0x6c7846,back:0x525c38,wet:0x7c7a56,
   trees:0,treeZ:-40,treeH:48,seed:229};
 
+/* play-test, 27 Nov: "they went out and killed fiue Deere, which they brought to the
+   Plantation" (Mourt p. [61]). The one-man carrier read as a club and was cut; this is the
+   carry that reads: a deer slung by its tied feet under a pole, the pole on the shoulders of
+   two Wampanoag men walking in from the east. They stop by Massasoit's company and stand
+   holding it. The deer is the game's own model (the doe of Chapter III), turned over */
+function plyDeerCarry(root,G,from,to){
+  const pole=new THREE.Group();root.add(pole);
+  const b=new Geo(), wood=RGB(0x6a5038);b.beam8([0,0,-5.2],[0,0,5.2],0.22,0.22,wood,wood);pole.add(b.mesh(false,false));
+  const turn=new THREE.Group();turn.rotation.y=Math.PI/2;pole.add(turn);
+  const flip=new THREE.Group();flip.rotation.x=Math.PI;flip.scale.setScalar(0.8);flip.position.y=0.1;turn.add(flip);
+  placeModel(flip,"assets/animals/deer_standing.glb","deer_standing",0,0,0,0,1,1,1);
+  /* the cords at the tied feet */
+  const c=new Geo(), cord=RGB(0x8a7a5a);for(const zz of [-1.1,1.1])c.box(0,-0.2,zz,0.5,0.5,0.35,cord);pole.add(c.mesh(false,false));
+  const men=[0,1].map(function(i){const f=tidewaterFigure(plyWampLook({mantle:false}));root.add(f);return f;});
+  PLY.deer={pole:pole,men:men,G:G,from:from,to:to,s:0,ph:0,
+    L:Math.hypot(to[0]-from[0],to[1]-from[1]),dir:Math.atan2(to[0]-from[0],to[1]-from[1])};
+  plyDeerStep(0);
+}
+function plyDeerStep(dt){
+  const D=PLY.deer, G=D.G, moving=D.s<D.L;
+  if(moving){D.s=Math.min(D.L,D.s+2.3*dt);D.ph+=2.3*dt*figWalkRate(D.men[0],0.7);}
+  const u=D.s/D.L, cx=D.from[0]+(D.to[0]-D.from[0])*u, cz=D.from[1]+(D.to[1]-D.from[1])*u;
+  const fx=Math.sin(D.dir), fz=Math.cos(D.dir), rx=Math.cos(D.dir), rz=-Math.sin(D.dir);
+  /* the pole rides on each man's right shoulder: half a foot to his right, at its height */
+  D.men.forEach(function(f,i){const k=i?-3.9:3.9, x=cx+fx*k, z=cz+fz*k, p=f.userData.parts;
+    f.position.set(x,G(x,z),z);f.rotation.y=D.dir;
+    if(moving)figWalk(p,D.ph+i*Math.PI,0.7);else figWalk(p,0,0);
+    if(p.shoulderR){p.shoulderR.rotation.set(-2.55,0,0.30);p.elbowR.rotation.set(-2.25,0,0);}});
+  D.pole.position.set(cx+rx*0.6,G(cx,cz)+4.25,cz+rz*0.6);D.pole.rotation.y=D.dir;
+}
 /* the speakers and the figures who stand silent: they face the player's start */
 function plyFace(x,z,at){return Math.atan2(at[0]-x,at[1]-z);}
 /* a Wampanoag man of 1621: the New England look (look book 1.14) - hair worn loose, not the
@@ -35783,6 +35875,7 @@ function plyWampLook(over){
 registerWorld("ch11",function(root){
   const w=plyW(), sd=plyDay(), where=sd.where, day=w.day;
   PLY.later=[];PLY.plot=null;PLY.post=null;PLY.fort=null;PLY.fish=null;PLY.tis=null;BLAZE.fires.length=0;
+  PLY.ram=null;PLY.nut=null;PLY.screwAt=null;PLY.wind=null;PLY.deer=null;
   plyRowersOff();
   let G, spots={}, at=[0,42], face=Math.PI, nextAt=null, look0=0, pitch0=0.30, ship=false;
   const duty=function(id,label,x,z,data){
@@ -35808,6 +35901,9 @@ registerWorld("ch11",function(root){
     placeShip(root,"godspeed",1,130,170,Math.PI/2);
     priceLanding(root,G,-4,56,98);
     const pile=workStack(root,6,33,"cask",9);for(let i=0;i<6;i++)pile.drop();
+    /* play-test, 27 Nov: the pile had no collider, so the player stood in it to lift a cask
+       out of it, and the shot over the shoulder was taken from behind the pile */
+    solid(6.9,33,3.4,1.3,LVL.MAIN,0);
     const foot=workStack(root,-11,50,"cask",9);
     workMan(root,crowdEq("hand",300,1615),10,39,0,"carry",{from:[10,39],to:[-3,52],load:"cask",speed:2.6,drop:foot.drop});
     workMan(root,crowdEq("hand",301,1615),14,41,0,"carry",{from:[13,40.5],to:[0,53.5],load:"cask",speed:2.9});
@@ -35816,12 +35912,15 @@ registerWorld("ch11",function(root){
       const f=englishWoman(false);f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));solid(a[0],a[1],1,1,LVL.MAIN,0);});
     starveChest(root,G,-50,40);
     starveChest(root,G,-18,20.5);duty("reasons","Bradford’s Reasons",-18,24,{kind:"reasons",verb:"Read them"});
-    duty("stock","The Common Stock",6,38,{kind:"stock",verb:"Carry a cask",face:[6,33]});
+    duty("stock","The Common Stock",6,38,{kind:"stock",verb:"Carry a cask",face:[6,33],stand:[6,37.6],
+      cam:[[13,6.5,43],[5.5,2.4,35]]});
     presTable(root,G,24,12);duty("conditions","The Ten Conditions",24,16,{kind:"conditions",after:"reasons",verb:"Read them"});
     starveChest(root,G,-34,20.5);starveChest(root,G,26,20.5);
     spots={weston:[34,32],carver:[-30,34],cushman:[-6,4]};
     nextAt=[44,8];starveChest(root,G,44,4.5);
-    at=[0,46];
+    /* play-test, 27 Nov: (0,46) is two feet off the first carrier's path; he walked through the
+       player while the first page was still open */
+    at=[-8,42];
   }
   if(where==="ship"){
     /* the Mayflower: Chapter I's ship, built by the same routines, named for her. The beam is
@@ -35838,7 +35937,7 @@ registerWorld("ch11",function(root){
        helm, the ration casks. Only the ladders belong to this scene */
     for(let i=interactables.length-1;i>=n0;i--)if(interactables[i].action!=="ladder")interactables.splice(i,1);
     G=function(){return LVL_Y[LVL.MAIN];};
-    PLY.post=plyBeam(root,-5.4,2.7);PLY.post.visible=!!w.did.beam;
+    PLY.post=plyBeam(root,-5.4,2.7,!!w.did.beam);PLY.post.visible=!!w.did.beam;
     duty("beam","The Cracked Beam",-5.4,6.4,{kind:"beam",verb:"Turn the screw",lvl:LVL.TWEEN,face:[-5.4,2.7],reach:3.4});
     plyDeckChest(root,LVL.MAIN,-6.5,5);duty("speeches","Mutinous Speeches",-6.5,8.5,{kind:"speeches",verb:"Read it"});
     plyDeckChest(root,LVL.MAIN,6.5,-2);duty("compact","The Compact",6.5,1.5,{kind:"compact",after:"speeches",verb:"Read it"});
@@ -35851,9 +35950,14 @@ registerWorld("ch11",function(root){
     put(englishWoman(false),LVL.TWEEN,5,-3,-1.8);put(englishWoman(true),LVL.TWEEN,-8.5,-6,1.0);
     {const f=englishWoman(false,{age:"child"});put(f,LVL.TWEEN,6.5,-0.8,-2.2);}
     {const s=buildFigure(crowdEq("hand",332,1615),{lod:1});s.position.set(8,LVL_Y[LVL.TWEEN]+0.24,6);s.rotation.y=-1.6;root.add(s);figReact(s,"sitSick",{instant:true});}
-    spots={bradford:[5,12]};
+    /* play-test, 27 Nov: the player started at (2.5,8) and Bradford stood at (5,12), both inside
+       the sweep of the capstan's bars (centre z=10.8, bars to 6.6 ft); and the camera, 29 ft
+       straight aft, sat against the mizzen. Both now stand clear of the bars; the player starts
+       forward of the mainmast by the main hatch (the way down to the beam), so the camera
+       behind sits in the clear air between the main and the mizzen */
+    spots={bradford:[-11,7]};
     nextAt=[-9,26];plyDeckChest(root,LVL.MAIN,-9,22.5);
-    at=[2.5,8];
+    at=[6,-5];look0=0.15;
   }
   if(where==="shore"){
     /* Cape Cod: the corn heaps, the grave, the barricade of 8 December; the shallop that went on
@@ -35890,7 +35994,7 @@ registerWorld("ch11",function(root){
     placeShip(root,"mayflower",1,30,210,Math.PI/2);
     plyShed(root,G,-36,8,0);
     [1.5,5.5,9.5,13.5].forEach(function(z,i){plySick(root,G,-33.6,z,Math.PI/2,i);});
-    {const s=buildFigure(crowdEq("hand",405,1615),{lod:1});s.position.set(-34,G(-34,16)+0.24,16);s.rotation.y=1.4;root.add(s);figReact(s,"sitSick",{instant:true});}
+    {const s=buildFigure(crowdEq("hand",405,1615),{lod:1});s.position.set(-35.6,G(-35.6,16.4)+0.24,16.4);s.rotation.y=1.4;root.add(s);figReact(s,"sitSick",{instant:true});}
     {const ring=new Geo(), stone=RGB(0x6a6458), gy=G(-25,8);for(let i=0;i<8;i++){const a=i/8*Math.PI*2;ring.box(-25+Math.sin(a)*1.4,gy+0.2,8+Math.cos(a)*1.4,0.7,0.4,0.6,stone);}root.add(ring.mesh(false,false));
      blazeAt(root,-25,gy+0.3,8,2.6,2.2).smoke=false;solid(-25,8,1.6,1.6,LVL.MAIN,0);}
     workMan(root,personEq("brewster",1621),-30.8,3.5,-Math.PI/2,"tend",{hero:true});
@@ -35900,7 +36004,11 @@ registerWorld("ch11",function(root){
     workMan(root,crowdEq("hand",406,1615),40,-20,2.6,"chop",{target:[37.5,-16.5]});
     duty("wood","The Woodpile",32,-5,{kind:"wood",verb:"Carry wood",face:[30,-9]});
     duty("water","The Brook",-57,30,{kind:"water",after:"wood",verb:"Carry water",face:[-61,30]});
-    duty("sick","The Sick",-28,4,{kind:"sick",after:"water",verb:"Tend them",face:[-32,4]});
+    /* play-test, 27 Nov: the duty faced the bed Brewster was already tending, and the player
+       crouched inside him with the camera under the roof against a post: now the next bed,
+       clear of him and of the posts, shot from outside the open front */
+    duty("sick","The Sick",-28,6,{kind:"sick",after:"water",verb:"Tend them",face:[-33.5,5.6],stand:[-30.4,6.2],
+      cam:[[-21,5.5,12],[-31.5,1.6,5.8]]});
     starveChest(root,G,34,36.5);
     spots={bradford:[8,32]};
     nextAt=[-6,36];starveChest(root,G,-6,32.5);
@@ -35922,7 +36030,10 @@ registerWorld("ch11",function(root){
     duty("samoset","Samoset",40,33.5,{kind:"samoset",verb:"Hear who he is"});
     starveChest(root,G,72,22.5);duty("tisquantum","Tisquantum’s Story",72,26,{kind:"tisquantum",after:"samoset",verb:"Read it"});
     presTable(root,G,112,18);duty("terms","The Seven Terms",112,22,{kind:"terms",after:"tisquantum",verb:"Sort them"});
-    duty("plant","The Planting",88,12,{kind:"plant",after:"terms",verb:"Set the corn",face:[88,6]});
+    /* play-test, 27 Nov: the player knelt between two hills, setting nothing; now at one, with
+       the shot from the side so the hill, the trowel and Tisquantum are all in it */
+    duty("plant","The Planting",88,12,{kind:"plant",after:"terms",verb:"Set the corn",face:[89.6,6.4],stand:[89.6,8.7],
+      cam:[[95.5,5.0,13.5],[90.5,1.4,7.2]]});
     starveChest(root,G,104,22.5);
     spots={bradford:[60,36],winslow:[80,38]};
     nextAt=[60,8];starveChest(root,G,60,4.5);
@@ -35947,7 +36058,10 @@ registerWorld("ch11",function(root){
     stand(personEq("massasoit",1621),16,42,plyFace(16,42,[0,30]));
     [[22,46],[10,47],[26,40],[6,44],[30,47],[19,50],[12,52],[28,53]].forEach(function(a,i){wamp(a[0],a[1],plyFace(a[0],a[1],[0,30])+(i%3-1)*0.3,{mantle:i%4===0});});
     stand(personEq("hobbamock",1621),40,22,plyFace(40,22,[0,40]));
-    duty("harvest","The Corn",46,4,{kind:"harvest",verb:"Carry it in",face:[44,0]});
+    plyDeerCarry(root,G,[88,31],[40,31]);
+    /* play-test, 27 Nov: at (44,0) the player stood across both carriers' paths, and they walked
+       through him with their baskets; he takes his basket at the field's east end instead */
+    duty("harvest","The Corn",60,4.5,{kind:"harvest",verb:"Carry it in",face:[60,-2],stand:[60,1.4]});
     duty("fowling","The Fowl",-54,-11,{kind:"fowling",after:"harvest",verb:"Carry them in",face:[-54,-16]});
     presTable(root,G,10,-62);duty("winslow","Winslow’s Letter",10,-58,{kind:"winslow",after:"fowling",verb:"Read it"});
     starveChest(root,G,-30,26.5);starveChest(root,G,30,26.5);starveChest(root,G,-40,0.5);
@@ -35960,7 +36074,7 @@ registerWorld("ch11",function(root){
     plyTimbers(root,G,14,-66);
     priceLogs(root,G,[[-24,-66,0.4,9],[34,-58,1.1,8]]);
     workMan(root,crowdEq("hand",420,1615),-24,-62,Math.PI,"chop",{target:[-24,-66]});
-    workMan(root,crowdEq("hand",421,1615),30,-55,-2.2,"saw");
+    workMan(root,crowdEq("hand",421,1615),30,-55,-2.2,"saw");plySawBench(root,G,30,-55,-2.2,2.8);
     workMan(root,crowdEq("hand",422,1615),-40,-50,0,"carry",{from:[-42,-48],to:[-12,-70],load:"board",speed:2.4});
     stand(personEq("standish",1622),24,-74,plyFace(24,-74,[14,-62]));
     stand(personEq("hobbamock",1622),24,40,plyFace(24,40,[0,40]));
@@ -36024,6 +36138,8 @@ function updatePly(dt){
   PLY.t+=dt;
   /* the sick's fire at Plymouth; the light of each scene is SCENE_LOOK.ch11, via applyLook */
   updateBlaze(dt);
+  if(PLY.wind){PLY.wind.t+=dt;plyWindAt(Math.min(PLY.wind.t,PLY.wind.T));}
+  if(PLY.deer)plyDeerStep(dt);
 }
 
 /* ---- CHAPTER XI'S CONTENT, AND ITS MUSTER ----
@@ -38147,7 +38263,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1624";
+const BUILD="20261127-1652";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
