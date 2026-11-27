@@ -90,5 +90,13 @@
  "martin": {
   "text": "My son is sick, and the President will not give him so much as a spoonful of beer above his allowance.",
   "desc": "An English gentleman of the council, a father whose son is sick: grieving and angry, a strained older voice, an English accent of the early 1600s, not American."
+ },
+ "read": {
+  "text": "I spoke hard words to the President and I am to hang for them.",
+  "desc": "An English blacksmith condemned to hang: rough, frightened and sullen, a hoarse working man's voice, an English accent of the early 1600s, not American."
+ },
+ "bargeman": {
+  "text": "But there is a town there, and fires, and we have been cold in this boat since morning.",
+  "desc": "An English soldier in a cold boat on a winter river: tired, restless and grumbling, a plain working voice, an English accent of the early 1600s, not American."
  }
 }
