@@ -3517,6 +3517,42 @@ function gradeRenderer(r){
   r.toneMappingExposure=EXPOSURE;
   return r;
 }
+/* ---- GRAIN: DETAIL WITHOUT A TEXTURE ----
+   A wall, a deck or a field painted one flat colour reads as plastic the moment it is
+   bigger than a man. Every Lambert material in the game takes a little value noise -
+   two octaves, about three feet and nine inches across - multiplied into its colour,
+   so a large face breaks up the way weathered wood, earth and canvas do. No texture
+   fetch: a hash and a smoothstep, a few dozen ALU ops on a shader that is otherwise
+   nearly free, because Lambert lights per VERTEX.
+   It scales a colour by at most GRAIN.value either way around the same mean, and the
+   two octaves average toward the middle, so in practice a face moves two or three per
+   cent and never more than about 12 levels of 255 (measured on the Elizabeth City
+   houses) - grain, not a recolour; nothing authored moves. It is in OBJECT space, not world space, so it rides
+   with a figure instead of swimming across him; for the merged world, whose vertices
+   are already world feet, the two are the same thing.
+   Installed on the PROTOTYPE, so it reaches every Lambert material, including the
+   ones Geo.mesh makes per mesh, without anyone having to remember it. A material
+   with its own onBeforeCompile (the ground's detail map) keeps its own and is left
+   alone. Compiled only under USE_FOG: the world has fog and the portrait, wardrobe
+   and menu canvases do not, so the panels describing a man are never mottled.
+   OFF on the low tier: the uniform is 0 and the branch skips the noise. */
+const GRAIN={value:0.12};
+const GRAIN_BY_TIER={high:0.12,medium:0.08,low:0};
+THREE.MeshLambertMaterial.prototype.onBeforeCompile=function(sh){
+  sh.uniforms.uGrain=GRAIN;
+  sh.vertexShader=sh.vertexShader
+    .replace("#include <common>","#include <common>\nvarying vec3 vGrainP;")
+    .replace("#include <begin_vertex>","#include <begin_vertex>\nvGrainP=transformed;");
+  sh.fragmentShader=sh.fragmentShader
+    .replace("#include <common>","#include <common>\nvarying vec3 vGrainP;\nuniform float uGrain;\n"+
+      "float gHash(vec3 p){p=fract(p*0.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}\n"+
+      "float gNoise(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);\n"+
+      " return mix(mix(mix(gHash(i),gHash(i+vec3(1,0,0)),f.x),mix(gHash(i+vec3(0,1,0)),gHash(i+vec3(1,1,0)),f.x),f.y),\n"+
+      "  mix(mix(gHash(i+vec3(0,0,1)),gHash(i+vec3(1,0,1)),f.x),mix(gHash(i+vec3(0,1,1)),gHash(i+vec3(1,1,1)),f.x),f.y),f.z);}")
+    .replace("#include <color_fragment>","#include <color_fragment>\n"+
+      "#ifdef USE_FOG\nif(uGrain>0.0){float gn=gNoise(vGrainP*0.33)*0.65+gNoise(vGrainP*1.3)*0.35;\n"+
+      " diffuseColor.rgb*=1.0+uGrain*(gn*2.0-1.0);}\n#endif");
+};
 /* And one light rig for every canvas that shows a FIGURE - the dialogue
    portrait, the wardrobe and the menu. All three had their own hand-set lights,
    which is how the same man came to be lit three different ways in three panels
@@ -7951,7 +7987,7 @@ function enterWorld(id){
   /* a fresh world starts in daylight, whatever the last one ended in */
   DUSK.t=0;DUSK.on=false;AMBUSH.on=false;
   if(id!=="ch2")AMBUSH.done=false;
-  applySky(0);
+  applyLook();             /* this scene's light, sky, fog and horizon: SCENE_LOOK */
   /* One owner for the HUD's chapter line and the guide. Every route into a
      world - the intro card, Continue, a pasted muster code, the admin picker,
      being returned to the deck after a hanging - comes through here, so none of
@@ -7992,6 +8028,7 @@ function setTier(t){
   if(!GFX_TIERS[t]||GFX.tier===t)return false;
   GFX.tier=t;GFX.res=GFX_TIERS[t].res;GFX.fx=GFX_TIERS[t].fx;
   if(renderer)resize();
+  tierLook();                 /* grain, vignette and clouds follow the tier too */
   console.log("graphics tier -> "+t+" (res x"+GFX.res+", effects x"+GFX.fx+")");
   return true;
 }
@@ -8128,6 +8165,7 @@ function initRenderer(){
      drifts during exactly the scenes that are framed most carefully. */
   scene.onBeforeRender=function(r,s,camera){
     if(skyDome&&camera)skyDome.position.copy(camera.position);
+    if(CLOUDS&&CLOUDS.parent&&camera)CLOUDS.position.copy(camera.position);
   };
   window.addEventListener("resize",resize);
 }
@@ -22621,8 +22659,9 @@ function buildSkyDome(){
 /* repaint the gradient for a given dusk fraction */
 function paintSky(k){
   if(!skyDome)return;
-  const top=lerpHex(SKY_DAY.top,SKY_DUSK.top,k);
-  const hor=lerpHex(SKY_DAY.hor,SKY_DUSK.hor,k);
+  const top=lerpHex(LOOK_NOW.top,SKY_DUSK.top,k);
+  const hor=lerpHex(LOOK_NOW.hor,SKY_DUSK.hor,k);
+  const curve=LOOK_NOW.curve+(0.45-LOOK_NOW.curve)*k;
   const p=skyDome.geometry.attributes.position;
   const c=skyDome.geometry.attributes.color;
   for(let i=0;i<p.count;i++){
@@ -22632,7 +22671,7 @@ function paintSky(k){
     const t=Math.max(0,Math.min(1,p.getY(i)/60));
     /* a power curve, because a linear sky gradient reads as a printed ramp -
        the real thing changes fast near the horizon and slowly overhead */
-    const h=lerpHex(hor,top,Math.pow(t,0.45));
+    const h=lerpHex(hor,top,Math.pow(t,curve));
     /* vertex colours, so linear - the gradient is authored in sRGB and mixed
        there (which is the right space to interpolate a hand-picked ramp in),
        then converted once per vertex on the way into the buffer */
@@ -22647,24 +22686,347 @@ function applySky(k){
   if(!scene)return;
   buildSkyDome();
   paintSky(k);
-  SKY_BG.setHex(lerpHex(SKY_DAY.bg,SKY_DUSK.bg,k));
+  SKY_BG.setHex(lerpHex(LOOK_NOW.bg,SKY_DUSK.bg,k));
   scene.background=SKY_BG;
   if(scene.fog){
-    scene.fog.color=SKY_FOG.setHex(lerpHex(SKY_DAY.fog,SKY_DUSK.fog,k));
-    scene.fog.near=SKY_DAY.near+(SKY_DUSK.near-SKY_DAY.near)*k;
-    scene.fog.far=SKY_DAY.far+(SKY_DUSK.far-SKY_DAY.far)*k;
+    scene.fog.color=SKY_FOG.setHex(lerpHex(LOOK_NOW.fog,SKY_DUSK.fog,k));
+    scene.fog.near=LOOK_NOW.near+(SKY_DUSK.near-LOOK_NOW.near)*k;
+    scene.fog.far=LOOK_NOW.far+(SKY_DUSK.far-LOOK_NOW.far)*k;
   }
-  if(hemiLight)hemiLight.intensity=SKY_DAY.hemi+(SKY_DUSK.hemi-SKY_DAY.hemi)*k;
+  if(hemiLight)hemiLight.intensity=LOOK_NOW.hemi+(SKY_DUSK.hemi-LOOK_NOW.hemi)*k;
   if(sunLight){
-    sunLight.intensity=SKY_DAY.sun+(SKY_DUSK.sun-SKY_DAY.sun)*k;
-    sunLight.color=SKY_SUN.setHex(lerpHex(SKY_DAY.sunC,SKY_DUSK.sunC,k)).convertSRGBToLinear();
+    sunLight.intensity=LOOK_NOW.sun+(SKY_DUSK.sun-LOOK_NOW.sun)*k;
+    sunLight.color=SKY_SUN.setHex(lerpHex(LOOK_NOW.sunC,SKY_DUSK.sunC,k)).convertSRGBToLinear();
   }
   /* A cast shadow needs something casting it. As the sun goes down the blobs go
      with it, which also means the ambush is lit by almost nothing but the match -
      which is the point that scene is making. */
   /* the fill is sky-bounce, so it dies with the sky rather than with the sun */
-  if(fillLight)fillLight.intensity=0.30-0.22*k;
-  if(shadowMesh)shadowMesh.material.opacity=1-k*0.88;
+  if(fillLight)fillLight.intensity=LOOK_NOW.fill-(LOOK_NOW.fill-0.08)*k;
+  if(CLOUDS)CLOUDS.material.color.setHex(lerpHex(0xffffff,0x5a4a44,k));
+  if(shadowMesh)shadowMesh.material.opacity=(1-k*0.88)*LOOK_NOW.shade;
+}
+/* ========== SCENE_LOOK: THE LIGHT OF EVERY SCENE, IN ONE TABLE ==========
+   Every scene used to enter in the same noon (SKY_DAY), and the few that differed patched
+   it afterwards from their own update functions with a `.lit` flag: a night here, a grey
+   winter there, each multiplying the lights by its own factors and each repainting the
+   dome with its own copy of the same loop. Ten chapters run from a dawn at sea in April
+   1607 to a February in 1624, and the light is half of how a place says when it is.
+
+   So: one table, keyed by world and by the chapter's own day index (the same index its
+   *_DAYS table is read by), and one function, applyLook(), called by enterWorld - every
+   route into a scene comes through there, and every day re-enters its world. A look
+   sets the sun's colour, strength and height, the hemisphere's sky and ground colour,
+   the fill, the fog, the dome's gradient, the exposure, the clouds, the vignette and
+   whether the scene gets a distant horizon. applySky(k) still runs the dusk lerp, now
+   FROM this scene's look rather than from one noon for all.
+
+   READABILITY FIRST. Nothing goes below about 30 degrees of sun in daylight, because
+   Lambert shades per vertex and a low sun darkens every horizontal face - decks, ground,
+   the tops of hats - which is most of what a child reads a figure by. Overcast looks
+   trade sun for sky light rather than losing both. Nights are lit like the old nights,
+   with the moonlight cooler and the exposure a touch up so faces still read.
+
+   Fog stays the dome's horizon colour in every look, on purpose: distant geometry must
+   dissolve into the colour the sky is at that height, or the treeline ends in a band.
+   Sun azimuth moves at most ten degrees from (60,150,40), because the blob shadows'
+   offset (SH_DX/SH_DZ) and the painted port light below decks assume that quarter.
+   ceiling: one look per day index; a scene that changes light mid-day still needs its
+   own applySky(k) call, as the Cape Henry dusk does. */
+const LOOK_BASE={bg:null,fog:null,near:200,far:860,hemi:0.58,sun:0.86,sunC:0xffe6bd,
+  top:0x35688f,hor:0xbec4bb,curve:0.45,hSky:0xc9d8de,hGnd:0x4a3a22,elev:64,az:0,fill:0.30,
+  exp:1,shade:1,clouds:4,cloudC:0xf4f1ea,hz:true,gap:null,vig:0.85,wood:0x26361f};
+function lookFrom(o){
+  const L=Object.assign({},LOOK_BASE,o||{});
+  if(L.bg==null)L.bg=L.hor;
+  if(L.fog==null)L.fog=L.hor;
+  return L;
+}
+let LOOK_NOW=lookFrom({});
+/* the moods that recur, so a table row can say "a grey winter" and adjust from there */
+const LK={
+  night:{top:0x0e121c,hor:0x2a3244,curve:0.6,near:80,far:520,hemi:0.25,sun:0.25,sunC:0xb4c2e0,
+    hSky:0x8a9abb,hGnd:0x2a2620,elev:42,fill:0.14,exp:1.08,shade:0.35,clouds:0,vig:1},
+  winter:{top:0x8e989e,hor:0xb9c0c3,curve:0.6,near:180,far:760,hemi:0.52,sun:0.60,sunC:0xe9e7e1,
+    hSky:0xc8d0d6,hGnd:0x48423a,elev:30,fill:0.28,shade:0.7,clouds:0,vig:0.75,wood:0x3e3c34},
+  summer:{top:0x3c71a2,hor:0xc8cfc6,sunC:0xfff1d6,sun:0.92,elev:64,hemi:0.60,clouds:4},
+  spring:{top:0x3c72a4,hor:0xc5d0c8,sunC:0xfff0d4,sun:0.88,elev:56,hemi:0.60,clouds:5},
+  autumn:{top:0x44709a,hor:0xcec6b0,sunC:0xffdca8,sun:0.86,elev:40,hemi:0.56,hGnd:0x56422a,
+    clouds:4,cloudC:0xf6e8d4,wood:0x3a3a22},
+  grey:{top:0x8c969c,hor:0xb2b9bc,curve:0.6,near:170,far:760,hemi:0.54,sun:0.60,sunC:0xe2e2dc,
+    hSky:0xc4ccd0,elev:36,fill:0.28,shade:0.7,clouds:0,vig:0.75}
+};
+function lk(base,o){return Object.assign({},LK[base]||{},o||{});}
+const SCENE_LOOK={
+  /* I. Aboard, the bay mouth, the first hours after dawn, 26 April 1607 (Percy: land
+     descried "about foure a clocke in the morning"). Warm low light, cool overhead.
+     No horizon here: buildRiver already lays the capes and the Eastern Shore. */
+  ch1:{top:0x2f5683,hor:0xcdc0a8,curve:0.40,sunC:0xffd2a0,sun:0.92,elev:40,az:-8,
+    hSky:0xc6d0dc,hGnd:0x4c3a26,hemi:0.60,clouds:6,cloudC:0xf8dcc0,hz:false},
+  /* II. Cape Henry, ashore that afternoon - an April afternoon, the sun westering.
+     The dusk of the attack lerps from here. The cape has its own far country. */
+  ch2:{top:0x37699a,hor:0xc6c8bc,sunC:0xffe0b0,sun:0.90,elev:46,az:-10,clouds:5,hz:false},
+  /* II's survey: Point Comfort, Archer's Hope and the island, late April and May 1607 */
+  comfort:lk("spring",{gap:[-0.9,0.9]}),
+  archers:lk("spring",{hor:0xc3ccc0}),
+  james:lk("spring",{hor:0xc2cbc0,elev:60}),
+  /* III. The fort going up, 14 May to 15 June 1607: late spring, clear */
+  ch3:lk("summer",{top:0x386c9c,hor:0xc1cbc0,elev:62,sun:0.90}),
+  /* IV. The sickly season. The order is SICK_DAYS's. */
+  ch4:[
+    lk("summer",{}),                                                   /* 22 June, the ships go */
+    lk("summer",{top:0x5a7f9c,hor:0xd3d0bb,near:150,far:780,sunC:0xfff0c8,sun:0.88,clouds:2,
+      cloudC:0xf2eedf}),                                              /* 7 July: heat and haze */
+    lk("night",{top:0x161e2c,hor:0x4a3e3c,curve:0.5,hSky:0x9a8e98,sunC:0xd89a70,
+      exp:1.06}),                                                     /* a night in August, the watch */
+    lk("summer",{top:0x6c7f86,hor:0xcfc8a0,near:120,far:700,hSky:0xd2d2b4,hGnd:0x50442a,
+      sunC:0xffe6a8,sun:0.80,elev:58,exp:0.98,clouds:0,vig:0.95}),   /* 18 August: the sick air */
+    lk("grey",{top:0x7b868c,hor:0xb9bcb2,near:140,far:720,hemi:0.62,sun:0.52,
+      sunC:0xe8e2d0,elev:56}),                                        /* 22 August: Gosnold's grave */
+    lk("summer",{top:0x4d7898,hor:0xcac9b6,sunC:0xffe6b8,sun:0.86,elev:52,clouds:3}),  /* 11 September */
+    lk("autumn",{top:0x3c6e9c,hor:0xcfc8b0,elev:46,sun:0.90,wood:0x26361f})           /* 19 September: corn */
+  ],
+  /* V. Smith's relation, autumn 1607 to 7 January 1608 (CAPT_DAYS) */
+  ch5:[
+    lk("autumn",{elev:36}),                                            /* Kecoughtan, autumn */
+    lk("winter",{}),                                                   /* the fort, November */
+    lk("winter",{top:0x58748c,hor:0xc6cdd0,curve:0.5,sun:0.64,sunC:0xeef0f4,hSky:0xd4dee6,
+      elev:26,clouds:3,cloudC:0xe8ecef}),                             /* 10 December, the barge: cold and pale */
+    lk("winter",{top:0x86929a,hor:0xb6bec2}),                         /* 2 January */
+    lk("winter",{top:0x8a9498,hor:0xbcc2c2}),                         /* Werowocomoco, then and now */
+    lk("winter",{top:0x86898a,hor:0xb8b6b0,hGnd:0x4e3e30})           /* 7 January: the fire, smoke in the air */
+  ],
+  /* VI. Smith and the record, February 1608 to October 1609 (PRES_DAYS). PRES.night
+     (Werowocomoco, the warning) is laid over whichever day it falls on. */
+  ch6:[
+    lk("spring",{top:0x5a7d98,hor:0xc4cbca,sunC:0xf4ead8,sun:0.76,elev:40,hemi:0.56,
+      wood:0x3e3c30}),                                                /* Feb-Apr 1608: late winter */
+    lk("summer",{top:0x2f6c9e,hor:0xc6d6dc,sun:0.95,elev:66,clouds:5,gap:[-0.9,0.9]}),  /* the Bay, summer 1608 */
+    lk("summer",{top:0x4a7898,hor:0xcfcdb8,near:170,far:800,sunC:0xfff0c8}),          /* July-Sept 1608: heat */
+    lk("autumn",{}),                                                   /* Werowocomoco, autumn 1608 */
+    lk("autumn",{top:0x6c8194,hor:0xc5c2b4,sunC:0xf6dfb8,sun:0.72,elev:34,clouds:0,
+      shade:0.85,wood:0x3e3c30}),                                     /* late 1608 */
+    lk("winter",{top:0x4f7698,hor:0xd8e0e4,curve:0.5,near:200,far:820,sun:0.82,sunC:0xf4f6ff,
+      hSky:0xdce6ee,hGnd:0x6a6660,hemi:0.62,elev:30,shade:0.9,clouds:2,cloudC:0xeef2f6,
+      vig:0.85}),                                                     /* 12 January 1609: frozen, crisp */
+    lk("spring",{}),                                                   /* spring 1609 */
+    lk("autumn",{top:0x4c7696,hor:0xd0c8ae,sunC:0xffdfa6,elev:44,wood:0x26361f})       /* Aug-Oct 1609 */
+  ],
+  /* VII. The starving time, October 1609 to June 1610 (STARVE_DAYS) */
+  ch7:[
+    lk("autumn",{top:0x44709a,hor:0xcdc7b2,elev:42}),                 /* early October */
+    lk("autumn",{top:0x6d8092,hor:0xc2bfb2,near:170,far:760,sunC:0xf0dcc0,sun:0.64,elev:32,
+      clouds:0,shade:0.8,wood:0x403c30}),                             /* Orapakes, November: bare */
+    lk("winter",{top:0x848d93,hor:0xb0b7ba,near:160,far:700,hemi:0.48,sun:0.54,sunC:0xdcdcda,
+      hSky:0xc4ccd0,hGnd:0x3e3a34,exp:0.98}),                         /* the starving winter */
+    lk("winter",{top:0x7a838a,hor:0xaab0b2,near:140,far:680,hemi:0.48,sun:0.50,sunC:0xd8d8d6,
+      hSky:0xc0c8cc,hGnd:0x3a3630,exp:0.98,vig:0.9}),                 /* the trial */
+    lk("summer",{top:0x3a76b0,hor:0xcfd8de,sunC:0xfffaf0,sun:0.95,elev:68,cloudC:0xffffff}),  /* the dig, summer 2012 */
+    lk("spring",{top:0x3c74a6,hor:0xc8d6da,gap:[-0.9,0.9]}),          /* Point Comfort, spring 1610 */
+    lk("summer",{top:0x4d7898,hor:0xcdcbbf,sun:0.88,hSky:0xccd4d6,clouds:2}),  /* 23 May 1610: bright, and a ruin */
+    lk("spring",{top:0x3f74a4,hor:0xccd4cf,elev:44,sunC:0xffeccc})    /* 7-10 June 1610, the river */
+  ],
+  /* VIII. The golden leaf, June 1610 to March 1617 (LEAF_DAYS) */
+  ch8:[
+    lk("summer",{top:0x3770a6,hor:0xc6d2d0,elev:66}),                 /* a June Sunday, 1610 */
+    lk("night",{}),                                                    /* the river by Paspahegh, at night */
+    lk("summer",{top:0x3a72a2,hor:0xc8d0c8}),                         /* May-June 1611, a Sunday */
+    lk("summer",{top:0x3b72a2,hor:0xcad0c4,elev:58}),                 /* Henrico */
+    lk("spring",{top:0x4a7aa4,hor:0xc9d2d2,sun:0.85,elev:48}),        /* the Potomac, April 1613 */
+    lk("spring",{top:0x4c789e,hor:0xc8cfcc,sunC:0xf8eedc,sun:0.84,elev:50,wood:0x34402a}),  /* March-April 1614 */
+    lk("spring",{top:0x4a7aa4,hor:0xcad3d0,elev:50}),                 /* Matchot, spring 1614 */
+    lk("grey",{top:0x8a949a,hor:0xb0b7ba,near:160,far:720,sunC:0xd8dade,sun:0.56,elev:34})  /* Gravesend, March 1617 */
+  ],
+  /* IX. The price of tobacco, May 1617 to March 1620 (PRICE_DAYS) */
+  ch9:[
+    lk("summer",{top:0x3a70a0,hor:0xc9cfc6}),                         /* May-June 1617 */
+    lk("spring",{top:0x4676a0,hor:0xc8cec8,sun:0.86,elev:52}),        /* 1618 */
+    lk("grey",{top:0x858d92,hor:0xa8aeb0,near:120,far:640,hemi:0.60,sun:0.48,sunC:0xd4d0c8,
+      hSky:0xc0c6c8,hGnd:0x4a443c,elev:24,hz:false,vig:0.8}),         /* London, 18 November 1618 */
+    lk("summer",{top:0x3a72a6,hor:0xcbd2c8,elev:62,clouds:6}),        /* the ancient planters' land, 1619 */
+    lk("summer",{top:0x5a809e,hor:0xd6d1b8,near:160,far:760,sunC:0xfff0c4,elev:66,clouds:2,
+      cloudC:0xf2eedf}),                                              /* the Assembly, a hot August */
+    lk("grey",{top:0x8c969c,hor:0xb2b9bc,gap:[-0.9,0.9]}),            /* Point Comfort, late August 1619 */
+    lk("autumn",{top:0x66808f,hor:0xc6c6bc,sunC:0xf2e0c4,sun:0.72,elev:34,clouds:2})  /* Sept 1619 - March 1620 */
+  ],
+  /* X. The sky should sooner fall, October 1621 to February 1624 (SKY_DAYS) */
+  ch10:[
+    lk("autumn",{top:0x50779a,hor:0xcec6b0,sun:0.82,elev:38}),        /* October-November 1621 */
+    lk("spring",{top:0x4a78a2,hor:0xccd2d0,sunC:0xf8f0e0,sun:0.86,elev:46,wood:0x34402a}),  /* March 1622 */
+    lk("night",{}),                                                    /* Pace's house, the night of the 21st */
+    lk("summer",{top:0x587c98,hor:0xd2c4a6,near:180,far:780,sunC:0xffe2b0,sun:0.86,elev:56,
+      clouds:2,cloudC:0xf0e4d0}),                                     /* Elizabeth City: fields burning far off */
+    lk("autumn",{top:0x6a7d8c,hor:0xc4bcae,near:150,far:720,sunC:0xf0d8b8,sun:0.66,elev:30,
+      clouds:0,shade:0.8,wood:0x403c30}),                             /* the Pamunkey: cold, smoke on the river */
+    lk("grey",{top:0x77858e,hor:0xbfc3bd,near:150,far:740,sunC:0xe6e2d6,elev:40,wood:0x3a4030}),  /* Martin's Hundred */
+    lk("autumn",{top:0x5f7c92,hor:0xc6c6ba,sunC:0xf0e4cc,sun:0.76,elev:44,clouds:2})  /* May 1623 - February 1624 */
+  ]
+};
+/* which day of its chapter a world is showing - the same index each *_DAYS table uses */
+const LOOK_DAY={ch4:function(){return sickW().day;},ch5:function(){return captW().day;},
+  ch6:function(){return presW().day;},ch7:function(){return starveW().day;},
+  ch8:function(){return leafW().day;},ch9:function(){return priceW().day;},
+  ch10:function(){return skyW().day;}};
+function lookDay(w){const f=LOOK_DAY[w];try{return f?(f()|0):0;}catch(e){return 0;}}
+function sceneLook(){
+  const w=CURRENT_WORLD;
+  let e=SCENE_LOOK[w];
+  if(Array.isArray(e))e=e[Math.max(0,Math.min(e.length-1,lookDay(w)))];
+  /* the one night that is an event rather than a day: Werowocomoco, the warning */
+  if(w==="ch6"&&typeof PRES!=="undefined"&&PRES.night)e=Object.assign({},e,LK.night);
+  return lookFrom(e);
+}
+/* the default sun, (60,150,40), as a bearing and a height */
+const SUN_AZ=Math.atan2(40,60), SUN_R=Math.hypot(60,150,40);
+function applyLook(){
+  LOOK_NOW=sceneLook();
+  const L=LOOK_NOW;
+  if(hemiLight){
+    hemiLight.color.setHex(L.hSky).convertSRGBToLinear();
+    hemiLight.groundColor.setHex(L.hGnd).convertSRGBToLinear();
+  }
+  if(sunLight){
+    const e=L.elev*Math.PI/180, a=SUN_AZ+Math.max(-10,Math.min(10,L.az))*Math.PI/180;
+    sunLight.position.set(Math.cos(e)*Math.cos(a)*SUN_R,Math.sin(e)*SUN_R,Math.cos(e)*Math.sin(a)*SUN_R);
+  }
+  if(renderer)renderer.toneMappingExposure=EXPOSURE*L.exp;
+  CLOUDS=null;
+  if(worldRoot){buildClouds(worldRoot,L);buildHorizon(worldRoot,L);}
+  applySky(0);
+  tierLook();
+}
+/* What the graphics tier takes away: the grain (a fill cost on every lit pixel), the
+   clouds and the vignette (a full-screen blended layer the compositor pays for every
+   frame). Called by setTier and by applyLook. */
+function tierLook(){
+  const low=GFX.tier==="low";
+  GRAIN.value=GRAIN_BY_TIER[GFX.tier]||0;
+  if(CLOUDS)CLOUDS.visible=!low;
+  const v=document.getElementById("vig");
+  if(v){v.style.visibility=low?"hidden":"";v.style.opacity=String(LOOK_NOW.vig);}
+}
+
+/* ---- CLOUDS: A FEW, FAR OFF, AND OPAQUE ----
+   A sky with nothing in it reads as a backdrop. Four or five low-poly cumulus, each a
+   handful of flattened icosahedra merged, flat-bottomed, shaded by vertex colour from
+   a lit top to a sky-tinted belly. ONE mesh, ONE draw call, about 3,000 triangles, and
+   OPAQUE: no blended overdraw, which is the one thing this game cannot afford.
+   They ride with the camera the way the dome does (scene.onBeforeRender), 560-740 feet
+   out and 150-270 up, so they stay inside cam.far wherever you walk and never parallax
+   into reach. fog:false, because they are sky, and the dusk lerp darkens them through
+   the material colour. Hidden on the low tier. */
+let CLOUDS=null;
+const CLOUD_BASE=new THREE.IcosahedronGeometry(1,1);SHARED.add(CLOUD_BASE);
+function buildClouds(root,L){
+  if(!L.clouds)return;
+  const bp=CLOUD_BASE.attributes.position, bn=CLOUD_BASE.attributes.normal;
+  const top=mixHex(L.cloudC,L.hor,0.12), bot=mixHex(mixHex(L.cloudC,0x7c838c,0.42),L.hor,0.30);
+  const pos=[],col=[];
+  const seed=(CURRENT_WORLD||"x").charCodeAt((CURRENT_WORLD||"x").length-1)*1.7+lookDay(CURRENT_WORLD)*5.3;
+  for(let c=0;c<L.clouds;c++){
+    const a=(c/L.clouds)*Math.PI*2+srand(seed+c*3.1)*1.1;
+    const d=560+srand(seed+c*5.7)*180, y=150+srand(seed+c*2.3)*120;
+    const cx=Math.sin(a)*d, cz=Math.cos(a)*d, tx=Math.cos(a), tz=-Math.sin(a);
+    const len=70+srand(seed+c*7.9)*90, nb=4+Math.floor(srand(seed+c*1.3)*4);
+    for(let b=0;b<nb;b++){
+      const u=(nb>1?b/(nb-1)-0.5:0)*len, k=1-Math.abs(u)/len*1.1;
+      const r=(20+srand(seed+c*9.1+b*1.7)*18)*Math.max(0.35,k);
+      const bx=cx+tx*u+(srand(seed+b*4.4+c)-0.5)*14, bz=cz+tz*u+(srand(seed+b*2.2+c)-0.5)*14;
+      const by=y+srand(seed+b*6.6+c)*r*0.3;
+      for(let i=0;i<bp.count;i++){
+        const vy=Math.max(-0.3,bp.getY(i));          /* a flat belly */
+        pos.push(bx+bp.getX(i)*r*1.35, by+vy*r*0.62, bz+bp.getZ(i)*r*1.1);
+        const t=Math.max(0,Math.min(1,bn.getY(i)*0.6+0.5));
+        const h=mixHex(bot,top,t);
+        col.push(s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
+      }
+    }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute("color",new THREE.Float32BufferAttribute(col,3));
+  CLOUDS=new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,fog:false}));
+  CLOUDS.frustumCulled=false;
+  root.add(CLOUDS);
+}
+
+/* ---- THE HORIZON: WOODS PAST THE EDGE, AND A FAR SHORE ----
+   Every survey site and the fort is a 900-foot square of ground with the river to +z.
+   Walk to the shore and look along it, and the land simply stopped: past x=450 there
+   was sky down to the waterline. Look across the river and there was nothing at all,
+   when the James at the island is two miles wide and its south shore is a low wood the
+   whole way along. Chapter II fixed the same fault at the cape with more of the same
+   terrain; this does it once for every site, from three layers:
+     - a band of low-poly pines just past the patch's edge, on land only, so the ground
+       ends in a wood rather than a hem;
+     - a far shore across open water, ~670 feet out: a strand, a row of pines and a
+       ribbon of woods behind them;
+     - a ribbon of distant woods ~760 feet out behind the land, mostly haze.
+   It ASKS where the water is rather than being told: WORLD.ground is defined everywhere
+   in these worlds, so a bearing whose ground 440 feet out is below the water is water.
+   A look's `gap` leaves a bay open to the sky (Point Comfort, the Bay).
+   One merged Lambert mesh, one draw call, ~8-12k triangles - geometry, which is cheap
+   here - and OPAQUE: it covers sky rather than blending over it. Fog does the blend,
+   which is why every look keeps fog the colour of the dome's horizon. Not aboard ship
+   and not where a look says hz:false (the cape and the bay mouth have their own). */
+function hzCone(g,x,y,z,r,h,col){
+  const n=5, ap=[x,y+h,z], ph=srand(x*0.37+z*0.11)*6.283;
+  for(let i=0;i<n;i++){
+    const a0=ph+i/n*6.283, a1=ph+(i+1)/n*6.283;
+    g.tri([x+Math.cos(a1)*r,y,z+Math.sin(a1)*r],[x+Math.cos(a0)*r,y,z+Math.sin(a0)*r],ap,col);
+  }
+}
+function hzP(a,R,y){return [Math.sin(a)*R,y,Math.cos(a)*R];}
+/* a ribbon facing the middle of the world, from angle a0 to a1 at radius R */
+function hzRibbon(g,a0,a1,R0,R1,y0a,y0b,y1a,y1b,col){
+  g.quad(hzP(a1,R0,y0b),hzP(a0,R0,y0a),hzP(a0,R1,y1a),hzP(a1,R1,y1b),col);
+}
+function buildHorizon(root,L){
+  if(!L.hz||WORLD.hull||typeof WORLD.ground!=="function")return;
+  const G=WORLD.ground, g=new Geo();
+  const wood=RGB(L.wood), woodD=RGB(mixHex(L.wood,0x000000,0.22));
+  const farW=RGB(mixHex(L.wood,L.hor,0.18)), strand=RGB(mixHex(0xa8996e,L.hor,0.2));
+  const open=function(a){return !!L.gap&&a>L.gap[0]&&a<L.gap[1];};
+  const water=function(a){return G(Math.sin(a)*440,Math.cos(a)*440)<-0.6;};
+  /* the near band: two rows just past the patch, on land and off the strand */
+  const E=452, STEP=80;
+  for(let side=0;side<4;side++)for(let i=0;i<=STEP;i++)for(let row=0;row<2;row++){
+    const q=side*1000+i*3+row;
+    const off=E+4+row*17+srand(q*1.7)*8, along=-E-20+(2*E+40)*i/STEP+(srand(q*2.3)-0.5)*9;
+    const x=side===0?off:side===1?-off:along, z=side===2?off:side===3?-off:along;
+    const y=G(x,z);
+    if(y<0.6)continue;
+    const h=(30+srand(q*3.9)*34)*(row?1.15:1);
+    hzCone(g,x,y-1.5,z,h*0.21,h,row?woodD:wood);
+  }
+  /* the far shore and the far woods, by bearing */
+  const N=160, da=Math.PI*2/N;
+  for(let i=0;i<N;i++){
+    const a0=-Math.PI+i*da, a1=a0+da, am=a0+da/2;
+    if(water(am)){
+      if(open(am))continue;
+      const R=650+coastNoise(i*0.21,7)*50;
+      hzRibbon(g,a0,a1,R-10,R+6,-0.5,-0.5,1.4,1.4,strand);
+      /* broad and overlapping: at this range a wood is a mass with a broken top, not
+         a row of spires */
+      for(let t=0;t<4;t++){
+        const aa=a0+da*(t+srand(i*3.1+t))/4, rr=R+8+srand(i*7.7+t)*30;
+        const h=15+srand(i*5.3+t)*14;
+        hzCone(g,Math.sin(aa)*rr,0.8,Math.cos(aa)*rr,h*0.45,h,t===1?woodD:wood);
+      }
+      const h0=13+coastNoise(i*0.5,19)*9, h1=13+coastNoise((i+1)*0.5,19)*9;
+      hzRibbon(g,a0,a1,R+40,R+40,-2,-2,h0,h1,farW);
+    } else {
+      const R=760, x=Math.sin(am)*R, z=Math.cos(am)*R, gy=Math.max(0,G(x,z));
+      const h0=38+coastNoise(i*0.45,31)*26+coastNoise(i*1.9,43)*10;
+      const h1=38+coastNoise((i+1)*0.45,31)*26+coastNoise((i+1)*1.9,43)*10;
+      hzRibbon(g,a0,a1,R,R,gy-10,gy-10,gy+h0,gy+h1,farW);
+    }
+  }
+  if(!g.p.length)return;
+  const m=g.mesh(false,false);
+  m.name="horizon";
+  root.add(m);
 }
 /* ================= THE MEN ON THE DUNE =================
    Reported: "when the indians attack there's no native attacking, just arrows from nowhere."
@@ -25519,7 +25881,7 @@ registerWorld("ch4",function(root){
    dusk; nothing else in this chapter moves */
 function updateSick(dt){
   if(CURRENT_WORLD!=="ch4")return;
-  if(SICK_SHIPS.night&&!SICK_SHIPS.lit){applySky(0.92);SICK_SHIPS.lit=true;}
+  /* the watch's dusk is SCENE_LOOK.ch4[2] now, set on the way in by applyLook */
   if(!SICK_SHIPS.leaving.length)return;
   SICK_SHIPS.t+=dt;
   if(SICK_SHIPS.t<4)return;                /* a moment to see them riding there first */
@@ -26478,23 +26840,7 @@ registerWorld("ch5",function(root){
 const CAPT_ASH=["storehouse_roof","storehouse_walls","camp_shelters","awning"];
 function updateCapt(dt){
   if(CURRENT_WORLD!=="ch5")return;
-  if(!CAPT.lit&&CAPT.winter){
-    /* winter: a low grey sky and a weaker sun, set once after enterWorld's applySky(0) */
-    scene.background=new THREE.Color(0xb3babd);
-    if(scene.fog){scene.fog.color=new THREE.Color(0xb9bfc1);scene.fog.near=180;scene.fog.far=760;}
-    if(hemiLight)hemiLight.intensity*=0.85;if(sunLight)sunLight.intensity*=0.7;
-    /* and the dome, which paints its own gradient: a flat December overcast, lighter at
-       the horizon, the same per-vertex way paintSky does it */
-    if(skyDome){
-      const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
-      for(let i=0;i<pp.count;i++){
-        const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=lerpHex(0xb9c0c3,0x8e989e,Math.pow(t,0.6));
-        cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
-      }
-      cc.needsUpdate=true;
-    }
-    CAPT.lit=true;
-  }
+  /* winter light: SCENE_LOOK.ch5, set on the way in by applyLook */
   if(CAPT.ash)for(const k of CAPT_ASH){const p=FORT.parts[k];if(p&&p.visible)p.visible=false;}
   if(CAPT.ship&&CAPT.ship.go&&CAPT.ship.m.position.x<CAPT.ship.to)
     CAPT.ship.m.position.x=Math.min(CAPT.ship.to,CAPT.ship.m.position.x+dt*60);
@@ -27908,7 +28254,6 @@ registerWorld("ch6",function(root){
         F.box(x,-0.26,z,0.25,0.02,6+srand(i)*10,iceD);}
       root.add(F.mesh(false,false));
     }
-    if(PRES.night){scene.background=new THREE.Color(0x1c2230);if(scene.fog){scene.fog.color=new THREE.Color(0x1c2230);scene.fog.near=60;scene.fog.far=320;}}
     const H=CAPT_HALL;
     if(w.day===3){
       duty("invite","Powhatan’s House",H.x+H.len/2+8,H.z,{kind:"invite",verb:"Hear his answer"});
@@ -28008,23 +28353,7 @@ function updatePres(dt){
     if(p&&!p.userData.presCut){p.userData.presCut=true;starveCut(p,function(x,z){return C.tents.some(function(h){return Math.hypot(x-h[0],z-h[1])<9;});});}
     const aw=FORT.parts.awning;if(aw&&aw.visible)aw.visible=false;
   }
-  if(!PRES.lit&&(PRES.winter||PRES.night)){
-    if(PRES.night){scene.background=new THREE.Color(0x1c2230);if(hemiLight)hemiLight.intensity*=0.35;if(sunLight)sunLight.intensity*=0.25;}
-    else{
-      scene.background=new THREE.Color(0xb3babd);
-      if(scene.fog){scene.fog.color=new THREE.Color(0xb9bfc1);scene.fog.near=180;scene.fog.far=760;}
-      if(hemiLight)hemiLight.intensity*=0.85;if(sunLight)sunLight.intensity*=0.7;
-    }
-    if(skyDome){
-      const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
-      for(let i=0;i<pp.count;i++){
-        const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=PRES.night?lerpHex(0x2a3244,0x0e121c,Math.pow(t,0.6)):lerpHex(0xb9c0c3,0x8e989e,Math.pow(t,0.6));
-        cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
-      }
-      cc.needsUpdate=true;
-    }
-    PRES.lit=true;
-  }
+  /* winter and the night of the warning: SCENE_LOOK.ch6 and LK.night, via applyLook */
   /* play-test, 27 Nov: run inside the cutscene now, at four times her speed a ship left the
      shot in two seconds; and one that had arrived sat on the horizon until the next scene */
   const sail=function(s){if(!s||!s.go||!s.m.visible)return;
@@ -29079,20 +29408,7 @@ registerWorld("ch7",function(root){
 function updateStarve(dt){
   if(CURRENT_WORLD!=="ch7")return;
   STARVE.t+=dt;
-  if(!STARVE.lit&&STARVE.winter){
-    scene.background=new THREE.Color(0xa9b0b4);
-    if(scene.fog){scene.fog.color=new THREE.Color(0xb0b6b8);scene.fog.near=160;scene.fog.far=700;}
-    if(hemiLight)hemiLight.intensity*=0.8;if(sunLight)sunLight.intensity*=0.6;
-    if(skyDome){
-      const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
-      for(let i=0;i<pp.count;i++){
-        const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=lerpHex(0xb0b7ba,0x848d93,Math.pow(t,0.6));
-        cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
-      }
-      cc.needsUpdate=true;
-    }
-    STARVE.lit=true;
-  }
+  /* the starving winter's light: SCENE_LOOK.ch7, via applyLook */
   if(STARVE.hide&&FORT.parts)for(const k of STARVE.hide){const p=FORT.parts[k];if(p&&p.visible)p.visible=false;}
   /* the ruin, cut into each fort part as it arrives */
   if(STARVE.cut&&FORT.parts){
@@ -30035,21 +30351,7 @@ function updateLeaf(dt){
     if(p&&!p.userData.leafCut){p.userData.leafCut=true;starveCut(p,function(x,z){return C.tents.some(function(h){return Math.hypot(x-h[0],z-h[1])<9;});});}
     const aw=FORT.parts.awning;if(aw&&aw.visible)aw.visible=false;
   }
-  if(!LEAF.lit){
-    const sd=leafDay();
-    if(LEAF.night){scene.background=new THREE.Color(0x1a2030);if(scene.fog){scene.fog.color=new THREE.Color(0x1a2030);scene.fog.near=80;scene.fog.far=520;}
-      if(hemiLight)hemiLight.intensity*=0.35;if(sunLight)sunLight.intensity*=0.25;}
-    else if(sd.where==="gravesend"){scene.background=new THREE.Color(0xa2abb2);if(hemiLight)hemiLight.intensity*=0.85;if(sunLight)sunLight.intensity*=0.7;}
-    if(skyDome&&(LEAF.night||sd.where==="gravesend")){
-      const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
-      for(let i=0;i<pp.count;i++){
-        const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=LEAF.night?lerpHex(0x2a3244,0x0e121c,Math.pow(t,0.6)):lerpHex(0xb0b7ba,0x8a949a,Math.pow(t,0.6));
-        cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
-      }
-      cc.needsUpdate=true;
-    }
-    LEAF.lit=true;
-  }
+  /* night on the river and grey Gravesend: SCENE_LOOK.ch8, via applyLook */
   updateBlaze(dt);
 }
 
@@ -30920,20 +31222,7 @@ function updatePrice(dt){
     /* the 1607 sail-awning they prayed under; by 1619 they met in a church, and a house stands there */
     const aw=FORT.parts.awning;if(aw&&aw.visible)aw.visible=false;
   }
-  if(!PRICE.lit){
-    const sd=priceDay(), grey=sd.where==="pointcomfort"||sd.where==="london";
-    if(grey){scene.background=new THREE.Color(0xa6adb1);if(hemiLight)hemiLight.intensity*=0.85;if(sunLight)sunLight.intensity*=0.7;
-      if(skyDome){
-        const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
-        for(let i=0;i<pp.count;i++){
-          const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=lerpHex(0xb2b9bc,0x8c969c,Math.pow(t,0.6));
-          cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
-        }
-        cc.needsUpdate=true;
-      }
-    }
-    PRICE.lit=true;
-  }
+  /* London and Point Comfort's grey: SCENE_LOOK.ch9, via applyLook */
 }
 
 /* ---- CHAPTER IX'S CONTENT, AND ITS MUSTER ----
@@ -31894,19 +32183,7 @@ function updateSky(dt){
     if(p&&!p.userData.skyCut){p.userData.skyCut=true;starveCut(p,function(x,z){return C.tents.some(function(h){return Math.hypot(x-h[0],z-h[1])<9;});});}
     const aw=FORT.parts.awning;if(aw&&aw.visible)aw.visible=false;
   }
-  if(!SKY.lit){
-    if(SKY.night){scene.background=new THREE.Color(0x1a2030);if(scene.fog){scene.fog.color=new THREE.Color(0x1a2030);scene.fog.near=80;scene.fog.far=520;}
-      if(hemiLight)hemiLight.intensity*=0.35;if(sunLight)sunLight.intensity*=0.25;
-      if(skyDome){
-        const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
-        for(let i=0;i<pp.count;i++){
-          const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=lerpHex(0x2a3244,0x0e121c,Math.pow(t,0.6));
-          cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
-        }
-        cc.needsUpdate=true;
-      }}
-    SKY.lit=true;
-  }
+  /* the night at Pace's: SCENE_LOOK.ch10, via applyLook */
   updateBlaze(dt);
 }
 
@@ -33974,7 +34251,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1243";
+const BUILD="20261127-1313";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
