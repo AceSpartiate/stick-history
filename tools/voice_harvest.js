@@ -70,6 +70,15 @@
      said depends on the player: every row's explanation is read here */
   try{for(const d of Object.keys(PRICE_CAUSE))for(const r of PRICE_CAUSE[d]){
     off.innerHTML="<ul><li>"+r.t+" — <b>"+PRICE_K[r.k]+"</b>: "+r.why+"</li></ul>";add(readableText(off),'narrator');}}catch(e){}
+  /* document cards: a chapter's card function (leafCard, bayCard, plyCard...) joins a writer and a date
+     into one header at run time ("John Mason, he was there."), which no literal holds. Every call with
+     two literal first arguments is built here through the game's own function and read as the game
+     reads it. 27 Nov: seven Chapter XII headers were spoken with no recording. */
+  const CARD=/\b([a-z]+Card)\(\s*("(?:[^"\\\n]|\\.)*")\s*,\s*("(?:[^"\\\n]|\\.)*")/g;
+  for(const m of script.matchAll(CARD)){
+    try{const fn=window[m[1]];if(typeof fn!=="function"||fn.length<3)continue;
+      const h=fn(lit(m[2]),lit(m[3]),"x");if(typeof h!=="string")continue;
+      off.innerHTML=h;const r=readableText(off);if(r)add(r,'narrator');}catch(e){}}
   off.remove();
   /* counts said aloud: "You answered "+right+" of "+n+"..." for every count a paper can give */
   const TPL=/("(?:[^"\\\n]|\\.)*")\s*\+\s*([\w.$()\[\]]+)\s*\+\s*("(?:[^"\\\n]|\\.)*")(?:\s*\+\s*([\w.$()\[\]]+)\s*\+\s*("(?:[^"\\\n]|\\.)*"))?/g;
