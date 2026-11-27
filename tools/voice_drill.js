@@ -1,8 +1,8 @@
-/* voice_drill.js - play Chapters I to XI start to finish and write down every line
+/* voice_drill.js - play Chapters I to XII start to finish and write down every line
    the game speaks that has no recording (it would fall back to the browser's flat voice).
    Load the game over http (no save needed), then in the console:
 
-     window.DRILL_ONLY=['ch1'];   // optional: any of ch1..ch11
+     window.DRILL_ONLY=['ch1'];   // optional: any of ch1..ch12
      fetch('tools/voice_drill.js').then(r=>r.text()).then(eval)
 
    and read window.DRILL ({log, spoke, read, miss:[[text, world, how]], errs}) when log ends
@@ -80,6 +80,11 @@
       if(!need){await next(act);continue;}
       if(!await step(act,need,w.did))break;}
     D.log.push('ch11 day '+w.day+' closed '+!!w.did.closed);}
+  async function ch12(){if(typeof bayW!=='function')return;const act=actF("bay",bayAct);delete S.works.ch12;beginWorld("ch12");await sleep(1500);await cont();const w=bayW();
+    for(let g=0;g<110&&!w.did.closed;g++){const need=bayNeed();
+      if(!need){await next(act);continue;}
+      if(!await step(act,need,w.did))break;}
+    D.log.push('ch12 day '+w.day+' closed '+!!w.did.closed);}
   /* ==================== CHAPTERS I TO V ====================
      Older chapters have no need() function to follow, so each is played by hand from its own
      act functions: every person spoken to (wrong answers too), every document, sheet and
@@ -347,9 +352,9 @@
     D.log.push('ch5 done '+!!w.done);}
 
   const only=window.DRILL_ONLY;   /* e.g. ['ch9'] or ['ch1'] to play one chapter */
-  const all={ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,ch10,ch11};
+  const all={ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,ch10,ch11,ch12};
   (async()=>{if(!only||only.some(k=>/^ch[1-5]$/.test(k)))genFixed();
-    for(const f of (only?only.map(k=>all[k]):[ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,ch10,ch11])){try{await f();}catch(e){D.log.push('ERR '+e+' '+(e.stack||'').split('\n')[1]);}}
+    for(const f of (only?only.map(k=>all[k]):[ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,ch10,ch11,ch12])){try{await f();}catch(e){D.log.push('ERR '+e+' '+(e.stack||'').split('\n')[1]);}}
     if(bak)localStorage.setItem("stickhistory.save.v1",bak);else localStorage.removeItem("stickhistory.save.v1");
     D.log.push('ALL DONE');})();
   return 'drill started';

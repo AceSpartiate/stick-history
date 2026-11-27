@@ -135,6 +135,23 @@ CAST = {
               f"and businesslike, a clipped city voice, {ENG}.",
     'carver': f"An English merchant and church agent in his forties, caught between two quarrelling sides: mild, "
               f"careful and courteous, a soft older voice, {ENG}.",
+    # Chapter XII, 27 Nov. Massachusetts Bay. Winthrop was born 1588 and Dudley 1576; the others' ages are what the parts call for.
+    'winthrop': f"An English gentleman lawyer in his forties, governor of a new colony: grave, measured and "
+                f"self-assured, a cultivated low voice used to presiding, {ENG}.",
+    'dudley': f"An English gentleman in his mid fifties, the colony's deputy governor, writing home plainly: blunt, "
+              f"stern and weathered, a gruff older voice, {ENG}.",
+    'williams': f"A young English minister of about thirty, earnest and unbending in argument: passionate, quick "
+                f"and sincere, a clear tenor voice, {ENG}.",
+    'endecott': f"An English soldier-magistrate in his late forties, reading out his orders: hard, curt and "
+                f"impatient, a rough commanding voice, {ENG}.",
+    'gardener': f"An English military engineer in his late thirties commanding a small river fort, warning men who "
+                f"will not listen: dry, sardonic and plain-spoken, a worn practical voice, {ENG}.",
+    'mason': f"An English captain in his late thirties, a hard professional soldier: terse, flat and matter-of-fact, "
+             f"a low steady voice, {ENG}.",
+    'underhill': f"An English captain in his thirties, a soldier who also writes for the press: brisk, assured and "
+                 f"a little showy, a bright carrying voice, {ENG}.",
+    'hutchinson': f"An English woman in her mid forties, with a teacher's calm confidence, questioned by "
+                  f"a court of men: composed, sharp and unafraid, a clear mature female voice, {ENG}.",
 }
 REEL_GAP = 0.6
 
