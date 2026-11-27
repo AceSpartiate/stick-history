@@ -27598,6 +27598,12 @@ registerWorld("ch6",function(root){
       }
       /* play-test, 27 Nov: the list, and the record after it, were labels over bare ground */
       presTable(root,G,-96,-35);
+      /* animals, 27 Nov: Archer's ship "sixe Mares and two Horses": three of them grazing the
+         felled ground inside the fort - small horses, bay; the sty, its sows and that spring's
+         pigs half grown; and a dog about the men at the awning */
+      [[-46,-88,0.4],[-35,-84,2.6],[-32,-91,-1.0]].forEach(function(h){addAnimal(root,G,"horse",h[0],h[1],h[2],{area:[-40,-87,11,4.5]});});   /* clear of the logs at z -100 */
+      hogSty(root,G,70,-66,[[-2,-2,0.4],[2,1,2.0],[0,3,-0.8],[-3,2,1.2,0.7],[3,-3,2.6,0.7]]);
+      addAnimal(root,G,"dog",-50,2,1.2,{way:[[-50,2],[-38,-10],[-22,-4],[-14,12],[-30,18]]});
       duty("list","The List of Stores",-96,-30,{kind:"list",verb:"Set it beside the letter"});
     }
     at=[0,20];
@@ -28519,11 +28525,10 @@ function starveCrabPots(root,G,x,z){
     g.box(px+1.0,gy+0.08,pz+0.6,0.5,0.12,0.35,shell);}
   root.add(g.mesh(false,false));
 }
+/* animals, 27 Nov: Davis's hogs were four boxes; they root about his yard inside the bank
+   now, and keep clear of his men and of the basket of crabs coming up from the pots */
 function starveHog(root,G,x,z,yaw){
-  const g=new Geo(), hide=RGB(0x6a5a52), hideD=RGB(0x4a3e38), gy=G(x,z);
-  g.box(0,1.3,0,1.5,1.3,2.8,hide);g.box(0,1.4,1.7,1.0,0.9,0.8,hideD);
-  for(const c of [[-0.5,-1],[0.5,-1],[-0.5,1],[0.5,1]])g.box(c[0],0.4,c[1],0.3,0.8,0.3,hideD);
-  const m=g.mesh(false,false);m.position.set(x,gy,z);m.rotation.y=yaw;root.add(m);
+  addAnimal(root,G,"hog",x,z,yaw,{area:[2,8,9,8],avoid:[[-12,8],[6,-6],[-6,16],[5,22],[9,4]]});
 }
 function starveDig(root,G){
   /* James Fort, 2012: a square cellar opened in the ground, strings and pegs, a sifting
@@ -28601,6 +28606,11 @@ registerWorld("ch7",function(root){
          Point comfort" */
       [[-80,24],[-90,40]].forEach(function(a,i){workMan(root,crowdEq(i?"soldier":"hand",130+i),a[0],a[1],0,"carry",
         {from:[-78,22],to:[-104,64],load:i?"basket":"cask",drop:i?null:workStack(root,-108,66,"cask",6).drop});});
+      /* animals, 27 Nov: October 1609, and Smith's friends count "5 or 600 swine": a sty full
+         where the winter will leave "The Empty Sties", and a dog going among the men - Percy
+         lists "doggs" among what they ate before the spring */
+      hogSty(root,G,48,-34,[[-2,-2,0.4],[2,1,2.0],[0,3,-0.8],[-3,2,1.2],[3,-3,2.6,0.8]]);
+      addAnimal(root,G,"dog",-6,4,0.5,{way:[[-6,4],[22,8],[34,-6],[10,-24],[-16,-26],[-22,16]]});
       duty("store","The Storehouse",-70,16,{kind:"store",verb:"Count what is left"});
       duty("venison","The Gate",2,34,{kind:"venison",verb:"Meet them"});
     }
@@ -28700,7 +28710,7 @@ registerWorld("ch7",function(root){
     G=captLand(root,"comfort",{trees:60,winter:false,clear:function(x,z){return Math.hypot(x,z-10)<60;}});
     starveEarthwork(root,G,0,10);
     starveCrabPots(root,G,20,40);
-    [[8,0,0.4],[12,6,2.0],[-6,-2,1.1],[2,18,-0.8]].forEach(function(a){starveHog(root,G,a[0],a[1],a[2]);});
+    [[8,2,0.4],[11,8,2.0],[-4,4,1.1],[2,14,-0.8]].forEach(function(a){starveHog(root,G,a[0],a[1],a[2]);});   /* animals, 27 Nov: inside their yard */
     /* play-test, 27 Nov: Percy stood against the inside of the bank, his name on its slope */
     spots={davis:[-6,16,2.4],percy:[5,22,-2.6]};
     [[-12,8,0.8],[6,-6,2.4]].forEach(function(a,i){const f=buildFigure(crowdEq("soldier",90+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));solid(a[0],a[1],0.8,0.8,LVL.MAIN,0);});
@@ -30767,7 +30777,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0511";
+const BUILD="20261127-0513";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
