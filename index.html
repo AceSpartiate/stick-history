@@ -27465,7 +27465,7 @@ const STARVE_DAYS=[
   {where:"fort",date:"23 May 1610",need:["view","commission"],next:"The Ledger",ruin:3},
   {where:"river",date:"7 to 10 June 1610",need:["burn","helm"],next:null}];
 const STARVE_DUTY={
-  store:"Count what is left in the store",venison:"Meet the boys from Powhatan",
+  store:"Count what is left in the store",venison:"Meet the boy from Powhatan", /* review, 27 Nov: was "the boys"; Savage came alone of the English, "with 4 or 5 Indians" (Spelman p. cii) */
   baskets:"Watch the corn measured",five:"Set the five accounts side by side",
   hogs:"Ask where the hogs went",pryse:"Hear what happened to Hugh Pryse",ledger2:"Pin the winter to its writers",
   trial:"Read the four accounts of the trial",
@@ -27498,25 +27498,25 @@ function starvePerson(id){return STARVE_PEOPLE.filter(function(p){return p.id===
 
 const STARVE_SAYS={
   "percy":[
-    ["“I am so sick I can neither go nor stand, and they have made me President. Twenty men give orders here now, and none of them is me.”"],
+    ["“They have chosen me President, and I am so sick I can hardly stand. Ask me again when I can walk the fort.”"], /* review, 27 Nov: was Percy calling himself one of twenty masters; the twenty-presidents joke is Smith's friends' charge against him (p. 170), not his own words */
     [],
     [],                                    /* his dialogue beats, this scene */
-    ["“I judged him. I will answer for it to God, and I have written it down so that men may know I did.”"],
+    ["“I judged him. I have written down what he did, and what I did, so that men may know.”"], /* review, 27 Nov: was an invented vow to answer to God; the record has only Percy's judgement and 'this was moste Lamentable' (Percy via EV) */
     [],
-    ["“Look at them. Fat. Their hogs fed on crabs, and not a word sent up the river to us.”"],
-    ["“Here is my commission, Sir Thomas, and the old patent, and the council’s seal. Take them. I am glad to be rid of them.”"],
+    ["“Look at them. Well fed. Their hogs fed on crabs, and not a word sent up the river to us.”"], /* review, 27 Nov: was 'Fat'; Percy says 'in good case and well lykeinge' (via EV) */
+    ["“Here is my commission, Sir Thomas, and the old patent, and the council’s seal.”"], /* review, 27 Nov: was 'Take them. I am glad to be rid of them'; no source gives Percy's feelings at the surrender (Strachey 4:1748-9) */
     []],
   "spelman":[
-    ["“Savage says Powhatan uses him kindly, and there is food in his towns. I will go with him. There is none here.”"],
-    ["“He takes me and the Dutchman with him, away from the storehouse. I do not know why. I do not like the woods.”"],
+    ["“Savage will not go back without one of us. I will go with him. Vitals are scarce here.”"], /* review, 27 Nov: was Savage promising kindness and food, and 'none here'; Spelman: Savage 'was loith to goe with out sum of his cuntrymen', Spelman went 'by Reason that vitals were scarse' (pp. cii-ciii) */
+    ["“The king keeps me and the Dutchman by him. Tomorrow the corn is measured at his storehouse.”"], /* review, 27 Nov: was Spelman describing his own leading-away before it happens, and an invented fear of the woods; the draft has the king taking him only after the quarrel (p. civ) */
     [],[],[],[],[],[]],
   "davis":[
-    ["“Sixteen of us in the pinnace, and I am told there is no food. A fine welcome.”"],
+    ["“Sixteen good men in my pinnace, and I am told the store is low already. A fine welcome.”"], /* review, 27 Nov: was 'there is no food'; Smith left '10 weekes provision' (p. 167), though 'the rest had consumed their proportions' (p. 170); GH: 'some sixteene proper men more' (p. 105) */
     [],[],[],[],
     [],                                    /* his dialogue beats, this scene */
     [],[]],
   "ratcliffe":[
-    ["“Point Comfort, for me. There are fish at the river’s mouth, and a fort to build. Better than starving here among twenty masters.”"],
+    ["“I am sent down to Point Comfort with a company, to hold the river’s mouth and build a fort there.”"], /* review, 27 Nov: was Ratcliffe choosing Point Comfort for its fish and echoing the friends' 'twenty presidents'; the record: a company sent 'to inhabit Point comfort' (p. 170; GH p. 105), the fort ordered by Percy (EV) */
     ["“Powhatan sends us bread and venison and gives us a house. We will have the ship laden with corn by tomorrow.”"],
     [],[],[],[],[],[]],
   "strachey":[[],[],[],[],[],[],
@@ -27524,7 +27524,7 @@ const STARVE_SAYS={
     ["“Sir Thomas means to sail for Newfoundland, and the fishing fleet. There is food there, if there is food anywhere.”"]],
   "gates":[[],[],[],[],[],[],
     ["“Ring the bell. Let us see who comes.”"],
-    ["“Nobody burns this town. If we go, we go as Englishmen, and leave it standing.”"]],
+    ["“Nobody burns this town. We leave it standing.”"]], /* review, 27 Nov: was 'we go as Englishmen'; the record has only that Gates 'Laboured with our men' (Percy) and kept his own company last ashore (Strachey 4:1752) */
   "digger":[[],[],[],[],
     ["“Careful with that trowel. Everything in this cellar was thrown away in one winter, and it is all evidence.”"],
     [],[],[]]};
@@ -27537,34 +27537,34 @@ const STARVE_NPCS=[
     {npc:"“They will say in London that we were idle, or quarrelsome, or that I governed badly. I was sick, and I was here. Ask me what you like.”",
      choices:[
       {t:"Who do you blame for this winter?",wise:true,ink:8,
-       reply:"“Captain Ratcliffe, who let Powhatan’s son and daughter go ashore when he might have kept them for his safety. Master West, who loaded his pinnace with corn and sailed home with it. Captain Davis, at Point Comfort. And the savages, who kill any man who steps outside.” He does not say himself.",
+       reply:"“Captain Ratcliffe, who let Powhatan’s son and daughter go ashore when he might have kept them for his safety. Master West, who loaded his pinnace with corn and sailed home with it. Captain Davis, at Point Comfort. And the Salvages, who kill any man who steps outside.” He does not say himself.", /* review, 27 Nov: was 'savages', unmarked; period words stay the writer's own, in Percy's spelling */
        insight:{g:"disp",b:"Percy’s Blame",s:"George Percy, President through the Starving Time, wrote his account in the 1620s to answer Smith's 1624 book. He blamed Ratcliffe's “creduletie”, West's sailing home with a pinnace full of corn, Davis's hoarding at Point Comfort, and the Powhatan. He was the only writer inside the fort that winter, and the man most likely to be blamed."}},
-      {t:"Did you hang men for stealing food?",fair:true,ink:3,
+      {t:"Did you have men executed for stealing food?",fair:true,ink:3, /* review, 27 Nov: was 'hang'; Percy says only 'I Caused them to be executed', method not given (via EV) */
        reply:"“Some robbed the store to fill their bellies, and I had them executed. I have written that down myself. Would you rather I had not?”"},
       {t:"Smith would never have let this happen.",wise:false,
-       reply:"His face goes hard. “Smith is in England, and his friends will make him a saint in print. Smith left us twenty masters and no corn.”"}]}]},
+       reply:"His face goes hard. “Smith is in England. Let his friends write what they like of him; I will write what I saw.”"}]}]}, /* review, 27 Nov: was 'Smith left us twenty masters and no corn'; the friends list '10 weekes provision' (p. 167), and no Percy text read says otherwise. Percy did write to answer Smith (EV) */
   {id:"davis",name:"Captain Davis",voice:"male",role:"commands at Algernon Fort",at:5,eq:STARVE_PEOPLE[2].eq,
    done:"“We fished. Is that a crime?”",
    beats:[
     {npc:"“The President is looking at my men as if they had stolen something. They fished, and they crabbed, and they lived. Ask me what you like.”",
      choices:[
       {t:"Why didn’t you send food up to Jamestown?",wise:true,ink:8,
-       reply:"He shrugs. “Twenty miles of river, and the savages on the banks.” Percy will write that you were “in good case and well lykeinge”, that you “concealed their plenty”, and that the crabs your hogs ate “wold have been a greate relefe unto us and saved many of our Lyves”. Nobody wrote down your side.",
+       reply:"He shrugs, and says nothing you could write down. Percy will write that you were “in good case and well lykeinge”, that you “concealed their plenty”, and that the crabs your hogs ate “wold have been a greate relefe unto us and saved many of our Lyves”. Nobody wrote down your side.", /* review, 27 Nov: was an invented excuse for Davis ('Twenty miles of river...'); Davis's side is not recorded, and Point Comfort is further than twenty miles from Jamestown */
        insight:{g:"disp",b:"Plenty at Point Comfort",s:"Percy wrote that when he went down to Algernon Fort in spring 1610 he found Davis's men well fed, “haveinge concealed their plenty from us above att James Towne”, their hogs fed on crabs. Only Percy tells it; Davis's side does not survive."}},
       {t:"How many are you here?",fair:true,ink:3,
-       reply:"“Forty, near enough. Strachey will count us when the knights come.”"},
+       reply:"“Forty, near enough.” Strachey, arriving in May, wrote that the fort was “kept by Captaine James Davies with forty men”."}, /* review, 27 Nov: was Davis foreseeing the knights' arrival, which nobody expected; Strachey: 'is now kept by Captaine James Davies with forty men' (4:1748, via EV) */
       {t:"Then you let them starve on purpose.",wise:false,
        reply:"“Did I? Who told you that? The President, who sent me here?”"}]}]},
   {id:"strachey",name:"Master Strachey",voice:"male",role:"Secretary to Sir Thomas Gates",at:6,eq:STARVE_PEOPLE[4].eq,
    done:"“I set down what I see. What I see is a ruin.”",
    beats:[
-    {npc:"“Ten months on an island in the sea, two pinnaces built with our own hands, and we come to this. I am to write it all down for Sir Thomas. Ask me.”",
+    {npc:"“Nine months and more on an island in the sea, two pinnaces built with our own hands, and we come to this. I am to write it all down for Sir Thomas. Ask me.”", /* review, 27 Nov: was 'Ten months'; Bermuda 28 July 1609 (4:1747) to 10 May 1610 (True Declaration p. 12) is nine and a half */
      choices:[
       {t:"What will you say caused it?",wise:true,ink:8,
        reply:"He looks at the houses pulled down for firewood. “Unto such calamity can sloath, riot, and vanity, bring the most setled and plentifull estate.” He will also write that “the Indian killed as fast without, if our men stirred but beyond the bounds of their Block-house, as Famine and Pestilence did within.” Both are in the same letter.",
        insight:{g:"disp",b:"Sloath, Riot, and Vanity",s:"William Strachey, who arrived with Gates on 23 May 1610, blamed the colonists' “sloath, riot, and vanity”. In the same letter he wrote that the Powhatan “killed as fast without” as famine and disease did within. He was not there for the winter; he was writing for the new government."}},
       {t:"Where have you been all winter?",fair:true,ink:3,
-       reply:"“Wrecked on the Bermudas, every soul of us alive. We built two pinnaces out of the wreck and cedar, and here we are.”"},
+       reply:"“Wrecked on the Bermudas, and every soul of us came ashore alive. We built two pinnaces out of the wreck and cedar, and here we are.”"}, /* review, 27 Nov: was 'every soul of us alive', which reads as if none died on Bermuda; some did */
       {t:"They were lazy. That is all.",wise:false,
        reply:"“Lazy?” He looks at a man who cannot stand. “Write that, if you can look at him and write it.”"}]}]}];
 
@@ -27581,13 +27581,13 @@ function starveSpeaker(id){
 /* ---- THE RECORD THAT OPENS EACH SCENE ---- */
 const STARVE_OPEN=[
   {t:"Five hundred",b:"<p class=\"note\">This chapter is about a famine. It includes starvation, killing, and people eating the dead, all told in the words of the people who wrote about it. None of it is shown.</p><p>Smith’s friends listed what he left: “10 weekes provision in the store … 490 and odde persons … 5 or 600 swine”.</p><p>Then, in the same book: “of 500, within 6 months after there remained not many more then 60. most miserable and poore creatures.”</p><p>Where did they go?</p>"},
-  {t:"The baskets",b:"<p>Powhatan has sent word by the boy Henry Spelman: “if they would bring ther ship, and sum copper, he would fraught hir backe with corne.”</p><p>Captain Ratcliffe has taken a ship up the Pamunkey, toward Powhatan’s town of Orapakes. Spelman is with him. Spelman is the only one of the English who was there and lived to write about it.</p>"},
-  {t:"Inside the palisade",b:"<p>“for corne, provision, and contribution from the Salvages; wee had nothing but mortal wounds with clubs and arrowes.” <i>— Smith’s friends, 1612</i></p><p>Nobody wrote about this winter at the time. Everything we have was written later, to defend someone or to blame someone.</p>"},
+  {t:"The baskets",b:"<p>Powhatan has sent word by the boy Henry Spelman: “if they would bring ther ship, and sum copper, he would fraught hir backe with corne.”</p><p>Captain Ratcliffe has taken a ship up to Orapakes, and gone on by barge to Powhatan, on the Pamunkey. Spelman is already there, at Powhatan’s side. Spelman is the only one of the English who was there and lived to write about it.</p>"}, /* review, 27 Nov: was 'Spelman is with him'; Spelman had gone back to the king with the English answer, and the draft has Ratcliffe leaving his ship at Orohpikes and going by barge 'to ye Powhatan to Powmunkey' (pp. ciii-cv) */
+  {t:"Inside the palisade",b:"<p>“for corne, provision, and contribution from the Salvages; wee had nothing but mortal wounds with clubs and arrowes.” <i>— Smith’s friends, 1612</i></p><p>Nobody who lived through this winter wrote about it at the time. Everything we have was written later, or by people who were not there, to defend someone or to blame someone.</p>"}, /* review, 27 Nov: was 'Nobody wrote about this winter at the time'; the True Declaration and Strachey are 1610, by men who were not there (CH7-RECORD, Who wrote) */
   {t:"The trial",b:"<p>A man of the colony killed his wife. He was executed. No source gives their names.</p><p>Four accounts survive. They disagree about why he did it, what was found, how he confessed, and how he died. Each was written by someone with a reason to tell it his way.</p>"},
   {t:"Four hundred years later",b:"<p>In the summer of 2012, archaeologists at Jamestown were digging a cellar in the middle of James Fort. In a layer of rubbish thrown away in the winter of 1609–10 they found part of a girl’s skull and a shin bone.</p><p>The written sources can only tell us what their writers said. This is different evidence.</p>"},
-  {t:"Point Comfort",b:"<p>In the spring President Percy went down the river to Algernon Fort, at Point Comfort, where Captain Davis held the river’s mouth.</p><p>What he found there, he never forgave.</p>"},
+  {t:"Point Comfort",b:"<p>In the spring President Percy went down the river to Algernon Fort, at Point Comfort, where Captain Davis held the river’s mouth.</p><p>What he found there, he set down years later as a charge against Davis.</p>"}, /* review, 27 Nov: was 'he never forgave', a guess at feeling; Percy's text is a charge (via EV) */
   {t:"“We are starved”",b:"<p>“the three and twentieth of May we cast Anchor before <i>James</i> Towne.” <i>— Strachey</i></p><p>Sir Thomas Gates and Sir George Somers, given up for lost with the <i>Sea Venture</i>, have come from the Bermudas in two pinnaces built from the wreck. Percy: those still alive were “so maugre and Leane thatt itt was Lamentable to behowlde them”, “Cryeinge owtt we are starved. We are starved.”</p>"},
-  {t:"The helm",b:"<p>There is food for sixteen days. There is no help to be had from the Powhatan, who “(at their best) have little more, then from hand to mouth”. “itt was Resolved uppon By Sir Thomas Gates and the whole Collonie with all Spede to Retourne for England.” <i>— Percy</i></p><p>The seventh of June, the pinnaces are manned.</p>"}];
+  {t:"The helm",b:"<p>There is food for sixteen days. There is no help to be had from the Powhatan, who “(at their best) have little more, then from hand to mouth” (Strachey). “itt was Resolved uppon By Sir Thomas Gates and the whole Collonie with all Spede to Retourne for England.” <i>— Percy</i></p><p>The seventh of June, the pinnaces are manned.</p>"}]; /* review, 27 Nov: was unattributed, before a line credited to Percy; the hand-to-mouth line is Strachey's (4:1749) */
 
 /* ---- THINGS TO LOOK AT ---- [id, label, x, z, title, body] per scene */
 const STARVE_LOOKS=[
@@ -27595,11 +27595,11 @@ const STARVE_LOOKS=[
   [["field","The Corn Field",30,-40,"Corn about the town","<p>Spelman: “a great number Indians that lay lurking in ye woods & corne about”.</p><p>The corn is harvested and stored. The Powhatan were short themselves: Strachey later wrote that “(at their best) [they] have little more, then from hand to mouth”.</p>"]],
   [["houses","The Empty Houses",-52,-20,"Firewood","<p>Houses whose owners have died are pulled apart and burned. Strachey, in May, will say it was “rather then the dwellers would step into the Woods a stones cast off from them, to fetch other fire-wood”.</p><p>Why wouldn’t they? Strachey also wrote that “the Indian killed as fast without, if our men stirred but beyond the bounds of their Block-house, as Famine and Pestilence did within.”</p>"],
    ["what","What They Ate",-40,14,"After the hogs","<p>Percy: “haveinge fedd upon horses and other beastes as longe as they Lasted, we weare gladd to make shifte with vermin as doggs Catts Ratts and myce”, and “to eate Bootes shoes or any other leather”.</p><p>Smith, 1624: “roots, herbes, acornes, walnuts, berries, now and then a little fish … yea, even the very skinnes of our horses.”</p>"],
-   ["runaways","The Woods",60,-60,"Runaways","<p>“Many of our men this starveinge Tyme did Runn away unto the Salvages whome we never heard of after.” <i>— Percy</i></p><p>That is the first time the words “starving time” appear in an eyewitness’s hand. What happened to the runaways, nobody recorded.</p>"]],
+   ["runaways","The Woods",60,-60,"Runaways","<p>“Many of our men this starveinge Tyme did Runn away unto the Salvages whome we never heard of after.” <i>— Percy</i></p><p>Those are the words “starving time” in an eyewitness’s hand; Smith’s 1624 book, by a man who was not there, uses them too. What happened to the runaways, nobody recorded.</p>"]], /* review, 27 Nov: was 'the first time'; Percy wrote in the mid-1620s, after Smith's 1624 'we called the starving time' (Tyler p. 295) */
   [["store","The Store",-70,16,"Robbing the store","<p>“some to satisfye their hunger have Robbed the store for the which I Caused them to be executed.” <i>— Percy</i></p><p>He wrote it himself. Their names and their number are not given.</p>"]],
-  [["sieve","The Sieve",8,-8,"What a cellar keeps","<p>Everything in this layer was thrown away in one winter: animal bones, among them horse, dog, cat, rat and snake, and the girl’s bones with them.</p><p>The written sources say the colonists ate those animals. Here, the bones say it too.</p>"]],
+  [["sieve","The Sieve",8,-8,"What a cellar keeps","<p>Everything in this layer was thrown away in one winter: butchered animal bones, a horse and dogs among them, and the girl’s bones with them.</p><p>The written sources say the colonists ate their horses and dogs. Here, the bones say it too.</p>"]], /* review, 27 Nov: was 'horse, dog, cat, rat and snake'; Jamestown Rediscovery reports only 'A butchered horse and dogs were found in the same deposit' (historicjamestowne.org, A Starving Time Tragedy) */
   [["pots","The Crab Pots",24,40,"Crabs for the hogs","<p>Percy: “the Crabb fishes wherewith they had fedd their hoggs wold have been a greate relefe unto us and saved many of our Lyves.”</p><p>He also wrote that Davis meant “to have keptt some of the better sorte alyve and with their towe pinnesses to have Retourned for England”.</p>"]],
-  [["bell","The Bell",-30,12,"The bell","<p>Gates “caused the Bell to be rung, and such as were able to come forth of their houses” came to the church, where Master Bucke “made a zealous and sorrowfull Prayer”. <i>— Strachey</i></p>"]],
+  [["bell","The Bell",-30,12,"The bell","<p>Gates “caused the Bell to be rung, at which (all such as were able to come forth of their houses) repayred to Church”, where Master Bucke “made a zealous and sorrowfull Prayer”. <i>— Strachey</i></p>"]], /* review, 27 Nov: was 'and such as were able... came to the church'; Strachey 4:1748 via EV: 'at which (all such as were able to come forth of their houses) repayred to Church' */
   [["guns","The Fort Gate",8,40,"The ordnance","<p>Before they sailed they buried the guns “before the Fort gate, which looked into the River”. At “the beating of the Drum” all went aboard, and “with a peale of small shot, wee set saile”. <i>— Strachey</i></p>"]]];
 
 /* ---- THE FOUR ACCOUNTS OF THE TRIAL ----  plain on the card; the source in full behind a button */
@@ -27609,17 +27609,17 @@ const STARVE_CARDS=[
    why:"hunger",ev:"a confession, under torture",end:"executed",
    full:"“one of our Colline murdered his wyfe Ripped the Childe outt of her woambe and threwe itt into the River and after Chopped the Mother in pieces and sallted her for his foode, The same not beinge discovered before he had eaten parte thereof.” The confession was “inforced from him by torture haveinge hunge by the Thumbes with weightes att his feete a quarter of an howere”. “For the which Crewell and unhumane factt I adjudged him to be executed.”"},
   {who:"The Company",when:"A True Declaration, printed 1610",role:"“Sir Thomas Gates thus relateth” it. Gates was on Bermuda that winter.",
-   plain:"A man who hated his wife killed her, cut her up and hid her in his house. He claimed he had done it from hunger. But his house was searched, and food was found in it. He confessed to the murder and was burned.",
+   plain:"A man who hated his wife killed her, cut her up and hid her in his house. He said she had died, and that he had kept her body for food, from hunger. But his house was searched, and food was found in it. He confessed to the murder and was burned.", /* review, 27 Nov: was 'He claimed he had done it from hunger'; his excuse was 'that his wife died, that he hid her to satisfie his hunger' (True Declaration p. 16) */
    why:"hatred",ev:"food found in his house",end:"burned",
    full:"“one of the companie who mortally hated his wife, and therefore secretly killed her, then cut her in pieces and hid her in diuers parts of his house”. His excuse: “he said that his wife died, that he hid her to satisfie his hunger, and that he fed daily vpon her”. But “his house was againe searched, where they found a good quantitie of meale, oatemeale, beanes and pease. Hee therevpon was araigned, confessed the murder, and was burned for his horrible villany.”"},
   {who:"Smith",when:"Generall Historie, 1624",role:"He was in England.",
    plain:"A man killed his wife, salted her, and had eaten part of her before it was known. He was executed. Smith makes a joke of it.",
    why:"not said",ev:"none given",end:"executed",
-   full:"“one amongst the rest did kill his wife, powdered her, and had eaten part of her before it was knowne, for which hee was executed, as hee well deserved; now whether shee was better roasted, boyled or carbonado’d, I know not; but of such a dish as powdered wife I never heard of.” (“Powdered” means salted.)"},
-  {who:"The Ancient Planters",when:"a petition to the King, 1624",role:"Survivors of the early years, blaming the Company.",
+   full:"“one amongst the rest did kill his wife, powdered her, and had eaten part of her before it was knowne; for which hee was executed, as hee well deserved: now whether shee was better roasted, boyled or carbonado’d, I know not; but of such a dish as powdered wife I never heard of.” (“Powdered” means salted.)"}, /* review, 27 Nov: was ', for which' and 'deserved; now'; Tyler p. 295 prints 'knowne; for which' and 'deserved: now' */
+  {who:"The Ancient Planters",when:"A Breife Declaration, 1624",role:"Survivors of the early years, answering the Crown’s inquiry, and blaming the Company.", /* review, 27 Nov: was 'a petition to the King'; it answered the Crown's inquiry into the Company, commissioned by the General Assembly (EV) */
    plain:"A man killed his wife as she slept, salted her body, and ate it. He was executed. They tell it as proof of how bad the famine was.",
    why:"hunger, as proof of famine",ev:"none given",end:"executed",
-   full:"“one amonge the rest slue his wife as she slept in his bosome, cut her in peeces, powdered her & fedd uppon her till he had clean devoured all partes saveinge her heade, & was for soe barbarous a fact and cruelty justly executed.”"}];
+   full:"“one amonge the rest slue his wife as she slept in his bosome, cut her in peeces, powdered her & fedd uppon her till he had clean devoured all partes saveinge her heade, & was for soe barbarouse a fact and cruelty justly executed.”"}]; /* review, 27 Nov: was 'barbarous'; EV prints 'barbarouse' */
 
 /* ---- THE LEDGER ----  who blamed what. w.pins[id] = the writer the player pinned it to */
 const STARVE_WRITERS=[["friends","Smith’s friends, 1612"],["company","The Company, 1610"],["percy","Percy, 1620s"],["strachey","Strachey, 1610"]];
@@ -27674,14 +27674,14 @@ function starveAct(d){
   if(d.kind==="store"){
     starveQuiz("The storehouse · early October","Twenty presidents",
       "<p>Smith’s friends wrote: “Now were we all constrained to liue only of that which Smith had only for his owne company, for the rest had consumed their proportions. And now haue we 20 Presidents with all their appurtenances; for Master Persie was so sicke he could not goe nor stand.”</p><p>What are they saying about who was in charge?</p>",
-      [["Nobody, really: everyone gave orders, and the President was too sick","Twenty presidents","<p>Twenty presidents means no president. Percy, chosen when Smith sailed, was too sick to stand. The joke is the friends’ — and it serves their case, that the colony fell apart without Smith.</p>"],
+      [["Nobody, really: everyone gave orders, and the President was too sick","Twenty presidents","<p>Twenty presidents means no president. Percy, the new President, was too sick to stand. The joke is the friends’ — and it serves their case, that the colony fell apart without Smith.</p>"], /* review, 27 Nov: was 'chosen when Smith sailed'; the date of Percy's election is disputed (EV: 10 Sept 1609; CH7-RECORD dispute 9) */
        ["There were twenty men on the council by law","Not a council","<p>The council had been cut down to almost nothing. “20 Presidents” is a joke: every gentleman with a following behaved as if he were in charge.</p>"],
        ["Percy governed alone and well","Not by this account","<p>Not by Smith’s friends’ account. Percy “was so sicke he could not goe nor stand”. Percy’s own account, written later, tells it differently, as you will see.</p>"]],"store");
     return;
   }
   if(d.kind==="venison"){
-    starveQuiz("The gate · two boys from Powhatan","Venison",
-      "<p>Thomas Savage, the boy left with Powhatan the year before, has come down with venison “to Capt: Percye, who now was Presedent”. He will not go back “with out sum of his cuntrymen”. Henry Spelman, a boy of the Third Supply, says he will go.</p><p>Why did Spelman go?</p>",
+    starveQuiz("The gate · a boy from Powhatan","Venison", /* review, 27 Nov: was 'two boys from Powhatan'; Savage came 'with 4 or 5 Indians', and Spelman was at the fort (p. cii) */
+      "<p>Thomas Savage, the boy given to Powhatan in 1608, has come down with venison “to Capt: Percye, who now was Presedent”. He will not go back “with out sum of his cuntrymen”. Henry Spelman, a boy of the Third Supply, says he will go.</p><p>Why did Spelman go?</p>", /* review, 27 Nov: was 'the year before'; Newport gave Savage to Powhatan early in 1608 (Arber p. 406) */
       [["Because there was food at Powhatan’s, and none here","Vitals were scarce","<p>Spelman went “the more willinglie … by Reason that vitals were scarse with us”. Powhatan used him “uery kindly”, and after about three weeks sent him back with an offer: “if they would bring ther ship, and sum copper, he would fraught hir backe with corne.”</p><p>Spelman wrote his account about 1613, in his own spelling. He is the only Englishman who saw what came next and wrote it down.</p>"],
        ["Because the President ordered him to spy","Not in his account","<p>Spelman says nothing of orders. He went “the more willinglie … by Reason that vitals were scarse with us”.</p>"],
        ["Because he wanted to learn the language","Not his reason","<p>He may have learned it — he later served as an interpreter. But the reason he gives is hunger: “vitals were scarse with us”.</p>"]],"venison");
@@ -27710,12 +27710,12 @@ function starveAct(d){
        {t:"No: only one of them can be right",fn:function(){starveDone("hogs");
          fortResult("Not necessarily","<p>Six hundred hogs can be killed by raiders, eaten by officers and kept downriver all at once. Each writer chose the part that blamed the people he blamed: the Company, Powhatan; Smith’s friends, the officers; Percy, Davis.</p>",["+6 Ink"]);}},
        {t:"No: there were never six hundred hogs",fn:function(){starveDone("hogs");
-         fortResult("Perhaps — but that is a fifth argument","<p>Three sows made sixty pigs in the spring of 1609, so six hundred by October is a lot. Two sources give the number, the friends’ list and the Company’s pamphlet. Doubting it is fair. It does not tell you where they went.</p>",["+6 Ink"]);}}]));
+         fortResult("Perhaps — but that is a fifth argument","<p>Smith’s friends wrote that three sows “in one yeare increased 60 and od[d] pigges”, so six hundred by October is a lot. Two sources give the number, the friends’ list and the Company’s pamphlet. Doubting it is fair. It does not tell you where they went.</p>",["+6 Ink"]);}}])); /* review, 27 Nov: was 'in the spring of 1609'; the friends say only 'of 3 sowes, in one yeare increased 60 and od[d] pigges' (p. 154) */
     return;
   }
   if(d.kind==="pryse"){
     starveQuiz("The market place","Hugh Pryse",
-      "<p>Percy wrote that Hugh Pryse, “beinge pinched with extreme famin, In a furious distracted moode did Come openly into the markett place Blaspheameinge exclameinge and Creyinge outt thatt there was noe god”. That afternoon he went into the woods with a butcher, “a Corpulentt fatt man”, to look for food, and “bothe of them weare slaine by the Salvages”.</p><p>When they were found, wild animals had torn Pryse, “a Leane spare man”, and left the fat butcher untouched.</p><p>What does Percy want the reader to believe?</p>",
+      "<p>Percy wrote that Hugh Pryse, “beinge pinched with extreme famin, In a furious distracted moode did Come openly into the markett place Blaspheameinge exclameinge and Creyinge outt thatt there was noe god”. That afternoon he went into the woods with a butcher, “a Corpulentt fatt man”, to look for food, and “bothe of them weare slaine by the Salvages”.</p><p>Percy adds that when they were found, wild animals had torn Pryse, “a Leane spare man”, and left the fat butcher untouched.</p><p>What does Percy want the reader to believe?</p>", /* review, 27 Nov: was unattributed narration; the detail is Percy's (via EV) */
       [["That God punished Pryse for saying there was no God","A judgement","<p>Percy reads God’s judgement in the bodies. A reader today might see a starving man who went where it was dangerous, and two deaths in the woods during a siege.</p><p>Both readings use the same facts. Percy’s is the one that makes sense of a winter that made none.</p>"],
        ["That the woods were full of game, if men would hunt","Not his point","<p>That is not his point. Two men went to the woods for food and were killed. Percy’s point is the difference in the bodies: he reads it as God’s judgement on a blasphemer.</p>"],
        ["That Pryse was a liar","Not his point","<p>Percy does not call him a liar. He reads the deaths as God’s judgement on Pryse’s words: the lean blasphemer torn, the fat butcher untouched.</p>"]],"pryse");
@@ -27729,25 +27729,25 @@ function starveAct(d){
     starveQuiz("James Fort · the cellar, 2012","The bone report",
       "<p><b>Found:</b> part of a skull and a shin bone, about a tenth of a skeleton, about two and a half feet down in the rubbish of a cellar, in a layer thrown away in the winter of 1609–10.</p>"+
       "<p><b>Who:</b> a girl of about fourteen, from her teeth and the growth of her knee. English, probably from the south of England, from the chemistry of her bones: a diet of “wheat and meat”. She probably came with the ships of August 1609.</p>"+
-      "<p><b>The marks:</b> chops to the forehead and the back of the skull, and knife cuts on the jaw and cheek, made to take the flesh off. They are hesitant and unskilled, not a butcher’s. The scientist who studied them said they show she was already dead.</p>"+
+      "<p><b>The marks:</b> chops to the forehead and the back of the skull, and knife cuts on the jaw and cheek, made to take the flesh off. They are hesitant and unskilled, not like the butchering of an animal. The scientist who studied them said where they were placed shows she was already dead.</p>"+ /* review, 27 Nov: was 'not a butcher's'; Owsley: 'hesitancy, trial, and tentativeness in the marks that is not seen in animal butchery', and their placing 'indicates that she was already dead' (NG, 1 May 2013) */
       "<p><b>Her name:</b> unknown. The archaeologists called her “Jane”.</p><p>What can these bones prove that the written sources cannot?</p>",
-      [["That at least once, that winter, people at James Fort ate the dead","Proven","<p>The Company called the story of men eating the dead a lie told by deserters. Percy, Smith and the Ancient Planters said it happened. The bones settle that question: it happened, at least this once.</p><p>What the bones cannot tell you: her name, how she died, who did it, or why. Nothing links her to the man and his wife. She was a girl of fourteen, and no written source mentions her.</p>"],
-       ["That she was killed for food","They cannot","<p>They cannot prove that. The marks show she was already dead. How she died, the bones do not say. What they do prove is that her body was cut for food: the Company’s denial was wrong.</p>"],
+      [["That at least once, that winter, people at James Fort ate the dead","Proven","<p>The Company called the story of a man eating his dead wife a lie “roared out” by deserters. Percy, Smith and the Ancient Planters said the starving ate the dead. The bones settle that much: it happened, at least this once.</p><p>What the bones cannot tell you: her name, how she died, who did it, or why. Nothing links her to the man and his wife. She was a girl of fourteen, and no written source mentions her.</p>"], /* review, 27 Nov: was 'the story of men eating the dead'; the True Declaration's charge is against 'the tragicall historie of the man eating of his dead wife' (Force p. 16) */
+       ["That she was killed for food","They cannot","<p>They cannot prove that. The scientist who studied the marks judged she was already dead. How she died, the bones do not say. What they do prove is that her body was cut for food, which weakens the Company’s denial.</p>"], /* review, 27 Nov: was stated as fact; it is Owsley's reading (NG) */ /* review, 27 Nov: was 'the Company's denial was wrong'; the bones do not touch the wife case the Company denied */
        ["That she was the wife in the trial","No","<p>No. Nothing links them. She was about fourteen, and no written source mentions her. Never mix the two up. What the bones do prove is that people at James Fort ate the dead that winter, at least once.</p>"]],"jane");
     return;
   }
   /* 5 · Point Comfort */
   if(d.kind==="crabs"){
     starveQuiz("Algernon Fort · the river mouth","In good case",
-      "<p>Percy, of Davis’s men: “Our people I fownd in good case and well lykeinge haveinge concealed their plenty from us above att James Towne. Beinge so well stored thatt the Crabb fishes wherewith they had fedd their hoggs wold have been a greate relefe unto us and saved many of our Lyves.”</p><p>Who tells this, and what is missing?</p>",
-      [["Only Percy tells it; Davis’s side was never written down","One side","<p>Only Percy, writing years later. Davis may have had reasons — twenty miles of river with the Powhatan on the banks, or no boat fit to send. Nobody kept them.</p><p>Percy planned to bring half the men from Jamestown down to be fed, or all of them. He did not get the chance.</p>"],
+      "<p>Percy, of Davis’s men: “Our people I fownd in good case and well lykeinge haveinge concealed their plenty from us above att James Towne, Beinge so well stored thatt the Crabb fishes wherewith they had fedd their hoggs wold have been a greate relefe unto us and saved many of our Lyves.”</p><p>Who tells this, and what is missing?</p>", /* review, 27 Nov: was 'Towne. Beinge'; EV prints 'Towne, Beinge' */
+      [["Only Percy tells it; Davis’s side was never written down","One side","<p>Only Percy, writing years later. Davis may have had reasons — the river was dangerous that winter — but if he did, nobody wrote them down.</p><p>Percy planned to bring half the men from Jamestown down to be fed, or all of them. He did not get the chance.</p>"], /* review, 27 Nov: was 'twenty miles of river... or no boat fit to send'; Percy says Davis had two pinnaces, and the distance is wrong; Davis's side is not recorded */
        ["Davis wrote his own account, and admits it","No account","<p>Davis left no account. Only Percy tells it.</p>"],
        ["Every source agrees Davis hoarded the food","Only one source","<p>Only Percy says so. The Company and Smith’s friends do not mention Point Comfort’s plenty.</p>"]],"crabs");
     return;
   }
   if(d.kind==="sails"){
     playCutscene({skippable:true,steps:STARVE_SAILS()},function(){starveDone("sails");enterWorld("ch7");
-      fortResult("The Bermudas","<p>“we espyed towe pinnesses Comeinge into the Baye.” <i>— Percy</i></p><p>Gates, Somers and some hundred and forty men and women of the <i>Sea Venture</i>, wrecked on the Bermudas in July 1609 and given up for lost, have built two pinnaces, the <i>Deliverance</i> and the <i>Patience</i>, and come on to Virginia. Gates, knowing of no fort at Point Comfort, “was dowtfull whether we weare frends or noe”.</p><p>Monday, the twenty-first of May, about noon.</p>",["+6 Ink"]);});
+      fortResult("The Bermudas","<p>“we espyed towe pinnesses Comeinge into the Baye.” <i>— Percy</i></p><p>Gates, Somers and the people of the <i>Sea Venture</i>, about a hundred and fifty men, women and children when she sailed, wrecked on the Bermudas in July 1609 and given up for lost, have built two pinnaces, the <i>Deliverance</i> and the <i>Patience</i>, and come on to Virginia. Gates, knowing of no fort at Point Comfort, “was dowtfull whether we weare frends or noe”.</p><p>Monday, the twenty-first of May, about noon.</p>",["+6 Ink"]);}); /* review, 27 Nov: was 'some hundred and forty men and women'; Strachey: 'about one hundred and forty, besides women' (4:1736), 'men, women, and children, about the number of one hundred and fifty' (4:1737); not all of them reached Virginia */
     return;
   }
   /* 6 · we are starved */
@@ -27764,7 +27764,7 @@ function starveAct(d){
   }
   if(d.kind==="commission"){
     starveDone("commission");
-    fortResult("Sixteen days","<p>Strachey read Gates’s commission aloud, and “Captaine <i>Percie</i> (then President) delivered up unto him his Commission, the old Patent and the Councell Seale”.</p><p>Gates had brought food that would “serve one hundred and fiftie for a Sea Voyage”. Shared out, the store would last “not possible to serve longer then sixteene dayes”.</p><p>The Company printed that “if God had not sent Sir Thomas Gates from the Bermudos within foure daies, they had all beene famished”. Smith, copying it in 1624, wrote “almost”.</p>",["+6 Ink"]);
+    fortResult("Sixteen days","<p>Strachey read Gates’s commission aloud, and “Captaine <i>Percie</i> (then President) delivered up unto him his Commission, the old Patent and the Councell Seale”.</p><p>Gates had brought food that would “serve one hundred and fiftie for a Sea Voyage”. Shared out with what was left, Strachey reckoned it “not possible to serve longer then sixteene dayes”.</p><p>The Company printed that “if God had not sent Sir Thomas Gates from the Bermudos within foure daies, they had all beene famished”. Smith, copying it in 1624, wrote “almost”.</p>",["+6 Ink"]); /* review, 27 Nov: was ungrammatical around the quote; Strachey 4:1751 via EV */
     return;
   }
   /* 7 · the helm */
@@ -27778,7 +27778,7 @@ function starveAct(d){
   }
   if(d.kind==="helm"){
     playCutscene({skippable:true,steps:STARVE_HELM()},function(){starveDone("helm");w.did.landed=true;checkpoint("ch7-landed");enterWorld("ch7");
-      fortResult("Sunday, the tenth of June","<p>Lord De La Warr landed at Jamestown “the tenth of June, being Sunday”, heard a sermon, and had his commission read. He had come “with 3 ships exceeding well furnished”.</p><p>The colony that was abandoned on the seventh was the capital of Virginia again on the tenth. Had the longboat been a day later, the 1624 book says, “questionlesse the Indians would have destroied the Fort”.</p><p>Master Strachey has the papers. Before he writes his report, he wants to know whom you blame.</p>",["+6 Ink"]);});
+      fortResult("Sunday, the tenth of June","<p>Lord De La Warr landed at Jamestown “the tenth of June, being Sunday”, heard a sermon, and had his commission read. He had come “with 3 ships exceeding well furnished”.</p><p>The colony that was abandoned on the seventh was the capital of Virginia again on the tenth. Had they stayed away any longer, the 1624 book says, “questionlesse the Indians would have destroied the Fort”.</p><p>Master Strachey has the papers. Before he writes his report, he wants to know whom you blame.</p>",["+6 Ink"]);}); /* review, 27 Nov: was 'a day later'; Tyler p. 298: 'if they had abandoned the Fort any longer time' */
     return;
   }
 }
@@ -27788,7 +27788,7 @@ function starveBaskets(saw){
   fortResult(saw?"Pushed up":"Not what Spelman saw",
     (saw?"":"<p>Spelman saw something else: “the Indians dealing deceitfully by pulling or beareing vpp the bottom of their baskets with their hands soe thait ye lesse corne might fill them.”</p>")+
     "<p>“The English men taking exceptions against it and a discontentment riseing vppon it ye king departed taking me and ye dutchman with him.”</p>"+
-    "<p>Then “a great number Indians that lay lurking in ye woods & corne about began with an oulis and whoopubb”, and shot the men carrying corn to the ship. Spelman was already gone. He heard it; he did not see it.</p>",["+6 Ink"],function(){
+    "<p>Then “a great number Indians that lay lurking in ye woods & corne about began with an oulis and whoopubb”, and shot the men carrying corn to the ship. Spelman was already gone. He did not see it.</p>",["+6 Ink"],function(){ /* review, 27 Nov: was 'He heard it'; Spelman does not say how he learned of it (p. civ) */
       playCutscene({skippable:true,steps:STARVE_LED()},function(){enterWorld("ch7");});});
 }
 /* five accounts of Ratcliffe's death, side by side */
@@ -27813,7 +27813,7 @@ function starveFive(){
     starveDone("five");
     fortResult("One witness, and he left","<p>You placed "+right+" of "+ROWS.length+".</p><ul>"+ROWS.map(function(r){return "<li>"+r.t+": <b>"+WHO[r.v]+"</b></li>";}).join("")+"</ul>"+
       "<p>The torture is in Percy’s account only. He was not there; he heard it, and wrote it down some fifteen years later. Pocahontas saving Spelman is in Smith’s 1624 book only — Spelman himself thanks the king of Patawomeck, and never mentions her.</p>"+
-      "<p>How many died depends on who you read: “xxvj or vij” or sixteen (Spelman), “about thirty” (the Company and Smith). Who escaped does too.</p>",["+6 Ink"]);}}]);
+      "<p>How many died depends on who you read: “xxvj or vij”, or all but two of sixteen (Spelman, in two drafts), “about thirty” (the Company and Smith). Who escaped does too.</p>",["+6 Ink"]);}}]); /* review, 27 Nov: was 'or sixteen'; the draft: sixteen came by barge and they 'killed them all sauing one William Russell and one other' (p. cv) */
   w.five=(w.five&&w.five.length===ROWS.length)?w.five:ROWS.map(function(){return null;});
   ROWS.forEach(function(r,i){if(w.five[i]!=null)$("sf"+i).textContent=WHO[w.five[i]];});
   document.querySelectorAll("#sickBody [data-sf]").forEach(function(b){
@@ -27822,7 +27822,7 @@ function starveFive(){
 /* the trial: four cards, and three questions about them */
 function starveTrial(){
   const w=starveW();
-  let h="<p>Percy is the only one here who saw it. The four accounts lie on the table. Read them; then answer.</p>"+STARVE_CARDS.map(starveCard).join("");
+  let h="<p>Percy, who judged the case, is the only one of the four writers who was in the fort that winter. The four accounts lie on the table. Read them; then answer.</p>"+STARVE_CARDS.map(starveCard).join(""); /* review, 27 Nov: was 'the only one here who saw it'; Percy judged, he did not see the killing */
   starveSheet("The fort · the four accounts","The trial",h,shuffle([
     {t:"The Company says he killed her out of hatred, not hunger. Why would it say so?",fn:function(){starveTrialEnd("why");}},
     {t:"Percy, the judge, says the confession came by torture. What does that do to the case?",fn:function(){starveTrialEnd("torture");}},
@@ -27832,10 +27832,10 @@ function starveTrialEnd(k){
   const w=starveW();w.trialAsk=k;
   starveDone("trial");
   const A={
-    why:"<p>Because the Company’s whole pamphlet argues that Virginia was a good land, badly used. If a man killed his wife from hunger, there was famine. If he killed her from hatred, with “meale, oatemeale, beanes and pease” in his house, there was not — only wickedness. The same death is used to deny a famine.</p>",
-    torture:"<p>It cuts both ways. A confession “inforced … by torture” proves very little about what really happened. But Percy, the man who ordered it, chose to write it down himself — perhaps to show he did everything the law allowed. Percy’s is the only account by someone who was there.</p>",
-    joke:"<p>That in 1624, fourteen years later and safe in London, Smith could turn a starving colony’s worst night into a joke about cooking — “of such a dish as powdered wife I never heard of”. It tells you nothing about the case, and a great deal about the writer.</p>"};
-  fortResult("Four accounts, one death",A[k]+"<p><b>What all four agree on:</b> a man killed his wife, and was executed for it. <b>What they disagree on:</b> why, what was found, how he confessed, and how he died — “executed”, or “burned”.</p><p>Percy, Smith and the Ancient Planters use the case to prove there was a famine. The Company uses it to deny one.</p>",["+6 Ink"]);
+    why:"<p>Because the Company’s whole pamphlet argues that Virginia was a good land, badly used. If a man killed his wife from hunger, the famine had driven men to eat each other. If he killed her from hatred, with “meale, oatemeale, beanes and pease” in his house, the horror was one man’s wickedness, not the famine’s. The same death is used to play the famine down.</p>", /* review, 27 Nov: was 'there was not [famine]... used to deny a famine'; the True Declaration admits 'famyne and sicknesse' (p. 18) and denies only that hunger explains this case */
+    torture:"<p>It cuts both ways. A confession “inforced … by torture” proves very little about what really happened. But Percy, the man who ordered it, chose to write it down himself — perhaps to show he did everything the law allowed. Percy’s is the only account by the man who judged the case.</p>", /* review, 27 Nov: was 'the only account by someone who was there'; some Ancient Planters were there (CH7-RECORD, Who wrote) */
+    joke:"<p>That in 1624, fourteen years later and safe in London, Smith could turn a starving colony’s worst story into a joke about cooking — “of such a dish as powdered wife I never heard of”. It tells you nothing about the case, and a great deal about the writer.</p>"}; /* review, 27 Nov: was 'worst night'; no source gives a time */
+  fortResult("Four accounts, one death",A[k]+"<p><b>What all four agree on:</b> a man killed his wife, and was executed for it. <b>What they disagree on:</b> why, what was found, how he confessed, and how he died — “executed”, or “burned”.</p><p>Percy, Smith and the Ancient Planters use the case to show how bad the famine was. The Company uses it to show that famine was not to blame.</p>",["+6 Ink"]); /* review, 27 Nov: was 'to deny one'; the Company denies hunger as the motive, not the famine */
 }
 /* the ledger: pin each explanation to its writer */
 function starveLedger(){
@@ -27883,7 +27883,7 @@ function STARVE_LED(){
     {spawn:{id:"sp",eq:STARVE_PEOPLE[1].eq,at:[-4,G7(-4,-4),-4],face:Math.PI}},
     {move:{id:"sp",to:[-40,G7(-40,-70),-70],face:Math.PI*0.9},t:5,cam:{to:[10,8,20],look:[-30,3,-50]},
      narrate:"Behind him, at the storehouse, the English are carrying corn to the ship."},
-    {sfx:"wind",t:5,narrate:"Then, Spelman wrote, came “an oulis and whoopubb”, and the men in the corn “shott the men as they passed by them”. He did not see it. He heard it."},
+    {sfx:"wind",t:5,narrate:"Then, Spelman wrote, came “an oulis and whoopubb”, and the men in the corn “shott the men as they passed by them”. He was already gone. He did not see it."}, /* review, 27 Nov: was 'He heard it'; Spelman does not say (p. civ) */
     {fade:"out",t:1}];
 }
 function STARVE_SAILS(){
@@ -28174,7 +28174,7 @@ CONTENT.ch7={
     q:[
       {stim:"Smith’s friends, 1612: “of 500, within 6 months after there remained not many more then 60.” The 500 counts the whole Third Supply fleet, including some 150 who spent the winter on Bermuda.",
        q:"Why is 500 minus 60 not the number who died?",
-       o:["Many were on Bermuda, or elsewhere, alive","The number 60 counts only the women","Most of the 500 never left England","The 500 counts the Powhatan as well"],a:0},
+       o:["Some were alive, on Bermuda","The number 60 counts only the women","Most of the 500 never left England","The 500 counts the Powhatan as well"],a:0}, /* review, 27 Nov: keyed answer was the longest option; rebalanced */
       {stim:"Smith’s friends: “now haue we 20 Presidents with all their appurtenances; for Master Persie was so sicke he could not goe nor stand.”",
        q:"What is the joke saying?",
        o:["Nobody was really in charge","There were twenty on the council","Percy ruled with a firm hand","Every man had been made a knight"],a:0},
@@ -28183,10 +28183,10 @@ CONTENT.ch7={
        o:["What happened after he was led away","Whether the corn was measured short","That the king took him from the place","That there was a quarrel over corn"],a:0},
       {stim:"Only Percy, who was not there, says Ratcliffe was tied to a tree and tortured. He wrote it about fifteen years later.",
        q:"How should a historian treat that detail?",
-       o:["As Percy’s report, heard at second hand","As certain, since Percy was President","As false, since Spelman doesn’t say it","As Spelman’s own eyewitness account"],a:0},
-      {stim:"Percy blames Ratcliffe’s “creduletie” for letting Powhatan’s son and daughter go ashore, when “he mighte have” kept them as hostages.",
+       o:["As Percy’s report, heard secondhand","As certain, since Percy was President","As false, since Spelman doesn’t say it","As Spelman’s own eyewitness account"],a:0}, /* review, 27 Nov: keyed answer was the longest option; rebalanced */
+      {stim:"Percy blames Ratcliffe’s “creduletie” for letting Powhatan’s son and daughter go ashore, when, kept aboard, they “mighte have bene A Sufficyentt pledge for his saffety”.", /* review, 27 Nov: was 'he mighte have', not continuous in the source; Percy via Lehigh: 'whome if he had deteyned mighte have bene A Sufficyentt pledge for his saffety' */
        q:"Why might the President blame a dead captain?",
-       o:["It moves the blame away from himself","Ratcliffe had asked him to write it","The Company told Percy to blame him","Ratcliffe’s family had paid him to"],a:0},
+       o:["It moves blame away from himself","Ratcliffe had asked him to write it","The Company told Percy to blame him","Ratcliffe’s family had paid him to"],a:0}, /* review, 27 Nov: keyed answer was the longest option; rebalanced */
       {stim:"Six hundred hogs. The Company: Powhatan’s people “destroyed our Hogs”. Smith’s friends: “our commanders and officers did daily consume them”. Percy: Davis’s men fed theirs on crabs.",
        q:"What do the three explanations have in common?",
        o:["Each blames the people its writer blames","They are all taken from Powhatan’s records","They all blame the colonists for laziness","They all agree there were no hogs at all"],a:0},
@@ -28201,19 +28201,19 @@ CONTENT.ch7={
        o:["That it was murder, not famine","That the colony was well governed","That he was a Powhatan spy","That the Company sent him food"],a:0},
       {stim:"Percy, who judged the man: the confession was “inforced from him by torture haveinge hunge by the Thumbes with weightes att his feete”.",
        q:"Does a confession made that way prove anything?",
-       o:["Very little about what really happened","Yes: a confession always proves guilt","Yes: torture was legal in that court","No: Percy made the whole trial up"],a:0},
+       o:["Very little about what happened","Yes: a confession always proves guilt","Yes: torture was legal in that court","No: Percy made the whole trial up"],a:0}, /* review, 27 Nov: keyed answer was the longest option; rebalanced */
       {stim:"Smith, in England in 1624: “of such a dish as powdered wife I never heard of.”",
        q:"What does the joke tell you?",
-       o:["About Smith, not about the case","That the murder never happened","That Smith was at the trial","That the wife was never found"],a:0},
-      {stim:"Percy, Smith and the Ancient Planters tell the wife’s death as proof of famine. The Company tells it as proof there was no famine.",
+       o:["About Smith, not about the case","That the murder never happened","That Smith himself was at the trial","That the wife was never found"],a:0}, /* review, 27 Nov: keyed answer was the longest option; a distractor lengthened */
+      {stim:"Percy, Smith and the Ancient Planters tell the wife’s death as proof of famine. The Company tells it as proof that famine was not the cause.", /* review, 27 Nov: was 'proof there was no famine'; the True Declaration admits famine (p. 18) and denies only that hunger drove this man */
        q:"What does that show about evidence?",
        o:["One fact can serve opposite arguments","Only the Company could be believed","The four writers never read each other","Murder cases cannot be used as evidence"],a:0},
       {stim:"Jane: a girl of about fourteen, her skull cut to remove the flesh, found in rubbish thrown away in the winter of 1609–10.",
        q:"What do her bones prove?",
        o:["That the dead were eaten at least once","That she was the wife in the trial","That she was killed in order to be eaten","The name of the person who did it"],a:0},
-      {stim:"The Company called the story of eating the dead a lie spread by deserters, “a viperous generation”.",
+      {stim:"The Company called the story of a man eating his dead wife a lie spread by deserters, “a viperous generation”. Percy, Smith and the Ancient Planters said the starving ate the dead.", /* review, 27 Nov: was 'the story of eating the dead'; the Company's charge is against the wife story (Force p. 16) */
        q:"How does the archaeology bear on that?",
-       o:["It shows the Company’s denial was wrong","It shows the deserters invented it all","It shows the Company never denied it","It has nothing to say about the matter"],a:0},
+       o:["It weakens the Company’s denial","It shows the deserters invented it all","It shows the Company never denied it","It has nothing to say about the matter"],a:0}, /* review, 27 Nov: keyed answer was the longest option, and overclaimed: Jane does not settle the wife case */
       {stim:"Percy: Hugh Pryse cried “there was noe god”, went to the woods that afternoon, and was killed; animals tore his lean body but left the fat butcher with him untouched.",
        q:"What does Percy want the reader to believe?",
        o:["That God punished the blasphemer","That the woods were safe to hunt","That Pryse had told a lie about food","That the butcher had killed Pryse"],a:0},
@@ -28228,7 +28228,7 @@ CONTENT.ch7={
        o:["Lazy, or afraid to step outside","It can’t; one sentence is a misprint","Both sentences say they were idle","Both sentences say they were brave"],a:0},
       {stim:"Strachey blamed “sloath, riot, and vanity”. He arrived on 23 May 1610, as secretary to the new governor.",
        q:"What should a reader remember about Strachey?",
-       o:["He wasn’t there, and served the new rulers","He lived through the whole winter there","He was one of Smith’s friends at the fort","He was writing for Powhatan, not England"],a:0},
+       o:["He came after, with the new rulers","He lived through the whole winter there","He was one of Smith’s friends at the fort","He was writing for Powhatan, not England"],a:0}, /* review, 27 Nov: keyed answer was the longest option; rebalanced */
       {stim:"Modern historians add a drought (tree rings show one of the driest spells in centuries), the siege, disease, and the loss of the leaders at sea.",
        q:"How does this differ from the 1610s writers?",
        o:["It finds causes no one was blamed for","It blames only the colonists’ idleness","It relies only on Percy’s own account","It shows there was never a real famine"],a:0},
@@ -30076,7 +30076,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0157";
+const BUILD="20261127-0207";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
