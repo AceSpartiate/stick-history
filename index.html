@@ -30063,7 +30063,7 @@ const PRICE_SAYS={
   "argall":[[],["“Every man to set two acres with corn, tradesmen excepted. And no hay to sweat tobacco: it robs the beasts of their fodder.”"],[],[],[],[],[]],
   /* appointed governor after De La Warr's death; sails January 1619 with Pory (Tyler pp. 249 n. 1, 281) */
   "yeardley":[[],[],["“I am named governor of Virginia. Master Pory sails with me as Secretary, and we carry the Company’s charter.”"],[],
-    ["“Every burgess will take the oath of supremacy, called in order and by name.”"],[],[]], /* Pory, Tyler p. 251 */
+    ["“Every burgess has taken the oath of supremacy, called in order and by name.”"],[],[]], /* Pory, Tyler p. 251. play-test, 27 Nov: said after the oath, so past tense */
   /* Persey "was unwilling to yield, till suche time as the Governor and Assembly had layd their commandment upon him" (Tyler p. 260) */
   "persey":[[],[],[],[],["“I have no such order from the Magazine. Lay your commandment on me, and I will take the tobacco at that price.”"],[],[]],
   /* the ancient planters "being set free" choose their dividends (Kingsbury III:245; GH, Tyler p. 337) */
@@ -30137,7 +30137,7 @@ const PRICE_OPEN=[
   /* the joint stock "expired, November 30, 1616" (Tyler p. 247); the Instructions of 18 Nov. 1618 (Kingsbury III:98) */
   {t:"The Great Charter",b:"<p>The Virginia Company’s seven-year partnership had ended in 1616. It needed new settlers, and new money.</p><p>So it wrote new rules for Virginia.</p>"},
   /* GH, Tyler pp. 335, 337; Rolfe, Kingsbury III:245 */
-  {t:"Set free",b:"<p>April 1619. Argall has sailed home. Sir George Yeardley lands with the charter.</p><p>The ancient planters are “set free” from the Company’s service, and choose their land.</p>"},
+  {t:"Set free",b:"<p>April 1619. Argall has sailed home. Sir George Yeardley lands with the charter.</p><p>The ancient planters, who came before 1616, are “set free” from the Company’s service. Each chooses his land: his dividend.</p>"},
   /* Pory, Tyler pp. 249-251 */
   {t:"The General Assembly",b:"<p>Friday 30 July 1619. The governor, his council and the burgesses meet in the church at James City.</p><p>For six days they make laws for the colony.</p>"},
   /* Rolfe, Kingsbury III:243; the record's content recommendations */
@@ -30232,7 +30232,20 @@ function priceQuiz(kick,title,body,opts,id,after){
 }
 /* a physical duty turns the player to the work first, so the hoe or the axe meets the ground
    or the log, not the air the player happened to be facing */
-function priceFace(d){if(d.face&&player)player.rotation.y=Math.atan2(d.face[0]-player.position.x,d.face[1]-player.position.z);}
+/* play-test, 27 Nov: turning was not enough. The duty answers anywhere within eight of its
+   label, so a player at the edge of that ring swung the axe at a log seven feet off. The
+   player is stepped in to the tool's reach first (workToolTip: 2.6 for an axe, 2 for a spade),
+   on the side they came from (or at `stand`), unless that spot is blocked */
+function priceFace(d,reach){
+  if(!d.face||!player)return;
+  const fx=d.face[0], fz=d.face[1];
+  let dx=player.position.x-fx, dz=player.position.z-fz, L=Math.hypot(dx,dz);
+  if(L<0.3){dx=-Math.sin(player.rotation.y);dz=-Math.cos(player.rotation.y);L=1;}
+  /* a log is long: an axe that came at it from an end would stand the player on it */
+  const x=d.stand?d.stand[0]:fx+dx/L*(reach||2), z=d.stand?d.stand[1]:fz+dz/L*(reach||2);
+  if(!WORLD.blocked(x,z))player.position.set(x,WORLD.ground(x,z),z);
+  player.rotation.y=Math.atan2(fx-player.position.x,fz-player.position.z);
+}
 function priceCard(who,when,plain){return "<div class=\"starveCard\"><b>"+who+"</b> <i>— "+when+"</i><p>"+plain+"</p></div>";}
 /* a sheet of rows, each marked with one of `keys`; marks kept in w.marks[id] */
 function priceRows(kick,title,intro,rows,keys,id,done){
@@ -30305,7 +30318,7 @@ function priceAct(d){
     return;
   }
   if(d.kind==="hoe"&&!d.worked){
-    d.worked=true;priceFace(d);
+    d.worked=true;priceFace(d,2);
     playerDoes("dig",4,"The market-place and streets, planted with tobacco.",{},function(){
       if(PRICE.plot)PRICE.plot.visible=true;priceAct(d);});
     return;
@@ -30330,13 +30343,13 @@ function priceAct(d){
     /* Rolfe, 15 June 1618 (GH, Tyler p. 334): the whole primary record */
     priceQuiz("Jamestown · June 1618","Powhatan",
       "<p>Rolfe: “Powhatan died this last Aprill, yet the Indians continue in peace. Itopatin his second brother succeeds him, and both hee and Opechankanough have confirmed our former league”.</p><p>That is the whole record. What mattered most to Rolfe?</p>",
-      [["That the peace would hold","The league","<p>No place, no cause, no day. Her father’s death, in one sentence, from her widower. Its point is the peace. Powhatan’s people left no written account.</p>"],
+      [["That the peace would hold","The league","<p>No place, no cause, no day. Pocahontas’s father’s death, in one sentence, from her widower. Its point is the peace. Powhatan’s people left no written account.</p>"],
        ["How Powhatan died","Not said","<p>Rolfe gives no cause, no place, no day. His point is the peace.</p>"],
        ["Who would govern the English","Not that","<p>He names Powhatan’s successor, Itopatin, and the peace. Nothing more.</p>"]],"powhatan");
     return;
   }
   if(d.kind==="corn"&&!d.worked){
-    d.worked=true;priceFace(d);
+    d.worked=true;priceFace(d,2);
     playerDoes("dig",4,"Two acres of corn, by order. Tradesmen excepted.",{},function(){
       if(PRICE.plot)PRICE.plot.visible=true;priceAct(d);});
     return;
@@ -30379,7 +30392,7 @@ function priceAct(d){
     return;
   }
   if(d.kind==="clear"&&!d.worked){
-    d.worked=true;priceFace(d);
+    d.worked=true;priceFace(d,2.6);
     playerDoes("chop",4.5,"Your own dividend: trees down, ground cleared, ready to plant.",{},function(){
       if(PRICE.plot)PRICE.plot.visible=true;priceAct(d);});
     return;
@@ -30403,7 +30416,7 @@ function priceAct(d){
   if(d.kind==="oath"){
     playCutscene({skippable:true,steps:PRICE_OATH()},function(){priceDone("oath");enterWorld("ch9");
       /* Pory, Tyler pp. 248-251; the record: who voted is not said */
-      fortResult("The quire of the church","<p>Twenty-two burgesses were chosen, from eleven places; twenty sat. Who voted for them, Pory does not say.</p><p>No woman, servant, African or Indian sat.</p>",["+6 Ink"]);});
+      fortResult("The quire of the church","<p>They came from eleven places, and twenty sat. Who voted for them, Pory does not say.</p><p>No woman, servant, African or Indian sat.</p>",["+6 Ink"]);});
     return;
   }
   if(d.kind==="martin"){
@@ -30540,7 +30553,10 @@ function PRICE_OATH(){
      narrate:"Friday 30 July 1619. The quire of the church at James City."},
     {cam:{to:[cx+5,gy+9.5,cz+5.3],look:[cx-7,gy+3.5,cz-1]},t:5,
      narrate:"Mr. Bucke, the minister, said a prayer. Then the burgesses were called in, one by one, by name."},
-    {move:{id:"b8",to:at(cx+3.6,cz+1),face:Math.PI/2},t:4.5,
+    /* play-test, 27 Nov: this step had no camera of its own, so the burgess walked out of the
+       nave shot and took his oath as a hat brim at the foot of the frame. Now it is seen from
+       the quire, over the council, with his face to the table */
+    {move:{id:"b8",to:at(cx+3.6,cz+1),face:Math.PI/2},cam:{to:[cx+9.5,gy+10.8,cz+5.4],look:[cx+3.2,gy+4.6,cz+0.6]},t:4.5,
      narrate:"Each took the oath of supremacy, “none staggering at it”, the Speaker wrote."},
     {cam:{to:[cx-1,gy+10,cz-5.3],look:[cx+9,gy+3.5,cz+1]},t:5,
      narrate:"Twenty-two burgesses were chosen. Who voted for them, the record does not say."},
@@ -30643,7 +30659,10 @@ registerWorld("ch9",function(root){
       duty("price","The Price",-44,6,{kind:"price",after:"oath",verb:"Hear it"});starveChest(root,G,-44,2.5);
       duty("servants","The Laws",14,11.5,{kind:"servants",after:"price",verb:"Sort them"});presTable(root,G,14,8);
       pricePillory(root,G,28,20);starveChest(root,G,-24,19);
-      workMan(root,crowdEq("hand",235),-70,24,0,"carry",{from:[-104,66],to:[-78,22],load:"cask",speed:3});
+      /* play-test, 27 Nov: the carrier borrowed from Chapter VIII walked from the shore to (-78,22)
+         straight through the river palisade, and was out of sight behind it from the whole
+         fort. Now he brings casks in at the river gate, the one gap in that wall, to a stack */
+      workMan(root,crowdEq("hand",235),0,40,Math.PI,"carry",{from:[0,46],to:[0,15],load:"cask",speed:3,drop:workStack(root,-3.4,13.6,"cask",6).drop});
     }
     if(w.day===6){
       /* once the chapter is closed Pory is at his table with the laws, not in the street too */
@@ -30653,7 +30672,7 @@ registerWorld("ch9",function(root){
       starveChest(root,G,14,8);
       workMan(root,crowdEq("hand",236),20,-20,0.4,"chop",{target:[21.5,-17]});
       priceLogs(root,G,[[22,-16.5,0.3,6]]);
-      workMan(root,crowdEq("hand",237),-70,24,0,"carry",{from:[-104,66],to:[-78,22],load:"wood",speed:3});
+      workMan(root,crowdEq("hand",237),0,40,Math.PI,"carry",{from:[0,46],to:[0,15],load:"wood",speed:3});   /* by the river gate, as on Assembly day */
       if(w.did.closed){nextAt=null;
         duty("record","Master Pory’s Papers",-44,23,{kind:"record",verb:"Close the chapter’s record"});
         const pu=buildFigure(PRICE_PEOPLE[3].eq);pu.position.set(-44,G(-44,16.6),16.6);pu.rotation.y=0;root.add(pu);solid(-44,16.6,1,1,LVL.MAIN,0);}
@@ -30684,13 +30703,13 @@ registerWorld("ch9",function(root){
     spots={spence:[6,40,-1.6]};
     /* clearing the ground: felling, hauling the wood, digging, and a house going up */
     workMan(root,crowdEq("hand",250),38,-8,2.4,"chop",{target:[41,-11]});
-    workMan(root,crowdEq("hand",251),36,-6,0,"carry",{from:[36,-6],to:[-20,2],load:"wood",speed:2.6});
+    workMan(root,crowdEq("hand",251),36,-6,0,"carry",{from:[36,-6],to:[-20,-6],load:"wood",speed:2.6});   /* below the tobacco rows (z -2 up), not through them */
     workMan(root,crowdEq("hand",252),-4,14,0.3,"dig",{heap:workHeap(root,-3,17,0x5e4a32,26)});
     workMan(root,crowdEq("hand",253),-30,0,Math.PI,"hammer");
     addAnimal(root,G,"dog",0,30,0,{way:[[6,34],[2,10],[-24,6]]});
     starveChest(root,G,-12,40.5);starveChest(root,G,-4,30.5);starveChest(root,G,30,26.5);starveChest(root,G,22,42.5);
     duty("argall","News of Argall",-12,44,{kind:"argall",verb:"Read it"});
-    duty("clear","Your Dividend",28,15,{kind:"clear",verb:"Clear it",face:[28,11]});
+    duty("clear","Your Dividend",28,15,{kind:"clear",verb:"Clear it",face:[28,11],stand:[28,13.6]});
     duty("summer","Master Rolfe’s Letter",-4,34,{kind:"summer",after:"clear",verb:"Read it"});
     at=[8,52];nextAt=[22,46];
   }
@@ -32774,7 +32793,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0641";
+const BUILD="20261127-0642";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
