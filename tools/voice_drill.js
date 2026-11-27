@@ -1,4 +1,4 @@
-/* voice_drill.js - play Chapters VI, VII and VIII start to finish and write down every line
+/* voice_drill.js - play Chapters VI to X start to finish and write down every line
    the game speaks that has no recording (it would fall back to the browser's flat voice).
    Load the game over http, press Continue, then in the console:
 
@@ -54,9 +54,14 @@
       if(!need){await next(act);continue;}
       if(!await step(act,need,w.did))break;}
     D.log.push('ch9 day '+w.day+' closed '+!!w.did.closed);}
+  async function ch10(){if(typeof skyW!=='function')return;const act=actF("sky",skyAct);delete S.works.ch10;beginWorld("ch10");await sleep(1500);await cont();const w=skyW();
+    for(let g=0;g<90&&!w.did.closed;g++){const need=skyNeed();
+      if(!need){await next(act);continue;}
+      if(!await step(act,need,w.did))break;}
+    D.log.push('ch10 day '+w.day+' closed '+!!w.did.closed);}
   const only=window.DRILL_ONLY;   /* e.g. ['ch9'] to play one chapter */
-  const all={ch6,ch7,ch8,ch9};
-  (async()=>{for(const f of (only?only.map(k=>all[k]):[ch6,ch7,ch8,ch9])){try{await f();}catch(e){D.log.push('ERR '+e);}}
+  const all={ch6,ch7,ch8,ch9,ch10};
+  (async()=>{for(const f of (only?only.map(k=>all[k]):[ch6,ch7,ch8,ch9,ch10])){try{await f();}catch(e){D.log.push('ERR '+e);}}
     if(bak)localStorage.setItem("stickhistory.save.v1",bak);D.log.push('ALL DONE');})();
   return 'drill started';
 })();
