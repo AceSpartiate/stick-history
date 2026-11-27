@@ -82,6 +82,17 @@ CAST = {
                f"loyal, a steady working man's voice with a dry edge, {ENG}.",
     'russell': f"An English doctor of physic in his forties: calm, learned and wry, a measured, reassuring "
                f"voice, {ENG}.",
+    # Chapter VII
+    'spelman': f"An English boy of about fourteen, a gentleman's son, starving and wary: quick, young and "
+               f"thin-voiced, a little frightened, {ENG}.",
+    'davis': f"An English soldier captain in his thirties holding a small fort: blunt, defensive and wary, "
+             f"a hard plain voice, {ENG}.",
+    'strachey': f"An English gentleman writer and secretary in his late thirties: observant, articulate and "
+                f"grave, a cultivated measured voice, {ENG}.",
+    'gates': f"An English soldier knight in his fifties, a governor: grave, firm and commanding, a deep "
+             f"steady voice, {ENG}.",
+    'digger': "A modern American archaeologist in his thirties: careful, warm and plain-spoken, a clear "
+              "friendly voice, a present-day American accent.",
 }
 REEL_GAP = 0.6
 
