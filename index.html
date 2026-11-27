@@ -3517,6 +3517,42 @@ function gradeRenderer(r){
   r.toneMappingExposure=EXPOSURE;
   return r;
 }
+/* ---- GRAIN: DETAIL WITHOUT A TEXTURE ----
+   A wall, a deck or a field painted one flat colour reads as plastic the moment it is
+   bigger than a man. Every Lambert material in the game takes a little value noise -
+   two octaves, about three feet and nine inches across - multiplied into its colour,
+   so a large face breaks up the way weathered wood, earth and canvas do. No texture
+   fetch: a hash and a smoothstep, a few dozen ALU ops on a shader that is otherwise
+   nearly free, because Lambert lights per VERTEX.
+   It scales a colour by at most GRAIN.value either way around the same mean, and the
+   two octaves average toward the middle, so in practice a face moves two or three per
+   cent and never more than about 12 levels of 255 (measured on the Elizabeth City
+   houses) - grain, not a recolour; nothing authored moves. It is in OBJECT space, not world space, so it rides
+   with a figure instead of swimming across him; for the merged world, whose vertices
+   are already world feet, the two are the same thing.
+   Installed on the PROTOTYPE, so it reaches every Lambert material, including the
+   ones Geo.mesh makes per mesh, without anyone having to remember it. A material
+   with its own onBeforeCompile (the ground's detail map) keeps its own and is left
+   alone. Compiled only under USE_FOG: the world has fog and the portrait, wardrobe
+   and menu canvases do not, so the panels describing a man are never mottled.
+   OFF on the low tier: the uniform is 0 and the branch skips the noise. */
+const GRAIN={value:0.12};
+const GRAIN_BY_TIER={high:0.12,medium:0.08,low:0};
+THREE.MeshLambertMaterial.prototype.onBeforeCompile=function(sh){
+  sh.uniforms.uGrain=GRAIN;
+  sh.vertexShader=sh.vertexShader
+    .replace("#include <common>","#include <common>\nvarying vec3 vGrainP;")
+    .replace("#include <begin_vertex>","#include <begin_vertex>\nvGrainP=transformed;");
+  sh.fragmentShader=sh.fragmentShader
+    .replace("#include <common>","#include <common>\nvarying vec3 vGrainP;\nuniform float uGrain;\n"+
+      "float gHash(vec3 p){p=fract(p*0.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}\n"+
+      "float gNoise(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);\n"+
+      " return mix(mix(mix(gHash(i),gHash(i+vec3(1,0,0)),f.x),mix(gHash(i+vec3(0,1,0)),gHash(i+vec3(1,1,0)),f.x),f.y),\n"+
+      "  mix(mix(gHash(i+vec3(0,0,1)),gHash(i+vec3(1,0,1)),f.x),mix(gHash(i+vec3(0,1,1)),gHash(i+vec3(1,1,1)),f.x),f.y),f.z);}")
+    .replace("#include <color_fragment>","#include <color_fragment>\n"+
+      "#ifdef USE_FOG\nif(uGrain>0.0){float gn=gNoise(vGrainP*0.33)*0.65+gNoise(vGrainP*1.3)*0.35;\n"+
+      " diffuseColor.rgb*=1.0+uGrain*(gn*2.0-1.0);}\n#endif");
+};
 /* And one light rig for every canvas that shows a FIGURE - the dialogue
    portrait, the wardrobe and the menu. All three had their own hand-set lights,
    which is how the same man came to be lit three different ways in three panels
@@ -7442,58 +7478,18 @@ function buildRiver(root){
      leaves the player looking at, so the chapter opens in the water it ended on.
      It also has to be distinguishable from the shore, and green water against a
      green wood was part of why the two would not separate. */
-  const water=new THREE.Mesh(new THREE.ShapeGeometry(shape),mat(0x3a5560));
+  /* amp 0, no vertex swell: the hull's hole is cut to the waterline, and the triangulation
+     is too coarse to carry one; the ripple and glint are per pixel and still apply */
+  const water=liveWater(new THREE.Mesh(new THREE.ShapeGeometry(shape),waterMat(0x3a5560,{amp:0,sky:0xa9b9bf})));
   water.rotation.x=-Math.PI/2;water.position.y=0;root.add(water);
 
-  const swell=new Geo(), landG=new Geo(), woodG=new Geo();
-  const cA=RGB(0x46656e),cB=RGB(0x35525c);
-  /* ---- FORTY-FOUR BOXES, SCATTERED AT RANDOM, ALL EXACTLY THE SAME HEIGHT ----
-     Two faults, and the second one made the first impossible to pin down.
-
-     Math.random() GAVE THE SEA A DIFFERENT SHAPE ON EVERY LOAD. Everything else in
-     this project draws its jitter from srand() for exactly this reason: a world that
-     is not reproducible cannot be measured twice, and a fault that moves cannot be
-     confirmed fixed. This was the one place that opted out.
-
-     AND EVERY TOP FACE SAT AT y=0.8. Forty-four squares 16 to 38 ft across, dropped at
-     random over an annulus three hundred feet deep, overlap constantly - and where two
-     overlap, their top faces are COPLANAR. Measured: 3,758 square feet of depth tie
-     across 50 pairs, the largest single patch 222 square feet. That was the biggest
-     z-fight left anywhere in the chapter, and it is on open water where it reads as a
-     crawling stain rather than as a seam.
-
-     Fixed by CONSTRUCTION, on a jittered polar grid. I tried rejection sampling first -
-     draw a position, drop it if it touches one already placed - and it seated seven of
-     the forty-four, because retrying with srand(i*2.71 + k*0.37) barely moves the
-     position: consecutive hashes of nearly equal inputs are not independent draws. A
-     grid needs no retries and cannot fail.
-
-     Four rings 75 ft apart, eleven swells to a ring, and the jitter is DERIVED rather
-     than guessed - I wrote +/-0.20 rad first and it was wrong, because 0.20 rad at the
-     inner ring is 24 ft of arc, not the 14 I had in mind.
-
-       tightest spacing  = 2*pi*120/11 = 68.5 ft, at the inner ring
-       widest swell      = 38 ft, so centres must stay 38 ft apart
-       slack to share    = 68.5 - 38 = 30.5 ft, i.e. 15 ft each
-       so angular jitter = 15/120 = 0.127 rad maximum
-
-     Held at +/-0.09 rad, which closes 21.6 ft and leaves 46.9 ft between centres
-     against the 38 ft needed. Radially: 75 ft apart, +/-14 ft each, so 47 ft against
-     38. Disjoint footprints cannot be coplanar, so this does not come back if someone
-     retunes the numbers - and the check below proves it rather than trusting it.
-
-     Each swell also carries its own height, which is free now that overlap is
-     impossible, and is simply truer: a sea of identically tall swells is not a sea. */
-  const SW_RING=11, SW_ROWS=4;
-  for(let i=0;i<SW_RING*SW_ROWS;i++){
-    const ring=Math.floor(i/SW_RING), slot=i%SW_RING;
-    const r=120+ring*75+(srand(i*5.13)-0.5)*28;
-    const a=(slot/SW_RING)*Math.PI*2+(srand(i*2.71)-0.5)*0.18;
-    const w=16+srand(i*7.77)*22;
-    const h=0.62+srand(i*11.31)*0.78;
-    swell.box(Math.cos(a)*r,h*0.5-0.1,Math.sin(a)*r,w,h,w,(srand(i*3.19)<0.5)?cA:cB);
-  }
-  root.add(swell.mesh(false,false));
+  const landG=new Geo(), woodG=new Geo();
+  /* ---- THE SWELL MOVED INTO THE WATER ITSELF (27 Nov 2026) ----
+     Forty-four flat slabs on a jittered polar grid stood in for a swell here, placed by
+     construction so no two could z-fight (git history has the derivation). waterMat draws
+     the ripple, the angle tint and the glint on the sea now, and against a sea that
+     lightens toward the horizon the slabs read as dark rafts - which the landing
+     cutscene's note below already found from eleven feet up. */
 
   /* ---- CAPE HENRY, CLOSE TO STARBOARD, AS THEY CAME IN ----
      Swept in bearing, so consecutive steps SHARE AN EDGE. That is the whole fix: a
@@ -7936,7 +7932,9 @@ function enterWorld(id){
   WORLD.hull=true;                        /* a deck for a ground means a ship around it */
   WORLD.sea=-9999;                        /* no open water inside a hull */
   WORLD.blocked=function(x,z){return blocked(x,z);};
+  liveReset();LIVE.root=worldRoot;        /* the ground paint is per world */
   WORLDS[id](worldRoot);
+  liveSoon(30);                           /* after the builder's own microtasks: cached models land first */
   labelHost=$("labels");
   for(let i=0;i<interactables.length;i++){
     const it=interactables[i];
@@ -7951,7 +7949,7 @@ function enterWorld(id){
   /* a fresh world starts in daylight, whatever the last one ended in */
   DUSK.t=0;DUSK.on=false;AMBUSH.on=false;
   if(id!=="ch2")AMBUSH.done=false;
-  applySky(0);
+  applyLook();             /* this scene's light, sky, fog and horizon: SCENE_LOOK */
   /* One owner for the HUD's chapter line and the guide. Every route into a
      world - the intro card, Continue, a pasted muster code, the admin picker,
      being returned to the deck after a hanging - comes through here, so none of
@@ -7992,6 +7990,8 @@ function setTier(t){
   if(!GFX_TIERS[t]||GFX.tier===t)return false;
   GFX.tier=t;GFX.res=GFX_TIERS[t].res;GFX.fx=GFX_TIERS[t].fx;
   if(renderer)resize();
+  tierLook();                 /* grain, vignette and clouds follow the tier too */
+  liveTier();
   console.log("graphics tier -> "+t+" (res x"+GFX.res+", effects x"+GFX.fx+")");
   return true;
 }
@@ -8128,6 +8128,7 @@ function initRenderer(){
      drifts during exactly the scenes that are framed most carefully. */
   scene.onBeforeRender=function(r,s,camera){
     if(skyDome&&camera)skyDome.position.copy(camera.position);
+    if(CLOUDS&&CLOUDS.parent&&camera)CLOUDS.position.copy(camera.position);
   };
   window.addEventListener("resize",resize);
 }
@@ -12025,7 +12026,8 @@ function landingCutscene(){
      t:5.6,
      narrate:"About thirty men went in her."},
 
-    /* HIGHER THAN IT WANTS TO BE. The swell is drawn as low flat slabs, which is right
+    /* HIGHER THAN IT WANTS TO BE. (The slabs were retired on 27 Nov - see buildRiver - so
+       this height is no longer forced.) The swell was drawn as low flat slabs, which is right
        at a distance and reads as floating plate glass when the camera sits at 11 units
        and one of them passes between the eye and the boat. From 26 they foreshorten
        back into a running sea. */
@@ -19662,6 +19664,660 @@ function detailGround(mesh,a){
   mesh.geometry.setAttribute("dUv",new THREE.BufferAttribute(uv,2));
   if(mesh.material&&!SHARED.has(mesh.material))mesh.material.dispose();
   mesh.material=groundMat(a||"earth","grass");
+  LIVE.ground.push(mesh);          /* liveRun paints it once the world is built */
+  return mesh;
+}
+/* ========== GROUND THAT LOOKS LIVED ON (scenery pass, 27 Nov 2026) ==========
+   The ground was one flat colour per 16-foot cell: a fort that twelve hundred people had
+   walked over for fifteen years read as a fresh-raked tennis court, and the band edges were
+   staircases of squares. This paints it AFTER the world is built, when everything that
+   decides what ground looks like is known - colliders, interactables, the built meshes,
+   the water - so it is one pass in one place and no world builder had to change.
+
+   1. MORE VERTICES WHERE YOU WALK. Every ground triangle in the play region (the
+      interactables and the spawn, padded) is cut into ~3 ft pieces that lie exactly on the
+      old plane, so the shape, the collision and every planted figure are untouched. Its
+      neighbours outside are fanned to meet the new edge points, so there is no T-junction
+      and no crack. Flat-coloured cells are re-coloured from their neighbours' centres, which
+      turns the staircases into gradients. ~20k triangles; triangles are the cheap budget.
+   2. PAINT, as vertex colour, so it costs nothing per frame: seeded noise at two scales;
+      worn paths found by A* between the interactables, the spawn and the landing, so they
+      go round buildings and through gates by themselves; damp earth near water with a
+      lighter wet band at the waterline, and mud at the landing; darker earth at the foot of
+      every wall; winter desaturation.
+   3. PAINTED SHADOWS. Every static triangle bigger than a man is projected along the real
+      sun direction onto a 1 ft grid, blurred, and baked in as darker earth: houses, the
+      palisade, trees, the church. No shadow map, no extra mesh, no transparency.
+   4. TUFTS, WEEDS AND STONES: three opaque InstancedMeshes, three draw calls in all.
+      Denser along walls and fences, none on paths, under roofs, in colliders, in water or
+      where anyone stands. The low tier draws 40% of them (liveTier).
+   Models that arrive later (the fort's GLBs) cast too: loadGLB asks for a repaint.
+   ceiling: the region is one rectangle up to 340 ft a side; a chapter played over a wider
+   ground gets plain (still noised) earth past it. */
+const LIVE={ground:[],water:[],winter:false,inst:[],timer:0,gen:0,root:null,R:null,ms:0,nodes:null};
+function liveReset(){
+  clearTimeout(LIVE.timer);LIVE.gen++;
+  for(const m of LIVE.inst){if(m.dispose)m.dispose();}
+  LIVE.ground.length=0;LIVE.water.length=0;LIVE.inst.length=0;
+  LIVE.winter=false;LIVE.root=null;LIVE.R=null;LIVE.nodes=null;
+}
+/* Debounced, and then a few FRAMES more: the chapters' update functions hide and cut fort
+   parts on their first frames (the 1607 tents in Chapter VI's spring), and a shadow painted
+   before that is the shadow of a tent that is not there. */
+function liveSoon(ms){
+  if(!LIVE.root)return;
+  clearTimeout(LIVE.timer);
+  const gen=++LIVE.gen;
+  LIVE.timer=setTimeout(function(){
+    let n=4,done=false;
+    const go=function(){
+      if(done||gen!==LIVE.gen)return;
+      done=true;
+      try{liveRun();}catch(e){console.warn("liveRun",e);}
+    };
+    const tick=function(){if(--n>0&&!done)requestAnimationFrame(tick);else go();};
+    requestAnimationFrame(tick);
+    setTimeout(go,1500);     /* a hidden tab draws no frames; paint anyway */
+  },ms===undefined?250:ms);
+}
+function liveHash(i,j){return srand(i*157.31+j*311.73);}
+function liveNoise(x,z){
+  const i=Math.floor(x),j=Math.floor(z),fx=x-i,fz=z-j,u=fx*fx*(3-2*fx),v=fz*fz*(3-2*fz);
+  const a=liveHash(i,j),b=liveHash(i+1,j),c=liveHash(i,j+1),d=liveHash(i+1,j+1);
+  return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;
+}
+/* a scalar field over the region, `s` feet a cell */
+function LGrid(R,s){
+  this.x0=R.x0;this.z0=R.z0;this.s=s;
+  this.w=Math.ceil((R.x1-R.x0)/s)+1;this.h=Math.ceil((R.z1-R.z0)/s)+1;
+  this.a=new Float32Array(this.w*this.h);
+}
+LGrid.prototype.at=function(x,z){
+  let u=(x-this.x0)/this.s-0.5,v=(z-this.z0)/this.s-0.5;
+  if(u<0||v<0||u>this.w-1||v>this.h-1)return 0;
+  const i=Math.min(this.w-2,Math.floor(u)),j=Math.min(this.h-2,Math.floor(v)),fu=u-i,fv=v-j,a=this.a,w=this.w;
+  if(i<0||j<0)return 0;
+  const p=j*w+i;
+  return (a[p]*(1-fu)+a[p+1]*fu)*(1-fv)+(a[p+w]*(1-fu)+a[p+w+1]*fu)*fv;
+};
+/* separable box blur, `r` cells each way */
+LGrid.prototype.blur=function(r){
+  const w=this.w,h=this.h,a=this.a,t=new Float32Array(w*h),k=1/(2*r+1);
+  for(let j=0;j<h;j++){let s=0;const o=j*w;
+    for(let i=-r;i<=r;i++)s+=a[o+Math.max(0,Math.min(w-1,i))];
+    for(let i=0;i<w;i++){t[o+i]=s*k;s+=a[o+Math.min(w-1,i+r+1)]-a[o+Math.max(0,i-r)];}}
+  for(let i=0;i<w;i++){let s=0;
+    for(let j=-r;j<=r;j++)s+=t[Math.max(0,Math.min(h-1,j))*w+i];
+    for(let j=0;j<h;j++){a[j*w+i]=s*k;s+=t[Math.min(h-1,j+r+1)*w+i]-t[Math.max(0,j-r)*w+i];}}
+  return this;
+};
+LGrid.prototype.box=function(x0,z0,x1,z1,v){
+  const s=this.s,i0=Math.max(0,Math.floor((x0-this.x0)/s)),i1=Math.min(this.w-1,Math.floor((x1-this.x0)/s)),
+        j0=Math.max(0,Math.floor((z0-this.z0)/s)),j1=Math.min(this.h-1,Math.floor((z1-this.z0)/s));
+  for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const p=j*this.w+i;if(this.a[p]<v)this.a[p]=v;}
+};
+/* fill a triangle given in ground (x,z); its three corners always count, so a post
+   thinner than a cell still leaves its mark */
+LGrid.prototype.tri=function(ax,az,bx,bz,cx,cz){
+  const s=this.s,w=this.w,h=this.h,a=this.a;
+  const u0=(ax-this.x0)/s,v0=(az-this.z0)/s,u1=(bx-this.x0)/s,v1=(bz-this.z0)/s,u2=(cx-this.x0)/s,v2=(cz-this.z0)/s;
+  const i0=Math.max(0,Math.floor(Math.min(u0,u1,u2))),i1=Math.min(w-1,Math.floor(Math.max(u0,u1,u2)));
+  const j0=Math.max(0,Math.floor(Math.min(v0,v1,v2))),j1=Math.min(h-1,Math.floor(Math.max(v0,v1,v2)));
+  if(i0>i1||j0>j1)return;
+  const d=(u1-u0)*(v2-v0)-(u2-u0)*(v1-v0);
+  if(Math.abs(d)>1e-6){
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){
+      const pu=i+0.5,pv=j+0.5;
+      const l1=((pu-u0)*(v2-v0)-(u2-u0)*(pv-v0))/d,l2=((u1-u0)*(pv-v0)-(pu-u0)*(v1-v0))/d;
+      if(l1>=0&&l2>=0&&l1+l2<=1)a[j*w+i]=1;
+    }
+  }
+  const mark=function(u,v){const i=Math.floor(u),j=Math.floor(v);if(i>=0&&j>=0&&i<w&&j<h)a[j*w+i]=1;};
+  mark(u0,v0);mark(u1,v1);mark(u2,v2);
+};
+/* the play region: every interactable on the ground and the spawn, padded */
+function liveRegion(){
+  const pts=[];
+  for(const it of interactables)if(it.lvl===undefined||it.lvl===LVL.MAIN)pts.push([it.x,it.z]);
+  if(player)pts.push([player.position.x,player.position.z]);
+  if(!pts.length)pts.push([0,0]);
+  let x0=1e9,z0=1e9,x1=-1e9,z1=-1e9;
+  for(const p of pts){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[1]);z1=Math.max(z1,p[1]);}
+  const MAX=340,MIN=200,PAD=60;
+  const fit=function(a,b,c){
+    a-=PAD;b+=PAD;
+    if(b-a<MIN){const m=(a+b)/2;a=m-MIN/2;b=m+MIN/2;}
+    if(b-a>MAX){a=Math.max(a,c-MAX/2);b=a+MAX;}
+    return [Math.floor(a),Math.ceil(b)];
+  };
+  const sx=player?player.position.x:0,sz=player?player.position.z:0;
+  const X=fit(x0,x1,sx),Z=fit(z0,z1,sz);
+  return {x0:X[0],x1:X[1],z0:Z[0],z1:Z[1]};
+}
+/* Cut the region's ground triangles into n x n pieces on their own plane, fan the
+   neighbours onto the new edge points, and keep a base colour to paint from. Once per world. */
+function liveSubdivide(R){
+  const q=function(v){return Math.round(v*64);};
+  const vkey=function(x,z){return q(x)+","+q(z);};
+  const ekey=function(ax,az,bx,bz){const a=vkey(ax,az),b=vkey(bx,bz);return a<b?a+"|"+b:b+"|"+a;};
+  const inR=function(x,z){return x>R.x0&&x<R.x1&&z>R.z0&&z<R.z1;};
+  /* which edges are being cut, and into how many */
+  const cut=new Map();
+  const info=[];
+  for(const mesh of LIVE.ground){
+    const P=mesh.geometry.attributes.position.array,C=mesh.geometry.attributes.color.array,nt=P.length/9;
+    let st=0;
+    for(let k=0;k<3&&k<nt*3;k++){const o=k*3,o2=((k+1)%3)*3;st=Math.max(st,Math.abs(P[o]-P[o2]),Math.abs(P[o+2]-P[o2+2]));}
+    /* flat-coloured cells (every builder but the cape's) get their colour from the cell
+       centres around each vertex, so a band edge is a gradient rather than a staircase */
+    let flat=true;
+    for(let t=0;t<Math.min(nt,60)&&flat;t++){const o=t*9;
+      for(let k=1;k<3;k++)if(Math.abs(C[o]-C[o+k*3])>1e-5||Math.abs(C[o+1]-C[o+k*3+1])>1e-5)flat=false;}
+    const n=(st>40)?1:Math.max(1,Math.round(st/3));
+    info.push({mesh:mesh,st:st,n:n,flat:flat});
+    if(n<2)continue;
+    for(let t=0;t<nt;t++){
+      const o=t*9,cx=(P[o]+P[o+3]+P[o+6])/3,cz=(P[o+2]+P[o+5]+P[o+8])/3;
+      if(!inR(cx,cz))continue;
+      for(let k=0;k<3;k++){const a=o+k*3,b=o+((k+1)%3)*3;cut.set(ekey(P[a],P[a+2],P[b],P[b+2]),n);}
+    }
+  }
+  /* cell-centre colours, for the flat meshes */
+  const cells=new Map();
+  for(const f of info){
+    if(!f.flat||f.st>40)continue;
+    const P=f.mesh.geometry.attributes.position.array,C=f.mesh.geometry.attributes.color.array,nt=P.length/9;
+    for(let t=0;t<nt;t++){
+      const o=t*9,cx=(P[o]+P[o+3]+P[o+6])/3,cz=(P[o+2]+P[o+5]+P[o+8])/3;
+      const key=Math.floor(cx/f.st)+","+Math.floor(cz/f.st);
+      const e=cells.get(key);
+      if(e){e[0]+=C[o];e[1]+=C[o+1];e[2]+=C[o+2];e[3]++;}else cells.set(key,[C[o],C[o+1],C[o+2],1]);
+    }
+  }
+  const cellCol=function(st,x,z,fb,out){
+    const u=x/st-0.5,v=z/st-0.5,i=Math.floor(u),j=Math.floor(v),fu=u-i,fv=v-j;
+    let r=0,g=0,b=0,w=0;
+    const add=function(ii,jj,k){if(k<=0)return;const e=cells.get(ii+","+jj);if(!e)return;r+=e[0]/e[3]*k;g+=e[1]/e[3]*k;b+=e[2]/e[3]*k;w+=k;};
+    add(i,j,(1-fu)*(1-fv));add(i+1,j,fu*(1-fv));add(i,j+1,(1-fu)*fv);add(i+1,j+1,fu*fv);
+    if(w<1e-6){out[0]=fb[0];out[1]=fb[1];out[2]=fb[2];return;}
+    out[0]=r/w;out[1]=g/w;out[2]=b/w;
+  };
+  const tmp=[0,0,0];
+  for(const f of info){
+    const geo=f.mesh.geometry,P=geo.attributes.position.array,C=geo.attributes.color.array,nt=P.length/9;
+    const np=[],nc=[];
+    /* a point on an edge is computed from the edge's canonical end, so both triangles that
+       share the edge produce bit-identical coordinates */
+    const edgePt=function(ax,ay,az,bx,by,bz,i,n){
+      if(vkey(bx,bz)<vkey(ax,az)){let t=ax;ax=bx;bx=t;t=ay;ay=by;by=t;t=az;az=bz;bz=t;i=n-i;}
+      const k=i/n;return [ax+(bx-ax)*k,ay+(by-ay)*k,az+(bz-az)*k];
+    };
+    const emitV=function(p,c){np.push(p[0],p[1],p[2]);nc.push(c[0],c[1],c[2]);};
+    for(let t=0;t<nt;t++){
+      const o=t*9;
+      const A=[P[o],P[o+1],P[o+2]],B=[P[o+3],P[o+4],P[o+5]],Cc=[P[o+6],P[o+7],P[o+8]];
+      const cA=[C[o],C[o+1],C[o+2]],cB=[C[o+3],C[o+4],C[o+5]],cC=[C[o+6],C[o+7],C[o+8]];
+      const cx=(A[0]+B[0]+Cc[0])/3,cz=(A[2]+B[2]+Cc[2])/3;
+      const colAt=function(p,l0,l1,l2){
+        return [cA[0]*l0+cB[0]*l1+cC[0]*l2,cA[1]*l0+cB[1]*l1+cC[1]*l2,cA[2]*l0+cB[2]*l1+cC[2]*l2];};
+      const n=f.n;
+      if(n>=2&&inR(cx,cz)){
+        /* P(i,j) = A + (B-A) i/n + (C-A) j/n */
+        const pt=function(i,j){
+          if(j===0)return edgePt(A[0],A[1],A[2],B[0],B[1],B[2],i,n);
+          if(i===0)return edgePt(A[0],A[1],A[2],Cc[0],Cc[1],Cc[2],j,n);
+          if(i+j===n)return edgePt(B[0],B[1],B[2],Cc[0],Cc[1],Cc[2],j,n);
+          const a=i/n,b=j/n;
+          return [A[0]+(B[0]-A[0])*a+(Cc[0]-A[0])*b,A[1]+(B[1]-A[1])*a+(Cc[1]-A[1])*b,A[2]+(B[2]-A[2])*a+(Cc[2]-A[2])*b];
+        };
+        const cl=function(i,j){return colAt(null,1-(i+j)/n,i/n,j/n);};
+        for(let i=0;i<n;i++)for(let j=0;i+j<n;j++){
+          emitV(pt(i,j),cl(i,j));emitV(pt(i+1,j),cl(i+1,j));emitV(pt(i,j+1),cl(i,j+1));
+          if(i+j<n-1){emitV(pt(i+1,j),cl(i+1,j));emitV(pt(i+1,j+1),cl(i+1,j+1));emitV(pt(i,j+1),cl(i,j+1));}
+        }
+        continue;
+      }
+      /* outside: does any edge of mine border a cut triangle? then fan from my centroid */
+      const V=[A,B,Cc],VC=[cA,cB,cC];
+      let any=false;const ring=[],rc=[];
+      for(let k=0;k<3;k++){
+        const a=V[k],b=V[(k+1)%3],m=cut.get(ekey(a[0],a[2],b[0],b[2]));
+        ring.push(a);rc.push(VC[k]);
+        if(m){any=true;
+          for(let i=1;i<m;i++){
+            ring.push(edgePt(a[0],a[1],a[2],b[0],b[1],b[2],i,m));
+            const k2=i/m,ca=VC[k],cb=VC[(k+1)%3];
+            rc.push([ca[0]+(cb[0]-ca[0])*k2,ca[1]+(cb[1]-ca[1])*k2,ca[2]+(cb[2]-ca[2])*k2]);
+          }}
+      }
+      if(!any){for(let k=0;k<3;k++)emitV(V[k],VC[k]);continue;}
+      const G0=[cx,(A[1]+B[1]+Cc[1])/3,cz],gc=colAt(null,1/3,1/3,1/3);
+      for(let k=0;k<ring.length;k++){emitV(G0,gc);emitV(ring[k],rc[k]);emitV(ring[(k+1)%ring.length],rc[(k+1)%ring.length]);}
+    }
+    /* base colour: the cell blend for flat meshes, the builder's own for the cape */
+    if(f.flat&&f.st<=40){
+      for(let v=0;v<np.length/3;v++){
+        cellCol(f.st,np[v*3],np[v*3+2],[nc[v*3],nc[v*3+1],nc[v*3+2]],tmp);
+        nc[v*3]=tmp[0];nc[v*3+1]=tmp[1];nc[v*3+2]=tmp[2];
+      }
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute("position",new THREE.Float32BufferAttribute(np,3));
+    g.setAttribute("color",new THREE.Float32BufferAttribute(nc.slice(),3));
+    g.computeVertexNormals();
+    const uv=new Float32Array(np.length/3*2);
+    for(let v=0;v<np.length/3;v++){uv[v*2]=np[v*3]/DETAIL_TILE;uv[v*2+1]=np[v*3+2]/DETAIL_TILE;}
+    g.setAttribute("dUv",new THREE.BufferAttribute(uv,2));
+    g.userData.base=new Float32Array(nc);
+    g.computeBoundingSphere();
+    geo.dispose();f.mesh.geometry=g;
+  }
+}
+/* A* over a coarse grid; cost[] per cell, returns the cells walked */
+function liveAstar(nx,nz,cost,s,e){
+  const N=nx*nz,gS=new Float32Array(N).fill(1e30),NONE=0xFFFFFFFF,from=new Uint32Array(N).fill(NONE),shut=new Uint8Array(N);
+  const hp=[],hf=[];
+  const push=function(i,f){hp.push(i);hf.push(f);let c=hp.length-1;
+    while(c>0){const p=(c-1)>>1;if(hf[p]<=hf[c])break;
+      let t=hp[p];hp[p]=hp[c];hp[c]=t;t=hf[p];hf[p]=hf[c];hf[c]=t;c=p;}};
+  const pop=function(){const top=hp[0],li=hp.pop(),lf=hf.pop();
+    if(hp.length){hp[0]=li;hf[0]=lf;let c=0;
+      for(;;){const l=c*2+1,r=l+1;let m=c;
+        if(l<hp.length&&hf[l]<hf[m])m=l;if(r<hp.length&&hf[r]<hf[m])m=r;if(m===c)break;
+        let t=hp[m];hp[m]=hp[c];hp[c]=t;t=hf[m];hf[m]=hf[c];hf[c]=t;c=m;}}
+    return top;};
+  const ex=e%nx,ez=(e/nx)|0;
+  const H=function(i){const dx=Math.abs(i%nx-ex),dz=Math.abs(((i/nx)|0)-ez);return Math.max(dx,dz)+0.414*Math.min(dx,dz);};
+  gS[s]=0;push(s,H(s));
+  let guard=0;
+  while(hp.length&&guard++<N*4){
+    const c=pop();if(shut[c])continue;shut[c]=1;
+    if(c===e)break;
+    const cx=c%nx,cz=(c/nx)|0;
+    for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
+      if(!dx&&!dz)continue;const x=cx+dx,z=cz+dz;
+      if(x<0||z<0||x>=nx||z>=nz)continue;
+      const i=z*nx+x;if(shut[i])continue;
+      const g=gS[c]+(dx&&dz?1.414:1)*(cost[c]+cost[i])*0.5;
+      if(g<gS[i]){gS[i]=g;from[i]=c;push(i,g+H(i));}
+    }
+  }
+  const out=[];
+  if(from[e]===NONE&&s!==e)return out;
+  for(let c=e,k=0;c!==NONE&&k<N;c=from[c],k++){out.push(c);if(c===s)break;}
+  return out;
+}
+/* the meshes that may throw a painted shadow: static, opaque, bigger than a man */
+function liveCasters(){
+  const out=[],skip=new Set(LIVE.ground.concat(LIVE.water,LIVE.inst));
+  /* things that move leave no shadow where they stood: animals, deer */
+  for(const a of ANIMALS)if(a.g)skip.add(a.g);
+  for(const d of DEER)if(d.g)skip.add(d.g);
+  const box=new THREE.Box3();
+  const walk=function(o){
+    if(!o.visible||skip.has(o))return;
+    if(o.userData&&o.userData.parts)return;            /* a figure: it has its blob */
+    if(o===player)return;
+    if(o.isMesh&&!o.isInstancedMesh&&!skip.has(o)&&o!==skyDome&&o!==shadowMesh&&o.geometry&&o.geometry.attributes.position){
+      const m=o.material;
+      if(m&&!Array.isArray(m)&&!m.transparent&&!m.isMeshBasicMaterial){
+        if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
+        box.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+        const sx=box.max.x-box.min.x,sy=box.max.y-box.min.y,sz=box.max.z-box.min.z;
+        /* a cask or a chest is too small to bother with, and a standing man (a baked crowd
+           figure is one mesh) already has his blob */
+        const man=sy>3.5&&sy<7&&Math.max(sx,sz)<3.2;
+        if(Math.max(sx,sy,sz)>=3.5&&!man&&sx<3000&&sz<3000)out.push(o);
+      }
+    }
+    for(const c of o.children)walk(c);
+  };
+  walk(worldRoot);
+  return out;
+}
+function liveRun(){
+  if(!worldRoot||LIVE.root!==worldRoot)return;
+  const t0=performance.now();
+  worldRoot.updateMatrixWorld(true);
+  const G=WORLD.ground;
+  let waterY=null;
+  for(const w of LIVE.water){const y=w.getWorldPosition(new THREE.Vector3()).y;waterY=(waterY===null)?y:Math.max(waterY,y);}
+  if(!LIVE.ground.length){LIVE.ms=performance.now()-t0;return;}
+  if(!LIVE.R){LIVE.R=liveRegion();liveSubdivide(LIVE.R);}
+  /* the paint reaches 90 ft past the cut region and fades out over its last 30, so a wall
+     that runs out of the region does not drop its shadow along a straight line */
+  const R0=LIVE.R,R={x0:R0.x0-90,x1:R0.x1+90,z0:R0.z0-90,z1:R0.z1+90};
+  /* ---- the grids ---- */
+  const occ=new LGrid(R,1), occAll=new LGrid(R,1), shade=new LGrid(R,1), cover=new LGrid(R,1), path=new LGrid(R,1);
+  /* where something stands ON the ground - a wall, a post, a trunk - whether or not it has a collider */
+  const foot=new LGrid(R,1);
+  for(const c of colliders){
+    if(c.lvl!==LVL.MAIN)continue;
+    occAll.box(c.x-c.hw,c.z-c.hd,c.x+c.hw,c.z+c.hd,1);
+    if(c.hw<=1.05&&c.hd<=1.05)continue;                   /* a man, not a wall */
+    occ.box(c.x-c.hw,c.z-c.hd,c.x+c.hw,c.z+c.hd,1);
+  }
+  /* sun-projected shadows and what stands overhead */
+  const L=(typeof sunLight!=="undefined"&&sunLight)?sunLight.position.clone().normalize():new THREE.Vector3(0.36,0.9,0.24);
+  const kx=L.x/Math.max(0.2,L.y),kz=L.z/Math.max(0.2,L.y);
+  const v=new THREE.Vector3(),pr=[0,0,0,0,0,0],vp=[0,0,0,0,0,0];
+  for(const o of liveCasters()){
+    const geo=o.geometry,P=geo.attributes.position,idx=geo.index,nt=idx?idx.count/3:P.count/3,M=o.matrixWorld;
+    for(let t=0;t<nt;t++){
+      let lo=1e9,hi=-1e9;
+      for(let k=0;k<3;k++){
+        const vi=idx?idx.getX(t*3+k):t*3+k;
+        v.fromBufferAttribute(P,vi).applyMatrix4(M);
+        const h=v.y-G(v.x,v.z);lo=Math.min(lo,h);hi=Math.max(hi,h);
+        pr[k*2]=v.x-kx*Math.max(0,h);pr[k*2+1]=v.z-kz*Math.max(0,h);
+        vp[k*2]=v.x;vp[k*2+1]=v.z;
+      }
+      if(hi<0.4||lo>80)continue;                  /* lying on the ground, or the sky */
+      if(Math.max(pr[0],pr[2],pr[4])<R.x0||Math.min(pr[0],pr[2],pr[4])>R.x1||
+         Math.max(pr[1],pr[3],pr[5])<R.z0||Math.min(pr[1],pr[3],pr[5])>R.z1)continue;
+      shade.tri(pr[0],pr[1],pr[2],pr[3],pr[4],pr[5]);
+      if(lo>0.15)cover.tri(vp[0],vp[1],vp[2],vp[3],vp[4],vp[5]);
+      else if(lo<0.5&&hi>1.2)foot.tri(vp[0],vp[1],vp[2],vp[3],vp[4],vp[5]);
+    }
+  }
+  /* a palisade with no collider still walls off paths and shelters grass */
+  for(let i=0;i<occAll.a.length;i++){if(foot.a[i]>occAll.a[i])occAll.a[i]=foot.a[i];if(foot.a[i]>occ.a[i])occ.a[i]=foot.a[i];}
+  const tR=performance.now();
+  shade.blur(2).blur(1);
+  /* occlusion: at the foot of every wall and under anything overhead (a roof, a tent, a
+     canopy, a table), whether or not it has a collider */
+  const ao=new LGrid(R,1);
+  for(let i=0;i<ao.a.length;i++)ao.a[i]=Math.max(occ.a[i],cover.a[i]);
+  ao.blur(2).blur(2);
+  /* ---- worn paths: interactables, the spawn and the landing, joined by a spanning tree,
+     each edge walked by A* so it goes round what is solid ---- */
+  const tB=performance.now();
+  const nodes=[];
+  const addNode=function(x,z){if(x<R.x0+2||x>R.x1-2||z<R.z0+2||z>R.z1-2)return;
+    for(const n of nodes)if(Math.hypot(n[0]-x,n[1]-z)<5)return;nodes.push([x,z]);};
+  if(player)addNode(player.position.x,player.position.z);
+  for(const it of interactables)if(it.lvl===undefined||it.lvl===LVL.MAIN)addNode(it.x,it.z);
+  const S2=2,pg=new LGrid(R,S2),nx=pg.w,nz=pg.h,cost=new Float32Array(nx*nz);
+  let land=null;
+  for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){
+    const x=R.x0+(i+0.5)*S2,z=R.z0+(j+0.5)*S2,y=G(x,z);
+    let c=1+occ.at(x,z)*60+occ.at(x+1,z+1)*20+ao.at(x,z)*4;
+    if(waterY!==null){
+      if(y<waterY+0.15)c+=80;
+      else if(y<waterY+0.6&&player){const d=Math.hypot(x-player.position.x,z-player.position.z);if(!land||d<land[2])land=[x,z,d];}
+    }
+    cost[j*nx+i]=c;
+  }
+  if(land&&land[2]<220)addNode(land[0],land[1]);else land=null;
+  LIVE.nodes=nodes.slice();
+  const cellOf=function(p){return Math.max(0,Math.min(nz-1,Math.floor((p[1]-R.z0)/S2)))*nx+Math.max(0,Math.min(nx-1,Math.floor((p[0]-R.x0)/S2)));};
+  if(nodes.length>1){
+    const inT=[0],rest=nodes.map(function(_,i){return i;}).slice(1);
+    while(rest.length){
+      let best=null;
+      for(const a of inT)for(let r=0;r<rest.length;r++){const b=rest[r],d=Math.hypot(nodes[a][0]-nodes[b][0],nodes[a][1]-nodes[b][1]);
+        if(!best||d<best[2])best=[a,r,d];}
+      const b=rest.splice(best[1],1)[0];inT.push(b);
+      const cells=liveAstar(nx,nz,cost,cellOf(nodes[best[0]]),cellOf(nodes[b]));
+      for(const c of cells){const x=R.x0+((c%nx)+0.5)*S2,z=R.z0+(((c/nx)|0)+0.5)*S2;path.box(x-1.4,z-1.4,x+1.4,z+1.4,1);}
+    }
+  }
+  /* a trodden patch where each person and duty stands */
+  for(const n of nodes)path.box(n[0]-2.5,n[1]-2.5,n[0]+2.5,n[1]+2.5,0.8);
+  path.blur(1).blur(1);
+  const tA=performance.now();
+  /* ---- paint ---- */
+  const MUD=RGB(0x5e4a33);
+  const edgeK=function(x,z){return Math.max(0,Math.min(1,Math.min(x-R.x0,R.x1-x,z-R.z0,R.z1-z)/30));};
+  for(const mesh of LIVE.ground){
+    const geo=mesh.geometry,P=geo.attributes.position.array,C=geo.attributes.color.array;
+    if(!geo.userData.base)geo.userData.base=new Float32Array(C);
+    const B=geo.userData.base;
+    /* two scales of seeded noise: patches a few rods across, and grain underfoot. A pure
+       function of position, so it is worked out once per vertex and kept for repaints */
+    let NZ=geo.userData.nz;
+    if(!NZ){NZ=geo.userData.nz=new Float32Array(P.length);
+      for(let i=0;i<P.length;i+=3){const x=P[i],z=P[i+2];
+        NZ[i]=liveNoise(x*0.028+17.3,z*0.028-4.1);NZ[i+1]=liveNoise(x*0.012-9.2,z*0.012+3.3);NZ[i+2]=liveNoise(x*0.31,z*0.31);}}
+    for(let i=0;i<P.length;i+=3){
+      const x=P[i],y=P[i+1],z=P[i+2];
+      let r=B[i],g=B[i+1],b=B[i+2];
+      const n1=NZ[i],n2=NZ[i+1],n3=NZ[i+2];
+      const dry=(n2-0.5)*2;
+      r*=1+0.08*dry;g*=1-0.02*dry;b*=1-0.08*dry;
+      let k=1+0.20*(n1-0.5);
+      const ek=edgeK(x,z);
+      const p=ek>0?Math.min(1,path.at(x,z)*1.3)*ek:0;
+      k*=1+0.12*(n3-0.5)*(1-0.7*p);
+      r*=k;g*=k;b*=k;
+      if(p>0){const t=0.8*p;r+=(r*0.80-r)*t;g+=(g*0.70-g)*t;b+=(b*0.60-b)*t;}
+      if(waterY!==null){
+        const hw=y-waterY;
+        const damp=Math.max(0,Math.min(1,(1.8-hw)/1.5));
+        r*=1-0.26*damp;g*=1-0.24*damp;b*=1-0.20*damp;
+        const band=Math.max(0,1-Math.abs(hw-0.08)/0.32);
+        if(band>0){const t=0.5*band;r+=(r*1.5+0.02-r)*t;g+=(g*1.5+0.025-g)*t;b+=(b*1.5+0.03-b)*t;}
+        if(land){const dl=Math.hypot(x-land[0],z-land[1]),m=Math.max(0,Math.min(1,(8-dl)/5))*(0.55+0.45*n3);
+          if(m>0){const t=0.6*m;r+=(MUD[0]-r)*t;g+=(MUD[1]-g)*t;b+=(MUD[2]-b)*t;}}
+      }
+      if(ek>0){
+        const a=ao.at(x,z)*ek,s=Math.min(1,shade.at(x,z))*ek;
+        const dk=(1-0.36*a)*(1-0.42*s);
+        r*=dk;g*=dk;b*=dk;
+      }
+      if(LIVE.winter){const l=0.3*r+0.59*g+0.11*b;r+=(l*1.03-r)*0.25;g+=(l-g)*0.25;b+=(l*0.98-b)*0.25;}
+      C[i]=Math.max(0,r);C[i+1]=Math.max(0,g);C[i+2]=Math.max(0,b);
+    }
+    geo.attributes.color.needsUpdate=true;
+  }
+  const tP=performance.now();
+  liveScatter(R0,R,G,waterY,occAll,occ,cover,path,shade,land);
+  const tS=performance.now();
+  LIVE.ms=tS-t0;
+  /* where the time went, for ?diag and for anyone measuring a slow machine */
+  LIVE.prof={raster:tR-t0,blur:tB-tR,paths:tA-tB,paint:tP-tA,scatter:tS-tP};
+}
+/* ---- the three instanced meshes: built once, shared by every world ---- */
+let LIVE_GEO=null;
+function liveGeos(){
+  if(LIVE_GEO)return LIVE_GEO;
+  const up=function(g){const n=g.attributes.position.count,a=new Float32Array(n*3);for(let i=0;i<n;i++)a[i*3+1]=1;
+    g.setAttribute("normal",new THREE.BufferAttribute(a,3));return g;};
+  const both=function(p,c){const P=[],C=[];
+    for(let i=0;i<p.length;i+=9){P.push.apply(P,p.slice(i,i+9));P.push(p[i+6],p[i+7],p[i+8],p[i+3],p[i+4],p[i+5],p[i],p[i+1],p[i+2]);
+      const j=i;C.push.apply(C,c.slice(j,j+9));C.push(c[j+6],c[j+7],c[j+8],c[j+3],c[j+4],c[j+5],c[j],c[j+1],c[j+2]);}
+    const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.Float32BufferAttribute(P,3));
+    g.setAttribute("color",new THREE.Float32BufferAttribute(C,3));return g;};
+  /* a tuft: five blades leaning out from a common root, dark at the root and light at the
+     tip; every normal points up, so it is lit as the ground it grows from is */
+  let p=[],c=[];
+  for(let i=0;i<5;i++){
+    const a=i/5*Math.PI*2+srand(i*3.1)*0.7,h=0.55+srand(i*1.7)*0.5,lean=0.18+srand(i*5.3)*0.22,w=0.08;
+    const ca=Math.cos(a),sa=Math.sin(a),px=-sa,pz=ca;
+    const bx=ca*0.05,bz=sa*0.05;
+    p.push(bx-px*w,0,bz-pz*w, bx+px*w,0,bz+pz*w, ca*lean,h,sa*lean);
+    c.push(0.45,0.45,0.45, 0.45,0.45,0.45, 1.05,1.05,1.05);
+  }
+  const tuft=up(both(p,c));
+  /* a weed: five broad leaves in a rosette and a stalk */
+  p=[];c=[];
+  for(let i=0;i<5;i++){
+    const a=i/5*Math.PI*2+0.3,ca=Math.cos(a),sa=Math.sin(a),px=-sa,pz=ca;
+    const m=[ca*0.28,0.16,sa*0.28],tip=[ca*0.55,0.26,sa*0.55];
+    p.push(0,0.02,0, m[0]+px*0.13,m[1],m[2]+pz*0.13, tip[0],tip[1],tip[2]);
+    p.push(0,0.02,0, tip[0],tip[1],tip[2], m[0]-px*0.13,m[1],m[2]-pz*0.13);
+    c.push(0.55,0.55,0.55, 0.9,0.9,0.9, 1,1,1, 0.55,0.55,0.55, 1,1,1, 0.9,0.9,0.9);
+  }
+  p.push(-0.03,0,0, 0.03,0,0, 0.02,0.85,0.01);c.push(0.6,0.6,0.6, 0.6,0.6,0.6, 1.1,1.1,1.1);
+  const weed=up(both(p,c));
+  /* a stone: a faceted, low six-sided lump sunk in the earth */
+  p=[];c=[];
+  const ring=function(r,y,j){const o=[];for(let i=0;i<6;i++){const a=i/6*Math.PI*2+j;o.push([Math.cos(a)*r*(0.85+srand(i*7.7)*0.3),y,Math.sin(a)*r*(0.85+srand(i*2.9)*0.3)]);}return o;};
+  const r0=ring(1,-0.15,0),r1=ring(0.72,0.38,0.4),top=[0.05,0.55,-0.03];
+  for(let i=0;i<6;i++){const j=(i+1)%6;
+    p.push(...r0[i],...r1[i],...r0[j], ...r0[j],...r1[i],...r1[j], ...r1[i],...top,...r1[j]);
+    c.push(0.8,0.8,0.8, 1,1,1, 0.8,0.8,0.8, 0.8,0.8,0.8, 1,1,1, 1,1,1, 1,1,1, 1.08,1.08,1.08, 1,1,1);}
+  const stone=new THREE.BufferGeometry();
+  stone.setAttribute("position",new THREE.Float32BufferAttribute(p,3));
+  stone.setAttribute("color",new THREE.Float32BufferAttribute(c,3));
+  stone.computeVertexNormals();
+  const mt=new THREE.MeshLambertMaterial({vertexColors:true});
+  [tuft,weed,stone,mt].forEach(function(x){SHARED.add(x);});
+  return LIVE_GEO={tuft:tuft,weed:weed,stone:stone,mat:mt};
+}
+const LIVE_CAP={tuft:3600,weed:700,stone:800};
+function liveScatter(R,RP,G,waterY,occAll,occ,cover,path,shade,land){
+  const LG=liveGeos();
+  if(!LIVE.inst.length){
+    for(const k of ["tuft","weed","stone"]){
+      const m=new THREE.InstancedMesh(LG[k],LG.mat,LIVE_CAP[k]);
+      /* the colour buffer made here: setColorAt would size it by count, which is still 0 */
+      m.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(LIVE_CAP[k]*3),3);
+      m.frustumCulled=false;m.userData.kind=k;m.count=0;
+      worldRoot.add(m);LIVE.inst.push(m);
+    }
+  }
+  const edge=new LGrid(RP,1);edge.a.set(occ.a);edge.blur(3);
+  const stand=[];
+  for(const it of interactables)stand.push([it.x,it.z]);
+  if(player)stand.push([player.position.x,player.position.z]);
+  const got={tuft:[],weed:[],stone:[]};
+  const ST=1.5;
+  const grass=LIVE.winter?[RGB(0x7d7155),RGB(0x8e8262),RGB(0x6a6450)]:[RGB(0x5f7236),RGB(0x76843f),RGB(0x8a8a4c)];
+  let n=0;
+  for(let z=R.z0+1;z<R.z1-1;z+=ST)for(let x=R.x0+1;x<R.x1-1;x+=ST){
+    n++;
+    const px=x+(srand(n*1.37)-0.5)*ST,pz=z+(srand(n*2.11)-0.5)*ST;
+    const y=G(px,pz);
+    if(waterY!==null&&y<waterY+0.45)continue;
+    if(occAll.at(px,pz)>0.02||occAll.at(px+0.7,pz+0.7)>0.02||occAll.at(px-0.7,pz-0.7)>0.02)continue;
+    if(cover.at(px,pz)>0.02)continue;
+    const p=path.at(px,pz);if(p>0.35)continue;
+    if(land&&Math.hypot(px-land[0],pz-land[1])<11)continue;
+    let near=false;for(const s of stand)if(Math.abs(s[0]-px)<3.5&&Math.abs(s[1]-pz)<3.5){near=true;break;}
+    if(near)continue;
+    /* how green the ground is decides how much grows; walls and fences shelter more */
+    const gc=liveGroundCol(px,pz);
+    const green=Math.max(0,Math.min(1,(gc[1]-gc[0])*14+0.45));
+    const e=edge.at(px,pz);
+    let d=0.05+0.30*green+Math.min(0.9,e*2.2)*(1-p*2);
+    d*=(1-p*2.2);
+    if(LIVE.winter)d*=0.7;
+    const r=srand(n*3.71);
+    if(r>d*0.55)continue;
+    const kind=srand(n*5.93),yaw=srand(n*7.07)*Math.PI*2,sc=0.7+srand(n*8.3)*0.7;
+    if(kind<0.13||(p>0.12&&kind<0.5)){got.stone.push([px,y,pz,yaw,0.25+srand(n*9.1)*0.45,0.6+srand(n*4.4)*0.5]);continue;}
+    const cc=grass[Math.floor(srand(n*6.1)*3)],mix=0.3;
+    const col=[cc[0]+(gc[0]*1.2-cc[0])*mix,cc[1]+(gc[1]*1.2-cc[1])*mix,cc[2]+(gc[2]*1.2-cc[2])*mix];
+    if(kind<0.26)got.weed.push([px,y,pz,yaw,sc*1.2,1,col[0]*0.75,col[1]*0.85,col[2]*0.7]);
+    else got.tuft.push([px,y,pz,yaw,sc,0.8+srand(n*2.6)*0.6,col[0],col[1],col[2]]);
+  }
+  const M=new THREE.Matrix4(),Q=new THREE.Quaternion(),Y=new THREE.Vector3(0,1,0),Pv=new THREE.Vector3(),Sv=new THREE.Vector3(),Cc=new THREE.Color();
+  const STONE=[RGB(0x8a8478),RGB(0x77705f),RGB(0x9b9486)];
+  for(const m of LIVE.inst){
+    const list=got[m.userData.kind];
+    /* shuffled, so a lower tier's shorter count thins evenly instead of cutting a corner off */
+    for(let i=list.length-1;i>0;i--){const j=Math.floor(srand(i*4.17+list.length)*(i+1));const t=list[i];list[i]=list[j];list[j]=t;}
+    const N=Math.min(list.length,LIVE_CAP[m.userData.kind]);
+    for(let i=0;i<N;i++){
+      const a=list[i];
+      Q.setFromAxisAngle(Y,a[3]);
+      if(m.userData.kind==="stone"){Pv.set(a[0],a[1]-0.04,a[2]);Sv.set(a[4],a[4]*a[5],a[4]*(0.7+srand(i*1.9)*0.5));
+        const s=STONE[i%3];Cc.setRGB(s[0],s[1],s[2]);}
+      else{Pv.set(a[0],a[1]-0.05,a[2]);Sv.set(a[4],a[4]*a[5],a[4]);Cc.setRGB(a[6],a[7],a[8]);}
+      M.compose(Pv,Q,Sv);m.setMatrixAt(i,M);m.setColorAt(i,Cc);
+    }
+    m.userData.n=N;
+    m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;
+  }
+  liveTier();
+}
+/* the ground's painted colour at a point, from the nearest vertex of the mesh under it */
+function liveGroundCol(x,z){
+  for(const mesh of LIVE.ground){
+    const s=mesh.geometry.boundingSphere;
+    if(s&&Math.hypot(x-s.center.x,z-s.center.z)>s.radius)continue;
+    const g=mesh.geometry;
+    if(!g.userData.grid){
+      /* a coarse bucket of vertex indices, so the lookup is not a scan */
+      const P=g.attributes.position.array,b=new Map();
+      for(let i=0;i<P.length/3;i++){const k=Math.floor(P[i*3]/6)+","+Math.floor(P[i*3+2]/6);let e=b.get(k);if(!e)b.set(k,e=[]);e.push(i);}
+      g.userData.grid=b;
+    }
+    const e=g.userData.grid.get(Math.floor(x/6)+","+Math.floor(z/6));
+    if(!e)continue;
+    const P=g.attributes.position.array,C=g.attributes.color.array;
+    let best=-1,bd=1e9;
+    for(const i of e){const d=(P[i*3]-x)*(P[i*3]-x)+(P[i*3+2]-z)*(P[i*3+2]-z);if(d<bd){bd=d;best=i;}}
+    return [C[best*3],C[best*3+1],C[best*3+2]];
+  }
+  return [0.3,0.3,0.2];
+}
+/* one owner for what the tier changes here: how many tufts are drawn, and the water's ripples */
+function liveTier(){
+  const k=GFX.tier==="low"?0.4:GFX.tier==="medium"?0.7:1;
+  for(const m of LIVE.inst)m.count=Math.floor((m.userData.n||0)*k);
+  for(const w of LIVE.water){const u=w.material&&w.material.userData.u;if(u)u.uQ.value=GFX.tier==="low"?0:1;}
+}
+/* ========== WATER THAT READS AS WATER ==========
+   Opaque, like every other surface: a slow swell in the vertex shader (so the waterline
+   laps up and down the bank), and in the fragment three cheap terms on a rippled normal -
+   darker looking straight down, lighter toward the sky at a grazing angle, and a glint
+   where the ripple turns the sun into the eye. The low tier keeps the swell and the angle
+   tint on a flat normal and drops the ripple and the glint (uQ). One material per world;
+   disposeWorld frees it. */
+function waterMat(hex,opt){
+  opt=opt||{};
+  const m=new THREE.MeshLambertMaterial({color:lin(hex)});
+  const u={uT:{value:0},uQ:{value:GFX.tier==="low"?0:1},uAmp:{value:opt.amp===undefined?0.14:opt.amp},
+    uSun:{value:new THREE.Vector3(0.36,0.9,0.24)},uSunC:{value:new THREE.Color(1,0.9,0.75)},
+    uSky:{value:lin(opt.sky||0xb9ccd3)},uCam:{value:new THREE.Vector3()}};
+  m.userData.u=u;
+  m.onBeforeCompile=function(sh){
+    Object.assign(sh.uniforms,u);
+    sh.vertexShader=sh.vertexShader
+      .replace("#include <common>","#include <common>\nuniform float uT;\nuniform float uAmp;\nvarying vec3 vWP;")
+      .replace("#include <begin_vertex>","#include <begin_vertex>\n"+
+        "vec3 wq=(modelMatrix*vec4(transformed,1.0)).xyz;\n"+
+        "transformed+=normal*uAmp*(0.6*sin(dot(wq.xz,vec2(0.071,0.043))+uT*0.8)+0.4*sin(dot(wq.xz,vec2(-0.033,0.089))+uT*1.15));")
+      .replace("#include <project_vertex>","#include <project_vertex>\nvWP=(modelMatrix*vec4(transformed,1.0)).xyz;");
+    sh.fragmentShader=sh.fragmentShader
+      .replace("#include <common>","#include <common>\nuniform float uT;\nuniform float uQ;\nuniform vec3 uSun;\nuniform vec3 uSunC;\nuniform vec3 uSky;\nuniform vec3 uCam;\nvarying vec3 vWP;")
+      .replace("gl_FragColor = vec4( outgoingLight, diffuseColor.a );",
+        "vec2 wg=vec2(0.0);\n"+
+        "if(uQ>0.5){\n"+
+        "  vec2 p=vWP.xz;\n"+
+        "  wg+=0.10*vec2(0.8,0.6)*cos(dot(p,vec2(0.8,0.6))*0.55+uT*1.4);\n"+
+        "  wg+=0.08*vec2(-0.45,0.89)*cos(dot(p,vec2(-0.45,0.89))*0.93+uT*1.9);\n"+
+        "  wg+=0.06*vec2(0.96,-0.28)*cos(dot(p,vec2(0.96,-0.28))*1.7+uT*2.6);\n"+
+        "}\n"+
+        "vec3 wn=normalize(vec3(-wg.x,1.0,-wg.y));\n"+
+        "vec3 wv=normalize(uCam-vWP);\n"+
+        "float ndv=clamp(dot(wn,wv),0.0,1.0);\n"+
+        "float fr=1.0-ndv; fr*=fr; fr*=fr;\n"+
+        "outgoingLight*=mix(0.78,1.04,1.0-ndv);\n"+
+        "outgoingLight=mix(outgoingLight,uSky*0.85,fr*0.32);\n"+
+        "if(uQ>0.5){float gl=pow(max(dot(reflect(-uSun,wn),wv),0.0),70.0);outgoingLight+=uSunC*gl*0.85;}\n"+
+        "gl_FragColor = vec4( outgoingLight, diffuseColor.a );");
+  };
+  return m;
+}
+/* a water mesh: registered so the ground knows where the waterline is and the tier can
+   reach its material; the clock and the light it reflects are read as it is drawn */
+function liveWater(mesh){
+  const u=mesh.material.userData.u, sky0=u.uSky.value.clone();
+  mesh.onBeforeRender=function(r,s,camera){
+    /* three sets cameraPosition only for Phong, Standard and shader materials, never Lambert */
+    u.uCam.value.setFromMatrixPosition(camera.matrixWorld);
+    u.uT.value=(performance.now()*0.001)%3600;
+    if(typeof sunLight!=="undefined"&&sunLight){
+      u.uSun.value.copy(sunLight.position).normalize();
+      u.uSunC.value.copy(sunLight.color).multiplyScalar(sunLight.intensity);
+    }
+    /* the sky it reflects dims with the sky's own light: night scenes turn it down */
+    if(typeof hemiLight!=="undefined"&&hemiLight)u.uSky.value.copy(sky0).multiplyScalar(hemiLight.intensity/0.58);
+  };
+  LIVE.water.push(mesh);
   return mesh;
 }
 function buildThinSite(root,key){
@@ -19698,8 +20354,7 @@ function buildThinSite(root,key){
   }
   buildSkyDome(root);
   if(T.dress)T.dress(root,G);
-  const sea=new THREE.Mesh(new THREE.PlaneGeometry(1600,900),
-    new THREE.MeshLambertMaterial({color:lin(T.water)}));
+  const sea=liveWater(new THREE.Mesh(new THREE.PlaneGeometry(1600,900,80,45),waterMat(T.water,{sky:T.sky})));
   sea.rotation.x=-Math.PI/2;sea.position.set(0,-0.35,T.sea+450);root.add(sea);
   /* trees behind, merged into one mesh */
   const TR=new Geo();
@@ -22621,8 +23276,9 @@ function buildSkyDome(){
 /* repaint the gradient for a given dusk fraction */
 function paintSky(k){
   if(!skyDome)return;
-  const top=lerpHex(SKY_DAY.top,SKY_DUSK.top,k);
-  const hor=lerpHex(SKY_DAY.hor,SKY_DUSK.hor,k);
+  const top=lerpHex(LOOK_NOW.top,SKY_DUSK.top,k);
+  const hor=lerpHex(LOOK_NOW.hor,SKY_DUSK.hor,k);
+  const curve=LOOK_NOW.curve+(0.45-LOOK_NOW.curve)*k;
   const p=skyDome.geometry.attributes.position;
   const c=skyDome.geometry.attributes.color;
   for(let i=0;i<p.count;i++){
@@ -22632,7 +23288,7 @@ function paintSky(k){
     const t=Math.max(0,Math.min(1,p.getY(i)/60));
     /* a power curve, because a linear sky gradient reads as a printed ramp -
        the real thing changes fast near the horizon and slowly overhead */
-    const h=lerpHex(hor,top,Math.pow(t,0.45));
+    const h=lerpHex(hor,top,Math.pow(t,curve));
     /* vertex colours, so linear - the gradient is authored in sRGB and mixed
        there (which is the right space to interpolate a hand-picked ramp in),
        then converted once per vertex on the way into the buffer */
@@ -22647,24 +23303,347 @@ function applySky(k){
   if(!scene)return;
   buildSkyDome();
   paintSky(k);
-  SKY_BG.setHex(lerpHex(SKY_DAY.bg,SKY_DUSK.bg,k));
+  SKY_BG.setHex(lerpHex(LOOK_NOW.bg,SKY_DUSK.bg,k));
   scene.background=SKY_BG;
   if(scene.fog){
-    scene.fog.color=SKY_FOG.setHex(lerpHex(SKY_DAY.fog,SKY_DUSK.fog,k));
-    scene.fog.near=SKY_DAY.near+(SKY_DUSK.near-SKY_DAY.near)*k;
-    scene.fog.far=SKY_DAY.far+(SKY_DUSK.far-SKY_DAY.far)*k;
+    scene.fog.color=SKY_FOG.setHex(lerpHex(LOOK_NOW.fog,SKY_DUSK.fog,k));
+    scene.fog.near=LOOK_NOW.near+(SKY_DUSK.near-LOOK_NOW.near)*k;
+    scene.fog.far=LOOK_NOW.far+(SKY_DUSK.far-LOOK_NOW.far)*k;
   }
-  if(hemiLight)hemiLight.intensity=SKY_DAY.hemi+(SKY_DUSK.hemi-SKY_DAY.hemi)*k;
+  if(hemiLight)hemiLight.intensity=LOOK_NOW.hemi+(SKY_DUSK.hemi-LOOK_NOW.hemi)*k;
   if(sunLight){
-    sunLight.intensity=SKY_DAY.sun+(SKY_DUSK.sun-SKY_DAY.sun)*k;
-    sunLight.color=SKY_SUN.setHex(lerpHex(SKY_DAY.sunC,SKY_DUSK.sunC,k)).convertSRGBToLinear();
+    sunLight.intensity=LOOK_NOW.sun+(SKY_DUSK.sun-LOOK_NOW.sun)*k;
+    sunLight.color=SKY_SUN.setHex(lerpHex(LOOK_NOW.sunC,SKY_DUSK.sunC,k)).convertSRGBToLinear();
   }
   /* A cast shadow needs something casting it. As the sun goes down the blobs go
      with it, which also means the ambush is lit by almost nothing but the match -
      which is the point that scene is making. */
   /* the fill is sky-bounce, so it dies with the sky rather than with the sun */
-  if(fillLight)fillLight.intensity=0.30-0.22*k;
-  if(shadowMesh)shadowMesh.material.opacity=1-k*0.88;
+  if(fillLight)fillLight.intensity=LOOK_NOW.fill-(LOOK_NOW.fill-0.08)*k;
+  if(CLOUDS)CLOUDS.material.color.setHex(lerpHex(0xffffff,0x5a4a44,k));
+  if(shadowMesh)shadowMesh.material.opacity=(1-k*0.88)*LOOK_NOW.shade;
+}
+/* ========== SCENE_LOOK: THE LIGHT OF EVERY SCENE, IN ONE TABLE ==========
+   Every scene used to enter in the same noon (SKY_DAY), and the few that differed patched
+   it afterwards from their own update functions with a `.lit` flag: a night here, a grey
+   winter there, each multiplying the lights by its own factors and each repainting the
+   dome with its own copy of the same loop. Ten chapters run from a dawn at sea in April
+   1607 to a February in 1624, and the light is half of how a place says when it is.
+
+   So: one table, keyed by world and by the chapter's own day index (the same index its
+   *_DAYS table is read by), and one function, applyLook(), called by enterWorld - every
+   route into a scene comes through there, and every day re-enters its world. A look
+   sets the sun's colour, strength and height, the hemisphere's sky and ground colour,
+   the fill, the fog, the dome's gradient, the exposure, the clouds, the vignette and
+   whether the scene gets a distant horizon. applySky(k) still runs the dusk lerp, now
+   FROM this scene's look rather than from one noon for all.
+
+   READABILITY FIRST. Nothing goes below about 30 degrees of sun in daylight, because
+   Lambert shades per vertex and a low sun darkens every horizontal face - decks, ground,
+   the tops of hats - which is most of what a child reads a figure by. Overcast looks
+   trade sun for sky light rather than losing both. Nights are lit like the old nights,
+   with the moonlight cooler and the exposure a touch up so faces still read.
+
+   Fog stays the dome's horizon colour in every look, on purpose: distant geometry must
+   dissolve into the colour the sky is at that height, or the treeline ends in a band.
+   Sun azimuth moves at most ten degrees from (60,150,40), because the blob shadows'
+   offset (SH_DX/SH_DZ) and the painted port light below decks assume that quarter.
+   ceiling: one look per day index; a scene that changes light mid-day still needs its
+   own applySky(k) call, as the Cape Henry dusk does. */
+const LOOK_BASE={bg:null,fog:null,near:200,far:860,hemi:0.58,sun:0.86,sunC:0xffe6bd,
+  top:0x35688f,hor:0xbec4bb,curve:0.45,hSky:0xc9d8de,hGnd:0x4a3a22,elev:64,az:0,fill:0.30,
+  exp:1,shade:1,clouds:4,cloudC:0xf4f1ea,hz:true,gap:null,vig:0.85,wood:0x26361f};
+function lookFrom(o){
+  const L=Object.assign({},LOOK_BASE,o||{});
+  if(L.bg==null)L.bg=L.hor;
+  if(L.fog==null)L.fog=L.hor;
+  return L;
+}
+let LOOK_NOW=lookFrom({});
+/* the moods that recur, so a table row can say "a grey winter" and adjust from there */
+const LK={
+  night:{top:0x0e121c,hor:0x2a3244,curve:0.6,near:80,far:520,hemi:0.25,sun:0.25,sunC:0xb4c2e0,
+    hSky:0x8a9abb,hGnd:0x2a2620,elev:42,fill:0.14,exp:1.08,shade:0.35,clouds:0,vig:1},
+  winter:{top:0x8e989e,hor:0xb9c0c3,curve:0.6,near:180,far:760,hemi:0.52,sun:0.60,sunC:0xe9e7e1,
+    hSky:0xc8d0d6,hGnd:0x48423a,elev:30,fill:0.28,shade:0.7,clouds:0,vig:0.75,wood:0x3e3c34},
+  summer:{top:0x3c71a2,hor:0xc8cfc6,sunC:0xfff1d6,sun:0.92,elev:64,hemi:0.60,clouds:4},
+  spring:{top:0x3c72a4,hor:0xc5d0c8,sunC:0xfff0d4,sun:0.88,elev:56,hemi:0.60,clouds:5},
+  autumn:{top:0x44709a,hor:0xcec6b0,sunC:0xffdca8,sun:0.86,elev:40,hemi:0.56,hGnd:0x56422a,
+    clouds:4,cloudC:0xf6e8d4,wood:0x3a3a22},
+  grey:{top:0x8c969c,hor:0xb2b9bc,curve:0.6,near:170,far:760,hemi:0.54,sun:0.60,sunC:0xe2e2dc,
+    hSky:0xc4ccd0,elev:36,fill:0.28,shade:0.7,clouds:0,vig:0.75}
+};
+function lk(base,o){return Object.assign({},LK[base]||{},o||{});}
+const SCENE_LOOK={
+  /* I. Aboard, the bay mouth, the first hours after dawn, 26 April 1607 (Percy: land
+     descried "about foure a clocke in the morning"). Warm low light, cool overhead.
+     No horizon here: buildRiver already lays the capes and the Eastern Shore. */
+  ch1:{top:0x2f5683,hor:0xcdc0a8,curve:0.40,sunC:0xffd2a0,sun:0.92,elev:40,az:-8,
+    hSky:0xc6d0dc,hGnd:0x4c3a26,hemi:0.60,clouds:6,cloudC:0xf8dcc0,hz:false},
+  /* II. Cape Henry, ashore that afternoon - an April afternoon, the sun westering.
+     The dusk of the attack lerps from here. The cape has its own far country. */
+  ch2:{top:0x37699a,hor:0xc6c8bc,sunC:0xffe0b0,sun:0.90,elev:46,az:-10,clouds:5,hz:false},
+  /* II's survey: Point Comfort, Archer's Hope and the island, late April and May 1607 */
+  comfort:lk("spring",{gap:[-0.9,0.9]}),
+  archers:lk("spring",{hor:0xc3ccc0}),
+  james:lk("spring",{hor:0xc2cbc0,elev:60}),
+  /* III. The fort going up, 14 May to 15 June 1607: late spring, clear */
+  ch3:lk("summer",{top:0x386c9c,hor:0xc1cbc0,elev:62,sun:0.90}),
+  /* IV. The sickly season. The order is SICK_DAYS's. */
+  ch4:[
+    lk("summer",{}),                                                   /* 22 June, the ships go */
+    lk("summer",{top:0x5a7f9c,hor:0xd3d0bb,near:150,far:780,sunC:0xfff0c8,sun:0.88,clouds:2,
+      cloudC:0xf2eedf}),                                              /* 7 July: heat and haze */
+    lk("night",{top:0x161e2c,hor:0x4a3e3c,curve:0.5,hSky:0x9a8e98,sunC:0xd89a70,
+      exp:1.06}),                                                     /* a night in August, the watch */
+    lk("summer",{top:0x6c7f86,hor:0xcfc8a0,near:120,far:700,hSky:0xd2d2b4,hGnd:0x50442a,
+      sunC:0xffe6a8,sun:0.80,elev:58,exp:0.98,clouds:0,vig:0.95}),   /* 18 August: the sick air */
+    lk("grey",{top:0x7b868c,hor:0xb9bcb2,near:140,far:720,hemi:0.62,sun:0.52,
+      sunC:0xe8e2d0,elev:56}),                                        /* 22 August: Gosnold's grave */
+    lk("summer",{top:0x4d7898,hor:0xcac9b6,sunC:0xffe6b8,sun:0.86,elev:52,clouds:3}),  /* 11 September */
+    lk("autumn",{top:0x3c6e9c,hor:0xcfc8b0,elev:46,sun:0.90,wood:0x26361f})           /* 19 September: corn */
+  ],
+  /* V. Smith's relation, autumn 1607 to 7 January 1608 (CAPT_DAYS) */
+  ch5:[
+    lk("autumn",{elev:36}),                                            /* Kecoughtan, autumn */
+    lk("winter",{}),                                                   /* the fort, November */
+    lk("winter",{top:0x58748c,hor:0xc6cdd0,curve:0.5,sun:0.64,sunC:0xeef0f4,hSky:0xd4dee6,
+      elev:26,clouds:3,cloudC:0xe8ecef}),                             /* 10 December, the barge: cold and pale */
+    lk("winter",{top:0x86929a,hor:0xb6bec2}),                         /* 2 January */
+    lk("winter",{top:0x8a9498,hor:0xbcc2c2}),                         /* Werowocomoco, then and now */
+    lk("winter",{top:0x86898a,hor:0xb8b6b0,hGnd:0x4e3e30})           /* 7 January: the fire, smoke in the air */
+  ],
+  /* VI. Smith and the record, February 1608 to October 1609 (PRES_DAYS). PRES.night
+     (Werowocomoco, the warning) is laid over whichever day it falls on. */
+  ch6:[
+    lk("spring",{top:0x5a7d98,hor:0xc4cbca,sunC:0xf4ead8,sun:0.76,elev:40,hemi:0.56,
+      wood:0x3e3c30}),                                                /* Feb-Apr 1608: late winter */
+    lk("summer",{top:0x2f6c9e,hor:0xc6d6dc,sun:0.95,elev:66,clouds:5,gap:[-0.9,0.9]}),  /* the Bay, summer 1608 */
+    lk("summer",{top:0x4a7898,hor:0xcfcdb8,near:170,far:800,sunC:0xfff0c8}),          /* July-Sept 1608: heat */
+    lk("autumn",{}),                                                   /* Werowocomoco, autumn 1608 */
+    lk("autumn",{top:0x6c8194,hor:0xc5c2b4,sunC:0xf6dfb8,sun:0.72,elev:34,clouds:0,
+      shade:0.85,wood:0x3e3c30}),                                     /* late 1608 */
+    lk("winter",{top:0x4f7698,hor:0xd8e0e4,curve:0.5,near:200,far:820,sun:0.82,sunC:0xf4f6ff,
+      hSky:0xdce6ee,hGnd:0x6a6660,hemi:0.62,elev:30,shade:0.9,clouds:2,cloudC:0xeef2f6,
+      vig:0.85}),                                                     /* 12 January 1609: frozen, crisp */
+    lk("spring",{}),                                                   /* spring 1609 */
+    lk("autumn",{top:0x4c7696,hor:0xd0c8ae,sunC:0xffdfa6,elev:44,wood:0x26361f})       /* Aug-Oct 1609 */
+  ],
+  /* VII. The starving time, October 1609 to June 1610 (STARVE_DAYS) */
+  ch7:[
+    lk("autumn",{top:0x44709a,hor:0xcdc7b2,elev:42}),                 /* early October */
+    lk("autumn",{top:0x6d8092,hor:0xc2bfb2,near:170,far:760,sunC:0xf0dcc0,sun:0.64,elev:32,
+      clouds:0,shade:0.8,wood:0x403c30}),                             /* Orapakes, November: bare */
+    lk("winter",{top:0x848d93,hor:0xb0b7ba,near:160,far:700,hemi:0.48,sun:0.54,sunC:0xdcdcda,
+      hSky:0xc4ccd0,hGnd:0x3e3a34,exp:0.98}),                         /* the starving winter */
+    lk("winter",{top:0x7a838a,hor:0xaab0b2,near:140,far:680,hemi:0.48,sun:0.50,sunC:0xd8d8d6,
+      hSky:0xc0c8cc,hGnd:0x3a3630,exp:0.98,vig:0.9}),                 /* the trial */
+    lk("summer",{top:0x3a76b0,hor:0xcfd8de,sunC:0xfffaf0,sun:0.95,elev:68,cloudC:0xffffff}),  /* the dig, summer 2012 */
+    lk("spring",{top:0x3c74a6,hor:0xc8d6da,gap:[-0.9,0.9]}),          /* Point Comfort, spring 1610 */
+    lk("summer",{top:0x4d7898,hor:0xcdcbbf,sun:0.88,hSky:0xccd4d6,clouds:2}),  /* 23 May 1610: bright, and a ruin */
+    lk("spring",{top:0x3f74a4,hor:0xccd4cf,elev:44,sunC:0xffeccc})    /* 7-10 June 1610, the river */
+  ],
+  /* VIII. The golden leaf, June 1610 to March 1617 (LEAF_DAYS) */
+  ch8:[
+    lk("summer",{top:0x3770a6,hor:0xc6d2d0,elev:66}),                 /* a June Sunday, 1610 */
+    lk("night",{}),                                                    /* the river by Paspahegh, at night */
+    lk("summer",{top:0x3a72a2,hor:0xc8d0c8}),                         /* May-June 1611, a Sunday */
+    lk("summer",{top:0x3b72a2,hor:0xcad0c4,elev:58}),                 /* Henrico */
+    lk("spring",{top:0x4a7aa4,hor:0xc9d2d2,sun:0.85,elev:48}),        /* the Potomac, April 1613 */
+    lk("spring",{top:0x4c789e,hor:0xc8cfcc,sunC:0xf8eedc,sun:0.84,elev:50,wood:0x34402a}),  /* March-April 1614 */
+    lk("spring",{top:0x4a7aa4,hor:0xcad3d0,elev:50}),                 /* Matchot, spring 1614 */
+    lk("grey",{top:0x8a949a,hor:0xb0b7ba,near:160,far:720,sunC:0xd8dade,sun:0.56,elev:34})  /* Gravesend, March 1617 */
+  ],
+  /* IX. The price of tobacco, May 1617 to March 1620 (PRICE_DAYS) */
+  ch9:[
+    lk("summer",{top:0x3a70a0,hor:0xc9cfc6}),                         /* May-June 1617 */
+    lk("spring",{top:0x4676a0,hor:0xc8cec8,sun:0.86,elev:52}),        /* 1618 */
+    lk("grey",{top:0x858d92,hor:0xa8aeb0,near:120,far:640,hemi:0.60,sun:0.48,sunC:0xd4d0c8,
+      hSky:0xc0c6c8,hGnd:0x4a443c,elev:24,hz:false,vig:0.8}),         /* London, 18 November 1618 */
+    lk("summer",{top:0x3a72a6,hor:0xcbd2c8,elev:62,clouds:6}),        /* the ancient planters' land, 1619 */
+    lk("summer",{top:0x5a809e,hor:0xd6d1b8,near:160,far:760,sunC:0xfff0c4,elev:66,clouds:2,
+      cloudC:0xf2eedf}),                                              /* the Assembly, a hot August */
+    lk("grey",{top:0x8c969c,hor:0xb2b9bc,gap:[-0.9,0.9]}),            /* Point Comfort, late August 1619 */
+    lk("autumn",{top:0x66808f,hor:0xc6c6bc,sunC:0xf2e0c4,sun:0.72,elev:34,clouds:2})  /* Sept 1619 - March 1620 */
+  ],
+  /* X. The sky should sooner fall, October 1621 to February 1624 (SKY_DAYS) */
+  ch10:[
+    lk("autumn",{top:0x50779a,hor:0xcec6b0,sun:0.82,elev:38}),        /* October-November 1621 */
+    lk("spring",{top:0x4a78a2,hor:0xccd2d0,sunC:0xf8f0e0,sun:0.86,elev:46,wood:0x34402a}),  /* March 1622 */
+    lk("night",{}),                                                    /* Pace's house, the night of the 21st */
+    lk("summer",{top:0x587c98,hor:0xd2c4a6,near:180,far:780,sunC:0xffe2b0,sun:0.86,elev:56,
+      clouds:2,cloudC:0xf0e4d0}),                                     /* Elizabeth City: fields burning far off */
+    lk("autumn",{top:0x6a7d8c,hor:0xc4bcae,near:150,far:720,sunC:0xf0d8b8,sun:0.66,elev:30,
+      clouds:0,shade:0.8,wood:0x403c30}),                             /* the Pamunkey: cold, smoke on the river */
+    lk("grey",{top:0x77858e,hor:0xbfc3bd,near:150,far:740,sunC:0xe6e2d6,elev:40,wood:0x3a4030}),  /* Martin's Hundred */
+    lk("autumn",{top:0x5f7c92,hor:0xc6c6ba,sunC:0xf0e4cc,sun:0.76,elev:44,clouds:2})  /* May 1623 - February 1624 */
+  ]
+};
+/* which day of its chapter a world is showing - the same index each *_DAYS table uses */
+const LOOK_DAY={ch4:function(){return sickW().day;},ch5:function(){return captW().day;},
+  ch6:function(){return presW().day;},ch7:function(){return starveW().day;},
+  ch8:function(){return leafW().day;},ch9:function(){return priceW().day;},
+  ch10:function(){return skyW().day;}};
+function lookDay(w){const f=LOOK_DAY[w];try{return f?(f()|0):0;}catch(e){return 0;}}
+function sceneLook(){
+  const w=CURRENT_WORLD;
+  let e=SCENE_LOOK[w];
+  if(Array.isArray(e))e=e[Math.max(0,Math.min(e.length-1,lookDay(w)))];
+  /* the one night that is an event rather than a day: Werowocomoco, the warning */
+  if(w==="ch6"&&typeof PRES!=="undefined"&&PRES.night)e=Object.assign({},e,LK.night);
+  return lookFrom(e);
+}
+/* the default sun, (60,150,40), as a bearing and a height */
+const SUN_AZ=Math.atan2(40,60), SUN_R=Math.hypot(60,150,40);
+function applyLook(){
+  LOOK_NOW=sceneLook();
+  const L=LOOK_NOW;
+  if(hemiLight){
+    hemiLight.color.setHex(L.hSky).convertSRGBToLinear();
+    hemiLight.groundColor.setHex(L.hGnd).convertSRGBToLinear();
+  }
+  if(sunLight){
+    const e=L.elev*Math.PI/180, a=SUN_AZ+Math.max(-10,Math.min(10,L.az))*Math.PI/180;
+    sunLight.position.set(Math.cos(e)*Math.cos(a)*SUN_R,Math.sin(e)*SUN_R,Math.cos(e)*Math.sin(a)*SUN_R);
+  }
+  if(renderer)renderer.toneMappingExposure=EXPOSURE*L.exp;
+  CLOUDS=null;
+  if(worldRoot){buildClouds(worldRoot,L);buildHorizon(worldRoot,L);}
+  applySky(0);
+  tierLook();
+}
+/* What the graphics tier takes away: the grain (a fill cost on every lit pixel), the
+   clouds and the vignette (a full-screen blended layer the compositor pays for every
+   frame). Called by setTier and by applyLook. */
+function tierLook(){
+  const low=GFX.tier==="low";
+  GRAIN.value=GRAIN_BY_TIER[GFX.tier]||0;
+  if(CLOUDS)CLOUDS.visible=!low;
+  const v=document.getElementById("vig");
+  if(v){v.style.visibility=low?"hidden":"";v.style.opacity=String(LOOK_NOW.vig);}
+}
+
+/* ---- CLOUDS: A FEW, FAR OFF, AND OPAQUE ----
+   A sky with nothing in it reads as a backdrop. Four or five low-poly cumulus, each a
+   handful of flattened icosahedra merged, flat-bottomed, shaded by vertex colour from
+   a lit top to a sky-tinted belly. ONE mesh, ONE draw call, about 3,000 triangles, and
+   OPAQUE: no blended overdraw, which is the one thing this game cannot afford.
+   They ride with the camera the way the dome does (scene.onBeforeRender), 560-740 feet
+   out and 150-270 up, so they stay inside cam.far wherever you walk and never parallax
+   into reach. fog:false, because they are sky, and the dusk lerp darkens them through
+   the material colour. Hidden on the low tier. */
+let CLOUDS=null;
+const CLOUD_BASE=new THREE.IcosahedronGeometry(1,1);SHARED.add(CLOUD_BASE);
+function buildClouds(root,L){
+  if(!L.clouds)return;
+  const bp=CLOUD_BASE.attributes.position, bn=CLOUD_BASE.attributes.normal;
+  const top=mixHex(L.cloudC,L.hor,0.12), bot=mixHex(mixHex(L.cloudC,0x7c838c,0.42),L.hor,0.30);
+  const pos=[],col=[];
+  const seed=(CURRENT_WORLD||"x").charCodeAt((CURRENT_WORLD||"x").length-1)*1.7+lookDay(CURRENT_WORLD)*5.3;
+  for(let c=0;c<L.clouds;c++){
+    const a=(c/L.clouds)*Math.PI*2+srand(seed+c*3.1)*1.1;
+    const d=560+srand(seed+c*5.7)*180, y=150+srand(seed+c*2.3)*120;
+    const cx=Math.sin(a)*d, cz=Math.cos(a)*d, tx=Math.cos(a), tz=-Math.sin(a);
+    const len=70+srand(seed+c*7.9)*90, nb=4+Math.floor(srand(seed+c*1.3)*4);
+    for(let b=0;b<nb;b++){
+      const u=(nb>1?b/(nb-1)-0.5:0)*len, k=1-Math.abs(u)/len*1.1;
+      const r=(20+srand(seed+c*9.1+b*1.7)*18)*Math.max(0.35,k);
+      const bx=cx+tx*u+(srand(seed+b*4.4+c)-0.5)*14, bz=cz+tz*u+(srand(seed+b*2.2+c)-0.5)*14;
+      const by=y+srand(seed+b*6.6+c)*r*0.3;
+      for(let i=0;i<bp.count;i++){
+        const vy=Math.max(-0.3,bp.getY(i));          /* a flat belly */
+        pos.push(bx+bp.getX(i)*r*1.35, by+vy*r*0.62, bz+bp.getZ(i)*r*1.1);
+        const t=Math.max(0,Math.min(1,bn.getY(i)*0.6+0.5));
+        const h=mixHex(bot,top,t);
+        col.push(s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
+      }
+    }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute("color",new THREE.Float32BufferAttribute(col,3));
+  CLOUDS=new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,fog:false}));
+  CLOUDS.frustumCulled=false;
+  root.add(CLOUDS);
+}
+
+/* ---- THE HORIZON: WOODS PAST THE EDGE, AND A FAR SHORE ----
+   Every survey site and the fort is a 900-foot square of ground with the river to +z.
+   Walk to the shore and look along it, and the land simply stopped: past x=450 there
+   was sky down to the waterline. Look across the river and there was nothing at all,
+   when the James at the island is two miles wide and its south shore is a low wood the
+   whole way along. Chapter II fixed the same fault at the cape with more of the same
+   terrain; this does it once for every site, from three layers:
+     - a band of low-poly pines just past the patch's edge, on land only, so the ground
+       ends in a wood rather than a hem;
+     - a far shore across open water, ~670 feet out: a strand, a row of pines and a
+       ribbon of woods behind them;
+     - a ribbon of distant woods ~760 feet out behind the land, mostly haze.
+   It ASKS where the water is rather than being told: WORLD.ground is defined everywhere
+   in these worlds, so a bearing whose ground 440 feet out is below the water is water.
+   A look's `gap` leaves a bay open to the sky (Point Comfort, the Bay).
+   One merged Lambert mesh, one draw call, ~8-12k triangles - geometry, which is cheap
+   here - and OPAQUE: it covers sky rather than blending over it. Fog does the blend,
+   which is why every look keeps fog the colour of the dome's horizon. Not aboard ship
+   and not where a look says hz:false (the cape and the bay mouth have their own). */
+function hzCone(g,x,y,z,r,h,col){
+  const n=5, ap=[x,y+h,z], ph=srand(x*0.37+z*0.11)*6.283;
+  for(let i=0;i<n;i++){
+    const a0=ph+i/n*6.283, a1=ph+(i+1)/n*6.283;
+    g.tri([x+Math.cos(a1)*r,y,z+Math.sin(a1)*r],[x+Math.cos(a0)*r,y,z+Math.sin(a0)*r],ap,col);
+  }
+}
+function hzP(a,R,y){return [Math.sin(a)*R,y,Math.cos(a)*R];}
+/* a ribbon facing the middle of the world, from angle a0 to a1 at radius R */
+function hzRibbon(g,a0,a1,R0,R1,y0a,y0b,y1a,y1b,col){
+  g.quad(hzP(a1,R0,y0b),hzP(a0,R0,y0a),hzP(a0,R1,y1a),hzP(a1,R1,y1b),col);
+}
+function buildHorizon(root,L){
+  if(!L.hz||WORLD.hull||typeof WORLD.ground!=="function")return;
+  const G=WORLD.ground, g=new Geo();
+  const wood=RGB(L.wood), woodD=RGB(mixHex(L.wood,0x000000,0.22));
+  const farW=RGB(mixHex(L.wood,L.hor,0.18)), strand=RGB(mixHex(0xa8996e,L.hor,0.2));
+  const open=function(a){return !!L.gap&&a>L.gap[0]&&a<L.gap[1];};
+  const water=function(a){return G(Math.sin(a)*440,Math.cos(a)*440)<-0.6;};
+  /* the near band: two rows just past the patch, on land and off the strand */
+  const E=452, STEP=80;
+  for(let side=0;side<4;side++)for(let i=0;i<=STEP;i++)for(let row=0;row<2;row++){
+    const q=side*1000+i*3+row;
+    const off=E+4+row*17+srand(q*1.7)*8, along=-E-20+(2*E+40)*i/STEP+(srand(q*2.3)-0.5)*9;
+    const x=side===0?off:side===1?-off:along, z=side===2?off:side===3?-off:along;
+    const y=G(x,z);
+    if(y<0.6)continue;
+    const h=(30+srand(q*3.9)*34)*(row?1.15:1);
+    hzCone(g,x,y-1.5,z,h*0.21,h,row?woodD:wood);
+  }
+  /* the far shore and the far woods, by bearing */
+  const N=160, da=Math.PI*2/N;
+  for(let i=0;i<N;i++){
+    const a0=-Math.PI+i*da, a1=a0+da, am=a0+da/2;
+    if(water(am)){
+      if(open(am))continue;
+      const R=650+coastNoise(i*0.21,7)*50;
+      hzRibbon(g,a0,a1,R-10,R+6,-0.5,-0.5,1.4,1.4,strand);
+      /* broad and overlapping: at this range a wood is a mass with a broken top, not
+         a row of spires */
+      for(let t=0;t<4;t++){
+        const aa=a0+da*(t+srand(i*3.1+t))/4, rr=R+8+srand(i*7.7+t)*30;
+        const h=15+srand(i*5.3+t)*14;
+        hzCone(g,Math.sin(aa)*rr,0.8,Math.cos(aa)*rr,h*0.45,h,t===1?woodD:wood);
+      }
+      const h0=13+coastNoise(i*0.5,19)*9, h1=13+coastNoise((i+1)*0.5,19)*9;
+      hzRibbon(g,a0,a1,R+40,R+40,-2,-2,h0,h1,farW);
+    } else {
+      const R=760, x=Math.sin(am)*R, z=Math.cos(am)*R, gy=Math.max(0,G(x,z));
+      const h0=38+coastNoise(i*0.45,31)*26+coastNoise(i*1.9,43)*10;
+      const h1=38+coastNoise((i+1)*0.45,31)*26+coastNoise((i+1)*1.9,43)*10;
+      hzRibbon(g,a0,a1,R,R,gy-10,gy-10,gy+h0,gy+h1,farW);
+    }
+  }
+  if(!g.p.length)return;
+  const m=g.mesh(false,false);
+  m.name="horizon";
+  root.add(m);
 }
 /* ================= THE MEN ON THE DUNE =================
    Reported: "when the indians attack there's no native attacking, just arrows from nowhere."
@@ -23219,7 +24198,7 @@ registerWorld("ch2",function(root){
   })();
 
   /* ---- the sea, and the surf breaking on the strand ---- */
-  const sea=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),mat(0x3f6472));
+  const sea=liveWater(new THREE.Mesh(new THREE.PlaneGeometry(2400,2400,96,96),waterMat(0x3f6472,{sky:0x9dbccb})));
   sea.rotation.x=-Math.PI/2;sea.position.set(0,0,0);root.add(sea);
   /* ---- AND THE SHIPS THAT BROUGHT YOU ----
      The intro says it - "the ships are anchored inside the capes and the boats are down" -
@@ -23228,15 +24207,13 @@ registerWorld("ch2",function(root){
   placeShip(root,"susan",1,-120,330,Math.PI/2+0.35);
   placeShip(root,"godspeed",0.76,60,390,Math.PI/2+0.28);
   placeShip(root,"discovery",0.43,210,300,Math.PI/2+0.42);
-  const W=new Geo(),foam=RGB(0xd7e2df),swellA=RGB(0x486e7a),swellB=RGB(0x3a5c68);
+  const W=new Geo(),foam=RGB(0xd7e2df);
   for(let x=-SPAN/2;x<SPAN/2;x+=26){
     const w=22+Math.random()*12;
     W.box(x+13,0.35,CAPE.SEA+2+Math.sin(x*0.05)*3,w,0.7,7,foam);
   }
-  for(let i=0;i<70;i++){
-    const x=-1100+Math.random()*2200, z=CAPE.SEA+30+Math.random()*760;
-    W.box(x,0.4,z,26+Math.random()*30,0.9,20+Math.random()*24,(i%2)?swellA:swellB);
-  }
+  /* seventy flat slabs stood in for a swell here; waterMat moves the sea itself now, and
+     against a sea that lightens toward the horizon the slabs read as dark rafts */
   root.add(W.mesh(false,false));
 
   /* ---- THE PINE WOODS THE ARROWS COME OUT OF, AND THIS TIME A WOOD ----
@@ -24056,7 +25033,7 @@ function loadGLB(url){
   if(GLB_CACHE[url])return GLB_CACHE[url];
   return GLB_CACHE[url]=fetch(url).then(function(r){
     if(!r.ok)throw new Error(url+": "+r.status);return r.arrayBuffer();
-  }).then(function(buf){return parseGLB(buf,url);});
+  }).then(function(buf){const g=parseGLB(buf,url);liveSoon();return g;});   /* a model that arrives casts a shadow */
 }
 function parseGLB(buf,url){
   const dv=new DataView(buf);
@@ -24360,6 +25337,7 @@ function buildFortWorld(root,w,opt){
   WORLD.ground=G; WORLD.hull=false; WORLD.sea=0;
   WORLD.blocked=function(x,z){return Math.hypot(x,z)>430||G(x,z)<-0.6||inCollider(x,z,1.0);};
   FORT.on=false;FORT.t=0;FORT.bowmen=[];FORT.wounded=[];FORT.root=root;FORT.parts={};
+  LIVE.winter=!!opt.winter;
   /* ground, chunked as at the survey sites; trodden earth inside the work */
   const SPAN=900,N=4,CH_=SPAN/N,DIV=14;
   /* in winter (Chapter V) the grass is dead and the hardwoods bare */
@@ -24377,7 +25355,7 @@ function buildFortWorld(root,w,opt){
     root.add(detailGround(g.mesh(false,false),CURRENT_WORLD==="ch2"?"sand":"earth"));
   }
   buildSkyDome(root);
-  const sea=new THREE.Mesh(new THREE.PlaneGeometry(1600,900),new THREE.MeshLambertMaterial({color:lin(T.water)}));
+  const sea=liveWater(new THREE.Mesh(new THREE.PlaneGeometry(1600,900,80,45),waterMat(T.water,{sky:T.sky})));
   sea.rotation.x=-Math.PI/2;sea.position.set(0,-0.35,T.sea+450);root.add(sea);
 
   /* ---- THE WOODS, and what the felling has taken out of them ----
@@ -25519,7 +26497,7 @@ registerWorld("ch4",function(root){
    dusk; nothing else in this chapter moves */
 function updateSick(dt){
   if(CURRENT_WORLD!=="ch4")return;
-  if(SICK_SHIPS.night&&!SICK_SHIPS.lit){applySky(0.92);SICK_SHIPS.lit=true;}
+  /* the watch's dusk is SCENE_LOOK.ch4[2] now, set on the way in by applyLook */
   if(!SICK_SHIPS.leaving.length)return;
   SICK_SHIPS.t+=dt;
   if(SICK_SHIPS.t<4)return;                /* a moment to see them riding there first */
@@ -26215,6 +27193,7 @@ function captGround(key){return function(x,z){return siteGround(key,x,z);};}
 function captLand(root,key,opt){
   /* buildThinSite's ground and sky, without its survey spots or its boat */
   const T=SITE_TERRAIN[key], G=captGround(key);
+  LIVE.winter=!!opt.winter;
   scene.background=new THREE.Color(T.sky);scene.fog=new THREE.Fog(T.fog,220,820);
   WORLD.ground=G; WORLD.hull=false; WORLD.sea=0;
   WORLD.blocked=function(x,z){return Math.hypot(x,z)>430||G(x,z)<-0.6||inCollider(x,z,1.0);};
@@ -26230,7 +27209,7 @@ function captLand(root,key,opt){
     root.add(detailGround(g.mesh(false,false),"earth"));
   }
   buildSkyDome(root);
-  const sea=new THREE.Mesh(new THREE.PlaneGeometry(1600,900),new THREE.MeshLambertMaterial({color:lin(T.water)}));
+  const sea=liveWater(new THREE.Mesh(new THREE.PlaneGeometry(1600,900,80,45),waterMat(T.water,{sky:T.sky})));
   sea.rotation.x=-Math.PI/2;sea.position.set(0,-0.35,T.sea+450);root.add(sea);
   /* the woods: pine and bare hardwood mixed, in winter; all pine before it */
   const TR=new Geo(), clear=opt.clear||function(){return false;};
@@ -26478,23 +27457,7 @@ registerWorld("ch5",function(root){
 const CAPT_ASH=["storehouse_roof","storehouse_walls","camp_shelters","awning"];
 function updateCapt(dt){
   if(CURRENT_WORLD!=="ch5")return;
-  if(!CAPT.lit&&CAPT.winter){
-    /* winter: a low grey sky and a weaker sun, set once after enterWorld's applySky(0) */
-    scene.background=new THREE.Color(0xb3babd);
-    if(scene.fog){scene.fog.color=new THREE.Color(0xb9bfc1);scene.fog.near=180;scene.fog.far=760;}
-    if(hemiLight)hemiLight.intensity*=0.85;if(sunLight)sunLight.intensity*=0.7;
-    /* and the dome, which paints its own gradient: a flat December overcast, lighter at
-       the horizon, the same per-vertex way paintSky does it */
-    if(skyDome){
-      const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
-      for(let i=0;i<pp.count;i++){
-        const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=lerpHex(0xb9c0c3,0x8e989e,Math.pow(t,0.6));
-        cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
-      }
-      cc.needsUpdate=true;
-    }
-    CAPT.lit=true;
-  }
+  /* winter light: SCENE_LOOK.ch5, set on the way in by applyLook */
   if(CAPT.ash)for(const k of CAPT_ASH){const p=FORT.parts[k];if(p&&p.visible)p.visible=false;}
   if(CAPT.ship&&CAPT.ship.go&&CAPT.ship.m.position.x<CAPT.ship.to)
     CAPT.ship.m.position.x=Math.min(CAPT.ship.to,CAPT.ship.m.position.x+dt*60);
@@ -27699,7 +28662,7 @@ registerWorld("ch6",function(root){
        tents stood on: from Spring 1609 the tents and the sail-awning go and framed houses stand on
        five of their sites, so the change shows from one day to the next */
     if(w.day>=6){PRES.cut={tents:CAMP_TENTS.slice()};
-      STARVE_TENTS.filter(function(t){return t[0]!==22;}).forEach(function(t){leafHouse(root,G,t[0],t[1],0);});}
+      STARVE_TENTS.filter(function(t){return t[0]!==22;}).forEach(function(t){leafHouse(root,G,t[0],t[1],0,"thatch");});}
     if(w.day===0){
       spots={smith:[6,10,3.2],scrivener:[-30,0,2.6],newport:[-96,40,1.4],wingfield:[-104,46,1.0],archer:[-88,46,2.2]};
       /* Newport's ship, moored below the fort until she sails */
@@ -27908,7 +28871,6 @@ registerWorld("ch6",function(root){
         F.box(x,-0.26,z,0.25,0.02,6+srand(i)*10,iceD);}
       root.add(F.mesh(false,false));
     }
-    if(PRES.night){scene.background=new THREE.Color(0x1c2230);if(scene.fog){scene.fog.color=new THREE.Color(0x1c2230);scene.fog.near=60;scene.fog.far=320;}}
     const H=CAPT_HALL;
     if(w.day===3){
       duty("invite","Powhatan’s House",H.x+H.len/2+8,H.z,{kind:"invite",verb:"Hear his answer"});
@@ -28008,23 +28970,7 @@ function updatePres(dt){
     if(p&&!p.userData.presCut){p.userData.presCut=true;starveCut(p,function(x,z){return C.tents.some(function(h){return Math.hypot(x-h[0],z-h[1])<9;});});}
     const aw=FORT.parts.awning;if(aw&&aw.visible)aw.visible=false;
   }
-  if(!PRES.lit&&(PRES.winter||PRES.night)){
-    if(PRES.night){scene.background=new THREE.Color(0x1c2230);if(hemiLight)hemiLight.intensity*=0.35;if(sunLight)sunLight.intensity*=0.25;}
-    else{
-      scene.background=new THREE.Color(0xb3babd);
-      if(scene.fog){scene.fog.color=new THREE.Color(0xb9bfc1);scene.fog.near=180;scene.fog.far=760;}
-      if(hemiLight)hemiLight.intensity*=0.85;if(sunLight)sunLight.intensity*=0.7;
-    }
-    if(skyDome){
-      const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
-      for(let i=0;i<pp.count;i++){
-        const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=PRES.night?lerpHex(0x2a3244,0x0e121c,Math.pow(t,0.6)):lerpHex(0xb9c0c3,0x8e989e,Math.pow(t,0.6));
-        cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
-      }
-      cc.needsUpdate=true;
-    }
-    PRES.lit=true;
-  }
+  /* winter and the night of the warning: SCENE_LOOK.ch6 and LK.night, via applyLook */
   /* play-test, 27 Nov: run inside the cutscene now, at four times her speed a ship left the
      shot in two seconds; and one that had arrived sat on the horizon until the next scene */
   const sail=function(s){if(!s||!s.go||!s.m.visible)return;
@@ -28850,7 +29796,7 @@ registerWorld("ch7",function(root){
       if(!STARVE.cut)STARVE.cut={tents:[],gaps:[],gate:false};
       STARVE.cut.tents=CAMP_TENTS.slice();
       STARVE.hide=(STARVE.hide||[]).concat(["awning"]);   /* as in Chapter VI from spring 1609 */
-      STARVE_TENTS.filter(function(t){return ruined.indexOf(t)<0;}).forEach(function(t){leafHouse(root,G,t[0],t[1],0);});
+      STARVE_TENTS.filter(function(t){return ruined.indexOf(t)<0;}).forEach(function(t){leafHouse(root,G,t[0],t[1],0,"thatch");});
     }
   }
   if(where==="fort"){
@@ -29079,20 +30025,7 @@ registerWorld("ch7",function(root){
 function updateStarve(dt){
   if(CURRENT_WORLD!=="ch7")return;
   STARVE.t+=dt;
-  if(!STARVE.lit&&STARVE.winter){
-    scene.background=new THREE.Color(0xa9b0b4);
-    if(scene.fog){scene.fog.color=new THREE.Color(0xb0b6b8);scene.fog.near=160;scene.fog.far=700;}
-    if(hemiLight)hemiLight.intensity*=0.8;if(sunLight)sunLight.intensity*=0.6;
-    if(skyDome){
-      const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
-      for(let i=0;i<pp.count;i++){
-        const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=lerpHex(0xb0b7ba,0x848d93,Math.pow(t,0.6));
-        cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
-      }
-      cc.needsUpdate=true;
-    }
-    STARVE.lit=true;
-  }
+  /* the starving winter's light: SCENE_LOOK.ch7, via applyLook */
   if(STARVE.hide&&FORT.parts)for(const k of STARVE.hide){const p=FORT.parts[k];if(p&&p.visible)p.visible=false;}
   /* the ruin, cut into each fort part as it arrives */
   if(STARVE.cut&&FORT.parts){
@@ -29730,50 +30663,277 @@ function LEAF_WEDDING(){
 function G8(x,z){return WORLD.ground?WORLD.ground(x,z):0;}
 
 /* ---- NEW THINGS IN THE WORLD ---- */
+/* ---- ENGLISH BUILDINGS: the house and the church share one shell ----
+   look pass, 27 Nov: both were plain boxes under a lid - four flat walls, a roof with no
+   thickness, a black door - and read as crates. They are built of what they were built of
+   now, in geometry and per-vertex colour only (no texture, nothing transparent):
+   - walls of riven boards in courses, each board's foot standing proud of the one below
+     (sawtooth, so the courses read at any distance), on a ground sill, with corner boards;
+     in England, plaster between dark studs, and the churches' stone in courses;
+   - a roof with thickness, eaves and verges that overhang, and a ridge;
+   - a framed door of planks with strap hinges, and window openings with wooden shutters,
+     open or shut (there is no glass in the fort's houses; the London casements are drawn
+     as dark openings with a mullion, still nothing transparent);
+   - an end chimney, which stands INSIDE the footprint: the body is shortened by the
+     chimney's depth, so the footprint and the collider callers clear against do not change.
+   Occlusion is baked in the vertex colour, as everywhere else in the file: dark at the
+   ground line, under the eaves and verges, in the corner a chimney makes with its gable,
+   and on the soffits; boards facing the sun are a touch lighter up high, where the weather
+   bleaches them. The sun's bearing is read from sunLight, not typed.
+
+   What the record supports, and so what each roof is:
+   - "thatch": the fort of 1608-10. Smith's Proceedings on the fire of January 1608, the
+     quarters "being but thatched with reeds" (CH5-RECORD); the houses Chapter VI raises in
+     spring 1609 and Chapter VII's winter fort are the same kind. A storey and a loft.
+   - "bark": Virginia from 1610. Strachey's True Reportory (letter of July 1610, in Purchas)
+     is remembered as describing the fort's houses roofed with bark, as the Indians' were,
+     with wide clay "country" chimneys. PARAPHRASE ONLY: no page of it is on disk and the
+     wording has not been checked, so nothing here is a quotation; read Purchas before any of
+     it goes on screen (lead's review, 27 Nov). Hamor, 1614:
+     "two rowes of houses of framed timber, and some of them two stories and a garret
+     higher" (CH8-RECORD), so two storeys are allowed from here on. A country chimney is
+     timber daubed with clay; it is drawn clay-coloured with darker bands where the
+     framing shows. Nothing later in the record (1617-23) says the roofs changed, so the
+     later Virginia scenes keep bark; riven boards would look nearly the same.
+   - "eng": England - London and Gravesend. Tile roofs, timber frames with plaster, brick
+     stacks: ordinary for the towns of the Thames in 1617-18, not a claim about any house.
+   No label in the game names any of this; it is drawing, and these notes are its sources. */
+function smooth01(e0,e1,v){const t=Math.max(0,Math.min(1,(v-e0)/(e1-e0)));return t*t*(3-2*t);}
+function engShell(g,P,sp){
+  const hw=sp.hw, H=sp.H, rise=sp.rise, k=rise/hw, a0=sp.a0, a1=sp.a1, ac=(a0+a1)/2, Y0=0.45;
+  const R=function(n){return srand(sp.seed+n*1.618);};
+  const IN=P(ac,0,H*0.5);
+  let sx=0.83,sz=0.55;
+  try{if(sunLight){const v=sunLight.position, m=Math.hypot(v.x,v.z)||1;sx=v.x/m;sz=v.z/m;}}catch(e){}
+  const sA=sp.c*sx-sp.s*sz, sB=sp.s*sx+sp.c*sz;
+  const C=sp.chim;
+  const chimHalf=function(y){
+    if(!C||y>C.top)return 0;if(y<=C.hb)return C.w/2;if(y>=C.hb+C.sh)return C.sw/2;
+    return C.w/2+(C.sw/2-C.w/2)*(y-C.hb)/C.sh;};
+  /* baked occlusion and weather at a point on a face whose outward normal is (nA,nB) */
+  const ao=function(b,y,nA,nB){
+    let f=0.56+0.44*smooth01(0,2.6,y);
+    if(nB!==0)f*=1-0.32*smooth01(H-2.4,H,y);
+    else if(nA!==0){const yr=H+(hw-Math.abs(b))*k;f*=1-0.2*smooth01(yr-1.4,yr,y);
+      if(C&&nA===C.end){const ch=chimHalf(y);if(ch>0)f*=0.66+0.34*smooth01(ch,ch+1.8,Math.abs(b));}}
+    return f*(1+0.09*Math.max(0,nA*sA+nB*sB)*smooth01(2.5,H,y));
+  };
+  const col=function(base,m){return [base[0]*m,base[1]*m,base[2]*m];};
+  /* a face: a long wall (nB=+-1, t runs along a) or a gable (nA=+-1 at aE, t runs along b) */
+  const F=function(f,t,y,off){return f.nA?P(f.aE+f.nA*off,t,y):P(t,f.nB*(hw+off),y);};
+  const fb=function(f,t){return f.nA?t:f.nB*hw;};
+  const sh=function(f,t,y,base,m){return col(base,m*ao(fb(f,t),y,f.nA,f.nB));};
+  /* a flat piece standing `off` proud of a face: trim, door planks, shutters, openings */
+  const flat=function(f,tA,tB,yA,yB,off,base,m){
+    quadOut4(g,F(f,tA,yA,off),F(f,tB,yA,off),F(f,tB,yB,off),F(f,tA,yB,off),
+      sh(f,tA,yA,base,m),sh(f,tB,yA,base,m),sh(f,tB,yB,base,m),sh(f,tA,yB,base,m),F(f,(tA+tB)/2,(yA+yB)/2,off-1));};
+  /* one course: bottom edge t0..t1 at y0 stands `st` proud, top edge u0..u1 at y1 lies on
+     the wall, where the next course's foot covers it. The foot's underside is drawn only
+     above eye height, the only place it can be seen from */
+  const course=function(f,t0,t1,u0,u1,y0,y1,st,base,m,lap){
+    quadOut4(g,F(f,t0,y0,st),F(f,t1,y0,st),F(f,u1,y1,0),F(f,u0,y1,0),
+      sh(f,t0,y0,base,m),sh(f,t1,y0,base,m),sh(f,u1,y1,base,m*lap),sh(f,u0,y1,base,m*lap),IN);
+    if(st>0&&y0>4.2){const d=col(base,0.42*m);
+      quadOut4(g,F(f,t0,y0,0),F(f,t1,y0,0),F(f,t1,y0,st),F(f,t0,y0,st),d,d,d,d,F(f,(t0+t1)/2,y0+1,-1));}
+  };
+  const faces=[{nA:0,nB:1,t0:a0,t1:a1},{nA:0,nB:-1,t0:a0,t1:a1},{nA:-1,nB:0,aE:a0,t0:-hw,t1:hw},{nA:1,nB:0,aE:a1,t0:-hw,t1:hw}];
+  const half=function(y){return y<=H?hw:Math.max(0,hw*(1-(y-H)/rise));};
+  const wb=sp.wallCol;
+  /* ---- WALLS ---- */
+  const cH=sp.wall==="stone"?1.25:sp.wall==="plaster"?99:0.8, st=sp.wall==="board"?0.09:0;
+  faces.forEach(function(f,fi){
+    const top=f.nA?H+rise:H;
+    if(sp.wall==="plaster"){
+      /* plaster in three bands for the occlusion to ride on, then studs, rails and plate */
+      const ys=[Y0,2.6,H*0.55,H];if(f.nA)ys.push(H+rise*0.5,H+rise);
+      for(let i=0;i<ys.length-1;i++){const lo=half(ys[i]),hi=half(ys[i+1]);
+        course(f,f.nA?-lo:a0,f.nA?lo:a1,f.nA?-hi:a0,f.nA?hi:a1,ys[i],ys[i+1],0,wb,0.97+R(fi*9+i)*0.06,1);}
+      const tim=sp.timCol, n=Math.max(2,Math.round((f.t1-f.t0)/2.3));
+      for(let i=0;i<=n;i++){const t=f.t0+0.25+(f.t1-f.t0-0.5)*i/n;
+        const yt=f.nA?H+rise*(1-Math.abs(t)/hw)-0.3:H;
+        if(yt>Y0+1)flat(f,t-0.25,t+0.25,Y0,yt,0.07,tim,0.95+R(fi*31+i)*0.1);}
+      flat(f,f.t0,f.t1,H*0.55-0.25,H*0.55+0.25,0.09,tim,0.9);
+      flat(f,f.t0,f.t1,H-0.5,H,0.09,tim,0.85);
+      return;
+    }
+    let y=Y0,i=0;
+    while(y<top-0.01){
+      let y1=Math.min(top,y+cH);if(y<H-0.01&&y1>H)y1=H;if(top-y1<0.3)y1=top;
+      const m=0.9+R(fi*17+i)*0.18, lap=sp.wall==="board"?0.8:0.94;
+      if(!f.nA)course(f,a0,a1,a0,a1,y,y1,st,wb,m,lap);
+      else{
+        const lo=half(y),hi=half(y1),cut=(C&&f.nA===C.end)?chimHalf((y+y1)/2):0;
+        if(cut<=0)course(f,-lo,lo,-hi,hi,y,y1,st,wb,m,lap);
+        else if(lo>cut){
+          course(f,-lo,-Math.min(cut,lo),-hi,-Math.min(cut,hi),y,y1,st,wb,m,lap);
+          course(f,Math.min(cut,lo),lo,Math.min(cut,hi),hi,y,y1,st,wb,m,lap);}
+      }
+      y=y1;i++;
+    }
+  });
+  /* the sill the walls stand on, and the boards that close the corners */
+  const sill=sp.sillCol;
+  faces.forEach(function(f){
+    const ta=f.nA?-hw-0.2:a0-0.2, tb=f.nA?hw+0.2:a1+0.2;
+    flat(f,ta,tb,-0.4,Y0,0.2,sill,0.9);
+    quadOut4(g,F(f,ta,Y0,0),F(f,tb,Y0,0),F(f,tb,Y0,0.2),F(f,ta,Y0,0.2),col(sill,0.8),col(sill,0.8),col(sill,0.8),col(sill,0.8),F(f,(ta+tb)/2,Y0-1,0.1));
+    /* corner boards run 0.14 past the corner, so the pair closes the open ends of both walls'
+       boards (each course is one slanted quad, its end a sawtooth notch with sky behind it) */
+    if(sp.wall==="board"){flat(f,f.t0-0.14,f.t0+0.45,Y0,H,0.14,wb,0.82);flat(f,f.t1-0.45,f.t1+0.14,Y0,H,0.14,wb,0.82);}
+  });
+  /* ---- ROOF ---- */
+  const ra0=a0-sp.vo[0], ra1=a1+sp.vo[1], trv=sp.tr*Math.sqrt(1+k*k), rb=sp.roofCol;
+  const yU=function(b){return H+(hw-Math.abs(b))*k;};
+  /* thatch is laid in courses too, but reads as streaks, not steps: few soft butts, many strips */
+  const RS=sp.roof==="thatch"?{n:3,st:0.18,seg:11,j:0.34,bt:0.78}:sp.roof==="bark"?{n:6,st:0.13,seg:4,j:0.24,bt:0.5}:{n:10,st:0.07,seg:1,j:0.1,bt:0.5};
+  for(const s of [-1,1]){
+    const be=s*(hw+sp.ov), bU=function(u){return be*(1-u);}, yT=function(u){return yU(bU(u))+trv;};
+    const sun=1+0.07*Math.max(0,s*sB);
+    for(let j=0;j<RS.n;j++){
+      const u0=j/RS.n,u1=(j+1)/RS.n, low=0.74+0.26*smooth01(0,0.7,u0), low1=0.74+0.26*smooth01(0,0.7,u1);
+      for(let q=0;q<RS.seg;q++){
+        const aA=ra0+(ra1-ra0)*q/RS.seg, aB=ra0+(ra1-ra0)*(q+1)/RS.seg, m=sun*(1-RS.j/2+RS.j*R(s*40+j*7+q));
+        quadOut4(g,P(aA,bU(u0),yT(u0)+RS.st),P(aB,bU(u0),yT(u0)+RS.st),P(aB,bU(u1),yT(u1)),P(aA,bU(u1),yT(u1)),
+          col(rb,m*low),col(rb,m*low),col(rb,m*low1*0.9),col(rb,m*low1*0.9),P(ac,0,H));
+      }
+      /* the course's butt; the first is the eave's whole edge */
+      const yb=j===0?yU(be):yT(u0), d=col(rb,(j===0?(sp.roof==="thatch"?0.74:0.6):RS.bt)*sun);   /* thatch's cut edge is straw too */
+      quadOut4(g,P(ra0,bU(u0),yb),P(ra1,bU(u0),yb),P(ra1,bU(u0),yT(u0)+RS.st),P(ra0,bU(u0),yT(u0)+RS.st),d,d,d,d,P(ac,bU(u0)-s,yT(u0)));
+    }
+    /* soffit: the underside of the eave, in the shade */
+    const so=col(rb,0.34), so2=col(rb,0.22);
+    quadOut4(g,P(ra0,be,yU(be)),P(ra1,be,yU(be)),P(ra1,s*hw,H),P(ra0,s*hw,H),so,so,so2,so2,P(ac,s*hw,H+3));
+    /* the verges: the slab's cut end, and its underside out past the gable */
+    for(const e of [-1,1]){
+      const ra=e<0?ra0:ra1, aw=e<0?a0:a1, de=col(rb,0.55);
+      quadOut4(g,P(ra,be,yU(be)),P(ra,be,yT(0)+RS.st),P(ra,0,yU(0)+trv),P(ra,0,yU(0)),de,de,de,de,P(ac,be/2,yU(be/2)+trv/2));
+      if(Math.abs(ra-aw)>0.05)quadOut4(g,P(ra,be,yU(be)),P(aw,be,yU(be)),P(aw,0,yU(0)),P(ra,0,yU(0)),so,so2,so2,so,P((ra+aw)/2,be/2,yU(be/2)+3));
+    }
+  }
+  const yr=H+rise+trv;
+  if(sp.roof==="thatch")g.beam8(P(ra0-0.1,0,yr-0.15),P(ra1+0.1,0,yr-0.15),1.1,1.1,col(rb,0.8),col(rb,0.8),0.7,0.7);
+  else g.beam8(P(ra0,0,yr-0.05),P(ra1,0,yr-0.05),sp.roof==="tile"?0.6:0.7,sp.roof==="tile"?0.6:0.7,col(rb,0.7),col(rb,0.7),0.55,0.55);
+  /* ---- CHIMNEY, at an end, inside the footprint ---- */
+  if(C){
+    const aE=C.end<0?a0:a1, e=C.end, cc=C.col;
+    const prism=function(dA0,dA1,w0,w1,y0,y1,m0,m1,back){
+      const A=function(d){return aE+e*d;}, IC=P(A((dA0+dA1)/2),0,(y0+y1)/2);
+      const v=function(d,b,y,m){return col(cc,m*(0.6+0.4*smooth01(0,2.2,y))*(d<0.05?0.84:1));};
+      /* outer face */
+      quadOut4(g,P(A(dA0),-w0/2,y0),P(A(dA0),w0/2,y0),P(A(dA1),w1/2,y1),P(A(dA1),-w1/2,y1),
+        v(dA0,-w0/2,y0,m0),v(dA0,w0/2,y0,m0),v(dA1,w1/2,y1,m1),v(dA1,-w1/2,y1,m1),IC);
+      for(const sg of [-1,1])quadOut4(g,P(aE,sg*w0/2,y0),P(A(dA0),sg*w0/2,y0),P(A(dA1),sg*w1/2,y1),P(aE,sg*w1/2,y1),
+        v(0,0,y0,m0),v(dA0,0,y0,m0),v(dA1,0,y1,m1),v(0,0,y1,m1),IC);
+      if(back)quadOut4(g,P(aE,-w0/2,y0),P(aE,w0/2,y0),P(aE,w1/2,y1),P(aE,-w1/2,y1),v(1,0,y0,m0*0.8),v(1,0,y0,m0*0.8),v(1,0,y1,m1*0.8),v(1,0,y1,m1*0.8),IC);
+    };
+    prism(C.d,C.d,C.w,C.w,-0.4,C.hb,0.95,1,false);
+    prism(C.d,C.sd,C.w,C.sw,C.hb,C.hb+C.sh,1,0.9,false);
+    /* the stack in bands: darker at each joint, where a country chimney's timbers show
+       through the clay and a brick one has its courses */
+    const n=3, y0=C.hb+C.sh;
+    for(let i=0;i<n;i++){const ya=y0+(C.top-y0)*i/n, yb=y0+(C.top-y0)*(i+1)/n;
+      prism(C.sd,C.sd,C.sw,C.sw,ya,yb,0.8+R(70+i)*0.1,1.02,yb>H);}
+    if(C.brick)prism(C.sd+0.2,C.sd+0.2,C.sw+0.4,C.sw+0.4,C.top-0.1,C.top+0.5,0.9,0.95,true);
+    const ct=C.top+(C.brick?0.5:0), sd2=C.sd+(C.brick?0.2:0), sw2=C.sw/2+(C.brick?0.2:0), soot=RGB(0x1c1814);
+    quadOut4(g,P(aE,-sw2,ct),P(aE+e*sd2,-sw2,ct),P(aE+e*sd2,sw2,ct),P(aE,sw2,ct),soot,soot,soot,soot,P(aE+e*sd2/2,0,ct-1));
+  }
+  /* ---- DOOR, WINDOWS ---- */
+  const tim=sp.timCol, plank=sp.doorCol, dark=RGB(0x241a12), iron=RGB(0x2a2420);   /* an unlit room, not a hole */
+  const front=faces[0];
+  if(sp.door){
+    const da=sp.door.a, dw=sp.door.w, dh=Y0+sp.door.h, f=front;
+    flat(f,da-dw/2-0.4,da-dw/2,Y0,dh+0.4,0.16,tim,0.9);flat(f,da+dw/2,da+dw/2+0.4,Y0,dh+0.4,0.16,tim,0.9);
+    flat(f,da-dw/2-0.5,da+dw/2+0.5,dh,dh+0.45,0.2,tim,0.85);
+    const np=Math.max(3,Math.round(dw/0.8));
+    for(let i=0;i<np;i++)flat(f,da-dw/2+dw*i/np,da-dw/2+dw*(i+1)/np,Y0,dh,0.12,plank,0.85+R(90+i)*0.22);
+    for(const hy of [Y0+1.1,dh-1.1])flat(f,da-dw/2,da+dw*0.25,hy-0.08,hy+0.08,0.14,iron,1);
+  }
+  (sp.wins||[]).forEach(function(w,i){
+    const f=faces[w.face], ww=w.w, wh=w.h, t=w.t, yb=w.y, z=0.14;
+    flat(f,t-ww/2-0.25,t+ww/2+0.25,yb-0.25,yb+wh+0.25,z,tim,0.85);
+    flat(f,t-ww/2,t+ww/2,yb,yb+wh,z+0.02,dark,1);
+    if(w.kind==="casement"){flat(f,t-0.09,t+0.09,yb,yb+wh,z+0.04,tim,0.9);flat(f,t-ww/2,t+ww/2,yb+wh*0.62,yb+wh*0.62+0.14,z+0.04,tim,0.9);}
+    else if(w.kind==="shut"){flat(f,t-ww/2,t,yb,yb+wh,z+0.04,plank,0.9+R(110+i)*0.15);flat(f,t,t+ww/2,yb,yb+wh,z+0.04,plank,0.8+R(120+i)*0.15);}
+    else{flat(f,t-ww/2-0.3-ww/2,t-ww/2-0.3,yb,yb+wh,z,plank,0.9+R(130+i)*0.15);flat(f,t+ww/2+0.3,t+ww+0.3,yb,yb+wh,z,plank,0.85+R(140+i)*0.15);}
+  });
+}
 function leafChurch(root,G,x,z,yaw,stone){
-  /* a plain church: a long nave with a pitched roof and, at Gravesend, a stone tower */
-  const g=new Geo(), wall=RGB(stone?0x8a8478:0x8a6c48), wallD=RGB(stone?0x6a655c:0x6b5236), roof=RGB(stone?0x5a4a3e:0x7a6a4c);
-  const gy=G(x,z), L=26, W=12, H=11;
+  /* a plain church: a long nave with a pitched roof and, at Gravesend, a stone tower.
+     look pass, 27 Nov: the shell is engShell's. Jamestown's church of 1610 had "faire broad
+     windowes, to shut and open, as the weather shall occasion, of the same wood" (Strachey,
+     True Reportory, quoted from memory, as above) - wooden shutters, so shutters it has;
+     the size and the collider are unchanged */
+  const g=new Geo(), gy=G(x,z), L=26, W=12, H=11;
   const c=Math.cos(yaw), s=Math.sin(yaw), P=function(a,b,y){return [x+a*c+b*s,gy+y,z-a*s+b*c];};
-  const Q=function(a,b,c2,d,col){g.quad(a,b,c2,d,col);g.quad(d,c2,b,a,col);};
-  Q(P(-L/2,-W/2,-0.5),P(L/2,-W/2,-0.5),P(L/2,-W/2,H),P(-L/2,-W/2,H),wallD);
-  Q(P(-L/2,W/2,-0.5),P(L/2,W/2,-0.5),P(L/2,W/2,H),P(-L/2,W/2,H),wall);
-  Q(P(-L/2,-W/2,-0.5),P(-L/2,W/2,-0.5),P(-L/2,W/2,H),P(-L/2,-W/2,H),wall);
-  Q(P(L/2,-W/2,-0.5),P(L/2,W/2,-0.5),P(L/2,W/2,H),P(L/2,-W/2,H),wall);
-  Q(P(-L/2,-W/2-0.8,H),P(L/2,-W/2-0.8,H),P(L/2,0,H+6),P(-L/2,0,H+6),roof);
-  Q(P(-L/2,W/2+0.8,H),P(L/2,W/2+0.8,H),P(L/2,0,H+6),P(-L/2,0,H+6),roof);
-  g.quad(P(-L/2,-W/2,H),P(-L/2,W/2,H),P(-L/2,0,H+6),P(-L/2,0,H+6),wall);g.quad(P(-L/2,0,H+6),P(-L/2,0,H+6),P(-L/2,W/2,H),P(-L/2,-W/2,H),wall);
-  g.quad(P(L/2,-W/2,H),P(L/2,0,H+6),P(L/2,0,H+6),P(L/2,W/2,H),wall);g.quad(P(L/2,W/2,H),P(L/2,0,H+6),P(L/2,0,H+6),P(L/2,-W/2,H),wall);
-  /* the door, on the long side */
-  Q(P(-2,W/2+0.05,0),P(2,W/2+0.05,0),P(2,W/2+0.05,7),P(-2,W/2+0.05,7),RGB(0x3a2c20));
+  const wins=[];
+  for(const t of [-8.5,8.5])wins.push({face:0,t:t,y:3.2,w:3.2,h:3.0,kind:stone?"casement":"open"});
+  for(const t of [-8.5,0,8.5])wins.push({face:1,t:t,y:3.2,w:3.2,h:3.0,kind:stone?"casement":(t===0?"shut":"open")});
+  engShell(g,P,{c:c,s:s,seed:x*0.731+z*1.917,a0:-L/2,a1:L/2,hw:W/2,H:H,rise:6,
+    wall:stone?"stone":"board",roof:stone?"tile":"bark",
+    wallCol:RGB(stone?0x8a8478:0x8f7454),roofCol:RGB(stone?0x5e5048:0x6a5c4a),timCol:RGB(0x5e4630),
+    sillCol:RGB(stone?0x6a655c:0x5a4128),doorCol:RGB(0x5a4128),ov:0.9,vo:[0.6,0.6],tr:0.35,chim:null,
+    door:{a:0,w:4,h:7},wins:wins});
   if(stone){
-    /* a square tower at the west end */
-    const tx=-L/2-4;
-    for(const f of [[-4,-4,4,-4],[4,-4,4,4],[4,4,-4,4],[-4,4,-4,-4]])
-      Q(P(tx+f[0],f[1],-0.5),P(tx+f[2],f[3],-0.5),P(tx+f[2],f[3],H+12),P(tx+f[0],f[1],H+12),wallD);
-    Q(P(tx-4,-4,H+12),P(tx+4,-4,H+12),P(tx+4,4,H+12),P(tx-4,4,H+12),roof);
+    /* a square tower at the west end, in coursed stone, with a belfry and a parapet */
+    const tx=-L/2-4, th=H+12, sc=RGB(0x857f73), dk=RGB(0x1a1612);
+    const TW=function(a,b,y){return P(tx+a,b,y);}, IN=P(tx,0,th/2);
+    for(const f of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const pt=function(t,y,off){return f[0]?TW(f[0]*(4+off),t,y):TW(t,f[1]*(4+off),y);};
+      for(let i=0,y=-0.5;y<th-0.01;i++){const y1=Math.min(th,y+1.5), m=(0.9+srand(i*3.1+f[0]+f[1]*2+x)*0.16), a0=(0.56+0.44*smooth01(0,2.6,y)), a1=(0.56+0.44*smooth01(0,2.6,y1));
+        quadOut4(g,pt(-4,y,0),pt(4,y,0),pt(4,y1,0),pt(-4,y1,0),shadeRGB(sc,m*a0),shadeRGB(sc,m*a0),shadeRGB(sc,m*a1*0.92),shadeRGB(sc,m*a1*0.92),IN);y=y1;}
+      quadOut4(g,pt(-1.2,th-5,0.05),pt(1.2,th-5,0.05),pt(1.2,th-1.6,0.05),pt(-1.2,th-1.6,0.05),dk,dk,dk,dk,IN);
+      quadOut4(g,pt(-4.3,th-0.2,0.3),pt(4.3,th-0.2,0.3),pt(4.3,th+1.4,0.3),pt(-4.3,th+1.4,0.3),shadeRGB(sc,0.95),shadeRGB(sc,0.95),shadeRGB(sc,1.05),shadeRGB(sc,1.05),IN);
+      quadOut4(g,pt(-4.3,th-0.2,0.3),pt(4.3,th-0.2,0.3),pt(4.3,th-0.2,0),pt(-4.3,th-0.2,0),shadeRGB(sc,0.4),shadeRGB(sc,0.4),shadeRGB(sc,0.4),shadeRGB(sc,0.4),TW(0,0,th+2));
+    }
+    const lead=RGB(0x5a5a58);
+    quadOut4(g,TW(-4,-4,th+0.6),TW(4,-4,th+0.6),TW(4,4,th+0.6),TW(-4,4,th+0.6),lead,lead,lead,lead,TW(0,0,th-2));
   }
   /* play-test, 27 Nov: the collider ignored the yaw (Henrico's church is turned) and ran the
      tower's eight feet out of both ends */
   root.add(g.mesh(false,false));
   {const a0=stone?-4:0;leafSolid(x+a0*c,z-a0*s,L/2+(stone?4:0),W/2,yaw);}
 }
-function leafHouse(root,G,x,z,yaw){
-  /* a framed English house of the new towns: weatherboarded, two storeys */
-  const g=new Geo(), board=RGB(0x9a7a52), boardD=RGB(0x7a5c3c), roof=RGB(0x6a5a44);
-  const gy=G(x,z), L=14, W=9, H=12;
+function leafHouse(root,G,x,z,yaw,kind){
+  /* a framed English house of the new towns. kind: "thatch" (the fort, 1609-10), "bark"
+     (Virginia from 1610; the default) or "eng" (London, Gravesend) - see engShell.
+     The footprint is 14 by 9 whatever the variant: the chimney stands inside it at one end,
+     and the variants (body length, height, pitch, chimney end, door place, shutters,
+     colour) are drawn from a seed on the position, so a street is not one house twelve
+     times and the same house is the same house every visit */
+  kind=kind||"bark";
+  const g=new Geo(), gy=G(x,z), L=14, W=9, eng=kind==="eng", seed=x*0.731+z*1.917;
+  const R=function(n){return srand(seed+n*2.414);};
   const c=Math.cos(yaw), s=Math.sin(yaw), P=function(a,b,y){return [x+a*c+b*s,gy+y,z-a*s+b*c];};
-  const Q=function(a,b,c2,d,col){g.quad(a,b,c2,d,col);g.quad(d,c2,b,a,col);};
-  Q(P(-L/2,-W/2,-0.5),P(L/2,-W/2,-0.5),P(L/2,-W/2,H),P(-L/2,-W/2,H),boardD);
-  Q(P(-L/2,W/2,-0.5),P(L/2,W/2,-0.5),P(L/2,W/2,H),P(-L/2,W/2,H),board);
-  Q(P(-L/2,-W/2,-0.5),P(-L/2,W/2,-0.5),P(-L/2,W/2,H),P(-L/2,-W/2,H),board);
-  Q(P(L/2,-W/2,-0.5),P(L/2,W/2,-0.5),P(L/2,W/2,H),P(L/2,-W/2,H),board);
-  Q(P(-L/2,-W/2-0.6,H),P(L/2,-W/2-0.6,H),P(L/2,0,H+5),P(-L/2,0,H+5),roof);
-  Q(P(-L/2,W/2+0.6,H),P(L/2,W/2+0.6,H),P(L/2,0,H+5),P(-L/2,0,H+5),roof);
-  /* play-test, 27 Nov: the gable ends were open - two black triangles on every house */
-  Q(P(-L/2,-W/2,H),P(-L/2,W/2,H),P(-L/2,0,H+5),P(-L/2,0,H+5),boardD);
-  Q(P(L/2,-W/2,H),P(L/2,W/2,H),P(L/2,0,H+5),P(L/2,0,H+5),boardD);
-  Q(P(-1.2,W/2+0.05,0),P(1.2,W/2+0.05,0),P(1.2,W/2+0.05,6),P(-1.2,W/2+0.05,6),RGB(0x3a2c20));
+  const H=kind==="thatch"?9.5+R(1)*1.5:eng?12+R(1)*1.5:10.5+R(1)*2.2;
+  const rise=kind==="thatch"?6.5+R(2)*1.0:eng?5.6+R(2)*1.0:5.0+R(2)*1.4;
+  const end=R(3)<0.5?-1:1;
+  /* the chimney's depth out from its gable, counted inside the footprint */
+  const cd=eng?2.0:2.6, slack=R(4)*0.8, tr=kind==="thatch"?0.9:0.32, trv=tr*Math.hypot(1,rise/(W/2));
+  const a0=end<0?-L/2+cd:-L/2+slack, a1=end<0?L/2-slack:L/2-cd, bl=a1-a0;
+  const chim=eng?{end:end,d:cd,w:4.4,sw:2.6,sd:1.8,hb:5.5,sh:1.2,top:H+rise+trv+1.6,brick:true,col:RGB(0x8a4a36)}
+                :{end:end,d:cd,w:5.6,sw:3.0,sd:2.0,hb:6.0,sh:1.6,top:H+rise+trv+1.4,brick:false,col:RGB(R(5)<0.5?0xa89474:0x9c8a6c)};
+  /* the door at one of three places along the front; a window where the door is not */
+  const dp=[0.3,0.5,0.7][Math.floor(R(6)*3)], da=a0+bl*dp;
+  const kw=function(n){return eng?"casement":R(n)<0.45?"shut":"open";};
+  const wins=[], tall=H>=11;
+  const wa=a0+bl*(dp<0.5?0.76:0.24);
+  if(Math.abs(wa-da)>4.6)   /* an open shutter reaches 2.5 ft from its window's middle */
+    wins.push({face:0,t:wa,y:2.9,w:2.2,h:1.9,kind:kw(10)});
+  wins.push({face:1,t:a0+bl*0.5,y:2.9,w:2.2,h:1.9,kind:kw(11)});
+  if(tall){wins.push({face:0,t:a0+bl*0.25,y:H-3.2,w:2.0,h:1.7,kind:kw(12)});
+    wins.push({face:0,t:a0+bl*0.75,y:H-3.2,w:2.0,h:1.7,kind:kw(13)});
+    wins.push({face:1,t:a0+bl*0.5,y:H-3.2,w:2.0,h:1.7,kind:kw(14)});}
+  const gface=end<0?3:2;
+  wins.push({face:gface,t:0,y:2.9,w:2.0,h:1.8,kind:kw(15)});
+  if(rise>=5.4)wins.push({face:gface,t:0,y:H+0.7,w:1.5,h:1.4,kind:kw(16)});
+  const wallCol=eng?RGB([0xcdb994,0xd6c7a4,0xc2ad88][Math.floor(R(7)*3)])
+                   :RGB([0x9a7a52,0x8f7556,0xa08462,0x8a7462][Math.floor(R(7)*4)]);
+  const roofCol=kind==="thatch"?RGB(R(8)<0.5?0xaa9668:0x9e8c64):eng?RGB(R(8)<0.5?0x8e4a34:0x7e4632):RGB(R(8)<0.5?0x6a5c4a:0x5e5446);
+  engShell(g,P,{c:c,s:s,seed:seed,a0:a0,a1:a1,hw:W/2,H:H,rise:rise,
+    wall:eng?"plaster":"board",roof:kind==="thatch"?"thatch":eng?"tile":"bark",
+    wallCol:wallCol,roofCol:roofCol,timCol:RGB(eng?0x3e2c1e:0x5e4630),sillCol:RGB(0x5a4128),doorCol:RGB(0x5f4630),
+    ov:kind==="thatch"?1.1:eng?0.6:0.8,vo:end<0?[0.15,0.5]:[0.5,0.15],tr:tr,
+    chim:chim,door:{a:da,w:3,h:6.2},wins:wins});
   /* play-test, 27 Nov: a 14 by 14 square collider on a 14 by 9 house was an invisible wall
      two and a half feet in front of the door, and Rolfe and Dale stood inside two of them */
   root.add(g.mesh(false,false));leafSolid(x,z,L/2,W/2,yaw);
@@ -29977,7 +31137,7 @@ registerWorld("ch8",function(root){
     G=captLand(root,"thames",{trees:50,winter:true,clear:function(x,z){return Math.hypot(x,z)<120;}});
     leafChurch(root,G,-10,-30,0,true);
     LEAF.ship=placeShip(root,"susan",1,-40,110,Math.PI/2);
-    [[30,-10],[50,-30],[-60,-10]].forEach(function(a,i){leafHouse(root,G,a[0],a[1],i*0.4);});
+    [[30,-10],[50,-30],[-60,-10]].forEach(function(a,i){leafHouse(root,G,a[0],a[1],i*0.4,"eng");});
     /* Smith was in London, not at Gravesend: his book is here, not the man */
     spots={};
     /* play-test, 27 Nov: "Smith's Book", "A Notched Stick", "Whose Words?" and Purchas's record
@@ -30035,21 +31195,7 @@ function updateLeaf(dt){
     if(p&&!p.userData.leafCut){p.userData.leafCut=true;starveCut(p,function(x,z){return C.tents.some(function(h){return Math.hypot(x-h[0],z-h[1])<9;});});}
     const aw=FORT.parts.awning;if(aw&&aw.visible)aw.visible=false;
   }
-  if(!LEAF.lit){
-    const sd=leafDay();
-    if(LEAF.night){scene.background=new THREE.Color(0x1a2030);if(scene.fog){scene.fog.color=new THREE.Color(0x1a2030);scene.fog.near=80;scene.fog.far=520;}
-      if(hemiLight)hemiLight.intensity*=0.35;if(sunLight)sunLight.intensity*=0.25;}
-    else if(sd.where==="gravesend"){scene.background=new THREE.Color(0xa2abb2);if(hemiLight)hemiLight.intensity*=0.85;if(sunLight)sunLight.intensity*=0.7;}
-    if(skyDome&&(LEAF.night||sd.where==="gravesend")){
-      const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
-      for(let i=0;i<pp.count;i++){
-        const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=LEAF.night?lerpHex(0x2a3244,0x0e121c,Math.pow(t,0.6)):lerpHex(0xb0b7ba,0x8a949a,Math.pow(t,0.6));
-        cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
-      }
-      cc.needsUpdate=true;
-    }
-    LEAF.lit=true;
-  }
+  /* night on the river and grey Gravesend: SCENE_LOOK.ch8, via applyLook */
   updateBlaze(dt);
 }
 
@@ -30841,7 +31987,7 @@ registerWorld("ch9",function(root){
   }
   if(where==="london"){
     G=captLand(root,"thames",{trees:30,winter:true,clear:function(x,z){return Math.hypot(x,z)<140;}});
-    for(let k=0;k<5;k++){leafHouse(root,G,-56+k*26,-22,0);leafHouse(root,G,-43+k*26,-52,0);}
+    for(let k=0;k<5;k++){leafHouse(root,G,-56+k*26,-22,0,"eng");leafHouse(root,G,-43+k*26,-52,0,"eng");}
     leafChurch(root,G,-70,10,Math.PI/2,true);
     placeShip(root,"susan",1,-40,110,Math.PI/2);
     captBarge(root,G,30,72,0.3);
@@ -30920,20 +32066,7 @@ function updatePrice(dt){
     /* the 1607 sail-awning they prayed under; by 1619 they met in a church, and a house stands there */
     const aw=FORT.parts.awning;if(aw&&aw.visible)aw.visible=false;
   }
-  if(!PRICE.lit){
-    const sd=priceDay(), grey=sd.where==="pointcomfort"||sd.where==="london";
-    if(grey){scene.background=new THREE.Color(0xa6adb1);if(hemiLight)hemiLight.intensity*=0.85;if(sunLight)sunLight.intensity*=0.7;
-      if(skyDome){
-        const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
-        for(let i=0;i<pp.count;i++){
-          const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=lerpHex(0xb2b9bc,0x8c969c,Math.pow(t,0.6));
-          cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
-        }
-        cc.needsUpdate=true;
-      }
-    }
-    PRICE.lit=true;
-  }
+  /* London and Point Comfort's grey: SCENE_LOOK.ch9, via applyLook */
 }
 
 /* ---- CHAPTER IX'S CONTENT, AND ITS MUSTER ----
@@ -31685,8 +32818,29 @@ function skyBurnt(root,G,x,z,cols,rows){
 }
 /* "a peece of a Church" at Martin's Hundred (Frethorne, Kingsbury IV:41): an end wall standing */
 function skyRuin(root,G,x,z){
-  const g=new Geo(), wall=RGB(0x8a6c48), wallD=RGB(0x5e4a32), gy=G(x,z);
-  g.box(x,gy+4.5,z,12,9,0.8,wall);g.box(x-3.5,gy+10.5,z,4,3,0.8,wallD);g.box(x+5.8,gy+2,z+3,0.8,4,6,wallD);
+  /* "a peece of a Church" (Frethorne): what the fire left of a board end wall and a stub of its
+     side. look pass, 27 Nov: it was three boxes; it is upright boards now, the top ragged where
+     they burnt, charred black for the last foot and a half, dark at the ground. Same envelope
+     (12 ft wide, the gable stub to 12 ft, the side stub 6 ft along) and the same collider */
+  const g=new Geo(), board=RGB(0x8a6c48), gy=G(x,z), soot=RGB(0x1e1814);
+  const plank=function(cx,cz,w,d,top,i){
+    const m=0.86+srand(x*3.1+i*1.7)*0.22, c=shadeRGB(board,m), lo=Math.max(0.4,top-1.6);
+    const A=new Geo();
+    A.box(cx,gy+lo/2-0.2,cz,w,lo+0.4,d,c);
+    A.shade(function(px,py){return 0.58+0.42*smooth01(gy,gy+2.6,py);});
+    const B=new Geo();
+    B.box(cx,gy+(lo+top)/2,cz,w,top-lo,d,c);
+    B.shade(function(px,py){return py>gy+lo+0.01?[soot[0]/c[0],soot[1]/c[1],soot[2]/c[2]]:1;});
+    g.p.push.apply(g.p,A.p);g.c.push.apply(g.c,A.c);g.p.push.apply(g.p,B.p);g.c.push.apply(g.c,B.c);
+  };
+  const tops=[8.6,9.2,11.4,12,10.6,8.4,7.2,8.6,6.6,7.8,5.6,6.4];
+  for(let i=0;i<12;i++)plank(x-5.5+i,z+(i%2?0.06:-0.06),1.0,0.8,tops[i],i);
+  const side=[4.4,3.6,4.0,2.6,3.2,1.8];
+  for(let i=0;i<6;i++)plank(x+5.8+(i%2?0.06:-0.06),z+0.5+i,0.8,1.0,side[i],20+i);
+  /* the frame the boards were nailed to - sill and girt - so it reads as a wall, not the pale */
+  const tim=RGB(0x4e3a28);
+  g.box(x+0.2,gy+0.15,z,12.6,0.7,1.1,shadeRGB(tim,0.7));g.box(x,gy+4.9,z,12.2,0.55,1.05,tim);
+  g.box(x+5.8,gy+0.15,z+3,1.1,0.7,6.2,shadeRGB(tim,0.7));
   root.add(g.mesh(false,false));solid(x,z,6.2,0.8,LVL.MAIN,0);
 }
 /* a penny loaf cut four ways, on a chest */
@@ -31894,19 +33048,7 @@ function updateSky(dt){
     if(p&&!p.userData.skyCut){p.userData.skyCut=true;starveCut(p,function(x,z){return C.tents.some(function(h){return Math.hypot(x-h[0],z-h[1])<9;});});}
     const aw=FORT.parts.awning;if(aw&&aw.visible)aw.visible=false;
   }
-  if(!SKY.lit){
-    if(SKY.night){scene.background=new THREE.Color(0x1a2030);if(scene.fog){scene.fog.color=new THREE.Color(0x1a2030);scene.fog.near=80;scene.fog.far=520;}
-      if(hemiLight)hemiLight.intensity*=0.35;if(sunLight)sunLight.intensity*=0.25;
-      if(skyDome){
-        const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
-        for(let i=0;i<pp.count;i++){
-          const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=lerpHex(0x2a3244,0x0e121c,Math.pow(t,0.6));
-          cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
-        }
-        cc.needsUpdate=true;
-      }}
-    SKY.lit=true;
-  }
+  /* the night at Pace's: SCENE_LOOK.ch10, via applyLook */
   updateBlaze(dt);
 }
 
@@ -32551,6 +33693,13 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"27 November 2026 · latest",
+   head:"A new look",
+   lines:[
+     "<b>Every scene has its own light</b>",
+     "Dawn at sea, a hazy August, a frozen January, a grey London, night on the river: each scene is lit for its date and place, with woods and a far shore on the horizon.",
+     "<b>Houses, ground and water</b>",
+     "Houses have boards, roofs, chimneys, doors and shutters. The ground has paths, grass and shadows, and the water moves. All of it is built to run on a school Chromebook."]},
+  {when:"27 November 2026",
    head:"Chapter X: The Sky Should Sooner Fall",
    lines:[
      "<b>A new chapter: 1621 to 1624</b>",
@@ -33974,7 +35123,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1243";
+const BUILD="20261127-1338";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
