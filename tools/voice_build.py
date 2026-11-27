@@ -88,7 +88,12 @@ def say_form(t):
 
 def junk(t):
     """Strings the harvest finds that nobody ever hears: encoded data and identifiers."""
-    return bool(re.search(r"\S{28,}", t) or re.search(r"\w_\w", t) or not re.search(r"[aeiouy]", t, re.I))
+    # a number is said too: Archer's "aboue. 200." cuts a line "200.”" out of a muster
+    # question, and with no vowel in it it was never recorded; so is a muster choice's letter,
+    # "B." (voice drill, 27 Nov)
+    if re.fullmatch(r"[A-D]\.", t.strip()):
+        return False
+    return bool(re.search(r"\S{28,}", t) or re.search(r"\w_\w", t) or not re.search(r"[aeiouy0-9]", t, re.I))
 
 
 def one(item, npcs, redo=False):
