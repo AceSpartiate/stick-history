@@ -26557,9 +26557,9 @@ function workStack(root,x,z,kind,max){
 /* ---- THE SCENES ---- */
 const PRES_DAYS=[
   {where:"fort",date:"February to 10 April 1608",need:["load"],next:"Anas Todkill’s Page",ship:"newport"},
-  {where:"bay",date:"Summer 1608 — the mouth of the Rappahannock; no day was written down",need:["ray","grave"],next:"Anas Todkill’s Page"},
+  {where:"bay",date:"Summer 1608 — the mouth of the Rappahannock",need:["ray","grave"],next:"Anas Todkill’s Page"},
   {where:"fort",date:"21 July to 10 September 1608",need:["palace","patent"],next:"Anas Todkill’s Page"},
-  {where:"york",date:"Autumn 1608 — Werowocomoco; the day is not recorded",need:["invite","crown"],next:"Anas Todkill’s Page"},
+  {where:"york",date:"Autumn 1608 — Werowocomoco",need:["invite","crown"],next:"Anas Todkill’s Page"},
   {where:"fort",date:"Late 1608 — the Second Supply",need:["oath","letter"],next:"Anas Todkill’s Page"},
   {where:"york",date:"12 January 1609 — the river frozen",need:["terms","warning","pamunkey"],next:"Anas Todkill’s Page",winter:true,ice:true},
   {where:"fort",date:"Spring 1609",need:["law","casks","disperse"],next:"Anas Todkill’s Page"},
@@ -26604,31 +26604,31 @@ function presPerson(id){return PRES_PEOPLE.filter(function(p){return p.id===id;}
    let him know. */
 const PRES_SAYS={
   "smith":[
-    ["“They would load her with dirt because it glitters. I am not enamoured of their dirty skill, and I have said so.”"],
-    ["“Dig it on the isle, there, and dig it deep. If the Doctor’s oil fails, I will lie on dry ground.”"],
+    ["“They would load her with dirt because it glitters. I am not enamoured of their dirty skill.”"],
+    ["“Dig my grave on the isle. If the Doctor’s oil fails, I will lie on dry ground.”"],
     /* play-test, 27 Nov: "I take it now" was said before the letters patent were taken */
-    ["“They asked me to take the government in July, and I would not. Master Scrivener held it while I was on the Bay. Let the council say what it wants of me now.”"],
+    ["“They asked me to govern in July, and I would not. Let the council say what it wants of me now.”"],
     [],
-    ["“A can of water down the sleeve for every oath. You will be surprised how quickly a gentleman learns to hold his tongue.”"],
+    ["“A can of water down the sleeve for every oath. A gentleman soon learns to hold his tongue.”"],
     ["“He wants our swords and our guns for his corn. He will have neither.”"],
-    ["“He that will not work shall not eat, except by sickness he be disabled. I said it, and I will hold to it.”"],
+    ["“He that will not work shall not eat, except by sickness he be disabled. I hold to it.”"],
     []],
   "scrivener":[
     [],                                    /* his dialogue beats, this scene */
     [],
-    ["“I have held the presidency for him while he was on the Bay. Whether he will take it now is for the council, and for him.”"],
+    ["“I held the presidency while he was on the Bay. Whether he takes it now is for him.”"],
     [],
-    ["“Seventy more mouths, and not a month’s victual among them. Pitch and glass we shall have. Bread is another matter.”"],
+    ["“Seventy more mouths, and no victuals. Pitch and glass we shall have. Bread is another matter.”"],
     [],[],[]],
   "russell":[[],[],[],[],[],[],[],[]],     /* scene 1: his dialogue beats */
   "newport":[
-    ["“Fourteen weeks I have waited on these refiners. If the dirt is gold, the Company will forgive me the time.”"],
+    ["“Fourteen weeks I have waited on these refiners. If it is gold, the Company will forgive me.”"],
     [],[],[],
-    ["“I have orders to find the South Sea, or gold, or one of Sir Walter Raleigh’s lost people. I mean to try for all three.”"],
+    ["“My orders are to find the South Sea, or gold, or Sir Walter Raleigh’s lost people.”"],
     [],[],[]],
   "wingfield":[
     /* review, 27 Nov: was "I have written it all down"; Wingfield's Discourse runs to his landing at Blackwall, 21 May 1608, so it was written in England (Arber p. lxxxvii) */
-    ["“I go home to answer for myself, and I mean to set it all down in writing. They shall have my side as well as theirs.”"],
+    ["“I go home to answer for myself, and I mean to write down my side.”"],
     [],[],[],[],[],[],[]],
   "archer":[
     ["“I am for England. There are men here who would have seen me hanged, and Captain Newport would not let them.”"],
@@ -26639,13 +26639,13 @@ const PRES_SAYS={
     ["“The President is to go home and answer for what he has done. I am writing so to my Lord Salisbury.”"]],
   "martin":[[],[],[],[],[],[],[],
     /* review, 27 Nov: was "They made me President"; the record says Smith "made Martin President" (Proceedings pp. 162-163) */
-    ["“Captain Smith made me President, and I gave it back to him within three hours. Let them find another.”"]],
+    ["“Captain Smith made me President, and I gave it back to him within three hours.”"]],
   "percy":[[],[],[],[],[],[],
     /* review, 27 Nov: was "Captain Smith thinks a gentleman cannot fish"; no source gives Smith's view. The friends say only they "would not agree once to cast out their net" (p. 155) */
-    ["“Twenty of us to Point Comfort, to try for fishing. We take a net, and we shall see what the sea gives.”"],
+    ["“Twenty of us to Point Comfort, to try for fishing.”"],
     ["“If the President goes, somebody must hold this place through the winter. They are asking me.”"]],
   "laxon":[[],[],[],[],[],[],
-    ["“Sixty of us down the river to the oyster banks. Oysters every day until the corn comes in. There are worse ways to live.”"],
+    ["“Sixty of us to the oyster banks, until the corn comes in.”"],
     []],
   "laydon":[[],[],[],[],
     ["“Anne Burras, she is called. Mistress Forrest’s maid. She came on the ship.”"],
@@ -26654,27 +26654,27 @@ const PRES_SAYS={
 /* ---- THE THREE WHO ARE ASKED ---- */
 const PRES_NPCS=[
   {id:"scrivener",name:"Master Scrivener",voice:"male",role:"of the council",at:0,eq:PRES_PEOPLE[1].eq,
-   done:"“The church first, then the store, then the fields. If half the men were not digging sand, we should be done by now.”",
+   done:"“If half the men were not digging sand, we should be done by now.”",
    beats:[
     /* review, 27 Nov: was "have shared out the work"; the 1612 book dates that to after "the ship departed" (p. 105). While she lay there Newport set men on "a faire stoare house" and "his Maryners aboute a Church" (Wingfield, Arber pp. lxxxvi-lxxxvii) */
-    {npc:"“Captain Newport’s sailors are raising a store and a church. When the ship is gone, Captain Smith and I are to share out the rest between us: the town, the palisade, the fields. And half the men are down by the river, digging sand.”",
+    {npc:"“Newport’s sailors are raising a store and a church. When the ship is gone, Smith and I share out the rest. And half the men are down by the river, digging sand.”",
      choices:[
       {t:"Why are they digging sand?",wise:true,ink:8,
-       reply:"“The refiners swear there is gold in it.” He does not laugh. “There is no talk, no hope, nor work, but dig gold, wash gold, refine gold, load gold. Captain Newport has kept his ship here fourteen weeks for it. She might have gone in fourteen days.”",
-       insight:{g:"known",b:"Gilded Dirt",s:"The First Supply brought a jeweller, two refiners and two goldsmiths. Smith’s friends wrote that in spring 1608 there was “no talke, no hope, nor worke, but dig gold, wash gold, refine gold, load gold”, and that Newport’s ship stayed fourteen weeks to load it. Smith called it “gilded durt”."}},
+       reply:"“The refiners swear there is gold in it. No talk, no hope, nor work, but dig gold, wash gold, refine gold, load gold. Newport has kept his ship here fourteen weeks for it.”",
+       insight:{g:"known",b:"Gilded Dirt",s:"The First Supply brought a jeweller, two refiners and two goldsmiths. Smith’s friends wrote that in spring 1608 there was “no talke, no hope, nor worke, but dig gold …”. Newport’s ship stayed fourteen weeks to load it. Smith called it “gilded durt”."}},
       {t:"What did the fire leave standing?",fair:true,ink:3,
        /* review, 27 Nov: was "The store we have covered again"; the store was re-covered after the ship left (p. 105); Newport's men built one while she lay there (Wingfield, Arber pp. lxxxvi-lxxxvii) */
-       reply:"“Very little. Captain Newport’s men are building a new store and a church. The palisade must be mended where it burned.”"},
+       reply:"“Very little. The palisade must be mended where it burned.”"},
       {t:"Then we shall all be rich by summer.",wise:false,
-       reply:"“So the refiners say. Captain Smith says it is gilded dirt, and he is not often quiet about what he thinks.”"}]}]},
+       reply:"“So the refiners say. Captain Smith calls it gilded dirt.”"}]}]},
   {id:"russell",name:"Doctor Russell",voice:"male",role:"Walter Russell, doctor of physic",at:1,eq:PRES_PEOPLE[3].eq,
    done:"“Keep the oil warm and the Captain’s arm up. That is all the physic there is.”",
    beats:[
-    {npc:"“A fish, and a sword, and the Captain’s wrist. I have an oil that may serve. If it does not, you will have his grave dug, as he asked.”",
+    {npc:"“A fish, a sword, and the Captain’s wrist. I have an oil that may serve. If not, dig his grave, as he asked.”",
      choices:[
       {t:"What kind of fish was it?",wise:true,ink:8,
-       reply:"“Much of the fashion of a thornback, with a longer tail, and on the tail a poisoned sting two or three inches long. She struck it an inch and a half into his wrist.” He holds up his own arm to show you where.",
-       insight:{g:"known",b:"Stingeray Ile",s:"In summer 1608, at the mouth of the Rappahannock, Smith was spearing fish with his sword when a stingray struck him in the wrist. His men dug his grave on an island, as he ordered. By evening Doctor Russell’s oil had eased him, and he ate the fish for supper. They called the place Stingeray Ile. Russell and Todkill, who were there, wrote it down."}},
+       reply:"“Much of the fashion of a thornback, with a longer tail, and on the tail a poisoned sting two or three inches long. She struck it an inch and a half into his wrist.”",
+       insight:{g:"known",b:"Stingeray Ile",s:"In summer 1608, spearing fish with his sword at the mouth of the Rappahannock, Smith was stung in the wrist by a stingray. His men dug his grave, as he ordered. By evening Doctor Russell’s oil had eased him, and he ate the fish for supper. Russell and Todkill, who were there, wrote it down."}},
       {t:"Will he live?",fair:true,ink:3,
        reply:"“He has ordered his own grave and his own supper both. I would wager on the supper.”"},
       {t:"It is a judgement on him.",wise:false,
@@ -26683,16 +26683,16 @@ const PRES_NPCS=[
    done:"“Write what you like. I have written what I saw.”",
    beats:[
     /* review, 27 Nov: was "among the savages" outside quotation; Archer's own word is "Sauages" (p. xcvi), kept only where he is quoted */
-    {npc:"“I have written home already of how we found this place. Men scattered in the Powhatan towns for an ounce of copper a day, and fourscore living twenty miles off on oysters.”",
+    {npc:"“I have written home how we found this place: men scattered in the Powhatan towns for an ounce of copper a day, and fourscore living on oysters.”",
      choices:[
       {t:"Who will see your letter printed?",wise:true,ink:8,
-       reply:"“A friend in London, I suppose.” He does not know that the man will be Samuel Purchas, who will print the letter with pieces cut out, and a note in its margin blaming the troubles on “the malecontents … enemies to the President”.",
-       insight:{g:"disp",b:"A Letter Cut",s:"Gabriel Archer’s letter of 31 August 1609 is one of the few accounts by Smith’s enemies. It survives only as Samuel Purchas printed it, with notes saying “Some things … are here left out”, and blaming the troubles on Smith’s enemies. The enemy’s letter was edited by a man on Smith’s side."}},
+       reply:"“A friend in London, I suppose.” It will be Samuel Purchas, who will cut pieces out and blame the troubles, in a margin note, on “the malecontents … enemies to the President”.",
+       insight:{g:"disp",b:"A Letter Cut",s:"Gabriel Archer’s letter of 31 August 1609 is one of the few accounts by Smith’s enemies. It survives only as Samuel Purchas printed it, with a note that “Some things … are here left out”. A man on Smith’s side edited it."}},
       {t:"Did the men on the oysters starve?",fair:true,ink:3,
        /* review, 27 Nov: was "Smith's friends will tell you only seven or eight died"; that figure is the 1612 book's (p. 157), and Archer died in 1610 */
        reply:"“Ask them whether they chose to go. And when you hear how few died, ask who is counting.”"},
       {t:"Smith is a tyrant. Tell England so.",wise:false,
-       reply:"Archer smiles, very slightly. “I shall tell them what I saw. What you call him is your own affair.”"}]}]}];
+       reply:"Archer smiles slightly. “I shall tell them what I saw.”"}]}]}];
 
 function presSpeaker(id){
   const day=presW().day;
@@ -26707,86 +26707,86 @@ function presSpeaker(id){
 /* ---- THE RECORD THAT OPENS EACH SCENE ---- */
 const PRES_OPEN=[
   /* review, 27 Nov: was "is rebuilt"; Smith and Scrivener shared out the rebuilding once "the ship departed" (p. 105) */
-  {t:"Gilded dirt",b:"<p>The fort is being rebuilt from the ashes, and the First Supply’s men have found something better to do than build it. “There was no talke, no hope, nor worke, but dig gold, wash gold, refine gold, load gold.” <i>— Smith’s friends, 1612</i></p><p>In February Captain Newport and Smith went to Werowocomoco and came home with corn. Now Newport’s ship lies at the fort, waiting to be laden for England.</p>"},
-  {t:"The Bay",b:"<p>“The second of Iune 1608. Smith left the fort, to performe his discoverie”, in an open barge “of two tunnes burden”, with fourteen men. Among them were Walter Russell, doctor of physic, and James Read, the blacksmith from the ladder.</p><p>They are looking for “a glistering mettal”, for furs, for rivers, and for whether the bay is “endlesse”.</p>"},
+  {t:"Gilded dirt",b:"<p>The fort lies in ashes, and the newcomers have found better work than building. “There was no talke, no hope, nor worke, but dig gold, wash gold, refine gold, load gold.” <i>— Smith’s friends, 1612</i></p><p>Newport’s ship waits at the fort to be laden for England.</p>"},
+  {t:"The Bay",b:"<p>“The second of Iune 1608. Smith left the fort, to performe his discoverie”, in an open barge with fourteen men, among them Doctor Walter Russell and James Read, the blacksmith from the ladder.</p><p>They are looking for “a glistering mettal”, and for whether the bay is “endlesse”.</p>"},
   /* review, 27 Nov: was "The 21." capitalised; the source reads "the 21. of Iuly" mid-sentence (p. 114) */
-  {t:"The palace",b:"<p>The barge came home “the 21. of Iuly” and found the newcomers “al sicke … al vnable to do any thing but complain of the pride and vnreasonable needlesse cruelty of their sillie President”.</p><p>Those are the words of Smith’s friends. They are the only words about it that survive.</p>"},
-  {t:"The crown",b:"<p>Captain Newport is back with the Second Supply, and with orders from the Company: Powhatan is to be crowned, as a king under King James. There are presents for him: a basin and ewer, a bed, clothes, and a crown.</p><p>Smith goes ahead with four men to ask Powhatan to come to Jamestown to receive them.</p>"},
-  {t:"The supply",b:"<p>The Second Supply brought seventy people. Among them were eight Poles and Germans, sent to make pitch, tar and glass, and “the first gentlewoman and woman servant that arrived in our Colony”: Mistress Forrest and her maid, Anne Burras.</p><p>“leaving vs in all 200.” They brought no victuals to feed them.</p>"},
+  {t:"The palace",b:"<p>The barge came home “the 21. of Iuly” to find the newcomers “al sicke … al vnable to do any thing but complain of the pride and vnreasonable needlesse cruelty of their sillie President”.</p><p>Those are Smith’s friends’ words, the only ones that survive.</p>"},
+  {t:"The crown",b:"<p>Newport is back with the Second Supply and the Company’s orders: Powhatan is to be crowned, a king under King James. The presents include a basin and ewer, a bed, clothes and a crown.</p><p>Smith goes ahead with four men to invite Powhatan to Jamestown.</p>"},
+  {t:"The supply",b:"<p>The Second Supply brought seventy people: eight Poles and Germans to make pitch, tar and glass, and “the first gentlewoman and woman servant that arrived in our Colony”, Mistress Forrest and her maid, Anne Burras.</p><p>“leaving vs in all 200”, and no victuals to feed them.</p>"},
   /* review, 27 Nov: was "froyen"; Arber and Tyler both print "froye" (Tyler glosses it "Frozen"), p. 133 */
-  {t:"The ice",b:"<p>“The 12 of Ianuarie, we arrived at Werawocomoco, where the river was frozen neare halfe a mile from the shore.” Smith “taught them to march middle deepe, more then a flight shot, through this muddie froye ooze”.</p><p>Master Scrivener, left in charge of the fort, drowned on the way to Hog Island with ten men a few days ago. Nobody here knows it yet.</p>"},
-  {t:"He that will not work",b:"<p>Smith’s party came home with 279 bushels of corn and found the store “so rotten with the last somers rain, and eaten with rats and wormes as the hogs would scarsely eat it”.</p><p>He has called the company together.</p>"},
-  {t:"The Third Supply",b:"<p>Nine ships and five hundred people sailed from England in May 1609. A storm scattered them on Saint James’s day. Four came in on the eleventh of August, and others after, and in them came Captain Ratcliffe, Captain Martin and Master Archer, who “mortally hated him ere ever they see his face”.</p><p>The flagship, the <i>Sea Venture</i>, with the new governor’s commission aboard, has not come.</p>"}];
+  {t:"The ice",b:"<p>“The 12 of Ianuarie, we arrived at Werawocomoco, where the river was frozen neare halfe a mile from the shore.” Smith “taught them to march middle deepe … through this muddie froye ooze”.</p><p>Master Scrivener, left in charge of the fort, has drowned with ten men on the way to Hog Island. Nobody here knows it yet.</p>"},
+  {t:"He that will not work",b:"<p>Smith’s party came home with 279 bushels of corn, to find the store “so rotten … and eaten with rats and wormes as the hogs would scarsely eat it”.</p><p>He has called the company together.</p>"},
+  {t:"The Third Supply",b:"<p>Nine ships and five hundred people sailed in May 1609. A storm scattered them. Four came in on 11 August, others after, bringing Ratcliffe, Martin and Archer, who “mortally hated him ere ever they see his face”.</p><p>The flagship, the <i>Sea Venture</i>, with the new governor’s commission, has not come.</p>"}];
 
 /* ---- THINGS TO LOOK AT ----  one array per scene: [id, label, x, z, title, body] */
 const PRES_LOOKS=[
   /* review, 27 Nov: was "Ieweller"; Arber prints "Iueller", Tyler "Jueller" (p. 108) */
-  [["refiners","The Refiners",-60,58,"Gold in the sand","<p>The First Supply’s roll names “Daniel Stalling, Iueller. William Dawson, Refiner. Abraham Ransacke, Refiner. William Iohnson, Goldsmith … Robert Alberton, a Perfumer. Richard Belfield, Goldsmith.”</p><p>Smith’s friends wrote that “one mad fellow desired to bee buried in the sandes, least they should by their art make gold of his bones”.</p><p>The Company had sent men to find gold, and they were looking.</p>"],
-   ["beads","Corn from Werowocomoco",-30,6,"The blue beads","<p>In February Newport and Smith went to Werowocomoco. Powhatan would not haggle: “lay me down all your commodities togither, what I like I will take”, and he priced his corn so high “we had not 4. bushels for that we expected 20. hogsheads”.</p><p>Then, the 1612 book says, Smith “glaunced in the eies of Powhatan many Trifles”, and for “a pound or two of blew beads” got “2 or 300 bushels of corne”.</p><p>A boy, Thomas Savage, was left with Powhatan, and Powhatan gave Newport his servant Namontack. Only the English side of this bargain was written down.</p>"]],
+  [["refiners","The Refiners",-60,58,"Gold in the sand","<p>The First Supply’s roll: “Daniel Stalling, Iueller. William Dawson, Refiner. Abraham Ransacke, Refiner. William Iohnson, Goldsmith … Robert Alberton, a Perfumer. Richard Belfield, Goldsmith.”</p><p>Smith’s friends wrote that “one mad fellow desired to bee buried in the sandes, least they should by their art make gold of his bones”.</p>"],
+   ["beads","Corn from Werowocomoco",-30,6,"The blue beads","<p>In February Newport and Smith went to Werowocomoco. Powhatan would not haggle: “lay me down all your commodities togither, what I like I will take”.</p><p>Then, the 1612 book says, Smith “glaunced in the eies of Powhatan many Trifles”, and for “a pound or two of blew beads” got “2 or 300 bushels of corne”.</p><p>A boy, Thomas Savage, stayed with Powhatan, and Powhatan gave Newport his servant Namontack. Only the English side was written down.</p>"]],
   /* review, 27 Nov: was "fourteen men aboard"; fourteen are named besides Smith (p. 109) */
-  [["barge","The Barge",14,60,"Two tons","<p>The barge was “of two tunnes burden”: an open boat, rowed or sailed, with Smith and fourteen men aboard. When the bread rotted, the gentlemen begged to go home.</p><p>They tried to catch fish “with a frying pan; but we found it a bad instrument to catch fish with.”</p>"]],
-  [["ratcliffe","Captain Ratcliffe, under guard",-36,2,"Nothing in his own words","<p>Captain Ratcliffe is under guard, “a prisoner for muteny”. He was deposed in July, on condition that Smith would govern.</p><p>Whatever he said for himself, about the house in the woods or the store, nobody kept. Not one word of his side of 1608 survives.</p><p>Smith’s friends later wrote that his “right name was Sickelmore”.</p>"],
-   ["sick","The Sick Men",-90,24,"The Last Supply","<p>The men who came with Captain Nelson’s <i>Phoenix</i> and the First Supply are sick, and they blame the President for the store: he “had riotously consumed the store; and to fulfill his follies, about building him an vnnecessarie pallas in the woodes”.</p>"]],
-  [["presents","The Presents",-10,-10,"By water","<p>Powhatan would not come to Jamestown, so the presents went to him: “by water … neare 100 miles”, while Newport marched twelve miles overland. A basin and ewer, a bed, clothes, a scarlet cloak, and a crown.</p>"]],
-  [["glass","The Glasshouse",-178,-150,"Pitch, tar and glass","<p>The glasshouse stood “in the woods neere a myle from Iames Towne”. The Poles and Germans made pitch, tar, soap-ashes and glass; Newport took home “the tryals of pitch, tarre, glasse, frankincense, and sope ashes, with that clapbord and wainscot”.</p><p>“Dutch” in the English accounts means German.</p>"],
+  [["barge","The Barge",14,60,"Two tons","<p>An open boat “of two tunnes burden”, rowed or sailed, with Smith and fourteen men. They tried to catch fish “with a frying pan; but we found it a bad instrument to catch fish with.”</p>"]],
+  [["ratcliffe","Captain Ratcliffe, under guard",-36,2,"Nothing in his own words","<p>Captain Ratcliffe is under guard, “a prisoner for muteny”. He was deposed in July.</p><p>Not one word of his side of 1608 survives.</p><p>Smith’s friends later wrote that his “right name was Sickelmore”.</p>"],
+   ["sick","The Sick Men",-90,24,"The Last Supply","<p>The newcomers are sick, and they blame the President: he “had riotously consumed the store; and to fulfill his follies, about building him an vnnecessarie pallas in the woodes”.</p>"]],
+  [["presents","The Presents",-10,-10,"By water","<p>Powhatan would not come, so the presents went to him “by water … neare 100 miles”, while Newport marched twelve miles overland.</p>"]],
+  [["glass","The Glasshouse",-178,-150,"Pitch, tar and glass","<p>The glasshouse stood “in the woods neere a myle from Iames Towne”. Newport took home “the tryals of pitch, tarre, glasse, frankincense, and sope ashes”.</p><p>“Dutch” in the English accounts means German.</p>"],
    /* review, 27 Nov: was "is not written down"; the 1612 roll gives only "Mistresse Forest" (p. 129); other records were not checked */
-   ["women","Mistress Forrest and Anne Burras",25,18,"Two names","<p>“Mistresse Forest and Anne Buras her maide”: the first two Englishwomen at Jamestown.</p><p>The record gives their names, the ship they came in, and one wedding. The record does not give Mistress Forrest’s first name. Nothing either of them said or did is recorded, so in this game they say nothing.</p>"],
+   ["women","Mistress Forrest and Anne Burras",25,18,"Two names","<p>“Mistresse Forest and Anne Buras her maide”: the first two Englishwomen at Jamestown.</p><p>The record gives their names, their ship and one wedding, but not Mistress Forrest’s first name. Nothing either said is recorded, so here they say nothing.</p>"],
    /* review, 27 Nov: was "Anne Burras was about fourteen"; no checked source gives her age. The wedding came after the Nansemond trip and before 29 December (p. 130) */
-   ["wedding","The Wedding",-48,-12,"The first marriage","<p>“a marriage betweene Iohn Laydon and Anna Burrowes; being the first marriage we had in Virginia.” It was late in 1608; the day is not written down.</p><p>John Laydon was a labourer who came in 1607 with the first men.</p>"]],
-  [["house","The House for Powhatan",-60,0,"Three Dutchmen","<p>Powhatan had asked for men to build him a house, and Smith sent “3. Dutch-men and 2. English”. The Germans, finding Powhatan’s plenty “and knowing our want”, told him “as much as they knew of our estates and proiects”.</p><p>Later, two of them got fresh arms at the fort on a false message and took them to Powhatan.</p>"]],
-  [["table","The Table",-42,16,"Every man’s deserts","<p>Smith set up “a table as a publike memoriall of every mans deserts”: who had worked, and who had not.</p><p>“there are now no more Councells to protect you”, he told them. The council was down to Smith alone.</p>"],
-   ["kemps","Kemps",-28,-29,"The law, turned around","<p>Kemps and Tassore were Powhatan men held prisoner at the fort. They “taught vs how to order and plant our fields”, and when they were freed they “little desired it”.</p><p>Later, when English runaways came to him, Kemps “made himselfe sport, in shewing his countrymen, by them, how he was vsed; feeding them with this law, who would not worke must not eat, till they were neere starved”. Then he brought them back.</p>"],
-   ["well","The Well",-62,-28,"Sweet water","<p>That spring they “made a well in the forte of excellent sweete water, which till then was wanting”, built some twenty houses, dug and planted thirty or forty acres, and saw three sows become sixty pigs.</p><p>Two years after landing, the fort had its own well at last.</p>"]],
-  [["ships","The Third Supply",-120,60,"Four ships of nine","<p>Ratcliffe, writing home: “Sir Thomas Gates, and Sir George Summers Captaine Newport and 180 persons or ther about, are not yet arrived and we much feare they are lost.”</p><p>Archer’s ship carried “sixe Mares and two Horses” and “twenty women and children”. In the <i>Unity</i>, of seventy landsmen, “she had not ten sound”.</p>"]]];
+   ["wedding","The Wedding",-48,-12,"The first marriage","<p>“a marriage betweene Iohn Laydon and Anna Burrowes; being the first marriage we had in Virginia.” Late 1608; no day recorded.</p><p>John Laydon was a labourer who came with the first men in 1607.</p>"]],
+  [["house","The House for Powhatan",-60,0,"Three Dutchmen","<p>Smith sent “3. Dutch-men and 2. English” to build Powhatan a house. The Germans, seeing his plenty “and knowing our want”, told him “as much as they knew of our estates and proiects”.</p><p>Later two of them got arms from the fort on a false message and took them to Powhatan.</p>"]],
+  [["table","The Table",-42,16,"Every man’s deserts","<p>Smith set up “a table as a publike memoriall of every mans deserts”: who had worked, and who had not.</p><p>The council was down to Smith alone: “there are now no more Councells to protect you.”</p>"],
+   ["kemps","Kemps",-28,-29,"The law, turned around","<p>Kemps and Tassore were Powhatan men held at the fort. They “taught vs how to order and plant our fields”.</p><p>When English runaways came to him, Kemps “made himselfe sport … feeding them with this law, who would not worke must not eat, till they were neere starved”. Then he brought them back.</p>"],
+   ["well","The Well",-62,-28,"Sweet water","<p>That spring they “made a well in the forte of excellent sweete water, which till then was wanting”, built some twenty houses, dug and planted thirty or forty acres, and saw three sows become sixty pigs.</p>"]],
+  [["ships","The Third Supply",-120,60,"Four ships of nine","<p>Ratcliffe, writing home: “Sir Thomas Gates, and Sir George Summers Captaine Newport and 180 persons or ther about, are not yet arrived and we much feare they are lost.”</p><p>Archer’s ship carried “sixe Mares and two Horses”. In the <i>Unity</i>, of seventy landsmen, “she had not ten sound”.</p>"]]];
 
 /* ---- TODKILL'S PAGE ----
    One per scene. kind: plain (what happened, said plainly), slant (the friends' way), omit
    or false. `printed` is what the 1612 book set down. Plain earns the ink. */
 const PRES_PAGES=[
-  {q:"Master Wingfield and Master Archer are going home in Captain Newport’s ship. What shall I set down?",
-   o:[["Master Wingfield and Master Archer went home for England with Captain Newport.","plain"],
+  {q:"Wingfield and Archer are going home with Newport. What shall I set down?",
+   o:[["Wingfield and Archer went home with Captain Newport.","plain"],
       ["They went home to seek better employment, the colony having no use for parliaments, plays, petitions, admirals, recorders, interpreters, chronologers, courts of plea, nor justices of peace.","slant"],
       ["Nothing. Who goes home is not worth the paper.","omit"]],
-   printed:"<p>The 1612 book printed the second, word for word: Wingfield and Archer went “for England, to seeke some place of better imploiment”, the colony “not having any vse of Parliaments, plaies, petitions, admirals, recorders, interpreters, chronologers, courts of plea, nor Justices of peace”.</p><p>Archer was the Recorder; Wingfield had been President and kept a journal of his own. Every word in that list is aimed at somebody.</p>"},
-  {q:"After twelve days of rotten bread some of the gentlemen begged to turn back, and the Captain refused. How shall I write them?",
+   printed:"<p>The 1612 book printed the party’s version: Wingfield and Archer went “for England, to seeke some place of better imploiment”, the colony “not having any vse of Parliaments, plaies, petitions, admirals, recorders, interpreters, chronologers, courts of plea, nor Justices of peace”.</p><p>Archer was the Recorder. Every word in that list is aimed at somebody.</p>"},
+  {q:"The bread rotted, some gentlemen begged to turn back, and the Captain refused. How shall I write it?",
    o:[["Our bread was spoiled, and some of us asked to go home. The Captain would not.","plain"],
       ["He bade them abandon those childish fears, for worse than is past cannot happen.","slant"],
       ["Leave them out. They came round in the end.","omit"]],
-   printed:"<p>The 1612 book gave Smith’s speech in full: “abandon those childish feares, for worse then is past cannot happen … returne I wil not … til I haue seene the Massawomekes, found Patawomeck, or the head of this great water you conceit to be endlesse.”</p><p>The men who wanted to go home are not named. The man who would not is. Russell and Todkill, who signed this chapter, were in the barge.</p>"},
+   printed:"<p>The 1612 book gave Smith’s speech in full: “abandon those childish feares, for worse then is past cannot happen … returne I wil not …”</p><p>The men who wanted to go home are not named. The man who would not is.</p>"},
   {q:"How shall I write President Ratcliffe?",
    o:[["President Ratcliffe began a house in the woods, and the sick men blamed him for the store.","plain"],
       ["Their silly President had riotously consumed the store, and to fulfil his follies was building him an unnecessary palace in the woods.","slant"],
       ["Leave him out. He is deposed; let him be forgotten.","omit"]],
    /* review, 27 Nov: was "President, that"; Arber has "[Ratcliffe]" there and no comma (p. 114) */
-   printed:"<p>The 1612 book printed the second: “their sillie President [Ratcliffe] that had riotously consumed the store; and to fulfill his follies, about building him an vnnecessarie pallas in the woodes.”</p><p>Nothing Ratcliffe said for himself survives. Every word we have about his “palace” was written by his enemies.</p>"},
+   printed:"<p>The 1612 book printed the party’s version: “their sillie President [Ratcliffe] that had riotously consumed the store …”</p><p>Every word we have about his “palace” was written by his enemies.</p>"},
   {q:"How shall I write the crowning?",
-   o:[["Captain Newport crowned Powhatan at Werowocomoco, as the Company ordered, and gave him its presents.","plain"],
+   o:[["Newport crowned Powhatan, as the Company ordered, and gave him its presents.","plain"],
       ["The crown and the presents had been much better spared. We had his favour for a poor piece of copper, till this stately kind of soliciting made him overvalue himself.","slant"],
       ["Leave it out. It was the Company’s order, not ours to judge.","omit"]],
-   printed:"<p>The 1612 book printed the second: the presents “had bin much better well spared … for we had his favour much better onlie for a poore peece of Copper, till this stately kinde of soliciting made him so much overvalue himselfe, that he respected vs as much as nothing at all.”</p><p>Smith’s friends were not the Company’s friends. Here they blame its orders, and Newport who carried them, for a hard winter of trading.</p>"},
-  {q:"Seventy more people came with Captain Newport, with Poles and Germans to make pitch, tar and glass, and no food for any of them. What shall I set down?",
-   o:[["The supply brought seventy people, Poles and Germans among them to make pitch, tar and glass, and no victuals.","plain"],
+   printed:"<p>The 1612 book printed the party’s version: the presents “had bin much better well spared … for we had his favour much better onlie for a poore peece of Copper …”</p><p>Smith’s friends were not the Company’s friends. Here they blame its orders, and Newport, for a hard winter of trading.</p>"},
+  {q:"Seventy more came with Newport, Poles and Germans among them, and no food. What shall I set down?",
+   o:[["The supply brought seventy people, Poles and Germans among them, and no victuals.","plain"],
       ["To send them and seventy more without victuals, to work, was not well considered.","slant"],
       ["The Company has sent us workmen at last, and we want for nothing.","false"]],
-   printed:"<p>The 1612 book said both halves: “the hiring of the Poles and Dutch, to make pitch and tarre, glasse, milles, and sope-ashes; [that] was most necessarie and well. But to send them and seauenty more without victuall, to worke, was not so well considered.”</p><p>Partisans can be fair. This is a fair sentence, written by men who also had a quarrel with the Company.</p>"},
+   printed:"<p>The 1612 book said both halves: “the hiring of the Poles and Dutch … was most necessarie and well. But to send them and seauenty more without victuall, to worke, was not so well considered.”</p><p>Partisans can be fair. This sentence is.</p>"},
   {q:"We came to Werowocomoco meaning to seize Powhatan and his corn, as he meant to seize us. Shall I write that?",
    o:[["The President meant to surprise Powhatan and all his provision, and sent men ahead to build Powhatan a house.","plain"],
       ["Powhatan sent for us only to cut our throats, and we were fortunate to escape his treachery.","slant"],
       ["Leave our plan out. Write only his.","omit"]],
-   printed:"<p>The 1612 book printed it, plainly: Smith “resolued with Captaine Waldo … to surprise Powhatan and al his provision”, and sent the house-builders “Knowing there needed no better castel then that house, to surprize Powhatan”.</p><p>It also printed the cost to the towns they took corn from: “such complaints and tears from women and children, as he had bin too cruell to be a Christian that would not haue bin satisfied and moved with compassion.”</p><p>Friends do not always hide what you expect. A bold plan made their captain look bold.</p>"},
+   printed:"<p>The 1612 book printed it plainly: Smith “resolued … to surprise Powhatan and al his provision”, and sent the house-builders “Knowing there needed no better castel then that house, to surprize Powhatan”.</p><p>It also printed the cost to the towns they took corn from: “such complaints and tears from women and children …”</p><p>Friends do not always hide what you expect. A bold plan made their captain look bold.</p>"},
   {q:"At Paspahegh this spring the President’s men killed six or seven of them and burned their houses. How shall I sum up his year?",
    o:[["He kept the Powhatan quiet by force, and men died at Paspahegh.","plain"],
       ["He wrestled and overcame, without bloodshed, all that happened.","slant"],
       ["Leave Paspahegh out of the summing-up.","omit"]],
    /* review, 27 Nov: was "how"; Arber and Tyler both print "howe" (p. 159) */
-   printed:"<p>The 1612 book did both, seven pages apart. First: “6 or 7 Salvages were slaine, [and] as many made prisoners. [He] burnt their houses; tooke their boats with all their fishing weares.” Then, summing up: “howe he wrastled and overcame (without bloud shed) all that hapned.”</p><p>A book can contradict itself. Read all of it before you believe its summing-up.</p>"},
-  {q:"The President has gone home burned, and they say he was sent home to answer for misdeeds. What shall I set down of why he went?",
+   printed:"<p>The 1612 book did both, seven pages apart: “6 or 7 Salvages were slaine … [He] burnt their houses”, and then, summing up, “howe he wrastled and overcame (without bloud shed) all that hapned.”</p><p>A book can contradict itself. Read all of it before you believe its summing-up.</p>"},
+  {q:"The President has gone home burned. Some say he was sent to answer for misdeeds. What shall I set down?",
    o:[["He was badly burned and there was no surgeon in the fort, so he went home in the ships. His enemies say he was sent home to answer charges.","plain"],
       ["There was neither surgeon nor surgery in the fort to cure his hurt, so he went presently aboard. Thus we lost him who would send no man where he would not lead himself.","slant"],
       ["Write only that he went.","omit"]],
    /* review, 27 Nov: was "Iustice"; Arber prints "Justice" (p. 167) */
    /* review, 27 Nov: was "The same day"; no source gives the day Smith sailed; "[4 Oct. 1609]" is Arber's (p. 167) */
-   printed:"<p>The 1612 book printed the second: “neither chirurgeon nor chirurgery in the fort to cure his hurt”, and a farewell: “thus we lost him that, in all his proceedings, made Justice his first guid[e] … that vpon no danger, would send them where he would not lead them himselfe.”</p><p>On 4 October Ratcliffe wrote to England that Smith “is sent home to answere some misdeameanors”. Both men were there. Both had a side.</p>"}];
+   printed:"<p>The 1612 book printed the party’s version: “neither chirurgeon nor chirurgery in the fort to cure his hurt”, and a farewell: “thus we lost him that … vpon no danger, would send them where he would not lead them himselfe.”</p><p>On 4 October Ratcliffe wrote that Smith “is sent home to answere some misdeameanors”. Both men had a side.</p>"}];
 
 /* ---- WHAT THE LIST CAN PROVE ----
    The friends' list of what Smith left (Proceedings p. 167), row by row, against what the
@@ -26848,15 +26848,15 @@ function presAct(d){
         {load:k==="dirt"?"cask":"wood"},function(){
         fortResult(title,body,["+6 Ink"],function(){presNewportSails();});});};};
     presSheet("The fort · Captain Newport’s ship","Load the ship",
-      "<p>Captain Newport’s ship has lain at the fort fourteen weeks. The refiners have a heap of yellow-flecked dirt by the river and swear it is gold. Captain Smith wants her laden with cedar, which England will certainly buy.</p>",
-      [{t:"Load the refiners’ dirt",fn:go("dirt","Gilded dirt","<p>Into the hold it goes, cask after cask.</p><p><b>The record:</b> so it did. Smith’s friends called it “such a drunken ship with so much gilded durt”. No gold ever came of it.</p>")},
-       {t:"Load cedar, as Captain Smith wants",fn:go("cedar","Cedar","<p>You side with Captain Smith.</p><p><b>The record:</b> he lost that argument in April. Newport took the dirt. The cedar went home in June in Captain Nelson’s <i>Phoenix</i>, because “Captaine Smith rather desired to relade her with Cedar”.</p>")}]);
+      "<p>Newport’s ship has lain here fourteen weeks. The refiners swear their yellow-flecked dirt is gold. Smith wants her laden with cedar, which England will surely buy.</p>",
+      [{t:"Load the refiners’ dirt",fn:go("dirt","Gilded dirt","<p><b>The record:</b> so it went. Smith’s friends called it “such a drunken ship with so much gilded durt”. No gold came of it.</p>")},
+       {t:"Load cedar, as Captain Smith wants",fn:go("cedar","Cedar","<p><b>The record:</b> Smith lost that argument. Newport took the dirt. The cedar went home in June in Captain Nelson’s <i>Phoenix</i>, because “Captaine Smith rather desired to relade her with Cedar”.</p>")}]);
     return;
   }
   /* 1 · the stingray */
   if(d.kind==="ray"){
     playCutscene({skippable:true,steps:PRES_RAY()},function(){presDone("ray");enterWorld("ch6");
-      fortResult("Within four hours","<p>His hand, arm and shoulder swell. Nobody aboard thinks he will live, and he has given his orders: a grave on the isle, dug by his own men, “as himselfe appointed”.</p>",["+6 Ink"]);});
+      fortResult("Within four hours","<p>His arm and shoulder swell. Nobody thinks he will live. He orders a grave on the isle, “as himselfe appointed”.</p>",["+6 Ink"]);});
     return;
   }
   if(d.kind==="grave"){
@@ -26868,39 +26868,39 @@ function presAct(d){
       return;}
     presDone("grave");
     /* review, 27 Nov: was "The point there is still called Stingray Point"; the identification is modern and unchecked (CH6-RECORD), and the 1612 sentence runs on "after the name of the fish" (p. 114) */
-    fortResult("Stingeray Ile","<p>You dig it in the sand among the scrub, long enough for a man and deep enough to keep him.</p><p>It is not needed. By evening, through “a precious oile, Doctour Russel applyed”, the swelling goes down, and the Captain “eate the fish to his supper”.</p><p>“which then wee called Stingeray Ile, after the name of the fish.” <i>— Russell and Todkill, 1612</i>. A point at the river’s mouth is called Stingray Point today, and is usually taken to be the place.</p>",["+6 Ink"],function(){enterWorld("ch6");});
+    fortResult("Stingeray Ile","<p>It is not needed. By evening, thanks to “a precious oile, Doctour Russel applyed”, the swelling goes down, and the Captain “eate the fish to his supper”.</p><p>“which then wee called Stingeray Ile, after the name of the fish.” <i>— Russell and Todkill, 1612</i>. Stingray Point, at the river’s mouth, is usually taken to be the place.</p>",["+6 Ink"],function(){enterWorld("ch6");});
     return;
   }
   /* 2 · the palace, and the presidency */
   if(d.kind==="palace"){
     presQuiz("The woods · the President’s house","An unnecessary palace?",
-      "<p>A frame of hewn posts stands in a clearing in the woods, beams up, roof unfinished. Clapboard is stacked beside it. Smith’s friends call it “an vnnecessarie pallas in the woodes”, built while the store ran out.</p><p>What would you need, to judge whether they are right?</p>",
-      [["Ratcliffe’s reasons, and what it cost the store","Two sides","<p>That is what a historian would need, and it is exactly what is missing. Ratcliffe’s side does not survive.</p><p>A President in 1608 might well want a house fit to receive Powhatan, or the Company’s men. Or he might not. We cannot know, because only his enemies wrote about it.</p>"],
-       ["Nothing more: the sick men saw it with their own eyes","Seeing is not knowing","<p>They saw a frame in the woods. They did not see why it was built, and they were angry about the store. Their words come to us through Smith’s friends, who had a quarrel of their own with Ratcliffe.</p>"],
-       ["Only whether it was ever finished","Finished or not","<p>It was not finished. Smith stopped it: “the building of Ratcliffes pallas staide, as a thing needlesse”. But that tells you what Smith thought of it, not whether it was needless.</p>"]],"palace");
+      "<p>A frame of posts stands in a clearing, roof unfinished. Smith’s friends call it “an vnnecessarie pallas in the woodes”, built while the store ran out.</p><p>What would you need to judge whether they are right?</p>",
+      [["Ratcliffe’s reasons, and what it cost the store","Two sides","<p>That is what a historian would need, and it is exactly what is missing. Ratcliffe’s side does not survive; only his enemies wrote about the house.</p>"],
+       ["Nothing more: the sick men saw it with their own eyes","Seeing is not knowing","<p>They saw a frame, not why it was built, and they were angry about the store. Their words reach us through Smith’s friends, Ratcliffe’s enemies.</p>"],
+       ["Only whether it was ever finished","Finished or not","<p>It was not finished. Smith stopped it: “the building of Ratcliffes pallas staide, as a thing needlesse”. That tells you what Smith thought, not whether it was needless.</p>"]],"palace");
     return;
   }
   if(d.kind==="patent"){
     presDone("patent");
-    fortResult("The tenth of September","<p>“by the election of the Councel, and request of the company, Captaine Smith received the letters patents, and tooke vpon him the place of President, which till then, by no meanes he would accept.”</p><p>The palace is stopped, “as a thing needlesse”. The church is repaired, the store covered again, the watch renewed, “the whole company every Satturday exercised in a fielde”.</p><p>Notice what his friends stress: that he refused it first.</p>",["+6 Ink"]);
+    fortResult("The tenth of September","<p>“… Captaine Smith received the letters patents, and tooke vpon him the place of President, which till then, by no meanes he would accept.”</p><p>The palace is stopped, the church repaired, the store covered, and “the whole company every Satturday exercised in a fielde”.</p><p>Notice what his friends stress: that he refused it first.</p>",["+6 Ink"]);
     return;
   }
   /* 3 · the crown */
   if(d.kind==="invite"){
     presQuiz("Werowocomoco · Smith’s invitation","“I also am a king”",
-      "<p>Smith asks Powhatan to come to Jamestown to receive King James’s presents. Smith’s party wrote down his answer, in English:</p><p>“If your king haue sent me presents, I also am a king, and this [is] my land. 8 daies I will stay to receaue them. Your father is to come to me, not I to him; nor yet to your fort: neither will I bite at such a baite.”</p><p>What is Powhatan saying?</p>",
-      [["He is Newport’s equal, and the English must come to him","His land","<p>He will not go to the fort like a man summoned. Newport, whom he calls Smith’s “father”, must come to him. Then, Smith’s friends say, he “began to draw plots vpon the ground … of all those regions”: he knew the country, and showed it.</p><p>These are his words only as Smith’s party wrote them down in English. They are still the closest thing we have to his voice.</p>"],
-       ["He accepts King James as his lord","Not a subject","<p>Nothing in his answer accepts anyone as his lord. “I also am a king, and this [is] my land.” He will receive presents, in his own town, on his own terms.</p>"],
+      "<p>Smith invites Powhatan to Jamestown for King James’s presents. Smith’s party wrote down his answer, in English:</p><p>“If your king haue sent me presents, I also am a king, and this [is] my land. 8 daies I will stay to receaue them. Your father is to come to me, not I to him; nor yet to your fort: neither will I bite at such a baite.”</p><p>What is Powhatan saying?</p>",
+      [["He is Newport’s equal, and the English must come to him","His land","<p>He will not be summoned: Newport, Smith’s “father”, must come to him.</p><p>These are his words only as Smith’s party wrote them in English. They are still the closest we have to his voice.</p>"],
+       ["He accepts King James as his lord","Not a subject","<p>Nothing in his answer accepts a lord. “I also am a king, and this [is] my land.”</p>"],
        ["He refuses to trade with the English at all","Not a refusal","<p>He does not refuse. He sets the place and the terms: eight days, at Werowocomoco, and Newport must come to him.</p>"]],"invite");
     return;
   }
   if(d.kind==="crown"){
     playCutscene({skippable:true,steps:PRES_CROWN()},function(){enterWorld("ch6");setTimeout(function(){
       presQuiz("Werowocomoco · after the crowning","What did the crown mean?",
-        "<p>The Company meant the crown to make Powhatan a king under King James. Which of these does the record actually support?</p>",
-        [["The English meant one thing by it, and nobody wrote down what Powhatan meant","What we cannot know","<p>The English accounts show a man who would not kneel and who jumped at the guns: “neither knowing the maiestie nor meaning of a Crowne, nor bending of the knee”. That is the English reading of his face.</p><p>No Powhatan account of the crowning was written down. What a crown meant to him, nobody recorded. Some historians think he took the presents as a tribute, from people he meant to treat as his own subjects.</p>"],
+        "<p>The Company meant the crown to make Powhatan a king under King James. Which does the record support?</p>",
+        [["The English meant one thing by it, and nobody wrote down what Powhatan meant","What we cannot know","<p>The English show a man who would not kneel, “neither knowing the maiestie nor meaning of a Crowne”. That is their reading of his face. What it meant to him, nobody recorded. Some historians think he took the presents as tribute from people he meant to treat as his subjects.</p>"],
          /* review, 27 Nov: was "the next spring"; the swords were asked for in January 1609 (p. 133) */
-         ["Powhatan accepted that he was now King James’s subject","Not in the record","<p>He would not bend the knee until Newport leaned on his shoulders, and that winter he wanted English swords and guns, not English orders. Nothing in the record has him accepting anyone as his lord.</p>"],
+         ["Powhatan accepted that he was now King James’s subject","Not in the record","<p>He would not kneel until Newport leaned on his shoulders, and that winter he wanted English swords and guns, not English orders.</p>"],
          ["Powhatan asked to be crowned","The Company’s idea","<p>The crowning was the Company’s order, carried by Newport. Powhatan would not even come to the fort to receive it.</p>"]],"crown");},400);});
     return;
   }
@@ -26915,7 +26915,7 @@ function presAct(d){
     presQuiz("The woods · felling trees","The two gallants",
       "<p>Gabriel Beadle and John Russell, “the only two gallants of this last supply”, are learning to fell trees. Every third blow brings “a lowd oath”. Smith means to cure them. How?</p>",
       /* review, 27 Nov: was "sleeve" and "a winter wood"; the source reads "sleeue" (p. 126), and the felling was in autumn, while Newport was at Monacan */
-      [["A can of water poured down his sleeve for every oath","Water down the sleeve","<p>“for every oath to haue a can of water povvred downe his sleeue.” That is a cure.</p><p>Smith’s friends tell it as a joke on the gentlemen. They tell a great many stories about gentlemen who would not work.</p>"],
+      [["A can of water poured down his sleeve for every oath","Water down the sleeve","<p>“for every oath to haue a can of water povvred downe his sleeue.”</p><p>Smith’s friends tell it as a joke on the gentlemen. They tell many stories about gentlemen who would not work.</p>"],
        /* review, 27 Nov: was "Food was too short to stop anyone's ration over an oath"; no source says so */
        ["A day’s ration stopped for every oath","Not that","<p>Not in the record. Its answer was colder: “a can of water povvred downe his sleeue” for every oath.</p>"],
        ["Nothing. They are gentlemen, and may swear","Not with Smith","<p>Not under Smith. Every oath bought “a can of water povvred downe his sleeue”.</p>"]],"oath");
@@ -26923,8 +26923,8 @@ function presAct(d){
   }
   if(d.kind==="letter"){
     presQuiz("The storehouse · a letter for England","Smith’s “Rude Answer”",
-      "<p>The Company wrote complaining of faction and idle ideas. Smith answered: “I humbly intreat your Pardons if I offend you with my rude Answer.” In it is his most famous request: “When you send againe I intreat you rather send but thirty Carpenters, husbandmen, gardiners, fisher men, blacksmiths, masons … then a thousand of such as we haue.”</p><p>When was this letter first printed?</p>",
-      [["In 1624, in Smith’s own Generall Historie","Printed sixteen years later","<p>It is not in the 1612 book. It appears only in Smith’s <i>Generall Historie</i> of 1624, with no date, and no word of how it was sent. No copy written in 1608 is known.</p><p>It may be just what he wrote. But a man printing his own letter sixteen years on could improve it, and nobody could check.</p>"],
+      "<p>The Company complained of faction and idle ideas. Smith’s “rude Answer” holds his most famous request: “When you send againe I intreat you rather send but thirty Carpenters, husbandmen, gardiners, fisher men, blacksmiths, masons … then a thousand of such as we haue.”</p><p>When was this letter first printed?</p>",
+      [["In 1624, in Smith’s own Generall Historie","Printed sixteen years later","<p>It first appears in Smith’s <i>Generall Historie</i> of 1624. No copy from 1608 is known. A man printing his own letter sixteen years on could improve it, and nobody could check.</p>"],
        ["In 1608, as soon as it reached London","Not then","<p>Nothing of it was printed in 1608, or in his friends’ 1612 book. It first appears in Smith’s <i>Generall Historie</i> of 1624.</p>"],
        ["In 1612, in his friends’ book","Not there","<p>The 1612 book does not have it. It first appears in Smith’s <i>Generall Historie</i> of 1624, printed by Smith himself.</p>"]],"letter");
     return;
@@ -26932,7 +26932,7 @@ function presAct(d){
   /* 5 · the ice */
   if(d.kind==="terms"){
     presQuiz("Werowocomoco · the hall","Powhatan’s terms",
-      "<p>Powhatan says he never sent for them. For forty swords he will find forty bushels. He values “a basket of corne more pretious then a basket of copper, saying he could eate his corne, but not his copper”.</p><p>Then, as Smith’s party wrote it down: “What will it availe you to take that perforce, you may quietly haue with loue, or to destroy them that provide you food? … if a twig but breake, everie one crie, there comes Captaine Smith.” He asks them to lay down their arms.</p><p>What did Smith answer?</p>",
+      "<p>Powhatan says he never sent for them. For forty swords he will find forty bushels. Corn is worth more than copper, “saying he could eate his corne, but not his copper”.</p><p>Then, as Smith’s party wrote it: “What will it availe you to take that perforce, you may quietly haue with loue, or to destroy them that provide you food?” He asks them to lay down their arms.</p><p>What did Smith answer?</p>",
       [["“I liue not here as your subiect, but as your friend”, and he kept his arms","His answer","<p>“as I haue but one God, I honour but one king: and I liue not here as your subiect, but as your friend.” He kept the arms.</p><p>It was the last time Smith saw Powhatan.</p>"],
        ["He laid down his arms, as Powhatan asked","He did not","<p>He did not. “as I haue but one God, I honour but one king: and I liue not here as your subiect, but as your friend.”</p>"],
        ["He offered forty swords for forty bushels","No swords","<p>No swords. Powhatan wanted English weapons above all, and Smith would not give them. “I liue not here as your subiect, but as your friend.”</p>"]],"terms",
@@ -26942,17 +26942,17 @@ function presAct(d){
   if(d.kind==="warning"){
     presSheet("Werowocomoco · that night","The warning, told twice",
       /* review, 27 Nov: was "years out of place"; the sentence is on p. 169, the January visit pp. 133-138, months apart */
-      "<p><b>1612.</b> Smith’s friends tell the January visit over six pages, and do not mention Pocahontas. She appears once, some thirty pages later, in a sentence answering a rumour that he meant to marry her: “when her father intended to haue surprized him, shee by stealth in the darke night came through the wild woods and told him of it.” No date, no place.</p><p><b>1624.</b> Smith tells it again, in his own book, as a scene. Watch it as he told it.</p>",
+      "<p><b>1612.</b> Smith’s friends tell the January visit over six pages without Pocahontas. She appears thirty pages later, in one sentence answering a rumour that he meant to marry her: “when her father intended to haue surprized him, shee by stealth in the darke night came through the wild woods and told him of it.” No date, no place.</p><p><b>1624.</b> Smith tells it as a scene. Watch it as he told it.</p>",
       [{t:"Watch the 1624 telling",fn:function(){presTelling();}}]);
     return;
   }
   if(d.kind==="pamunkey"){
     presQuiz("Pamunkey · Opechancanough’s house","By the arm, or by the hair?",
-      "<p>At Pamunkey, Opechancanough’s house was surrounded by “6. or 700.” men. Smith offered to fight him alone on an island, “the conqueror take all”. Then:</p><p><b>1612:</b> he “snatched the king by his vambrace in the midst of his men, with his pistoll ready bent against his brest”. A vambrace is a guard worn on the forearm.</p><p><b>1624:</b> he “snatched the King by his long locke in the middest of his men”.</p><p>What does the change do?</p>",
+      "<p>At Pamunkey, “6. or 700.” men surround Opechancanough’s house. Then:</p><p><b>1612:</b> Smith “snatched the king by his vambrace in the midst of his men, with his pistoll ready bent against his brest”. A vambrace is a forearm guard.</p><p><b>1624:</b> he “snatched the King by his long locke in the middest of his men”.</p><p>What does the change do?</p>",
       /* review, 27 Nov: was "printed the second in 1624 ... about a third"; New Englands Trials, 1622: "this murdering Opechankanough ... by the long locke on his head" (Arber p. 263); the share killed is not in the checked record */
-      [["It makes the deed more humiliating, years later","By the hair","<p>Seizing a man by the arm-guard is a fight. Dragging a king by his hair in front of his people is a humiliation. Smith first printed the second in 1622, months after Opechancanough’s warriors killed more than three hundred of the English in Virginia in one morning, and there he called him “this murdering Opechankanough”. He printed it again in 1624.</p><p>Then the cost, which his friends wrote down themselves: at the towns they took corn from, “complaints and tears from women and children”. They carried home 279 bushels.</p>"],
+      [["It makes the deed more humiliating, years later","By the hair","<p>An arm-guard is a fight. A king dragged by his hair before his people is a humiliation. Smith first printed the hair in 1622, months after Opechancanough’s warriors killed more than three hundred English in one morning, calling him “this murdering Opechankanough”.</p><p>His friends wrote down the cost: “complaints and tears from women and children”. They carried home 279 bushels.</p>"],
        ["It corrects a mistake in the 1612 book","Not a correction","<p>Nothing says 1612 was wrong. The later telling simply grew, as his captivity did. The hair makes the scene harder and the king smaller.</p>"],
-       ["It shows there were two separate seizures","One seizure","<p>It is one event, told twice. In 1612 the arm; in 1624 the hair. As in Chapter V, the danger and the drama grew in the retelling.</p>"]],"pamunkey");
+       ["It shows there were two separate seizures","One seizure","<p>It is one event, told twice: in 1612 the arm, in 1624 the hair. As in Chapter V, the drama grew in the retelling.</p>"]],"pamunkey");
     return;
   }
   /* 6 · he that will not work */
@@ -26960,7 +26960,7 @@ function presAct(d){
     presQuiz("The fort · the assembly","The law",
       "<p>Smith speaks to the whole company: “you must obay this for a law, that he that will not worke, shall not eate, except by sicknesse he be disabled. For the labours of 30 or 40 honest and industrious men shall not bee consumed to maintaine 150 idle varlets.”</p><p>Who is excused?</p>",
       /* review, 27 Nov: was "which every man there would have known"; no source says so */
-      [["Only the sick","Except by sickness","<p>Only the sick. Not gentlemen, not councillors: “there are now no more Councells to protect you.” The rule echoes the Bible: Saint Paul’s second letter to the Thessalonians.</p>"],
+      [["Only the sick","Except by sickness","<p>Only the sick. Not gentlemen, not councillors: “there are now no more Councells to protect you.” The rule echoes Saint Paul’s second letter to the Thessalonians.</p>"],
        ["Gentlemen, who were not bred to labour","Not gentlemen","<p>Not gentlemen. That was the point. “there are now no more Councells to protect you.” Only the sick were excused.</p>"],
        ["Nobody at all","The sick","<p>The sick were excused: “except by sicknesse he be disabled.” Everyone else worked or did not eat.</p>"]],"law");
     return;
@@ -26978,7 +26978,7 @@ function presAct(d){
     for(let i=interactables.length-1;i>=0;i--){const it=interactables[i];
       if(it.action==="pres"&&it.data&&it.data.kind==="cask"&&it.data.c===d.c){if(it.el)it.el.style.display="none";interactables.splice(i,1);}}
     if(w.casks.length>=3){presDone("casks");
-      fortResult("Many thousand rats","<p>“In searching our casked corne, wee found it halfe rotten; and the rest so consumed with the many thousand rats, increased first from the ships, that we knewe not how to keepe that little wee had.”</p><p>The 279 bushels from Pamunkey, and everything else, is going to rats. The company will have to live off the country.</p>",["+6 Ink"]);}
+      fortResult("Many thousand rats","<p>“In searching our casked corne, wee found it halfe rotten; and the rest so consumed with the many thousand rats … that we knewe not how to keepe that little wee had.”</p><p>The company will have to live off the country.</p>",["+6 Ink"]);}
     else toast(w.casks.length===1?"The lid comes up, and they pour out over your hands.":"Half rotten. And more of them.");
     updateGuide();return;
   }
@@ -26986,29 +26986,29 @@ function presAct(d){
     const go=function(k,title,body){return function(){w.disperse=k;presDone("disperse");
       fortResult(title,body+"<p>Smith’s order to those who stayed: “every one that gathereth not every day as much as I doe, the next daie, shall be set beyond the river, and for ever bee banished from the fort.” “This order, many murmured, was very cruell”, but “of 200 men … there died not past 7 or 8.” Those are his friends’ numbers.</p>",["+6 Ink"]);};};
     presSheet("The fort · the gate","Where are you sent?",
-      "<p>There is not food enough in the fort to keep the company together. Smith sends them out to live off the country.</p>",
+      "<p>There is not food enough to keep the company together. Smith sends them out to live off the country.</p>",
       [{t:"Down the river to the oyster banks, with Ensign Laxon",fn:go("oysters","The oyster banks","<p>“60 or 80 with Ensigne Laxon were sent downe the river to liue vpon oysters.” Archer, who arrived that August, wrote that “fourescore liued twenty miles from the Fort and fed vpon nothing but Oysters eight weekes space”.</p>")},
        /* review, 27 Nov: was "Comfort:"; the source has a comma (p. 155) */
        /* review, 27 Nov: was "does not tell it that way"; Percy's Trewe Relacyon was not read for this chapter */
-       {t:"To Point Comfort with Master Percy, to fish",fn:go("fish","Point Comfort","<p>“20 with leiftenant Percie to trie for fishing at point Comfort, but in 6 weekes, they would not agree once to cast out their net.”</p><p>That is how Smith’s friends tell it. Percy later wrote his own account, bitter against Smith. For the fishing we have only Smith’s friends’ word.</p>")},
+       {t:"To Point Comfort with Master Percy, to fish",fn:go("fish","Point Comfort","<p>“20 with leiftenant Percie to trie for fishing at point Comfort, but in 6 weekes, they would not agree once to cast out their net.”</p><p>That is Smith’s friends’ word. Percy later wrote his own account, bitter against Smith.</p>")},
        /* review, 27 Nov: was "They lived on sturgeon ... and on roots they pounded into bread" at the falls; the falls gave "but a fewe berries and acornes"; sturgeon pounded into bread and Tockwough roots were at the fort (p. 155) */
        {t:"Up to the falls, with Master West",fn:go("falls","The falls","<p>“Master West, with as many, went vp to the falles; but nothing could bee found but a fewe berries and acornes.”</p><p>Those who stayed by the fort, the friends say, lived on sturgeon, dried and pounded into bread, and on Tockwough roots.</p>")},
-       {t:"To live in a Powhatan town",fn:go("town","Billeted","<p>“Many were billitted among the Salvages”, the friends wrote, and were well used. For sixteen days the country brought “100 a daie of squirrils, Turkies, Deare”.</p><p>The people who fed them wrote nothing down. We do not know what they thought of English guests who could not feed themselves.</p>")}]);
+       {t:"To live in a Powhatan town",fn:go("town","Billeted","<p>“Many were billitted among the Salvages”, the friends wrote, and were well used.</p><p>The people who fed them wrote nothing down. We do not know what they thought of guests who could not feed themselves.</p>")}]);
     return;
   }
   /* 7 · the record */
   if(d.kind==="archer"){
     presQuiz("The fort · a letter","Master Archer’s letter",
       /* review, 27 Nov: was "to govern instead"; Archer: "not to disturbe the old President during his time: but as his authority expired" (p. xcvii) */
-      "<p>Archer writes home on 31 August 1609. He says the men were “dispersed in the Sauages townes, liuing vpon their almes for an ounce of Copper a day”, that the President “gaue not any due respect to many worthy Gentlemen”, and that the newcomers chose Master West to govern when Smith’s year ran out. “Perhaps you shall haue it blazoned a mutenie by such as retaine old malice.”</p><p>The letter survives only as Samuel Purchas printed it, years later. Beside it, Purchas printed: “Some things, partly false rumours, partly factious suggestions, are here left out.”</p><p>Why does that matter?</p>",
-      [["An enemy’s letter was cut by an editor on Smith’s side","Cut","<p>Purchas also printed, in the margin, that the troubles came “from the malecontents which had beene in Virginia before (enemies to the President)”. So the one long account by Smith’s enemies reached us trimmed by a man who took Smith’s part.</p><p>We cannot read what was cut. We can only know that something was.</p>"],
-       ["It means Archer’s letter must be false","Not false","<p>Being cut does not make it false. It means we have less of it, chosen by someone else. What is left still disagrees with Smith’s friends, and that is worth having.</p>"],
+      "<p>Archer writes home on 31 August 1609: the men are “dispersed in the Sauages townes, liuing vpon their almes for an ounce of Copper a day”, and the President “gaue not any due respect to many worthy Gentlemen”.</p><p>The letter survives only as Samuel Purchas printed it, years later, with a note: “Some things, partly false rumours, partly factious suggestions, are here left out.”</p><p>Why does that matter?</p>",
+      [["An enemy’s letter was cut by an editor on Smith’s side","Cut","<p>In the margin Purchas blamed the troubles on “the malecontents which had beene in Virginia before (enemies to the President)”. So the one long account by Smith’s enemies reached us trimmed by a man on Smith’s side.</p><p>We cannot read what was cut. We only know that something was.</p>"],
+       ["It means Archer’s letter must be false","Not false","<p>Being cut does not make it false. We have less of it, chosen by someone else. What is left still disagrees with Smith’s friends.</p>"],
        ["It does not matter: an editor always cuts","It matters","<p>It matters who cut it. Purchas’s own note blames the troubles on Smith’s “enemies”. An editor with a side chose what we may read of the other side.</p>"]],"archer");
     return;
   }
   if(d.kind==="burn"){
     playCutscene({skippable:true,steps:PRES_BURN()},function(){presDone("burn");enterWorld("ch6");
-      fortResult("Blown up with powder","<p>“Sleeping in his boat … accidentallie one fired his powder bag; which tore his flesh from his bodie and thighes 9. or 10. inches square, in a most pittifull manner: but to quench the tormenting fire, frying him in his cloath[e]s, he leaped over board into the deepe river, where ere they could recover him, he was neere drown[e]d.” <i>— Pots and Phettiplace, 1612</i></p><p>He came “neare 100. miles” like that, with no surgeon. No source says who fired the bag, or suggests it was done on purpose.</p><p>His friends also say that Ratcliffe, Archer and Martin plotted to murder him in his bed, but “his h[e]art did faile him, that should haue given fire to that mercilesse pistol”. The man is not named.</p>",["+6 Ink"]);});
+      fortResult("Blown up with powder","<p>“Sleeping in his boat … accidentallie one fired his powder bag; which tore his flesh from his bodie and thighes 9. or 10. inches square … he leaped over board into the deepe river, where ere they could recover him, he was neere drown[e]d.” <i>— Pots and Phettiplace, 1612</i></p><p>No source says who fired the bag, or suggests it was done on purpose.</p><p>His friends also say Ratcliffe, Archer and Martin plotted to kill him in his bed, but “his h[e]art did faile him, that should haue given fire to that mercilesse pistol”. The man is not named.</p>",["+6 Ink"]);});
     return;
   }
   if(d.kind==="list"){presList();return;}
@@ -27030,7 +27030,7 @@ function presNext(){
 function presPage(){
   const w=presW(), P=PRES_PAGES[w.day];
   presSheet("Anas Todkill · his papers","What shall I set down?",
-    "<p>Todkill has a board on his knee and a pen that wants mending. “"+P.q.replace(/^“|”$/g,"")+"”</p>",
+    "<p>Todkill has a board on his knee. “"+P.q.replace(/^“|”$/g,"")+"”</p>",
     /* play-test, 27 Nov: the plain page was always the first button; shuffled, as presQuiz */
     shuffle(P.o.map(function(o){return {t:o[0],fn:function(){
       w.pages[w.day]=o[1];
@@ -27050,7 +27050,7 @@ function presNewportSails(){
     /* play-test, 27 Nov: the three stood on the beach, talkable, while she sailed with them in her */
     {t:4.5,do:function(){npcMeshes.forEach(function(n){if(n.npc&&["newport","wingfield","archer"].indexOf(n.npc.id)>=0)n.mesh.visible=false;});},
      narrate:"Master Wingfield and Master Archer went with him. Wingfield’s own account of Virginia stops here."},
-    {t:4,narrate:"Ten days later, Captain Nelson’s Phoenix came in at last, given up for lost since January."}]},function(){
+    {t:4,narrate:"Ten days later Captain Nelson’s Phoenix came in, given up for lost since January."}]},function(){
       presW().did.sailed0=true;saveGame();enterWorld("ch6");});
 }
 function PRES_RAY(){
@@ -27058,13 +27058,13 @@ function PRES_RAY(){
     /* play-test, 27 Nov: the player, standing at the spot, filled the right of the first and last
        shots; the world is rebuilt when the scene ends, so the figure comes back */
     {fade:"in",cam:{to:[-8,8,48],look:[-34,0,70],cut:true},t:4,do:function(){if(player)player.visible=false;},
-     narrate:"At the mouth of the Rappahannock, in the shallows, Captain Smith is “nailing them to the ground with his sword”: fish, in the shallow water."},
+     narrate:"In the shallows of the Rappahannock, Captain Smith is spearing fish, “nailing them to the ground with his sword”."},
     {do:function(){const m=presFigure("smith");if(m&&m.userData.parts){m.userData.parts.ra.rotation.x=-2.4;}}},
     {cam:{to:[-24,5,60],look:[-33,0,71]},t:4.5,
      do:function(){setTimeout(function(){const m=presFigure("smith");if(m&&m.userData.parts)m.userData.parts.ra.rotation.x=-0.3;if(PRES.ray)PRES.ray.visible=true;},1600);},
      narrate:"One of them was “much of the fashion of a Thornebacke with a longer taile whereon is a most poysoned sting of 2. or 3. inches long”,"},
     {sfx:"splash",t:4.5,
-     narrate:"“which shee strooke an inch and [a] halfe into the wrist of his arme.” So Doctor Russell and Anas Todkill wrote it. They were there."},
+     narrate:"“which shee strooke an inch and [a] halfe into the wrist of his arme.” So wrote Russell and Todkill, who were there."},
     {cam:{to:[-8,8,48],look:[-34,0,70]},t:4,narrate:"They carried him ashore."},
     {fade:"out",t:1}];
 }
@@ -27072,7 +27072,7 @@ function PRES_CROWN(){
   const H=CAPT_HALL;
   return [
     {fade:"in",cam:{to:[H.x+21,6,H.z+2],look:[H.x-12,3,H.z],cut:true},t:4,
-     narrate:"Werowocomoco, autumn 1608. Captain Newport has brought the Company’s presents, and the Company’s crown. This is how Smith’s friends told it in 1612."},
+     narrate:"Werowocomoco, autumn 1608. Newport has brought the Company’s presents and crown. This is how Smith’s friends told it in 1612."},
     {spawn:{id:"newportC",eq:presPerson("newport").eq,at:[H.x-1,H.y,H.z-2.5],face:-Math.PI/2}},
     {spawn:{id:"smithC",eq:PRES_PEOPLE[0].eq,at:[H.x+1,H.y,H.z-2.5],face:-Math.PI/2}},
     /* play-test, 27 Nov: at H.x-8 he stood inside the hearth ring, flames about his feet */
@@ -27094,9 +27094,9 @@ function PRES_CROWN(){
      do:function(){setTimeout(function(){playSfx("crack");},180);setTimeout(function(){playSfx("crack");},420);
        const p=csActor("powC");if(p){p.userData.parts.body.rotation.x=-0.08;p.position.z+=1.2;}},t:5,
      narrate:"“when, by the warning of a pistoll, the boates were prepared with such a volly of shot, that the king start[ed] vp in a horrible feare.”"},
-    {shake:0,t:5.5,narrate:"In return, “he gaue his old shoes and his mantle to Captain Newport”, and a heap of wheat ears, perhaps seven or eight bushels."},
+    {shake:0,t:5.5,narrate:"In return, “he gaue his old shoes and his mantle to Captain Newport”."},
     {cam:{to:[H.x+21,6,H.z+2],look:[H.x-12,3,H.z]},t:5.5,
-     narrate:"No Powhatan account of the crowning was ever written down. What a crown meant to him, nobody recorded."},
+     narrate:"What the crown meant to Powhatan, nobody recorded."},
     {fade:"out",t:1}];
 }
 function PRES_BESET(){
@@ -27113,8 +27113,8 @@ function PRES_BESET(){
      do:function(){ring.forEach(function(a,i){const m=csActor("beset"+i);if(!m)return;
        const dx=a[0]-hx, dz=a[1]-hz, d=Math.hypot(dx,dz)||1;m.position.x+=dx/d*6;m.position.z+=dz/d*6;m.position.y=G6(m.position.x,m.position.z);});},
      narrate:"Smith broke out, they say, “with his Pistol, Sword and Target”, and the crowd fell back."},
-    {t:5.5,narrate:"An old orator came to say the men were only there to guard the corn, and asked again that the English lay down their arms, “which so affrighteth this people”."},
-    {t:4,narrate:"The English kept their arms, and went on up the river to Pamunkey."},
+    {t:5.5,narrate:"An old orator said the men were only guarding the corn, and asked again that the English lay down their arms."},
+    {t:4,narrate:"The English kept their arms, and went on to Pamunkey."},
     {fade:"out",t:1}]);
 }
 function G6(x,z){return WORLD.ground?WORLD.ground(x,z):0;}
@@ -27124,7 +27124,7 @@ function presTelling(){
   setTimeout(function(){
     playCutscene({skippable:true,steps:[
       {fade:"in",cam:{to:[hx+24,7,hz+20],look:[hx-10,3,hz-12],cut:true},t:4,
-       narrate:"London, 1624. Smith tells it again, in his own book. His words, the spelling made modern."},
+       narrate:"London, 1624. Smith tells it again, in his own book, with modern spelling."},
       /* play-test, 27 Nov: he stood turned away from her, and the close shot cut off his head */
       {spawn:{id:"smithW",eq:PRES_PEOPLE[0].eq,at:[hx+8,G6(hx+8,hz+9),hz+9],face:-2.3}},
       {spawn:{id:"girlW",make:function(){return tidewaterWoman(true);},at:[hx-50,G6(hx-50,hz-46),hz-46],face:0.7}},
@@ -27139,9 +27139,9 @@ function presTelling(){
        narrate:"Then, the 1624 book says, eight or ten men brought platters of food, and Smith made them taste every dish. That is the 1624 telling."},
       {fade:"out",t:1}]},function(){
         PRES.night=false;presDone("warning");enterWorld("ch6");
-        fortResult("One sentence, or a scene","<p><b>1612:</b> one sentence, in a parenthesis, with no date: she “came through the wild woods and told him of it”. Smith’s friends’ six pages on that January do not mention her.</p>"+
+        fortResult("One sentence, or a scene","<p><b>1612:</b> one undated sentence: she “came through the wild woods and told him of it”.</p>"+
           "<p><b>1624:</b> a dark night, her tears, her fear of her father, the platters, and the tasting of every dish.</p>"+
-          "<p>The warning is in both. Everything that makes it a scene is only in the book Smith printed himself, after she had died in England, famous. That does not prove the scene false. It tells you where to be careful.</p>"+
+          "<p>The warning is in both. Everything that makes it a scene is only in Smith’s own book, printed after she had died in England, famous. That does not prove it false. It tells you where to be careful.</p>"+
           /* review, 27 Nov: dropped "Nobody wrote down why she came"; the 1612 sentence gives the friends' own reason (p. 169), and the chapter says nothing of why */
           "<p>The 1612 book says she was then “at most not past 13 or 14 yeares of age”.</p>",["+6 Ink"]);
       });
@@ -27151,7 +27151,7 @@ function PRES_BURN(){
   return [
     /* play-test, 27 Nov: the camera looked downriver, and the boat comes from upriver */
     {fade:"in",cam:{to:[-62,9,58],look:[4,1,118],cut:true},t:4,do:function(){if(PRES.boat)PRES.boat.go=true;},
-     narrate:"A boat comes down the river from the falls, nearly a hundred miles, with the President lying in the bottom of it."},
+     narrate:"A boat comes nearly a hundred miles down from the falls, with the President lying in the bottom."},
     {spawn:{id:"smithBurn",eq:PRES_PEOPLE[0].eq,at:[-34,G6(-34,62),62],face:Math.PI}},
     {do:function(){const m=csActor("smithBurn");if(m){m.rotation.set(-Math.PI/2,0,0);m.position.y=G6(-34,62)+1.4;}}},
     {cam:{to:[-24,7,52],look:[-34,1.5,62]},t:5,
@@ -27165,9 +27165,9 @@ function presSails(){
   const w=presW();
   playCutscene({skippable:true,steps:[
     {cam:{to:[-40,16,64],look:[-180,6,104],cut:true},t:4,do:function(){PRES.ships.forEach(function(s){s.go=true;});},
-     narrate:"In early October 1609 the ships went home to England, and Captain Smith in one of them. No source gives the day."},
+     narrate:"In early October 1609 the ships sailed for England, with Smith aboard. No source gives the day."},
     /* review, 27 Nov: was "the same day"; the day Percy was chosen is not recorded; Ratcliffe's letter is 4 October (p. xcviii) */
-    {t:5,narrate:"Master Percy, who stayed, became President “within lesse then an howre”. Ratcliffe, writing on 4 October, said they had “exceedinge much need” of victuals."},
+    {t:5,narrate:"Master Percy became President “within lesse then an howre”."},
     /* review, 27 Nov: was "another twenty-two years"; he died in June 1631, some twenty-one years and eight months later */
     {t:4.5,narrate:"Smith lived nearly twenty-two years more. He never came back to Virginia."}]},function(){
       w.did.sailed=true;checkpoint("ch6-sailed");enterWorld("ch6");updateGuide();
@@ -27185,7 +27185,7 @@ function presList(){
     "<b>Archer, of his own ship:</b> she carried “sixe Mares and two Horses”.<br>"+
     "<b>Smith’s friends, that spring:</b> “the labours of 30 or 40 honest and industrious men”; three sows made sixty pigs.<br>"+
     "<b>The ships:</b> about two hundred were at the fort before the Third Supply, and over three hundred came in it.</p>"+
-    "<p>For each line of the list, does another paper agree, disagree, or is there nothing to check it by?</p>";
+    "<p>For each line: does another paper agree, disagree, or is there nothing to check it by?</p>";
   PRES_ROWS.forEach(function(r,i){
     h+="<div class=\"captRow\"><span>"+r.t+"</span> <div class=\"captBtns\">"+PRES_V.map(function(v,k){
       return "<button class=\"btn small\" data-pr=\""+i+"\" data-v=\""+k+"\">"+v+"</button>";}).join(" ")+" <b class=\"captMark\" id=\"pm"+i+"\"></b></div></div>";
@@ -27197,9 +27197,9 @@ function presList(){
     presDone("list");
     fortResult("What the list is for","<p>You placed "+right+" of "+PRES_ROWS.length+" as the papers do.</p><ul>"+
       PRES_ROWS.map(function(r){return "<li>"+r.t+": <b>"+PRES_V[r.v]+".</b> "+r.why+"</li>";}).join("")+"</ul>"+
-      "<p>The friends printed the list in 1612, after most of those 490 people had died in the winter that followed. Its next words are: “But they regarded nothing but from hand to mouth.” The list makes their case: Smith left plenty, so whoever came after is to blame.</p>"+
+      "<p>The friends printed the list in 1612, after most of those 490 had died that winter. Its next words: “But they regarded nothing but from hand to mouth.” Smith left plenty, it says, so whoever came after is to blame.</p>"+
       /* review, 27 Nov: was "On the same day"; the list is undated (p. 167); Ratcliffe's letter is 4 October (p. xcix) */
-      "<p>On 4 October, as Smith was leaving, Ratcliffe asked England for “a sufficient supply of victualls for one yeare”. Both papers are real. Each was written to win an argument.</p>",["+6 Ink"]);
+      "<p>On 4 October Ratcliffe asked England for “a sufficient supply of victualls for one yeare”. Both papers are real. Each was written to win an argument.</p>",["+6 Ink"]);
   }}]);
   w.marks=w.marks.length===PRES_ROWS.length?w.marks:PRES_ROWS.map(function(){return null;});
   PRES_ROWS.forEach(function(r,i){if(w.marks[i]!=null)$("pm"+i).textContent=PRES_V[w.marks[i]];});
@@ -27214,7 +27214,7 @@ function presPagesSummary(){
     /* counted by hand off PRES_PAGES, 27 Nov: party's side at 0, 1, 2, 3 and 7; both halves
        fairly at 4; against itself at 6; its own captain's plan, plainly, at 5. A text search
        for "second" missed page 1 and said four. */
-    "five of those eight places. In one it was fair to both sides, in one its own pages contradict its summing-up, and in one it printed what a careful friend might have left out: its captain’s plan to seize Powhatan, and the tears of the towns he took corn from.</p>";
+    "five of those eight places. Once it was fair to both sides, once its pages contradict its summing-up, and once it printed what a careful friend might have left out: its captain’s plan to seize Powhatan.</p>";
 }
 
 /* ---- NEW THINGS IN THE WORLD ---- */
@@ -27680,9 +27680,9 @@ CONTENT.ch6={
   npcs:PRES_NPCS,
   charter:{insight:{b:"Smith & the Record"}},
   reck:{seal:"records",kick:"Anas Todkill’s Pages",title:"Set Down the President’s Years",
-    frame:"Todkill has his pages tied with string. “These go to Master Pots and Master Simmonds, to be made into a book. I was a partie, and so were you. Before they print a word, tell me how a reader ought to take a book like ours. Six questions; I’ll bear two wrong — no more.”",
+    frame:"Todkill has his pages tied with string. “These go to London, to be made into a book. I was a partie, and so were you. Tell me how a reader ought to take a book like ours. Six questions; I’ll bear two wrong — no more.”",
     lockLine:"Not yet. Todkill’s pages are closed when the President has sailed.",
-    pass:{title:"The Pages Hold",body:"Todkill ties the string again. “Then let them print it. A reader who knows who wrote it can weigh it. It is the reader who does not ask that we deceive.”"},
+    pass:{title:"The Pages Hold",body:"Todkill ties the string again. “Then let them print it. A reader who knows who wrote it can weigh it.”"},
     fail:{title:"The Pages Do Not Hold",body:"“You would have them read our book as if nobody wrote it,” says Todkill. “Somebody always writes it. Go round again, and ask who.”"},
     onPass:function(){presW().done=true;},
     q:[
@@ -29117,8 +29117,8 @@ const CHAPTERS=[
        "<p>In February Newport and Smith go to Werowocomoco and come home with corn. Chapter VI begins that spring, with the river sand full of gold, or so the refiners say.</p>"}},
   {n:"VI",yr:"1608–09",t:"Smith & the Record",d:"The fort, the Bay and Werowocomoco — February 1608 to October 1609",
    ready:true,world:"ch6",pace:2.5,near:9,
-   intro:function(){ return "Two years of John Smith: the gilded dirt, the Bay and the stingray, the presidency, the crowning of Powhatan, the ice at Werowocomoco, the rats in the corn, and the burn that sent him home. Nearly every page about these years was written by men who served under him, and two of them admit they were \u201ca partie\u201d. You are one of that company. What will you set down?"; },
-   obj:function(){ return "Live eight scenes from February 1608 to October 1609. In each, do what the day asks, then give Anas Todkill your page and see what the 1612 book printed. At the end, set the friends\u2019 list of stores beside an enemy\u2019s letter of the same day. When Smith has sailed, close Todkill\u2019s pages."; },
+   intro:function(){ return "Two years of John Smith, from the gilded dirt to the burn that sent him home. Nearly every page about them was written by men who served under him, and two admit they were \u201ca partie\u201d. You are one of that company. What will you set down?"; },
+   obj:function(){ return "Live eight scenes, February 1608 to October 1609. In each, do the day\u2019s task, then give Anas Todkill your page and see what the 1612 book printed. At the end, set the friends\u2019 list of stores beside an enemy\u2019s letter. When Smith has sailed, close Todkill\u2019s pages."; },
    goals:function(){
      const w=presW(), need=presNeed();
      return [
@@ -29140,8 +29140,8 @@ const CHAPTERS=[
      if(o)return {it:presRoute(o),why:w.did.sailed?"the chapter ends here":"Todkill\u2019s page"};
      return null; },
    end:{head:"Smith & the Record — Complete",yr:"Chapter VI · October 1609",nextWorld:"ch7",nextLabel:"The Starving Time — Chapter VII",extra:function(){return presPagesSummary();},
-     body:"<p>John Smith has gone home burned, and never comes back to Virginia. George Percy is President of about five hundred people, with ten weeks of food by one account and \u201cexceedinge much need\u201d by another. The ship carrying the new governor has not come.</p>"+
-       "<p>Todkill\u2019s pages, and his friends\u2019, go to London and are printed in 1612. The winter ahead is the next chapter, and it is still to come.</p>"}},
+     body:"<p>John Smith has gone home burned, never to return. George Percy is President of about five hundred people, with ten weeks of food by one account and \u201cexceedinge much need\u201d by another. The new governor\u2019s ship has not come.</p>"+
+       "<p>Todkill\u2019s pages are printed in London in 1612. The winter ahead is the next chapter.</p>"}},
   {n:"VII",yr:"1609–10",t:"The Starving Time",d:"The fort, Orapakes and the river — October 1609 to June 1610",
    ready:true,world:"ch7",pace:2.5,near:9,
    intro:function(){ return "Smith is gone. Of about five hundred people, six months later there are sixty at Jamestown. This chapter is about the famine of that winter: it includes starvation, killing and the eating of the dead, all in the words of the people who wrote about it, and none of it shown. Everyone who wrote about it blamed someone. You will keep the ledger of who blamed whom."; },
@@ -30643,7 +30643,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0534";
+const BUILD="20261127-0540";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
