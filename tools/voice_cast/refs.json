@@ -166,5 +166,25 @@
  "spence": {
   "text": "I have chosen my dividend, and I mean to clear it and plant.",
   "desc": "An English farmer and old soldier in his forties, one of the first settlers: weathered, plain-spoken and slow, a rough country voice, an English accent of the early 1600s, not American."
+ },
+ "wyatt": {
+  "text": "Opechancanough sends word: the death of one man shall be no breach of the peace.",
+  "desc": "An English gentleman and new governor in his early thirties, of an old knightly family: courteous, composed and official, a smooth educated voice, an English accent of the early 1600s, not American."
+ },
+ "pace": {
+  "text": "Waterhouse, in London, sixteen twenty-two: an Indian belonging to one Perry, living with Richard Pace, warned him in the night.",
+  "desc": "An English planter in his thirties, woken in the night with terrible news: urgent, low and steady, a plain working man's voice, an English accent of the early 1600s, not American."
+ },
+ "nuce": {
+  "text": "So we dig a well, and line it with brick.",
+  "desc": "An English captain in his forties commanding a small settlement, kind and worn out: fatherly, practical and tired, a warm low voice, an English accent of the early 1600s, not American."
+ },
+ "gsandys": {
+  "text": "George Sandys, privately, 30 March sixteen twenty-three: use a peace to make the Pow-a-tan as secure as wee were, then destroy them.",
+  "desc": "An English gentleman and poet in his forties, the colony's treasurer: cool, cultivated and precise, a dry measured voice, an English accent of the early 1600s, not American."
+ },
+ "frethorne": {
+  "text": "I am not halfe a quarter so strong as I was in England, and all is for want of victualls.",
+  "desc": "A young English servant boy in his teens, starving and homesick, begging his parents for help: thin, pleading and earnest, a young country voice, an English accent of the early 1600s, not American."
  }
 }

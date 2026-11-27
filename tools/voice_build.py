@@ -53,7 +53,8 @@ FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 # Pronunciation only: the key stays the original text. Respellings for names espeak
 # has never heard; each is how the place is said locally today.
 SAY = [(r"\bKecoughtan\b", "Kick-oh-tan"), (r"\bPaspahegh\b", "Pass-pa-hay"),
-       (r"\bweroance(s?)\b", r"wero-ance\1"), (r"\bPowhatan\b", "Pow-a-tan")]
+       (r"\bweroance(s?)\b", r"wero-ance\1"), (r"\bPowhatan\b", "Pow-a-tan"),
+       (r"\b([Cc])orne\b", r"\1orn")]   # "theire Corne" was read "Kornay" (Whisper, 27 Nov)
 
 
 def fnv1a(s):

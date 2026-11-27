@@ -27655,7 +27655,7 @@ registerWorld("ch6",function(root){
     /* 27 Nov: that spring they "built some twenty houses" (the well look says so) while the 1607
        tents stood on: from Spring 1609 the tents and the sail-awning go and framed houses stand on
        five of their sites, so the change shows from one day to the next */
-    if(w.day>=6){PRES.cut={tents:STARVE_TENTS.slice()};
+    if(w.day>=6){PRES.cut={tents:CAMP_TENTS.slice()};
       STARVE_TENTS.filter(function(t){return t[0]!==22;}).forEach(function(t){leafHouse(root,G,t[0],t[1],0);});}
     if(w.day===0){
       spots={smith:[6,10,3.2],scrivener:[-30,0,2.6],newport:[-96,40,1.4],wingfield:[-104,46,1.0],archer:[-88,46,2.2]};
@@ -28630,6 +28630,9 @@ function G7(x,z){return WORLD.ground?WORLD.ground(x,z):0;}
    through one), and by May the gate is off its hinges. The fort's parts are single meshes that
    arrive later, so updateStarve cuts them as they come (starveCut). */
 const STARVE_TENTS=[[63,-30],[-6,-33],[27,-41],[48,-47],[11,-48],[22,-22]];
+/* the camp has eight tents; these two are not house sites, so they are only cut (play-test, 27 Nov:
+   they stood on in every fort scene from 1609, one over the start point) */
+const CAMP_TENTS=STARVE_TENTS.concat([[0.8,-10.5],[-14.6,5.1]]);
 const STARVE_GAPS=[[0.55,1],[0.3,-1],[0.3,1]];   /* [how far from the river corner to the north bulwark, side] */
 function starveGap(g){return [g[1]*210*(1-g[0]),30-222*g[0]];}
 function starveRuin(root,G,level){
@@ -28802,7 +28805,7 @@ registerWorld("ch7",function(root){
     if(where==="fort"){
       const ruined=STARVE_TENTS.slice(0,Math.min(STARVE_TENTS.length,(sd.ruin||0)*2));
       if(!STARVE.cut)STARVE.cut={tents:[],gaps:[],gate:false};
-      STARVE.cut.tents=STARVE_TENTS.slice();
+      STARVE.cut.tents=CAMP_TENTS.slice();
       STARVE.hide=(STARVE.hide||[]).concat(["awning"]);   /* as in Chapter VI from spring 1609 */
       STARVE_TENTS.filter(function(t){return ruined.indexOf(t)<0;}).forEach(function(t){leafHouse(root,G,t[0],t[1],0);});
     }
@@ -29793,7 +29796,7 @@ registerWorld("ch8",function(root){
        1610, found the fort's houses standing, and De La Warr had the church mended: the tents go,
        and four of their sites take framed houses ((22,-22) is the corn ground, and (63,-30) would
        crowd the house at (50,-30)) */
-    LEAF.cut={tents:STARVE_TENTS.slice()};
+    LEAF.cut={tents:CAMP_TENTS.slice()};
     STARVE_TENTS.filter(function(t){return t[0]!==22&&t[0]!==63;}).forEach(function(t){leafHouse(root,G,t[0],t[1],0);});
     if(w.day===0){
       spots={delawarr:[-20,-2,2.6],percy:[-36,-2,2.4]};
@@ -30733,7 +30736,7 @@ registerWorld("ch9",function(root){
     /* the shelter at (22,-22) is gone: its ground is the tobacco, the corn and the woodpile.
        In 1617-18 "the Palizado's broken" (GH, Tyler p. 330): two gaps, cut as Chapter VII's
        are, without its charred stumps; the colliders stay, so nobody walks out through one */
-    PRICE.cut={tents:STARVE_TENTS.slice(),gaps:w.day<=1?STARVE_GAPS.slice(0,2).map(starveGap):[]};
+    PRICE.cut={tents:CAMP_TENTS.slice(),gaps:w.day<=1?STARVE_GAPS.slice(0,2).map(starveGap):[]};
     /* 27 Nov: the 1607 camp's canvas tents still stood in 1620. Smith's book has "but five or six
        houses" in the fort in 1617 (Tyler p. 330): every tent goes, and on five of their sites stands
        a framed house of the kind Chapter VIII builds at Henrico */
@@ -31097,7 +31100,7 @@ const SKY_NPCS=[
    done:"“Secure the house. Then the boat.”",
    beats:[
     /* Waterhouse (Kingsbury III:555): all Pace's words here are Waterhouse's account, in his mouth */
-    {npc:"“He woke me in the night. His brother lay with him, and told him to kill me. I must cross before day. Ask, quickly.”",
+    {npc:"“He woke me in the night. His brother lay with him, and told him to kill me. Ask.”",   /* play-test, 27 Nov: "I must cross before day" was still said after the crossing */
      choices:[
       {t:"Who is he, the one who warned you?",wise:true,ink:8,
        reply:"Waterhouse will write: “an Indian belonging to one Perry”, living in Pace’s house, whom Pace “vsed … as a Sonne”. No name.",
@@ -31521,7 +31524,7 @@ function skyNext(fromBoard){
            fixed sentence, so every line said here has a recording */
         const m=w.marks["board"+w.day]||[], off=rows.filter(function(r,i){return m[i]!==r.k;});
         fortResult("Whose account?","<p>You placed "+right+" of "+rows.length+".</p>"+
-          (off.length?"<ul>"+off.map(function(r){return "<li>"+r.res+"</li>";}).join("")+"</ul>":"")+(SKY_CLOSE[w.day]||""),
+          (off.length?"<ul>"+off.map(function(r){return "<li><b>"+SKY_K[r.k]+"</b>. "+r.res+"</li>";})   /* play-test, 27 Nov: a wrong row was explained, never told its right column */.join("")+"</ul>":"")+(SKY_CLOSE[w.day]||""),
           [],function(){skyNext(true);});});
     return;
   }
@@ -31686,7 +31689,7 @@ registerWorld("ch10",function(root){
     /* the 1607 tents go and framed houses stand on their sites, as in Chapter IX.
        play-test, 27 Nov: two of the camp's eight tents are not among STARVE_TENTS and stood on in
        1621-24, one over the start and one behind Wyatt; they go too, with nothing built there */
-    SKY.cut={tents:STARVE_TENTS.concat([[0.8,-10.5],[-14.6,5.1]])};
+    SKY.cut={tents:CAMP_TENTS.slice()};
     STARVE_TENTS.filter(function(t){return !(t[0]===22&&t[1]===-22);}).forEach(function(t){leafHouse(root,G,t[0],t[1],0);});
     if(w.day===0){
       spots={wyatt:[-20,-2,2.6],yeardley:[-36,-2,2.4]};
@@ -33928,7 +33931,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1100";
+const BUILD="20261127-1113";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
