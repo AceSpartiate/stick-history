@@ -58,7 +58,7 @@
       "path": "assets/props3d/iron_pot.glb",
       "source": "made for this game: an empty three-legged iron cooking pot with two ears. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7, prompt \"A three-legged cast-iron cooking pot of the early 1600s with a bail handle, plain black iron, empty. Three-quarter view from slightly above, the whole object in frame with margin, every part visible, plain pure white studio background, soft even lighting, photoreal product photo.\"; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI; reduced and colour-baked by tools/blender/bake_glb.py (--tris 2000 --height 0.85) (2026-11-27)",
       "licence": "own",
-      "notes": "binary glTF, vertex colours only, 1,999 triangles, 167 KB; placed by starveHearth() in index.html (Chapter VII, the winter) at scale 1.1"
+      "notes": "binary glTF, vertex colours only, 1,999 triangles, 167 KB; placed by starveHearth() in index.html (Chapter VII, the winter) at scale 1.1, and as the cook's kettle on the ship in Chapter I (buildCabins, at 1.45 x K)"
     },
     {
       "path": "assets/props3d/stingray.glb",

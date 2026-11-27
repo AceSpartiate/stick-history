@@ -7103,8 +7103,12 @@ function buildCabins(root){
   if(!BG){const fl=new THREE.PointLight(lin(0xff8a3a),1.35,32*K);fl.position.set(hx,y+3.2*K,GZ);root.add(fl);}
   solid(hx,GZ,1.7*K,2.3*K,LVL.MAIN);
   const hood=box(3.4*K,0.5*K,4.6*K,0x3a2c1a);hood.position.set(hx,y+5.4*K,GZ);root.add(hood);
-  const kettle=new THREE.Mesh(new THREE.CylinderGeometry(1.0*K,0.78*K,1.3*K,8),mat(0x2b2b30));
-  kettle.position.set(hx,y+3.2*K,GZ-0.6*K);root.add(kettle);
+  /* 3d, 27 Nov: the kettle is assets/props3d/iron_pot.glb (TRELLIS.2, Chapter VII's pot)
+     at 1.45 of its size, 2.1 ft across, its feet where the cylinder's base was; the
+     eight-sided cylinder only if it fails */
+  placeProp(root,"assets/props3d/iron_pot.glb","iron_pot",hx,y+2.55*K,GZ-0.6*K,0,1.45*K,function(){
+    const kettle=new THREE.Mesh(new THREE.CylinderGeometry(1.0*K,0.78*K,1.3*K,8),mat(0x2b2b30));
+    kettle.position.set(hx,y+3.2*K,GZ-0.6*K);root.add(kettle);});
   const chain=box(0.12*K,2.0*K,0.12*K,0x3a3a40);chain.position.set(hx,y+4.6*K,GZ-0.6*K);root.add(chain);
   const tx=halfBeam(GZ,y)-2.4*K;
   const tbl=box(2.2*K,0.4*K,4.6*K,0x6b5433);tbl.position.set(tx,y+2.4*K,GZ);root.add(tbl);
@@ -30686,7 +30690,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0511";
+const BUILD="20261127-0528";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
