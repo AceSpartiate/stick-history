@@ -168,7 +168,7 @@
   #intro .eyebrow{font-family:'IM Fell English SC',serif;color:var(--oxblood);letter-spacing:.14em;font-size:.9rem}
   #intro h2{font-size:1.85rem;margin:.1em 0} #intro .date{font-style:italic;color:#5a4a2c;margin-bottom:1em}
   #intro .obj{border-top:1px solid var(--line);margin-top:1em;padding-top:.85em}
-  #intro .obj b{font-family:'IM Fell English SC',serif;color:var(--oxblood);font-weight:400}
+  #intro .obj b{font-family:'IM Fell English SC',serif;color:var(--oxblood);font-weight:400;display:inline-block}
   #intro .ctrls{margin-top:.85em;font-size:.88rem;color:#5a4a2c;font-style:italic}
 
   /* ---- SCENE: viewport on top, Game Boy deck below ---- */
@@ -770,7 +770,7 @@
       <h2 id="introTitle">The Crossing</h2>
       <div class="date" id="introDate">Aboard the Susan Constant · the mouth of the Chesapeake, 26 April 1607</div>
       <p id="introBody"></p>
-      <div class="obj"><b>Your task —</b> <span id="introObj"></span></div>
+      <div class="obj"><b>Your task</b><span class="noRead"> —</span> <span id="introObj"></span></div>
       <div class="ctrls" id="introCtrls"></div>
       <div class="actbar"><button class="btn wide" id="btnEnter">Step Aboard</button></div>
     </div>
@@ -794,7 +794,7 @@
     <div class="parchment deckle sheet" style="max-width:560px" data-read>
       <div class="kick">Under the old sail · the council’s orders</div>
       <h3 id="fortWhen"></h3>
-      <div class="vNote">Send each party to a task. <b>Rank rules in 1607:</b> gentlemen were not bred to labour, and men at work they do not know get little done. <b>† Against the President’s order:</b> he “would admit no exercise at armes, or fortification but the boughs of trees cast together in the forme of a halfe moone” (<i>Proceedings</i>, 1612). You may defy it. It will be remembered.</div>
+      <div class="vNote">Send each party to a task. <b>Rank rules in 1607:</b> gentlemen were not bred to labour, and men at work they do not know get little done. <b><span class="noRead">† </span>Against the President’s order:</b> he “would admit no exercise at armes, or fortification but the boughs of trees cast together in the forme of a halfe moone” (<i>Proceedings</i>, 1612). You may defy it. It will be remembered.</div>
       <div id="fortRows"></div>
       <div class="vNote" id="fortWork"></div>
       <button class="btn wide mt" id="fortGo">Set them to work</button>
@@ -2110,7 +2110,7 @@ let CH={
      own lines say he rolls over and that you could step over him. See place(). */
   {id:"snore",name:"Sleeping Sailor",voice:"male",role:"off watch",lvl:1,pos:[4,-8],face:0,lie:true,
    eq:{skin:"english",palette:"ink",cloak:"none_cloak",torso:"none_torso",accessory:"none_acc",head:"head_cap",build:"build_normal",face:"sleepy"},
-   lines:["\u201c...mmf. Watch's not till eight bells. Go 'way.\u201d",
+   lines:["\u201c...mmf, watch's not till eight bells. Go 'way.\u201d",
      "He does not wake. Somewhere under the snoring is the word \u201cgold.\u201d",
      "\u201c...Bess. No. Don't take the... mmf.\u201d He rolls over.",
      "You could probably step over him. Most people do."]}
@@ -9417,7 +9417,17 @@ function openDoc(d){
   $("docTitle").textContent=d.title;
   const host=$("docBody");host.innerHTML="";
   for(let i=0;i<d.parts.length;i++){
-    const q=document.createElement("div");q.className="quote";q.textContent="\u201c"+d.parts[i].q+"\u201d";
+    /* the quotation marks are drawn, not read: with them in the text the voice had
+       "\u201cA beam of oak, ... rudder." as one line and "... timber.\u201d" as another, and neither is
+       the recorded sentence, so every document read aloud in the browser's voice (drill, 27 Nov) */
+    /* ...and so are the ellipses at either end of an extract, which glued it to the gloss
+       before it: "...10 April 1606., to deduce a colony..." The words are the source's own;
+       only what is said at the edges changes. These lines are in tools/voice_extra.json. */
+    const qm=/^(\u2026\s*)?([\s\S]*?)(\s*\u2026)?$/.exec(d.parts[i].q);
+    const q=document.createElement("div");q.className="quote";
+    const qo=document.createElement("span");qo.className="noRead";qo.textContent="\u201c"+(qm[1]||"");
+    const qc=document.createElement("span");qc.className="noRead";qc.textContent=(qm[3]||"")+"\u201d";
+    q.appendChild(qo);q.appendChild(document.createTextNode(qm[2]));q.appendChild(qc);
     const g=document.createElement("div");g.className="gloss";g.innerHTML=d.parts[i].g;
     host.appendChild(q);host.appendChild(g);
   }
@@ -10540,7 +10550,9 @@ function speak(text,kind,who,force){
         v=pool[h%pool.length];
       }
     }
-    const pieces=chunkForSpeech(clean);
+    /* a piece with no letter or number in it is a pause, not a line: the execution's "—" was
+       a lone "," that no recording can hold, handed to the browser's voice (drill, 27 Nov) */
+    const pieces=chunkForSpeech(clean).filter(function(p){return /[A-Za-z0-9]/.test(p);});
     for(let i=0;i<pieces.length;i++)
       /* kind travels with the piece so a demoted retry re-picks the RIGHT local voice
          rather than dropping every speaker onto the narrator's */
@@ -10594,6 +10606,10 @@ function readableText(el){
      caller that does not want it simply never looks at READ_MAP. */
   READ_MAP=[];
   const own=function(el,txt){if(el&&txt)READ_MAP.push({el:el,t:sayKey(txt)});};
+  const shown=function(n){let s="";for(let i=0;i<n.childNodes.length;i++){const ch=n.childNodes[i];
+    if(ch.nodeType===3)s+=ch.nodeValue;
+    else if(ch.nodeType===1&&!(ch.classList&&(ch.classList.contains("noRead")||ch.classList.contains("sayBtn"))))s+=shown(ch);}
+    return s;};
   const endStop=function(){const k=parts.length-1;if(k>=0&&!/[.!?:;][”’)\]]*$/.test(parts[k]))parts[k]=parts[k].replace(/[\s,—–-]+$/,"")+".";};
   (function walk(node,opts){
     for(let i=0;i<node.childNodes.length;i++){
@@ -10611,7 +10627,9 @@ function readableText(el){
           if(!/[.!?:;,”’)\]]$/.test(t)||(/[”’)\]]$/.test(t)&&!/[.!?,;:][”’)\]]+$/.test(t))){
             let b=node;
             try{while(b&&b!==el&&getComputedStyle(b).display==="inline")b=b.parentNode;}catch(e){}
-            if(b&&(b.textContent||"").replace(/\s+/g," ").trim()===t)t+=".";
+            /* what is drawn and not read (a question's number, a quotation mark) does not stop
+               the text from being the whole of its block */
+            if(b&&shown(b).replace(/\s+/g," ").trim()===t)t+=".";
           }
           parts.push(t);}
         continue;}
@@ -10646,12 +10664,26 @@ function readableText(el){
             const num=(typeof ONES!=="undefined"&&ONES[inOpts.n])?ONES[inOpts.n]:String(inOpts.n);
             tag2=num.charAt(0).toUpperCase()+num.slice(1);
           }
-          parts.push(tag2+": "+(/[.?!]$/.test(t)?t:t+"."));
+          /* ---- AND THE LETTER IS ITS OWN SENTENCE NOW ----
+             "C: followed the winds, south then west." joined a letter to a choice the paper
+             shuffles, so each choice was four different lines and none of them recorded: the
+             whole muster was read in the browser's voice (drill, 27 Nov). "C." and then the
+             choice is two recorded lines, the same whatever letter the shuffle gives it. */
+          parts.push(tag2+".");
+          parts.push(/[.?!]$/.test(t)?t:t+".");
           own(c,t);            /* the choice highlights as its own button */
         }
         continue;
       }
       if(tag==="SCRIPT"||tag==="STYLE"||tag==="CANVAS")continue;
+      /* a drop-down says what is chosen, not all seven things it could be (Chapter III's
+         orders read every task under every party); the † mark is drawn, not said */
+      if(tag==="SELECT"){
+        const o=c.options&&c.options[c.selectedIndex];
+        const t=o?(o.text||"").replace(/\s*†\s*$/,"").replace(/\s+/g," ").trim():"";
+        if(t){endStop();parts.push(/[.!?]$/.test(t)?t:t+".");own(c,t);}
+        continue;
+      }
       /* ---- A BLOCK ENDS A SENTENCE ----
          A list item, an attribution in italics, a reward pill or a bold lead-in with no stop of
          its own ran on into the next block: "...Saw or heard it himself Percy: ..." in one breath,
@@ -11767,9 +11799,10 @@ function cannonFallSteps(d,sol){
    then a question would be a toll, not a decision. */
 function askToFire(onYes){
   const w=$("fireWhy");
-  if(w)w.textContent="She is not run out, no drum has beat to quarters, and the Captain is "+
-    "on deck. Fire her and it is your doing, and there will be an"+
-    "account of it.";
+  /* one sentence to a literal: the voice harvest reads literals, and a sentence split across
+     two of them was never found to be recorded (drill, 27 Nov) */
+  if(w)w.textContent="She is not run out, no drum has beat to quarters, and the Captain is on deck. "+
+    "Fire her and it is your doing, and there will be an account of it.";
   $("fireYes").onclick=function(){$("mFire").classList.remove("on");onYes();};
   $("fireNo").onclick=function(){$("mFire").classList.remove("on");setPaused(false);};
   openModal("mFire");
@@ -12233,10 +12266,9 @@ function executeThePlayer(reason){
     $("cineFade").style.transition="opacity .8s linear";
     $("cineFade").style.opacity="0";
     result(false,"Executed",
-      "The expedition goes on without you, the most historically"+
-      "ordinary thing that could have happened.\n\nYou begin this chapter again."+
-      "Your Ink, wardrobe and Historian's Notes"+
-      "are all kept. Only the day is lost.",
+      "The expedition goes on without you, the most historically ordinary thing that could have happened."+
+      "\n\nYou begin this chapter again. "+
+      "Your Ink, wardrobe and Historian's Notes are all kept. Only the day is lost.",
       ["Notes kept","Ink kept","The chapter begins again"],
       function(){restartChapter(world);});
   });
@@ -12384,8 +12416,7 @@ function cannonCutscene(d,sol){
     {cam:{to:[mz.x+d.side*54*K, mz.y+13*K, mz.z-30*K],
           look:[mz.x+d.side*2*K, mz.y+2*K, mz.z]},
      t:3.0, sfx:"boom", gain:0.55, shake:0.05,
-     narrate:"From the water it is a white plume off her side, and the noise"+
-             "comes a moment after the smoke."},
+     narrate:"From the water it is a white plume off her side, and the noise comes a moment after the smoke."},
     {wait:0.25,shake:2.8},
     /* tight on the gun that just went off */
     {shot:{of:["player"],dist:9,height:2.6,lookH:3.2,tight:true},t:1.7,sfx:"creak",gain:0.45},
@@ -12724,7 +12755,7 @@ function endCouncil(){
   grantInsight(COUNCIL.outcome);   /* declared on COUNCIL, so the registry can see it */
   checkpoint("the council has chosen");
   result(true,"The Island",
-    "\u201cWe plant on the island.\u201d Wingfield does not put it to a vote."+
+    "\u201cWe plant on the island.\u201d Wingfield does not put it to a vote. "+
     "\u201cA ship may be moored to the trees there and unloaded.\u201d"+
     (warned?" It is written down that you said otherwise."
            :" Nobody else has walked the island, so nobody argues."),
@@ -12842,7 +12873,9 @@ function submitLash(){
   const ok=Q.need.every(function(g){return g.some(function(k){return a.indexOf(k)>=0;});});
   if(!ok){S.corrections++;lash.wrong++;incur("a wrong answer under the lash");}
   $("lashFeedback").innerHTML=ok?"<div class='explain good'><b>Accepted.</b> "+Q.model+"</div>"
-    :"<div class='explain'><b>Not quite.</b> "+Q.wrongWhy+"<br><br><i>A fuller answer:</i> "+Q.model+"</div>";
+    /* the label on its own line, so it is its own sentence: "A fuller answer: There was no
+       enemy..." was a line for every answer in the bank, none recorded (drill, 27 Nov) */
+    :"<div class='explain'><b>Not quite.</b> "+Q.wrongWhy+"<div class='mt'><i>A fuller answer</i></div><div>"+Q.model+"</div></div>";
   $("lashSubmit").textContent=(lash.i>=set.length-1)?"Endure the last":"Next lash";
   $("lashSubmit").onclick=function(){lash.i++;if(lash.i>=set.length)endLashes();else renderLash();};
 }
@@ -12893,12 +12926,12 @@ function endLashes(){
     (" There is nothing left above this. Come back a fourth time and no one will ask you anything.");
   if(cz.ashore){
     result(true,"Cut down",
-      "You are cut down, bloodied, and able to say why."+
+      "You are cut down, bloodied, and able to say why. "+
       "You answered "+right+" of "+lash.set.length+", and "+need+" was wanted."+more,
       ["Back to the strand"],function(){setPaused(false);});
     return;
   }
-  result(true,"It is done","The flogging ends. You are sent back among the men."+
+  result(true,"It is done","The flogging ends. You are sent back among the men. "+
     "You answered "+right+" of "+lash.set.length+", and "+need+" was wanted."+more,
     ["Try the casks again"],function(){setPaused(false);});
 }
@@ -13084,7 +13117,11 @@ function rkCount(){
 }
 function renderRK(){
   const R=CH.reck,Q=rk.set[rk.pos];
-  $("reckStim").textContent=Q.stim;$("reckQ").textContent=(rk.pos+1)+". "+Q.q;
+  /* the number is shown and not said: "3. What does this show?" is a line for every place a
+     question can fall on the paper, and none of them was recorded (drill, 27 Nov) */
+  $("reckStim").textContent=Q.stim;$("reckQ").textContent="";
+  const qn=document.createElement("span");qn.className="noRead";qn.textContent=(rk.pos+1)+". ";
+  $("reckQ").appendChild(qn);$("reckQ").appendChild(document.createTextNode(Q.q));
   const mc=$("reckMap");
   if(mc)mc.classList.toggle("on",!!(Q.map&&drawQuizMap(Q.map)));
   const opts=Q.o.map(function(t,i){return {t:t,ok:i===Q.a};});
@@ -15219,11 +15256,11 @@ function aimMiss(){
   if(!GUN.active||S.insight["Proved the Piece"])return;
   GUN.misses=(GUN.misses||0)+1;
   if(GUN.misses===3){
-    toast("Kendall: \u201cYou are snatching. Hold the aim after"+
+    toast("Kendall: \u201cYou are snatching. Hold the aim after "+
           "she goes, and take the near mark.\u201d");
   } else if(GUN.misses===6&&!GUN.rest){
     GUN.rest=true;
-    toast("Kendall sets a forked rest under the barrel."+
+    toast("Kendall sets a forked rest under the barrel. "+
           "\u201cLet the wood hold her.\u201d");
   }
 }
@@ -15912,8 +15949,8 @@ function shotAMan(who,off,radius){
          be reachable - the design rule is that losing changes what you are asked,
          never whether you are asked. */
       result(false,onAuthority?("You Killed "+auth.name):"Executed",
-        "A caliver ball passes through a man at a hundred paces. That is why you drill at a stump."+
-        "You are dead, and the expedition goes on without you."+
+        "A caliver ball passes through a man at a hundred paces. That is why you drill at a stump. "+
+        "You are dead, and the expedition goes on without you. "+
         "It will be read back at the muster.",
         ["No ink","Recorded: a man killed"],function(){
           /* the chapter you died in, not the one the game happened to start in */
@@ -15922,8 +15959,8 @@ function shotAMan(who,off,radius){
     } else {
       checkpoint("recorded against your name");
       result(false,lashes+" Lashes at the Tree",
-        "He will carry that wound home, and you will carry the count."+
-        "Discipline here was a man tied up and struck a set number of times, before everyone."+
+        "He will carry that wound home, and you will carry the count. "+
+        "Discipline here was a man tied up and struck a set number of times, before everyone. "+
         "Captain Kendall means to hear you account for it.",
         ["No ink","Recorded: a man wounded"],function(){openLashes("shot");});
     }
@@ -18689,8 +18726,8 @@ function kendallOverheard(){
      narrate:"\u201cNone has shown a warrant. Until the box is opened, we take orders on trust. I do not.\u201d"}
   ]},function(){
     result(true,"Overheard on the Strand",
-      "It is not treason. The box is still shut."+
-      "But it is close to the charge the council will bring that summer: that he did practise to sow discord between the president and council."+
+      "It is not treason. The box is still shut. "+
+      "But it is close to the charge the council will bring that summer: that he did practise to sow discord between the president and council. "+
       "Tell Captain Newport, or keep it.",
       ["A choice, recorded either way"],function(){
         setPaused(false);
@@ -20447,7 +20484,7 @@ const CHARTS={
     title:"The King's River",
     x:0.428,y:0.430,      /* a creek off the north bank, some way up */
     gloss:"<b>You are here:</b> a creek off the north bank, some miles above the river's mouth. "+
-      "Gabriel Archer wanted this place."+
+      "Gabriel Archer wanted this place. "+
       "Wingfield overruled him: a ship cannot lie against this bank."},
   tobacco:{kick:"The tobacco ground \u00b7 a planter's sketch",
     title:"The Tobacco Ground",
@@ -20467,21 +20504,21 @@ const CHARTS={
   james:{kick:"Jamestown Island \u00b7 the chart, weighted with a stone",
     title:"James Ile",
     art:"james", x:0.28,y:0.645,
-    gloss:"<b>You are here:</b> a low island some forty miles up from the capes."+
-      "Deep water against the trees, and far from the sea."+
+    gloss:"<b>You are here:</b> a low island some forty miles up from the capes. "+
+      "Deep water against the trees, and far from the sea. "+
       "Nobody lives on it. Taste the water to learn why."},
   comfort:{kick:"Point Comfort \u00b7 the chart, held down with a stone",
     title:"The Mouth of the Bay",
     x:0.606,y:0.628,      /* the low point inside the capes */
-    gloss:"<b>You are here:</b> a low point where the deep channel runs close in."+
-      "Percy named it for the deep channel, “which put us in good comfort”."+
+    gloss:"<b>You are here:</b> a low point where the deep channel runs close in. "+
+      "Percy named it for the deep channel, “which put us in good comfort”. "+
       "Every ship entering the bay must pass it."},
   ch2:{kick:"Cape Henry \u00b7 the Captain\u2019s chart, spread on a chest",
     title:"The Mouth of the Bay",
     art:"cape", x:0.420,y:0.700,     /* beside the crosse, not on top of it */
-    gloss:"<b>You are here:</b> the southern cape of the Chesapeake. It will be named Cape Henry on the 29th."+
-      "Across the water is Cape Charles."+
-      "There is no anchorage here, so the fleet will not stay."+
+    gloss:"<b>You are here:</b> the southern cape of the Chesapeake. It will be named Cape Henry on the 29th. "+
+      "Across the water is Cape Charles. "+
+      "There is no anchorage here, so the fleet will not stay. "+
       "West of the capes, this sheet is guesswork."}
 };
 /* the lower Chesapeake, in normalised coordinates - east to the right */
@@ -22210,7 +22247,7 @@ function doSurvey(d){
      you can do may leave the muster out of reach - and it is the search that decides,
      not a special case. */
   if(!gateReachable(surveyDays()-1,d.site,key)){
-    toast("Note that, and the day is gone, with the passage to a"+
+    toast("Note that, and the day is gone, with the passage to a "+
           "second place. Look elsewhere first.");
     return;
   }
@@ -22261,7 +22298,7 @@ function travelTo(key){
        describe the shortfall differently. */
     const want=Math.max(0,MUSTER_FINDINGS-findingsHeld());
     const spread=sitesSurveyed()<MUSTER_SITES;
-    toast("Spend the day on that passage and you will lack daylight for what the"+
+    toast("Spend the day on that passage and you will lack daylight for what the "+
           "scrivener wants"+
           (want?" \u2014 "+want+" more thing"+(want===1?"":"s")+" to note":"")+
           (spread?((want?", and ":" \u2014 ")+"a second place to set against the first"):"")+
@@ -22329,7 +22366,7 @@ function openChart(){
          fourteen since a site gained a fourth survey - so the line sat directly under
          "Daylight left: 14" and disagreed with it. Asked of the budget now, and "were given"
          rather than "have", because this line is read again with fewer days left. */
-      'Choosing the site took seventeen days. You were given'+surveyBudget()+'. Each passage and each thing you look at costs a day.</div>'+
+      'Choosing the site took seventeen days. You were given '+surveyBudget()+'. Each passage and each thing you look at costs a day.</div>'+
        rows+'</div>';
   }
   $("mapGloss").innerHTML=g;
@@ -22467,7 +22504,7 @@ function sealedBox(){
     if(knewSmith){ink+=6;S.smithRecognised=true;}
     S.ink+=ink;updateInk();
     result(true,"The Box Is Opened",
-      "Seven names, carried three thousand miles unread."+
+      "Seven names, carried three thousand miles unread. "+
       (knewSmith
         ? "You had met the man in irons. That counts at the muster."
         : "You never spoke to the man in irons.")+
@@ -23641,7 +23678,7 @@ const CAPE_DOC={
    {q:"The six and twentieth day of Aprill, about foure a clocke in the morning, wee descried the Land of Virginia.",
     g:"George Percy, on first sight of land."},
    {q:"The nine and twentieth day we set up a Crosse at Chesupioc Bay, and named that place Cape Henry.",
-    g:"Named for Henry, Prince of Wales, three days after the landing."+
+    g:"Named for Henry, Prince of Wales, three days after the landing. "+
       "You may read that <b>Robert Hunt</b> held a service here. No 1607 document says so."},
    {q:"At night, when wee were going aboard, there came the Savages creeping upon all foure, from the Hills, like Beares, with their Bowes in their mouthes\u2026",
     g:"<b>Gabriel Archer</b> was shot through both hands and a sailor, <b>Mathew Morton</b>, badly wounded."}
@@ -24204,12 +24241,16 @@ function openFortOrders(){
 function fortWord(f){
   return f>=1?"done":f>=.75?"nearly done":f>=.5?"half done":f>=.25?"begun":f>0?"scarcely begun":"not begun";
 }
+function fortWordCap(f){const w=fortWord(f);return w.charAt(0).toUpperCase()+w.slice(1);}
 function fortPaintWork(){
   const h=[];
   for(const t of FORT_TASKS){
     const who=FORT_PARTIES.filter(function(p){return FORT_PICK&&FORT_PICK[p.id]===t.id;})
       .map(function(p){return p.name.replace(/^The /,"the ");});
-    h.push("<div class='fortTask'><b>"+t.name+(t.defy?" †":"")+"</b> — "+fortWord(fortProg(t.id))+
+    /* "<b>Task</b>. State." is two sentences, each recorded once: "Fell trees and rive clapboard,
+       not begun This stretch: the gentlemen..." ran task, state and parties into one line that
+       changed with every order given (drill, 27 Nov). The parties' line is one of 31. */
+    h.push("<div class='fortTask'><b>"+t.name+"</b>"+(t.defy?"<span class='noRead'> †</span>":"")+". "+fortWordCap(fortProg(t.id))+"."+
       (who.length?"<br><span class='fortWho'>This stretch: "+who.join(", ")+"</span>":"")+"</div>");
   }
   $("fortWork").innerHTML=h.join("");
@@ -24253,16 +24294,16 @@ function fortAfterStretch(st){
   };
   const ev=next&&next.ev&&evs[next.ev];
   const head="The work of "+st.label;
-  const body="<p>"+fortReport()+"</p>"+(ev?"<div class='kick'>"+ev[0]+"</div>"+ev[1]:"");
+  const body=fortReport()+(ev?"<div class='kick'>"+ev[0]+"</div>"+ev[1]:"");
   fortResult(head,body,[fortDate(w.day)],after);
 }
 function fortReport(){
+  /* one task to a line, said as the orders sheet says it: "Fell trees and rive clapboard:
+     scarcely begun; cast boughs..." was one sentence for every mix of work, so the voice never
+     had it (drill, 27 Nov) */
   const bits=[];
-  /* only the first letter drops to lower case, so Kendall keeps his capital; the sentence
-     then gets one back */
-  for(const t of FORT_TASKS){const f=fortProg(t.id);if(f>0)bits.push(t.name.charAt(0).toLowerCase()+t.name.slice(1)+": "+fortWord(f));}
-  const r=bits.join("; ");
-  return bits.length?r.charAt(0).toUpperCase()+r.slice(1)+".":"Nothing got done.";
+  for(const t of FORT_TASKS){const f=fortProg(t.id);if(f>0)bits.push("<li><b>"+t.name+"</b>. "+fortWordCap(f)+".</li>");}
+  return bits.length?"<ul class='fortReport'>"+bits.join("")+"</ul>":"<p>Nothing got done.</p>";
 }
 function fortEve(){
   /* Percy wrote nothing of the attack but that the Paspahegh "sent Venison, but the Sawse came
@@ -25244,7 +25285,9 @@ function sickAct(d){
 function sickList(){
   const sd=sickDay();
   const rows=SICK_DEAD.filter(function(r){return r.d<=sd.d;});
-  let h="<p>Percy’s account, printed in 1625:</p><ul class=\"sickList\">";
+  /* the colon is drawn and not said, so the lead is a sentence of its own and not glued to
+     the first name (drill, 27 Nov) */
+  let h="<p>Percy’s account, printed in 1625<span class=\"noRead\">:</span></p><ul class=\"sickList\">";
   rows.forEach(function(r){h+="<li><b>"+r.day+"</b> · "+r.who+(r.of?" — <i>"+r.of+"</i>":"")+"</li>";});
   h+="</ul><p>"+rows.length+" named. Wingfield: “aboue fforty” dead before September. Smith: “about 46”. The Proceedings: “50”.</p>";
   if(!rows.length)h="<p>Percy has named no dead yet. His list begins on the sixth of August.</p>";
@@ -30666,7 +30709,7 @@ function PRICE_OATH(){
     {fade:"in",cam:{to:[cx-12.4,gy+11,cz],look:[cx+9,gy+3.5,cz],cut:true},t:4.5,
      narrate:"Friday 30 July 1619. The quire of the church at James City."},
     {cam:{to:[cx+5,gy+9.5,cz+5.3],look:[cx-7,gy+3.5,cz-1]},t:5,
-     narrate:"Mr. Bucke, the minister, said a prayer. Then the burgesses were called in, one by one, by name."},
+     narrate:"Master Bucke, the minister, said a prayer. Then the burgesses were called in, one by one, by name."},
     /* play-test, 27 Nov: this step had no camera of its own, so the burgess walked out of the
        nave shot and took his oath as a hat brim at the foot of the frame. Now it is seen from
        the quire, over the council, with his face to the table */
@@ -33931,7 +33974,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1113";
+const BUILD="20261127-1152";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
