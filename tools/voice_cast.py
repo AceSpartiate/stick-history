@@ -70,6 +70,11 @@ CAST = {
                  f"a harsh middle-aged voice, {ENG}.",
     'martin': f"An English gentleman of the council, a father whose son is sick: grieving and angry, a strained "
               f"older voice, {ENG}.",
+    # Chapter V
+    'read': f"An English blacksmith condemned to hang: rough, frightened and sullen, a hoarse working man's "
+            f"voice, {ENG}.",
+    'bargeman': f"An English soldier in a cold boat on a winter river: tired, restless and grumbling, a plain "
+                f"working voice, {ENG}.",
 }
 REEL_GAP = 0.6
 
