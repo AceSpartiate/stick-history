@@ -27618,7 +27618,7 @@ registerWorld("ch6",function(root){
   const w=presW(), sd=presDay();
   const where=sd.where;
   PRES.ship=null;PRES.ships=[];PRES.ray=null;PRES.boat=null;PRES.lit=false;PRES.winter=!!sd.winter;
-  PRES.rats.length=0;BLAZE.fires.length=0;PRES.figs={};
+  PRES.rats.length=0;BLAZE.fires.length=0;PRES.figs={};PRES.cut=null;
   let G, spots={}, at=[0,20], face=Math.PI, nextAt=null;
   /* a spot that waits on another duty (data.after) is held back and laid down by presDone
      the moment that duty is done: the crowning used to appear only after a reload */
@@ -27634,6 +27634,11 @@ registerWorld("ch6",function(root){
     buildFortWorld(root,view,{ships:["discovery"],people:false,record:false,winter:!!sd.winter});
     G=fortGround;
     nextAt=[-30,26];
+    /* 27 Nov: that spring they "built some twenty houses" (the well look says so) while the 1607
+       tents stood on: from Spring 1609 the tents and the sail-awning go and framed houses stand on
+       five of their sites, so the change shows from one day to the next */
+    if(w.day>=6){PRES.cut={tents:STARVE_TENTS.slice()};
+      STARVE_TENTS.filter(function(t){return t[0]!==22;}).forEach(function(t){leafHouse(root,G,t[0],t[1],0);});}
     if(w.day===0){
       spots={smith:[6,10,3.2],scrivener:[-30,0,2.6],newport:[-96,40,1.4],wingfield:[-104,46,1.0],archer:[-88,46,2.2]};
       /* Newport's ship, moored below the fort until she sails */
@@ -27937,6 +27942,11 @@ function presRoute(it,anyFort){
 function updatePres(dt){
   if(CURRENT_WORLD!=="ch6")return;
   PRES.t+=dt;
+  if(PRES.cut&&FORT.parts){
+    const p=FORT.parts.camp_shelters, C=PRES.cut;
+    if(p&&!p.userData.presCut){p.userData.presCut=true;starveCut(p,function(x,z){return C.tents.some(function(h){return Math.hypot(x-h[0],z-h[1])<9;});});}
+    const aw=FORT.parts.awning;if(aw&&aw.visible)aw.visible=false;
+  }
   if(!PRES.lit&&(PRES.winter||PRES.night)){
     if(PRES.night){scene.background=new THREE.Color(0x1c2230);if(hemiLight)hemiLight.intensity*=0.35;if(sunLight)sunLight.intensity*=0.25;}
     else{
@@ -31479,7 +31489,9 @@ const PATCH_NOTES=[
      "<b>Did tobacco cause it?</b>",
      "After each scene you weigh the causes: did tobacco cause it, help it, or not cause it at all? Tobacco drove the fixed price, the hunger for land and the laws about servants. It did not bring the ship.",
      "<b>Where to find it</b>",
-     "Pass Chapter VIII’s muster and its ending leads on to Chapter IX. If you passed it before today, Chapter IX is already open in the chapter list."]},
+     "Pass Chapter VIII’s muster and its ending leads on to Chapter IX. If you passed it before today, Chapter IX is already open in the chapter list.",
+     "<b>The fort grows</b>",
+     "The 1607 camp’s tents no longer stand for twelve years. From spring 1609, when Smith’s men “built some twenty houses”, the fort has framed houses instead."]},
   {when:"27 November 2026",
    head:"Less reading, and every line spoken",
    lines:[
@@ -32880,7 +32892,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0947";
+const BUILD="20261127-0948";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
