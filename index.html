@@ -3591,10 +3591,10 @@ function setExpression(fig,key){
    Chapter I runs 191 draw calls of a 600 ceiling and Chapter II ran 14. So there is
    one kind of person in this game now, and this is how he is put to work.
 
-   A stoop is made by tipping the whole man forward and bending his knees under him -
-   which is what a man lifting a boat timber does anyway. The torso CAN bend now
-   (parts.spine, 27 Nov), and these poses do not use it yet: that is the movement pass,
-   and this is the function that gets better when it comes. */
+   A stoop was made by tipping the whole man forward about his heels with his knees bent
+   the wrong way. The movement pass (below: MOVEMENT) hinges him at the hip, rounds his
+   back at the spine and bends his knees forward, and the kneel puts a knee on the ground
+   the right way round. */
 function bakeFigure(fig){
   /* A crowd figure is posed once and never moves again, so it has no use for its
      joints afterwards. This walks the finished, POSED figure and merges every mesh
@@ -3635,58 +3635,586 @@ function bakeFigure(fig){
   g.computeVertexNormals();
   return new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true}));
 }
+/* ========== MOVEMENT: WEIGHT, A WALK, IDLES, TALK AND REACTIONS ==========
+   Owner, 27 Nov: "people visibly do period work, not swaying or gimmicks". The figures pass
+   gave the rig a spine, elbows and knees; until this pass nothing bent them.
+
+   CONVENTIONS, measured off the rig rather than assumed (a figure faces +Z):
+     shoulder / hip  rotation.x  NEGATIVE swings the limb FORWARD, positive back
+     elbow           rotation.x  NEGATIVE is the natural bend (the forearm comes forward)
+     knee            rotation.x  POSITIVE is the natural bend (the shin goes back)
+     ankle           rotation.x  POSITIVE points the toe down
+     body / spine    rotation.x  POSITIVE bows forward; neck.x positive looks down
+     shoulder        rotation.z  OUTWARD is sg*a, where sg is -1 for L (his right, -X)
+   The knee sign is the fault the owner saw. The kneel, the stoop and the walk all bent their
+   knees NEGATIVE - the shin swung forward, a heron's leg - and the standing pose's arm
+   splay was inward, into the hips. Every pose here is the right way round.
+
+   THE BODY IS THE PELVIS. parts.body (the inner group) tips about the HIP, not the heels:
+   fmPlant hinges it there, then drops and slides it so the lower sole sits on the ground and
+   the feet stay on the spot the figure was put. So a stoop is a hip hinge with the knees
+   soft, a dig is a squat, and nothing floats or sinks while it moves.
+
+   COST. Nothing here allocates in the frame loop: scratch vectors, two matrices and two
+   quaternions are made once (FM), key tables are constant arrays read by index, and a
+   baked figure (bakeFigure) has no parts and is never touched. */
+const FM={v:[0,1,2,3,4,5,6,7].map(function(){return new THREE.Vector3();}),
+  m:new THREE.Matrix4(),m2:new THREE.Matrix4(),q:new THREE.Quaternion(),q2:new THREE.Quaternion()};
+const FM_JOINTS=["shoulderL","shoulderR","elbowL","elbowR","wristL","wristR","hipL","hipR","kneeL","kneeR","ankleL","ankleR"];
+function fmNow(){return performance.now()/1000;}
+function fmS(u){u=u<0?0:u>1?1:u;return u*u*(3-2*u);}
+/* a cyclic key track: [t0,v0, t1,v1, ...] with t in [0,1), eased between knots. Close knots
+   make a fast, committed stroke; wide ones a slow wind-up or recovery. */
+function fmKey(k,ph){
+  const n=k.length;
+  if(n===2)return k[1];
+  let i=0;
+  while(i+2<n&&k[i+2]<=ph)i+=2;
+  let t0=k[i],v0=k[i+1],t1,v1;
+  if(ph<t0){t0=k[n-2]-1;v0=k[n-1];t1=k[0];v1=k[1];}
+  else if(i+2<n){t1=k[i+2];v1=k[i+3];}
+  else {t1=k[0]+1;v1=k[1];}
+  const u=(ph-t0)/((t1-t0)||1);
+  return v0+(v1-v0)*fmS(u);
+}
+function figRest(q){
+  if(!q)return;
+  for(let i=0;i<FM_JOINTS.length;i++){const j=q[FM_JOINTS[i]];if(j)j.rotation.set(0,0,0);}
+  if(q.spine)q.spine.rotation.set(q.rest?q.rest.spine:0,0,0);
+  if(q.neck)q.neck.rotation.set(q.rest?q.rest.neck:0,0,0);
+  if(q.body){q.body.rotation.set(0,0,0);q.body.position.set(0,0,0);}
+}
+/* where the feet are, for a pelvis tilt and the leg joints: out[0] is how far the body must
+   drop (wrap units, negative), out[1] how far it must slide to keep the feet's mean on the
+   spot. Hinged about the hip, so the hip itself does not swing out over the toes. */
+const FM_PL=[0,0];
+function fmPlantVals(sc,pel,hl,hr,kl,kr,keepZ){
+  const T=RIG.THIGH, Sh=RIG.SHIN, H=RIG.HIP_Y;
+  const al=pel+hl, ar=pel+hr, bl=al+kl, br=ar+kr;
+  const ext=Math.max(T*Math.cos(al)+Sh*Math.cos(bl),T*Math.cos(ar)+Sh*Math.cos(br))+RIG.ANKLE_Y;
+  FM_PL[0]=(ext-H*Math.cos(pel))*sc;
+  const fz=keepZ?-(T*(Math.sin(al)+Math.sin(ar))+Sh*(Math.sin(bl)+Math.sin(br)))*0.5:0;
+  FM_PL[1]=-H*sc*Math.sin(pel)-fz*sc;
+  return FM_PL;
+}
+function fmPlant(p,pel,keepZ){
+  const b=p.body;if(!b)return;
+  const v=fmPlantVals(b.scale.y,pel,p.hipL?p.hipL.rotation.x:0,p.hipR?p.hipR.rotation.x:0,
+    p.kneeL?p.kneeL.rotation.x:0,p.kneeR?p.kneeR.rotation.x:0,keepZ);
+  b.rotation.x=pel;b.position.y=v[0];b.position.z=v[1];
+}
+/* ---- TWO-BONE ARM IK ----
+   Puts a hand's palm on a point given in the SPINE's space (the chest group the shoulders
+   hang from), with the elbow toward a pole direction. For the hand that is not holding the
+   tool, for loads held at their ends, for a hand on the chest and hands joined in prayer.
+   w<1 blends from whatever the shoulder holds this frame. */
+function figArmIK(p,side,tx,ty,tz,px,py,pz,w){
+  const sh=side<0?p.shoulderL:p.shoulderR, el=side<0?p.elbowL:p.elbowR;
+  if(!sh||!el)return false;
+  const U=RIG.UPARM, F=RIG.FOREARM+0.075;
+  let dx=tx-sh.position.x, dy=ty-sh.position.y, dz=tz-sh.position.z;
+  let D=Math.sqrt(dx*dx+dy*dy+dz*dz)||1e-4;
+  const hi=(U+F)*0.995, lo=Math.abs(U-F)+0.04;
+  if(D>hi){const k=hi/D;dx*=k;dy*=k;dz*=k;D=hi;}
+  else if(D<lo){const k=lo/D;dx*=k;dy*=k;dz*=k;D=lo;}
+  let ce=(U*U+F*F-D*D)/(2*U*F);ce=ce<-1?-1:ce>1?1:ce;
+  const phi=Math.PI-Math.acos(ce);
+  const V=FM.v;
+  V[0].set(0,-U-F*Math.cos(phi),F*Math.sin(phi)).normalize();          /* the arm's own frame */
+  V[1].set(0,-1,0).addScaledVector(V[0],V[0].y).normalize();
+  V[2].crossVectors(V[0],V[1]);
+  V[3].set(dx/D,dy/D,dz/D);                                           /* the frame wanted */
+  V[4].set(px,py,pz).addScaledVector(V[3],-(px*V[3].x+py*V[3].y+pz*V[3].z));
+  if(V[4].lengthSq()<1e-6)V[4].set(side,-0.3,-0.3).addScaledVector(V[3],-(side*V[3].x-0.3*V[3].y-0.3*V[3].z));
+  V[4].normalize();
+  V[5].crossVectors(V[3],V[4]);
+  FM.m.makeBasis(V[3],V[4],V[5]);
+  FM.m2.makeBasis(V[0],V[1],V[2]).transpose();
+  FM.m.multiply(FM.m2);
+  FM.q.setFromRotationMatrix(FM.m);
+  if(w===undefined||w>=1){sh.quaternion.copy(FM.q);el.rotation.set(-phi,0,0);}
+  else if(w>0){sh.quaternion.slerp(FM.q,w);el.rotation.set(el.rotation.x+(-phi-el.rotation.x)*w,el.rotation.y*(1-w),0);}
+  return true;
+}
+/* a point given in the body's (pelvis) space, into the spine's, in place */
+function fmToSpine(p,v){
+  const s=p.spine;if(!s)return v;
+  v.sub(s.position);FM.q2.copy(s.quaternion).invert();return v.applyQuaternion(FM.q2);
+}
+/* a point on a prop held in the right hand, in the spine's space */
+function fmPropPoint(p,prop,x,y,z,out){
+  out.set(x,y,z);
+  prop.updateMatrix();out.applyMatrix4(prop.matrix);
+  p.wristR.updateMatrix();out.applyMatrix4(p.wristR.matrix);
+  p.elbowR.updateMatrix();out.applyMatrix4(p.elbowR.matrix);
+  p.shoulderR.updateMatrix();out.applyMatrix4(p.shoulderR.matrix);
+  return out;
+}
+
+/* ---- THE WALK ----
+   Opposite arm and leg; the knee folds in early swing and the heel strikes with the toe up;
+   the elbows bend more as the arm comes forward; the shoulders turn a little against the
+   hips and the head holds still against that. The body drops by exactly what the stance leg's
+   angle costs it, so no sole floats at double support. Phase is driven by DISTANCE: use
+   figWalkRate for radians per world unit, and the planted foot does not skate. */
+function figWalk(p,ph,amp,run){
+  if(!p||!p.hipL)return;
+  if(amp===undefined)amp=1;
+  const R=run?1:0, A=(0.40+0.20*R)*amp, s=Math.sin(ph);
+  const hl=-s*A, hr=s*A;
+  const kf=(0.85+0.70*R)*amp;
+  const wl=Math.max(0,Math.cos(ph+0.6)), wr=Math.max(0,Math.cos(ph+0.6+Math.PI));
+  const kl=0.05*amp+kf*wl*wl, kr=0.05*amp+kf*wr*wr;
+  p.hipL.rotation.set(hl,0,0);p.hipR.rotation.set(hr,0,0);
+  p.kneeL.rotation.set(kl,0,0);p.kneeR.rotation.set(kr,0,0);
+  if(p.ankleL)p.ankleL.rotation.set(-(hl+kl)*0.85-0.20*amp*s,0,0);
+  if(p.ankleR)p.ankleR.rotation.set(-(hr+kr)*0.85+0.20*amp*s,0,0);
+  const B=(0.40+0.22*R)*amp, el=0.20+1.05*R;
+  if(p.shoulderL)p.shoulderL.rotation.set(s*B,0,-0.07);
+  if(p.shoulderR)p.shoulderR.rotation.set(-s*B,0,0.07);
+  if(p.elbowL)p.elbowL.rotation.set(-el-0.40*amp*Math.max(0,-s),0,0);
+  if(p.elbowR)p.elbowR.rotation.set(-el-0.40*amp*Math.max(0,s),0,0);
+  if(p.wristL)p.wristL.rotation.set(0,0,0);if(p.wristR)p.wristR.rotation.set(0,0,0);
+  const rs=p.rest?p.rest.spine:0, rn=p.rest?p.rest.neck:0;
+  if(p.spine)p.spine.rotation.set(rs+(0.03+0.16*R)*amp,-s*0.09*amp,0);
+  if(p.neck)p.neck.rotation.set(rn-(0.02+0.10*R)*amp,s*0.08*amp,0);
+  if(p.body){p.body.rotation.set(0,0,0);p.body.position.x=0;}
+  fmPlant(p,0,false);
+}
+/* radians of walk phase per WORLD unit travelled, for a figure (its own scale included) */
+function figWalkRate(fig,amp,run){
+  const p=fig&&fig.userData&&fig.userData.parts;
+  const sc=(p&&p.body?p.body.scale.y:FIG_SCALE)*(fig&&fig.scale?fig.scale.y:1);
+  const A=((run?0.60:0.40)*(amp===undefined?1:amp))||0.01;
+  return Math.PI/(2*RIG.HIP_Y*sc*Math.sin(A)*(run?1.45:1));
+}
+/* a turn on the spot is a few short steps, not a figure spinning on a pin. st holds the
+   step phase; turn is how far he turned this frame. Returns whether he is stepping. */
+function figTurnStep(p,st,turn,dt){
+  const a=Math.abs(turn)/Math.max(dt,1e-3);
+  st.tw=(st.tw||0)+((a>0.35?Math.min(0.42,a*0.22):0)-(st.tw||0))*Math.min(1,dt*8);
+  if(st.tw<0.02){st.tw=0;return false;}
+  st.tp=(st.tp||0)+Math.abs(turn)*3.4+dt*1.5;
+  figWalk(p,st.tp,st.tw);
+  return true;
+}
+
+/* ---- STANDING STILL, ALIVE ----
+   Over a base pose b (what he was placed in): a breath, a weight shift every nine to thirteen
+   seconds onto one leg with the other knee eased and the shoulders tilting against the hips,
+   and now and then a look round - most of the time he looks where he faces. All read off the
+   clock and his seed: no state and no allocation. k scales it (0 = the base pose exactly). */
+function fmBase(p){
+  const r=function(j,a){return p[j]?p[j].rotation[a]:0;};
+  return {sp:r("spine","x"),spy:r("spine","y"),nk:r("neck","x"),nky:r("neck","y"),
+    sL:r("shoulderL","x"),sLz:r("shoulderL","z"),sR:r("shoulderR","x"),sRz:r("shoulderR","z"),
+    eL:r("elbowL","x"),eR:r("elbowR","x"),hL:r("hipL","x"),hR:r("hipR","x"),
+    kL:r("kneeL","x"),kR:r("kneeR","x"),aL:r("ankleL","x"),aR:r("ankleR","x"),
+    pel:r("body","x"),py:p.body?p.body.position.y:0,pz:p.body?p.body.position.z:0};
+}
+function fmLookTg(n,seed){const h=srand(n*3.13+seed*11.7);return h<0.45?0:(srand(n*7.7+seed)-0.5)*1.15;}
+function fmLook(t,seed){
+  const u=t/4.6+seed*0.71, i=Math.floor(u), f=u-i;
+  const a=fmLookTg(i-1,seed), b=fmLookTg(i,seed);
+  return a+(b-a)*fmS(f/0.22);
+}
+function figIdle(p,b,t,seed,k){
+  if(!p||!b)return;
+  const br=Math.sin(t*1.55+seed*2.3);
+  const P=9+(seed*7.3)%4;
+  let w=Math.sin((t/P+seed*0.37)*Math.PI*2)*1.8;w=w>1?1:w<-1?-1:w;   /* +1: weight on his L leg */
+  const wl=Math.max(0,-w)*k, wr=Math.max(0,w)*k;
+  if(p.spine)p.spine.rotation.set(b.sp+br*0.014*k,b.spy,-w*0.035*k);
+  if(p.neck)p.neck.rotation.set(b.nk+br*0.008*k,b.nky+fmLook(t,seed)*k,w*0.025*k);
+  if(p.kneeL)p.kneeL.rotation.set(b.kL+wl*0.20,0,0);
+  if(p.kneeR)p.kneeR.rotation.set(b.kR+wr*0.20,0,0);
+  if(p.hipL)p.hipL.rotation.set(b.hL-wl*0.07,0,0);
+  if(p.hipR)p.hipR.rotation.set(b.hR-wr*0.07,0,0);
+  if(p.ankleL)p.ankleL.rotation.set(b.aL-wl*0.10,0,0);
+  if(p.ankleR)p.ankleR.rotation.set(b.aR-wr*0.10,0,0);
+  if(p.shoulderL)p.shoulderL.rotation.set(b.sL+br*0.02*k,0,b.sLz);
+  if(p.shoulderR)p.shoulderR.rotation.set(b.sR+br*0.02*k,0,b.sRz);
+  if(p.elbowL)p.elbowL.rotation.set(b.eL,0,0);if(p.elbowR)p.elbowR.rotation.set(b.eR,0,0);
+  if(p.body){p.body.rotation.set(b.pel,0,w*0.016*k);p.body.position.y=b.py;p.body.position.z=b.pz;}
+}
+
+/* ---- TALK: WHO IS SPEAKING, AND SINCE WHEN ----
+   speak() notes every line with its speaker id (voiceOf's `who`, or "narrator"); a cutscene
+   step's `by` names an actor; sayPump marks each sentence as it starts. A figure gestures
+   only while its OWN line is being said - with the voice on that is the speech queue running,
+   with it off it is the reading time speechSeconds() gives the line. */
+const TALK={who:null,src:null,to:null,text:"",t0:0,est:0,piece:0,pn:0};
+function talkNote(text,who,src,to){
+  const tx=String(text||"");
+  if(TALK.who===who&&TALK.text===tx&&fmNow()-TALK.t0<TALK.est)return;
+  TALK.who=who||"narrator";TALK.src=src||"say";TALK.to=to||null;TALK.text=tx;
+  TALK.t0=TALK.piece=fmNow();TALK.pn=0;
+  try{TALK.est=speechSeconds(tx);}catch(e){TALK.est=2+tx.length/14;}
+}
+function talking(who){
+  if(!who||TALK.who!==who)return false;
+  const dt=fmNow()-TALK.t0;
+  if(SPEECH_OK&&VOICE_ON)return SAY_ON||dt<0.5;
+  return dt<TALK.est;
+}
+/* time into the current sentence, and which sentence: without a voice, a sentence is taken
+   as every 2.8 s of reading time */
+function talkBeat(out){
+  const now=fmNow();
+  if(SPEECH_OK&&VOICE_ON&&SAY_ON){out[0]=now-TALK.piece;out[1]=TALK.pn;}
+  else{const d=now-TALK.t0;out[0]=d%2.8;out[1]=Math.floor(d/2.8);}
+  return out;
+}
+const FM_TB=[0,0];
+function fmBx(o,a,v,bv,k){if(o)o.rotation[a]=bv+(v-bv)*k;}
+/* The speaker's layer over his base pose b: a nod as each sentence starts and a little head
+   movement through it; one gesture per beat - an open palm, both palms, a point at the
+   listener, a hand on the chest, or the hands left still - risen over a third of a second,
+   held, and let fall before the next. e is how much he is talking (eased in and out by the
+   caller), so a gesture never snaps. */
+function figTalk(p,b,seed,e){
+  if(!p||e<=0.001)return;
+  const tb=talkBeat(FM_TB);
+  figTalkAt(p,b,seed,e,tb[0],tb[1]);
+}
+/* the same layer on a clock of its own (d seconds into a stretch of talk), for men talking
+   among themselves whose words are not in the speech queue */
+function fmTalkClock(p,b,seed,e,d){figTalkAt(p,b,seed,e,d%2.8,Math.floor(d/2.8)+Math.floor(seed*13));}
+function figTalkAt(p,b,seed,e,tau,pn){
+  if(!p||e<=0.001)return;
+  const beat=Math.floor(tau/3.0), tb3=tau-beat*3.0;
+  const g=Math.floor(srand(pn*3.7+beat*1.3+seed*0.91)*5);
+  const ge=fmS((tb3-0.20)/0.35)*(1-fmS((tb3-2.35)/0.5))*e;
+  const nod=Math.sin(Math.PI*Math.min(1,tau/0.45))*(tau<0.45?1:0)*0.14+Math.sin(fmNow()*4.3+seed)*0.025;
+  if(p.neck)p.neck.rotation.x+=nod*e;
+  if(ge<=0.001)return;
+  if(g===0||g===1){                          /* an open palm: the forearm up, so the palm faces up */
+    fmBx(p.shoulderL,"x",-0.42,b.sL,ge);fmBx(p.shoulderL,"z",-0.30,b.sLz,ge);fmBx(p.elbowL,"x",-1.28,b.eL,ge);
+    if(g===1){fmBx(p.shoulderR,"x",-0.38,b.sR,ge);fmBx(p.shoulderR,"z",0.28,b.sRz,ge);fmBx(p.elbowR,"x",-1.20,b.eR,ge);}
+  } else if(g===2){                          /* he points at the man he is speaking to */
+    fmBx(p.shoulderL,"x",-1.30,b.sL,ge);fmBx(p.shoulderL,"z",-0.12,b.sLz,ge);fmBx(p.elbowL,"x",-0.18,b.eL,ge);
+  } else if(g===3){                          /* his hand on his chest */
+    figArmIK(p,-1,-0.035,0.30,0.20,-0.8,-0.6,-0.3,ge);
+  }
+}
+
+
+/* ---- THE PLAYER: a jog that is paid for by the ground, standing alive, and turning to the
+   man he is speaking to ----
+   He covers ten feet a second walking and twenty-three running - a jog and a sprint - so his
+   gait is the run (figWalk's run), its phase advanced by the distance actually moved, so a
+   foot does not skate and a man pressed against a wall does not run on the spot. When he
+   stops the stride dies away in a fifth of a second and the idle comes up behind it. */
+const PMV={ph:0,amp:1,w:0,it:0,st:{},sm:null,sid:null};
+function fmSpeakerMesh(id){
+  if(PMV.sid===id&&PMV.sm&&PMV.sm.parent)return PMV.sm;
+  PMV.sid=id;PMV.sm=null;
+  for(let i=0;i<npcMeshes.length;i++)if(npcMeshes[i].npc&&npcMeshes[i].npc.id===id){PMV.sm=npcMeshes[i].mesh;break;}
+  if(!PMV.sm&&typeof CROWD!=="undefined")for(let i=0;i<CROWD.length;i++)if(CROWD[i].id===id){PMV.sm=CROWD[i].mesh;break;}
+  return PMV.sm;
+}
+function playerMove(dt,mv){
+  const p=playerParts;
+  if(!p||!p.hipL||!player)return;
+  PMV.w+=((mv?1:0)-PMV.w)*Math.min(1,dt*(mv?10:8));
+  PMV.it=mv?0:Math.min(1,PMV.it+dt*0.8);
+  /* in conversation he faces the man he is speaking to, in a step or two */
+  if(!mv&&dlg&&dlg.npc){
+    const m=fmSpeakerMesh(dlg.npc.id);
+    if(m&&m!==player){
+      let d=Math.atan2(m.position.x-player.position.x,m.position.z-player.position.z)-player.rotation.y;
+      while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;
+      const turn=Math.max(-3*dt,Math.min(3*dt,d));
+      player.rotation.y+=turn;
+      if(figTurnStep(p,PMV.st,turn,dt))return;
+    }
+  }
+  if(PMV.w>0.03)figWalk(p,PMV.ph,PMV.w*PMV.amp,true);
+  else figIdle(p,FM_B0,IDLE_T,3.3,PMV.it);
+}
+/* ---- A CUTSCENE'S SPEAKER, AND WHO HE IS SPEAKING TO ----
+   A step may carry by:"actorId" (and to:"actorId"): the line it narrates is that man's own
+   words. While it is said he turns to the man he speaks to (`to`, or the player, or the
+   nearest other actor) and talks with his head and hands; everyone else in the scene with a
+   head turns it to him. Actors are found as csActor finds them, then among the named people
+   standing in the world. */
+function figRef(id){
+  if(!id)return null;
+  const a=csActor(id);if(a)return a;
+  for(let i=0;i<npcMeshes.length;i++)if(npcMeshes[i].npc&&npcMeshes[i].npc.id===id)return npcMeshes[i].mesh;
+  return null;
+}
+const CST={sp:null,to:null,b:null,te:0,id:null};
+function updateCsTalk(dt){
+  if(!CS.active)return;
+  const s=CS.step, by=(s&&s.by)||null;
+  if(by!==CST.id){CST.id=by;CST.sp=figRef(by);CST.to=s&&s.to?figRef(s.to):null;CST.te=0;
+    const sp=CST.sp;
+    if(sp&&sp.userData.parts){const st=fmState(sp);st.b=fmBase(sp.userData.parts);CST.b=st.b;}
+    if(sp&&!CST.to){let best=1e9;
+      const cand=function(m){if(!m||m===sp||!m.userData||!m.userData.parts)return;
+        const d=Math.hypot(m.position.x-sp.position.x,m.position.z-sp.position.z);if(d<best){best=d;CST.to=m;}};
+      for(let i=0;i<CS.actors.length;i++)cand(CS.actors[i].mesh);
+      if(player&&player.visible)cand(player);}}
+  const sp=CST.sp;
+  if(!sp||!sp.parent||!sp.userData.parts)return;
+  const p=sp.userData.parts;
+  const moving=s&&s.move&&csActor(s.move.id)===sp;
+  /* the speaker turns to the man he is speaking to */
+  if(CST.to&&!moving){
+    let d=Math.atan2(CST.to.position.x-sp.position.x,CST.to.position.z-sp.position.z)-sp.rotation.y;
+    while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;
+    sp.rotation.y+=Math.max(-2.2*dt,Math.min(2.2*dt,d));
+  }
+  const tk=talking(by)||CS.t<1.2;
+  CST.te+=((tk?1:0)-CST.te)*Math.min(1,dt*5);
+  if(CST.b){
+    /* he holds the pose the scene gave him; his head and hands do the talking */
+    if(p.neck)p.neck.rotation.x=CST.b.nk;
+    figTalk(p,CST.b,3.7,CST.te);
+  }
+  /* and the others in the scene look at him */
+  for(let i=0;i<CS.actors.length;i++){
+    const m=CS.actors[i].mesh;
+    if(m===sp)continue;
+    fmLookAt(m,sp,dt);
+  }
+  if(player&&player!==sp&&player.visible)fmLookAt(player,sp,dt,true);
+}
+/* a listener turns his head to the speaker, and his body too when the speaker is behind him */
+function fmLookAt(m,at,dt,headOnly){
+  const q=m&&m.userData&&m.userData.parts;
+  if(!q||!q.neck)return;
+  let d=Math.atan2(at.position.x-m.position.x,at.position.z-m.position.z)-m.rotation.y;
+  while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;
+  if(Math.hypot(at.position.x-m.position.x,at.position.z-m.position.z)>40)return;
+  if(!headOnly&&Math.abs(d)>1.15){m.rotation.y+=Math.max(-1.6*dt,Math.min(1.6*dt,d-Math.sign(d)*1.0));}
+  const h=Math.max(-1.0,Math.min(1.0,d));
+  q.neck.rotation.y+=(h-q.neck.rotation.y)*Math.min(1,dt*4);
+}
+
+/* ---- A SHOT GOES OFF ----
+   A piece fired among people is a moment every scene with a gun in it already has: every live
+   figure within r of it flinches - ducks, an arm up, the head turned from the noise - and goes
+   back to what it was doing. Not the man who fired it. Baked figures cannot, and do not. */
+function fmGunshot(x,z,r,except){
+  const hit=function(m){
+    if(!m||m===except||!m.parent||!m.visible||!m.userData||!m.userData.parts)return;
+    if(Math.hypot(m.position.x-x,m.position.z-z)>r)return;
+    const rm=m.userData.rm;if(rm&&!rm.done&&rm.K.hold===Infinity)return;   /* he is held in a pose */
+    figReact(m,"flinch",{from:[x,z]});
+  };
+  for(let i=0;i<npcMeshes.length;i++){const n=npcMeshes[i];if(n.npc&&(n.npc.sat||n.npc.lie))continue;hit(n.mesh);}
+  if(typeof CROWD!=="undefined")for(let i=0;i<CROWD.length;i++)hit(CROWD[i].mesh);
+  for(let i=0;i<WORK.list.length;i++)hit(WORK.list[i].f);
+}
+/* ---- A FIGURE'S OWN STATE, made once, read every frame ---- */
+function fmState(fig){
+  const ud=fig.userData;
+  if(!ud.fm)ud.fm={te:0,b:null,st:{},yaw:0};
+  return ud.fm;
+}
+
+/* ========== REACTIONS ==========
+   figReact(fig, kind, opts) - a moment a scene already describes, played on a live figure:
+     "flinch"     a gunshot or a blow: duck, arms up, head away (opts.from [x,z] to turn from)
+     "nod"        two nods, laid over whatever he is doing
+     "point"      the arm out at opts.at ([x,y,z] or a figure) for opts.dur seconds
+     "attention"  stand straight, arms down, chin up - a muster, a governor coming ashore
+     "kneelPray"  down on both knees, hands joined, head bowed
+     "sitSick"    sat on the ground, hunched over his knees, a hand on his belly, rocking
+   The last three HOLD until opts.dur runs out or figReact(fig,"clear"). A reaction blends in
+   and out over what the figure was already doing (its base): a joint some other system is
+   animating is read live each frame, and one nobody else touches is held from the moment the
+   reaction began - so a man who was working goes back to work, and a man posed by a scene
+   goes back to that pose. Baked figures have no joints and are left alone. */
+const FM_CH=[["body","position","y"],["body","position","z"],["body","rotation","x"],
+  ["spine","rotation","x"],["spine","rotation","y"],["neck","rotation","x"],["neck","rotation","y"],
+  ["shoulderL","rotation","x"],["shoulderL","rotation","z"],["elbowL","rotation","x"],["wristL","rotation","x"],
+  ["shoulderR","rotation","x"],["shoulderR","rotation","z"],["elbowR","rotation","x"],["wristR","rotation","x"],
+  ["hipL","rotation","x"],["hipR","rotation","x"],["kneeL","rotation","x"],["kneeR","rotation","x"],
+  ["ankleL","rotation","x"],["ankleR","rotation","x"]];
+const C_PY=0,C_PZ=1,C_PEL=2,C_SP=3,C_SPY=4,C_NK=5,C_NKY=6,C_SLX=7,C_SLZ=8,C_ELL=9,C_WRL=10,
+  C_SRX=11,C_SRZ=12,C_ELR=13,C_WRR=14,C_HL=15,C_HR=16,C_KL=17,C_KR=18,C_AL=19,C_AR=20,FM_N=21;
+const REACT=[];
+const REACT_KIND={
+  flinch:   {in:0.07,hold:0.35,out:0.9,gest:false},
+  nod:      {in:0.01,hold:0.95,out:0.01,gest:true,rel:true},
+  point:    {in:0.35,hold:2.2,out:0.5,gest:true},
+  attention:{in:0.45,hold:Infinity,out:0.6},
+  kneelPray:{in:0.9,hold:Infinity,out:0.9},
+  sitSick:  {in:1.1,hold:Infinity,out:1.0}};
+function fmRead(p,c){const o=p[c[0]];return o?o[c[1]][c[2]]:0;}
+function fmWrite(p,c,v){const o=p[c[0]];if(o)o[c[1]][c[2]]=v;}
+function figReact(fig,kind,opts){
+  const p=fig&&fig.userData&&fig.userData.parts;
+  if(!p||!p.body)return null;
+  const ud=fig.userData;
+  if(!kind||kind==="clear"||kind==="stand"){
+    for(const s of ["rm","rg"]){const r=ud[s];if(r&&!r.done&&r.end>r.t)r.end=r.t;}
+    return null;
+  }
+  const K=REACT_KIND[kind];if(!K)return null;
+  opts=opts||{};
+  const slot=K.gest?"rg":"rm", old=ud[slot];
+  const r={f:fig,p:p,k:kind,K:K,o:opts,t:0,end:(opts.dur!==undefined?opts.dur:K.hold)+K.in,
+    base:new Float32Array(FM_N),last:new Float32Array(FM_N),tg:new Float32Array(FM_N),ik:false,done:false};
+  if(old&&!old.done){r.base.set(old.base);r.last.set(old.last);old.done=true;
+    const i=REACT.indexOf(old);if(i>=0)REACT.splice(i,1);}
+  else for(let i=0;i<FM_N;i++)r.base[i]=r.last[i]=fmRead(p,FM_CH[i]);
+  if(opts.instant)r.t=K.in;              /* already in it when the scene opens */
+  ud[slot]=r;
+  if(K.gest)REACT.push(r);else REACT.unshift(r);
+  return r;
+}
+function fmReactPose(r){
+  const tg=r.tg, p=r.p, t=r.t, sc=p.body.scale.y;
+  tg.fill(NaN);r.ik=false;
+  if(r.k==="nod"){
+    const u=t/0.95;
+    tg[C_NK]=u<0.5?Math.sin(u*2*Math.PI)*0.26:Math.sin((u-0.5)*2*Math.PI)*0.14;
+    tg[C_NK]=Math.max(0,tg[C_NK]);
+  } else if(r.k==="flinch"){
+    let side=1;
+    const fr=r.o.from;
+    if(fr){const f=r.f, a=Math.atan2(fr[0]-f.position.x,fr[1]-f.position.z)-f.rotation.y;side=Math.sin(a)>0?-1:1;}
+    tg[C_PEL]=0.12;tg[C_SP]=0.42;tg[C_SPY]=0.22*side;tg[C_NK]=0.38;tg[C_NKY]=0.55*side;
+    tg[C_SLX]=-2.25;tg[C_SLZ]=-0.35;tg[C_ELL]=-1.75;tg[C_SRX]=-1.95;tg[C_SRZ]=0.35;tg[C_ELR]=-1.9;
+    tg[C_HL]=-0.42;tg[C_HR]=-0.42;tg[C_KL]=0.72;tg[C_KR]=0.72;tg[C_AL]=-(0.12-0.42+0.72);tg[C_AR]=tg[C_AL];
+    const v=fmPlantVals(sc,0.12,-0.42,-0.42,0.72,0.72,true);tg[C_PY]=v[0];tg[C_PZ]=v[1];
+  } else if(r.k==="attention"){
+    tg[C_PEL]=0;tg[C_PY]=0;tg[C_PZ]=0;tg[C_SP]=(p.rest?p.rest.spine:0)-0.04;tg[C_SPY]=0;
+    tg[C_NK]=(p.rest?p.rest.neck:0)-0.07;tg[C_NKY]=0;
+    tg[C_SLX]=0.02;tg[C_SLZ]=-0.05;tg[C_ELL]=-0.10;tg[C_WRL]=0;
+    tg[C_SRX]=0.02;tg[C_SRZ]=0.05;tg[C_ELR]=-0.10;tg[C_WRR]=0;
+    tg[C_HL]=0;tg[C_HR]=0;tg[C_KL]=0;tg[C_KR]=0;tg[C_AL]=0;tg[C_AR]=0;
+  } else if(r.k==="kneelPray"){
+    const br=Math.sin(t*1.4)*0.012;
+    tg[C_PEL]=0;tg[C_HL]=-0.08;tg[C_HR]=-0.08;tg[C_KL]=1.62;tg[C_KR]=1.62;tg[C_AL]=1.36;tg[C_AR]=1.36;
+    const v=fmPlantVals(sc,0,-0.08,-0.08,1.62,1.62,false);tg[C_PY]=v[0];tg[C_PZ]=0;
+    tg[C_SP]=(p.rest?p.rest.spine:0)+0.10+br;tg[C_SPY]=0;tg[C_NK]=(p.rest?p.rest.neck:0)+0.40;tg[C_NKY]=0;
+    r.ik=true;
+  } else if(r.k==="sitSick"){
+    const rock=Math.sin(t*1.25)*0.06, br=Math.sin(t*1.9)*0.015;
+    tg[C_PEL]=-0.12;tg[C_HL]=-1.98;tg[C_HR]=-2.06;tg[C_KL]=1.15;tg[C_KR]=1.25;tg[C_AL]=0.95;tg[C_AR]=0.93;
+    tg[C_PY]=-(RIG.HIP_Y-0.10)*sc;tg[C_PZ]=0;
+    tg[C_SP]=(p.rest?p.rest.spine:0)+0.62+rock+br;tg[C_SPY]=0;tg[C_NK]=0.32;tg[C_NKY]=Math.sin(t*0.4)*0.15;
+    r.ik=true;
+  } else if(r.k==="point"){
+    r.ik=true;
+    tg[C_WRL]=-0.10;
+  }
+}
+/* the hands, for the reactions that place them */
+function fmReactHands(r,e){
+  const p=r.p, V=FM.v[6];
+  if(r.k==="kneelPray"){
+    figArmIK(p,-1,-0.03,0.24,0.24,-0.7,-0.7,-0.2,e);
+    figArmIK(p,1,0.03,0.24,0.24,0.7,-0.7,-0.2,e);
+  } else if(r.k==="sitSick"){
+    /* one hand round his knee, the other pressed to his belly */
+    V.set(0.12,RIG.HIP_Y+0.17,0.40);fmToSpine(p,V);figArmIK(p,1,V.x,V.y,V.z,0.8,-0.2,-0.6,e);
+    V.set(-0.02,RIG.SPINE_Y-0.05,0.17);fmToSpine(p,V);figArmIK(p,-1,V.x,V.y,V.z,-0.9,-0.4,-0.2,e);
+  } else if(r.k==="point"){
+    /* the target into the spine's space: world -> figure -> spine */
+    const f=r.f, a=r.o.at;
+    if(!a)return;
+    const W=FM.v[7];
+    if(a.isObject3D)a.getWorldPosition(W).y+=3.2;else W.set(a[0],a[1],a[2]);
+    f.updateMatrixWorld(false);
+    p.body.updateMatrix();p.spine.updateMatrix();
+    FM.m.copy(f.matrixWorld).multiply(p.body.matrix).multiply(p.spine.matrix).invert();
+    W.applyMatrix4(FM.m);
+    const side=W.x<0?-1:1;
+    const sh=side<0?p.shoulderL:p.shoulderR;
+    W.sub(sh.position).normalize().multiplyScalar(0.62).add(sh.position);
+    figArmIK(p,side,W.x,W.y,W.z,side*0.3,-1,-0.2,e);
+  }
+}
+function updateReacts(dt){
+  for(let n=REACT.length-1;n>=0;n--){
+    const r=REACT[n];
+    if(r.done||!r.f.parent){r.done=true;REACT.splice(n,1);continue;}
+    r.t+=dt;
+    const K=r.K, t=r.t;
+    let e=t<K.in?fmS(t/K.in):1;
+    if(t>r.end)e=1-fmS((t-r.end)/K.out);
+    const fin=(t>r.end+K.out);
+    fmReactPose(r);
+    const p=r.p, tg=r.tg;
+    for(let i=0;i<FM_N;i++){
+      const v=tg[i];if(v!==v)continue;                  /* NaN: not this reaction's joint */
+      const c=FM_CH[i], cur=fmRead(p,c);
+      if(Math.abs(cur-r.last[i])>1e-5)r.base[i]=cur;   /* something else is animating it */
+      const b=r.base[i];
+      const out=fin?b:(K.rel?b+v*e:b+(v-b)*e);
+      fmWrite(p,c,out);r.last[i]=out;
+    }
+    /* the legs were blended joint by joint; the feet go back on the ground under whatever they
+       came to (a knee bending before the body has dropped would lift a sole off it) */
+    if(!fin&&tg[C_KL]===tg[C_KL]){
+      fmPlant(p,p.body.rotation.x,false);
+      r.last[C_PY]=p.body.position.y;r.last[C_PZ]=p.body.position.z;
+    }
+    if(r.ik&&!fin)fmReactHands(r,e);
+    if(fin){
+      if(r.ik){if(p.shoulderL)p.shoulderL.rotation.y=0;if(p.shoulderR)p.shoulderR.rotation.y=0;
+        if(p.elbowL)p.elbowL.rotation.y=0;if(p.elbowR)p.elbowR.rotation.y=0;}
+      r.done=true;REACT.splice(n,1);
+      const ud=r.f.userData;if(ud.rm===r)ud.rm=null;if(ud.rg===r)ud.rg=null;
+    }
+  }
+}
+
 function poseFigure(fig,pose,seed){
   const q=fig.userData.parts;
   if(!q)return;
   const r=function(k){return srand(seed*7.13+k*3.71);};
+  figRest(q);
+  const rs=q.rest?q.rest.spine:0, rn=q.rest?q.rest.neck:0;
   if(pose==="kneel"){
-    /* ---- A KNEEL HAS TO PUT A KNEE ON THE GROUND ----
-       The old one was a deeper stoop: it folded the legs and never lowered the figure, so
-       the man did not kneel, he pitched forward over feet that stayed where they were.
-       Three captures of that - a thigh filling the frame at two and a half feet, a man
-       falling on his face across the diagonal at five, and buried to the waist when I
-       simply dropped the root to seat the knee. It is why the survey acts have been played
-       standing.
-       The joint that has to reach the ground is the KNEE, and where it ends up is fixed by
-       the thigh. Measured off this rig: the hip sits 2.33 above the feet, the knee 1.28,
-       the ankle 0.19 - so a thigh is 1.05 and a shin 1.09. Fold the left shin back under a
-       near-vertical thigh and the knee lands 0.95 below where it rests, which is the drop.
-       The right leg goes out in front, thigh forward and shin down, and its foot lands
-       within a hundredth of the ground at the same time. Verified: lowest point of the
-       whole figure -0.01, knee 0.00, forward foot -0.01, and the head at 4.58 instead of
-       5.81, which is what kneeling looks like.
-       The drop is on `body`, not on the figure's position: the root stays where the caller
-       put it, so a kneeling man is still standing on the spot he was sent to. */
-    q.body.rotation.x=0.20+r(1)*0.06;
-    q.hipL.rotation.x=-0.05; q.kneeL.rotation.x=-1.90; q.ankleL.rotation.x=0.0;
-    q.hipR.rotation.x= 1.30; q.kneeR.rotation.x=-1.42; q.ankleR.rotation.x=0.10;
-    q.la.rotation.x=-0.80-r(4)*0.16; q.ra.rotation.x=-0.88-r(5)*0.16;
-    q.elbowL.rotation.x=-0.70-r(6)*0.20; q.elbowR.rotation.x=-0.85-r(7)*0.20;
-    q.wristL.rotation.x=-0.20; q.wristR.rotation.x=-0.26;
-    q.neck.rotation.x=0.34;                       /* down at what his hands are doing */
-    q.body.position.y=-0.95;
+    /* ---- A KNEEL HAS TO PUT A KNEE ON THE GROUND, AND BEND IT THE RIGHT WAY ----
+       The first kneel folded the legs and never lowered the man; the second lowered him 0.95
+       and seated the knee - but it bent both knees NEGATIVE, so the kneeling shin stuck out
+       FORWARD from under a vertical thigh and the front leg's thigh went BACK with its shin
+       hanging from it: two hyperextended knees, the fault the owner saw. Now: the L knee is
+       on the ground with the shin back along it and the instep flat behind; the R thigh is
+       forward and level with its shin upright and the sole flat in front. fmPlant takes the
+       drop from the legs themselves - it comes to the same 0.95 the old note measured. */
+    q.hipL.rotation.x=-0.10;q.kneeL.rotation.x=1.62;q.ankleL.rotation.x=1.36;
+    q.hipR.rotation.x=-1.30-r(1)*0.06;q.kneeR.rotation.x=1.40;q.ankleR.rotation.x=-(q.hipR.rotation.x+1.40);
+    q.spine.rotation.x=rs+0.14+r(2)*0.10;
+    q.la.rotation.set(-0.55-r(4)*0.20,0,-0.06);q.ra.rotation.set(-0.62-r(5)*0.20,0,0.06);
+    q.elbowL.rotation.x=-0.75-r(6)*0.20;q.elbowR.rotation.x=-0.85-r(7)*0.20;
+    q.wristL.rotation.x=-0.20;q.wristR.rotation.x=-0.26;
+    q.neck.rotation.x=rn+0.30;                     /* down at what his hands are doing */
+    fmPlant(q,0,false);
   } else if(pose==="stoop"){
-    q.body.position.y=0;                          /* whatever he was, he is not kneeling */
-    q.body.rotation.x=0.30+r(1)*0.10;
-    q.hipL.rotation.x=0.34; q.hipR.rotation.x=0.30;
-    q.kneeL.rotation.x=-0.62-r(2)*0.14;
-    q.kneeR.rotation.x=-0.56-r(3)*0.14;
-    q.ankleL.rotation.x=0.28; q.ankleR.rotation.x=0.26;
-    q.la.rotation.x=-0.52-r(4)*0.28; q.ra.rotation.x=-0.58-r(5)*0.28;
-    q.elbowL.rotation.x=-0.80-r(6)*0.30; q.elbowR.rotation.x=-0.92-r(7)*0.30;
-    q.wristL.rotation.x=-0.25; q.wristR.rotation.x=-0.30;
-    q.neck.rotation.x=0.24;                       /* he is looking at the work */
+    /* bent at the hips over the work, knees soft and forward of the ankles (they used to
+       bend backwards), and the back rounded a little more above the waist */
+    const t=0.30+r(1)*0.10;
+    q.hipL.rotation.x=-t-0.12;q.hipR.rotation.x=-t-0.06;
+    q.kneeL.rotation.x=0.34+r(2)*0.14;q.kneeR.rotation.x=0.28+r(3)*0.14;
+    q.ankleL.rotation.x=-(t+q.hipL.rotation.x+q.kneeL.rotation.x);
+    q.ankleR.rotation.x=-(t+q.hipR.rotation.x+q.kneeR.rotation.x);
+    q.spine.rotation.x=rs+0.26+r(8)*0.12;
+    q.la.rotation.set(-0.45-r(4)*0.28,0,-0.06);q.ra.rotation.set(-0.52-r(5)*0.28,0,0.06);
+    q.elbowL.rotation.x=-0.70-r(6)*0.30;q.elbowR.rotation.x=-0.82-r(7)*0.30;
+    q.wristL.rotation.x=-0.25;q.wristR.rotation.x=-0.30;
+    q.neck.rotation.x=rn+0.10;                      /* he is looking at the work */
+    fmPlant(q,t,true);
   } else {
-    q.body.position.y=0;
-    /* standing. Nobody stands identically, and thirty-six men in one posture is
-       the other half of why a crowd looks wrong. */
-    q.la.rotation.x=-0.05-r(4)*0.16; q.ra.rotation.x=-0.03-r(5)*0.18;
-    q.la.rotation.z= 0.06+r(8)*0.07; q.ra.rotation.z=-0.06-r(9)*0.07;
-    q.elbowL.rotation.x=-0.16-r(6)*0.34; q.elbowR.rotation.x=-0.14-r(7)*0.34;
-    q.kneeL.rotation.x=-0.04-r(10)*0.10;
-    q.hipR.rotation.x=r(11)*0.10;
-    q.neck.rotation.y=(r(12)-0.5)*0.75;           /* looking about him */
-    q.body.rotation.x=(r(13)-0.5)*0.05;
+    /* standing. Nobody stands identically, and thirty-six men in one posture is the other
+       half of why a crowd looks wrong. The arms hang a little OUT from the body (the old
+       splay was inward, through the hips), one knee easy, the head turned. */
+    q.la.rotation.set(-0.05-r(4)*0.14,0,-(0.05+r(8)*0.06));
+    q.ra.rotation.set(-0.03-r(5)*0.16,0,0.05+r(9)*0.06);
+    q.elbowL.rotation.x=-0.16-r(6)*0.30;q.elbowR.rotation.x=-0.14-r(7)*0.30;
+    q.kneeL.rotation.x=0.04+r(10)*0.10;q.ankleL.rotation.x=-q.kneeL.rotation.x;
+    q.hipR.rotation.x=-r(11)*0.06;q.ankleR.rotation.x=-q.hipR.rotation.x;
+    q.neck.rotation.y=(r(12)-0.5)*0.75;
+    q.spine.rotation.x=rs+(r(13)-0.5)*0.05;
+    fmPlant(q,0,false);
   }
 }
 
@@ -8966,9 +9494,9 @@ function animate(){
   /* play-test, 27 Nov: Chapter VI's ships, the boat from the falls, the rats and its night sky
      are driven by updatePres, which this branch never called - so "Captain Newport set sail"
      played over a ship riding at anchor, and the boat from the falls never came in */
-  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
+  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);updateCsTalk(dt);updateReacts(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
   if(CAMLOCK.on){
-    updateFx(dt);updateFlog(dt);updateShadows();
+    updateFx(dt);updateFlog(dt);updateShadows();updateReacts(dt);
     cam.position.lerp(CAMLOCK.pos,Math.min(1,dt*3.5));
     cam.lookAt(CAMLOCK.look);
     renderer.render(scene,cam);return;
@@ -8987,13 +9515,14 @@ function animate(){
   else if(FORT.on){updateFort(dt);updateArrows(dt);}
   updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updateWork(dt);
   if(LESSON.on){
-    updateFx(dt);updateLesson(dt);updateShadows();
+    updateFx(dt);updateLesson(dt);updateShadows();updateReacts(dt);
     renderer.render(scene,cam);return;
   }
   /* loading a matchlock is done standing still - you are at the mark */
   const moving=(!GUN.active)&&(moveVec.x*moveVec.x+moveVec.y*moveVec.y)>0.02;
 
   if(!paused&&moving){
+    const ox=player.position.x, oz=player.position.z;
     const fx=-Math.sin(camYaw),fz=-Math.cos(camYaw);
     const rx=Math.cos(camYaw),rz=-Math.sin(camYaw);
     let dx=(fx*(-moveVec.y)+rx*moveVec.x),dz=(fz*(-moveVec.y)+rz*moveVec.x);
@@ -9011,6 +9540,9 @@ function animate(){
        so the jump worked standing still and did nothing at a walk. */
     player.position.y=WORLD.ground(player.position.x,player.position.z)+JUMP.y;
     animT+=dt*(running?17:10);
+    /* the gait is paid for by the ground actually covered (nothing, against a wall) */
+    PMV.amp=running?1.25:1;
+    PMV.ph+=Math.hypot(player.position.x-ox,player.position.z-oz)*figWalkRate(player,PMV.amp,true);
   } else animT+=dt*1.4;
 
   updateFx(dt);updateAim(dt);updateReload(dt);updateBlow(dt);updateDrill(dt);updateShadows();
@@ -9018,9 +9550,7 @@ function animate(){
      the zoom buttons and the pinch cannot quietly pull the player back out to third
      person while a loaded piece is at their shoulder. */
   if(gunInHands()&&!CS.active&&!LESSON.on&&camZoom>0)setZoom(0);
-  const amp=moving?0.75:0.06,sw=Math.sin(animT)*amp;
-  if(playerParts){playerParts.la.rotation.x=sw;playerParts.ra.rotation.x=-sw;
-    playerParts.ll.rotation.x=-sw;playerParts.rl.rotation.x=sw;}
+  playerMove(dt,moving&&!paused);updateReacts(dt);
   /* ---- THE OLD NPC ARM SWING IS GONE, AND IT WAS THE OTHER HALF OF THE GLITCH ----
      It stood here:
          if((labelTick&3)===0){ ... p.la.rotation.x=sw2; p.ra.rotation.x=-sw2; }
@@ -9802,6 +10332,7 @@ function drawPortrait(eq){
   }
   if(portScene.userData.fig)portScene.remove(portScene.userData.fig);
   const f=buildFigure(eq);f.rotation.y=0.5;portScene.add(f);portScene.userData.fig=f;
+  portScene.userData.b=fmBase(f.userData.parts);portScene.userData.te=0;portScene.userData.at=fmNow();
   /* ---- THE PORTRAIT DOUBLED ITSELF EVERY TIME ANYBODY SPOKE ----
      setSize() takes CSS pixels and multiplies them by the pixel ratio; this handed it
      c.width/c.height, which are the DRAWING BUFFER that setPixelRatio(2) had already
@@ -9820,6 +10351,16 @@ function drawPortrait(eq){
       requestAnimationFrame(hold);
       if(!$("mDlg").classList.contains("on")||!portScene.userData.fig)return;
       portScene.userData.fig.rotation.y=0.5;      /* dead still - no drift */
+      /* ...but he talks while his line is said: a nod, and his hands (figTalk) */
+      const U=portScene.userData, now=fmNow(), pdt=Math.min(0.1,now-(U.at||now));U.at=now;
+      const q=U.fig.userData.parts, tk=!!(dlg&&dlg.npc&&talking(dlg.npc.id));
+      U.te+=((tk?1:0)-U.te)*Math.min(1,pdt*5);
+      if(q&&U.b){
+        if(q.neck)q.neck.rotation.x=U.b.nk;
+        if(q.shoulderL)q.shoulderL.rotation.set(U.b.sL,0,U.b.sLz);if(q.shoulderR)q.shoulderR.rotation.set(U.b.sR,0,U.b.sRz);
+        if(q.elbowL)q.elbowL.rotation.set(U.b.eL,0,0);if(q.elbowR)q.elbowR.rotation.set(U.b.eR,0,0);
+        figTalk(q,U.b,1.9,U.te);
+      }
       portR.render(portScene,portCam);
     })();
   }
@@ -10843,6 +11384,7 @@ function sayPump(){
   if(!VOICE_ON||!SAY_Q.length){SAY_ON=false;SAYING=null;clearSayMark();return;}
   SAY_ON=true;
   const item=SAY_Q.shift();
+  TALK.piece=fmNow();TALK.pn++;              /* a sentence starts: a speaker nods into it */
   try{markSaying(item.text);}catch(e){}
   /* the recording, when there is one - unless the reader has chosen a system voice for
      this kind of speaker, which is a choice and is kept */
@@ -10908,6 +11450,9 @@ function sayPump(){
 }
 /* kind: "male" | "female" | "narrator"; who: a speaker id for the tint */
 function speak(text,kind,who,force){
+  /* who is speaking, for the figures (talkNote, by the movement code): noted even when the
+     voice is off or missing, because the gestures then follow the reading time */
+  try{talkNote(text,who||"narrator");}catch(e){}
   if(!SPEECH_OK)return false;
   if(!text)return true;
   const clean=String(text).replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
@@ -11494,6 +12039,13 @@ function csNext(){
   const st=CS.cs.steps;
   if(CS.i>=st.length){endCutscene();return;}
   const s=st[CS.i];CS.step=s;CS.t=0;CS.dur=s.t||0;
+  /* play-test, 27 Nov: a walker whose move has ended stood frozen mid-stride for the rest of the scene
+     (the bride at the wedding); the last walker's legs come to rest as the next step begins - BEFORE
+     the step's own `do`, so a pose the step gives him is not undone by it */
+  if(CS.walker){const pr=CS.walker.userData.parts;
+    if(pr&&pr.hipL){for(let j=6;j<12;j++)pr[FM_JOINTS[j]].rotation.x=0;
+      pr.la.rotation.x=pr.ra.rotation.x=0;if(pr.body)pr.body.position.y=0;if(pr.spine)pr.spine.rotation.y=0;}
+    CS.walker=null;}
   if(s.do){try{s.do();}catch(e){}}
   if(s.sfx)playSfx(s.sfx,s.gain);
   if(s.shake!==undefined)CS.shake=s.shake;
@@ -11501,6 +12053,8 @@ function csNext(){
   if(s.narrate){
     $("cineSub").textContent=s.narrate;$("cineSub").classList.add("on");
     speak(s.narrate);
+    /* a step with `by` is that man's own words: he is the one talking (updateCsTalk) */
+    if(s.by)talkNote(s.narrate,s.by,"cs",s.to);
     /* This only ran when no `t` was given, so any step with an explicit
        duration cut its own narration off mid-sentence - by thirteen seconds in
        the worst case. The duration is now the LONGER of the two. */
@@ -11513,9 +12067,6 @@ function csNext(){
     if(s.spawn.face!==undefined)m.rotation.y=s.spawn.face;
     scene.add(m);CS.actors.push({id:s.spawn.id,mesh:m});
   }
-  /* play-test, 27 Nov: a walker whose move has ended stood frozen mid-stride for the rest of the scene
-     (the bride at the wedding); the last walker's limbs come to rest as the next step begins */
-  if(CS.walker){const pr=CS.walker.userData.parts;if(pr){pr.la.rotation.x=pr.ra.rotation.x=pr.ll.rotation.x=pr.rl.rotation.x=0;}CS.walker=null;}
   if(s.move){const tg=csActor(s.move.id);CS.moveFrom=tg?tg.position.clone():null;CS.walker=tg||null;}
   if(s.shot){
     const fr=csShot(s.shot);
@@ -11593,14 +12144,19 @@ function updateCutscene(dt){
     if(tg){
       let ay=CS.moveFrom.y+(to[1]-CS.moveFrom.y)*e;
       if(s.move.arc)ay+=s.move.arc*4*e*(1-e);
+      const ox=tg.position.x, oz=tg.position.z;
       tg.position.set(CS.moveFrom.x+(to[0]-CS.moveFrom.x)*e,ay,
                       CS.moveFrom.z+(to[2]-CS.moveFrom.z)*e);
       if(s.move.spin)tg.rotation.z=e*s.move.spin;
       if(s.move.face!==undefined)tg.rotation.y=s.move.face;
       const pr=tg.userData.parts;
-      if(pr&&k<1){
-        const sw=Math.sin(CS.t*11)*0.62;
-        pr.la.rotation.x=sw;pr.ra.rotation.x=-sw;pr.ll.rotation.x=-sw;pr.rl.rotation.x=sw;
+      /* a man moved by a scene WALKS there: the stride is paid for by the ground covered,
+         eased in and out with the move, and quickens to a run if the scene hurries him. A
+         man flung (arc) or spun is not walking, and neither is a boat. */
+      if(pr&&pr.hipL&&k<1&&!s.move.arc&&!s.move.spin){
+        const dd=Math.hypot(tg.position.x-ox,tg.position.z-oz), run=dd/Math.max(dt,1e-3)>12;
+        CS.wph=(CS.wph||0)+dd*figWalkRate(tg,1,run);
+        figWalk(pr,CS.wph,Math.min(1,dd/Math.max(dt,1e-3)/2.5),run);
       }
     }
   }
@@ -12372,6 +12928,9 @@ function landingBoat(){
     /* sat on the thwarts: knees up, facing across the boat as a man at an oar does */
     const q=f.userData.parts;
     if(q){q.ll.rotation.x=-1.30;q.rl.rotation.x=-1.22;
+          /* movement pass: the shins hang from the thwart (the knees bend, the right way) rather
+             than the legs sticking out stiff in front */
+          q.kneeL.rotation.x=1.18;q.kneeR.rotation.x=1.10;q.ankleL.rotation.x=0.12;q.ankleR.rotation.x=0.12;
           q.la.rotation.x=0.55;q.ra.rotation.x=0.48;}
     f.position.set((i%2?1:-1)*1.5, 1.1, -5.5+i*3.6);
     f.rotation.y=(i%2?-1:1)*1.35;
@@ -13006,8 +13565,8 @@ function updateHang(dt){
   const w=HANG_T*11.0;
   if(p.hipL)p.hipL.rotation.x= Math.sin(w)*amp;
   if(p.hipR)p.hipR.rotation.x=-Math.sin(w)*amp;
-  if(p.kneeL)p.kneeL.rotation.x=-Math.abs(Math.sin(w*1.3))*amp*1.1;
-  if(p.kneeR)p.kneeR.rotation.x=-Math.abs(Math.cos(w*1.3))*amp*1.1;
+  if(p.kneeL)p.kneeL.rotation.x=Math.abs(Math.sin(w*1.3))*amp*1.1;   /* knees bend back, as knees do */
+  if(p.kneeR)p.kneeR.rotation.x=Math.abs(Math.cos(w*1.3))*amp*1.1;
   /* and he turns on the rope, which does not stop when the kicking does */
   player.rotation.y=HANG_YAW+Math.sin(HANG_T*0.7)*0.30;
   player.rotation.z=Math.sin(w*0.5)*amp*0.10;
@@ -19459,9 +20018,8 @@ function registerCh1Idles(){
     const p=m.userData.parts;
     CH1_IDLE.push({id:n.id,mesh:m,p:p,face:m.rotation.y,seed:i+1,
       kind:CH1_IDLE_KIND[n.id]||{k:"look",r:0.6},
-      base:{laX:p.la?p.la.rotation.x:0, raX:p.ra?p.ra.rotation.x:0,
-            neckY:p.neck?p.neck.rotation.y:0,
-            bodyX:p.body?p.body.rotation.x:0}});
+      /* the whole pose he was placed in: the idle and the talk are laid over it */
+      base:fmBase(p),te:0,st:{}});
   }
   return CH1_IDLE.length;
 }
@@ -19469,6 +20027,15 @@ function ease(o,axis,to,dt,rate){
   if(!o)return;
   o.rotation[axis]+=(to-o.rotation[axis])*Math.min(1,dt*(rate||5));
 }
+/* a man at a trade keeps its arm work over a living stance: the clerk writes, the cooper
+   drives a hoop, the cook stirs */
+const NPC_TRADE={clerk:"write",percy:"write",cooper:"hammer",cook:"stir"};
+/* ---- ALIVE, NOT SWAYING (movement pass, 27 Nov) ----
+   The kinds stay (CH1_IDLE_KIND says what each man is) and each is now a figIdle over the pose
+   he was placed in: breath, a weight shift onto one leg, a look round. "still" and "breathe"
+   (the chaplain, the helmsman, the sleeper) get the breath and almost nothing else. A man at a
+   trade does its arm work over that. And when you speak to him he turns to you in a step or
+   two, settles, and - while his line is being said - talks with his head and hands. */
 function updateNpcIdles(dt){
   if(!npcMeshes.length){CH1_IDLE.length=0;return;}
   /* re-register when the cast changes, which is how a world switch shows up here */
@@ -19478,7 +20045,10 @@ function updateNpcIdles(dt){
   for(let i=0;i<CH1_IDLE.length;i++){
     const c=CH1_IDLE[i], p=c.p, b=c.base, m=c.mesh;
     if(!m.parent)continue;                /* the world was torn down under us */
+    if(m.userData.rm&&!m.userData.rm.done&&m.userData.rm.K.hold===Infinity)continue;   /* a held reaction owns him */
     const attend=(named===c.id)||(dlg&&dlg.npc&&dlg.npc.id===c.id);
+    const K2=c.kind, t=IDLE_T*(K2.r?Math.max(0.6,Math.min(1.6,K2.r)):1);
+    let turn;
     if(attend){
       /* HE STOPS AND LOOKS AT YOU. Triggered by the Speak button naming him - the same
          selection the button uses, so what he does and what it says cannot disagree. */
@@ -19486,37 +20056,34 @@ function updateNpcIdles(dt){
       let d=want-m.rotation.y;
       while(d>Math.PI)d-=Math.PI*2;
       while(d<-Math.PI)d+=Math.PI*2;
-      m.rotation.y+=Math.max(-2.4*dt,Math.min(2.4*dt,d));
-      ease(p.la,"x",b.laX,dt,6);ease(p.ra,"x",b.raX,dt,6);
-      ease(p.neck,"y",0,dt,6);ease(p.body,"x",b.bodyX,dt,5);
-      continue;
+      turn=Math.max(-2.4*dt,Math.min(2.4*dt,d));
+    } else {
+      /* back to where he was placed, then get on with it */
+      let d2=c.face-m.rotation.y;
+      while(d2>Math.PI)d2-=Math.PI*2;
+      while(d2<-Math.PI)d2+=Math.PI*2;
+      turn=Math.max(-1.6*dt,Math.min(1.6*dt,d2));
     }
-    /* back to where he was placed, then get on with it */
-    let d2=c.face-m.rotation.y;
-    while(d2>Math.PI)d2-=Math.PI*2;
-    while(d2<-Math.PI)d2+=Math.PI*2;
-    m.rotation.y+=Math.max(-1.6*dt,Math.min(1.6*dt,d2));
-    const K2=c.kind, t=IDLE_T*(K2.r||1)+c.seed*1.7, w=Math.sin(t);
-    if(K2.k==="look"){
-      ease(p.neck,"y",Math.sin(IDLE_T*0.5+c.seed)*0.55,dt,3);
-      ease(p.la,"x",b.laX+w*0.06,dt,4);ease(p.ra,"x",b.raX-w*0.06,dt,4);
-    } else if(K2.k==="work"){
-      ease(p.ra,"x",b.raX-0.35-w*(K2.a||0.3),dt,9);
-      ease(p.la,"x",b.laX-0.10+w*(K2.a||0.3)*0.35,dt,6);
-      ease(p.neck,"y",b.neckY,dt,3);
-    } else if(K2.k==="sway"){
-      ease(p.body,"x",b.bodyX+w*(K2.a||0.04),dt,3);
-      ease(p.la,"x",b.laX+w*0.08,dt,3);ease(p.ra,"x",b.raX-w*0.08,dt,3);
-    } else if(K2.k==="fidget"){
-      ease(p.ra,"x",b.raX+w*(K2.a||0.2),dt,10);
-      ease(p.la,"x",b.laX-w*(K2.a||0.2)*0.7,dt,10);
-      ease(p.neck,"y",Math.sin(IDLE_T*1.1+c.seed)*0.4,dt,4);
-    } else if(K2.k==="breathe"){
-      ease(p.body,"x",b.bodyX+w*(K2.a||0.03),dt,2);
-    } else {                                /* still: hold the placed pose */
-      ease(p.la,"x",b.laX,dt,3);ease(p.ra,"x",b.raX,dt,3);
-      ease(p.neck,"y",b.neckY,dt,3);ease(p.body,"x",b.bodyX,dt,3);
+    m.rotation.y+=turn;
+    const quiet=(K2.k==="still"||K2.k==="breathe");
+    if(!figTurnStep(p,c.st,turn,dt)){
+      figIdle(p,b,t,c.seed,attend?0.5:quiet?0.3:K2.k==="sway"?1.3:K2.k==="fidget"?1.5:1);
+      if(quiet&&p.neck)p.neck.rotation.y=b.nky;
+      if(attend&&p.neck)p.neck.rotation.y=b.nky*0.3;
+      const tr=NPC_TRADE[c.id];
+      if(tr&&!attend){
+        const A=TASK_ANIM[tr], ph=(IDLE_T/A.T+c.seed*0.21)%1;
+        if(p.shoulderR)p.shoulderR.rotation.set(fmKey(A.sR,ph),0,b.sRz);
+        if(p.elbowR)p.elbowR.rotation.set(fmKey(A.eR,ph),0,0);
+        if(A.sL&&p.shoulderL)p.shoulderL.rotation.set(fmKey(A.sL,ph),0,b.sLz);
+        if(A.eL&&p.elbowL)p.elbowL.rotation.set(fmKey(A.eL,ph),0,0);
+        if(A.nk&&p.neck)p.neck.rotation.x=b.nk+fmKey(A.nk,ph)*0.6;
+      }
     }
+    /* his own line, being said */
+    const tk=talking(c.id);
+    c.te+=((tk?1:0)-c.te)*Math.min(1,dt*5);
+    if(c.te>0.002)figTalk(p,b,c.seed,c.te);
   }
 }
 
@@ -19684,77 +20251,43 @@ const CROWD_STAY={surgeon:1,drum:1,smith:1,cross:1};
    fault the build comment already records for posed men, measured at up to two feet.
    Rather than solve for the lowest foot every frame across thirty-six men, the cycle
    carries a small counter-bob, which is also what a walk looks like. */
-function crowdWalk(p,ph,amp){
-  const s=Math.sin(ph);
-  if(p.hipL)p.hipL.rotation.x= s*0.60*amp;
-  if(p.hipR)p.hipR.rotation.x=-s*0.60*amp;
-  if(p.kneeL)p.kneeL.rotation.x=-Math.max(0,-s)*0.85*amp-0.04;
-  if(p.kneeR)p.kneeR.rotation.x=-Math.max(0, s)*0.85*amp-0.04;
-  if(p.shoulderL)p.shoulderL.rotation.x=-s*0.40*amp;
-  if(p.shoulderR)p.shoulderR.rotation.x= s*0.40*amp;
-  if(p.elbowL)p.elbowL.rotation.x=-0.22-Math.abs(s)*0.22*amp;
-  if(p.elbowR)p.elbowR.rotation.x=-0.22-Math.abs(s)*0.22*amp;
-  if(p.ankleL)p.ankleL.rotation.x= s*0.18*amp;
-  if(p.ankleR)p.ankleR.rotation.x=-s*0.18*amp;
-}
-/* A REPEATED ACTION, per task, out of phase per man so a row of them is not a chorus
-   line. Small - these are read at twenty feet in daylight, and a big motion at that
-   distance reads as a glitch rather than as work. */
-/* ---- A MOTION FOR EVERY TASK, WHICH IT DID NOT HAVE ----
-   SHORE_TASKS defines TEN kinds of work and this branched on three, so cross, camp,
-   idle, surgeon, drum and boys all fell through to "lifting and stowing" - nineteen of
-   the thirty-six men, including a drummer miming a crate and eight idlers who are
-   standing about by definition. Audited by listing every task against the branch it
-   actually took, which is the only way this sort of gap shows up: nothing errors, every
-   man moves, and they are all doing the wrong thing. */
-function crowdWork(p,t,task,seed){
-  const w=Math.sin(t*2.1+seed*1.7);
-  if(task==="shallop"||task==="smith"){        /* sawing, or striking */
-    if(p.shoulderR)p.shoulderR.rotation.x=-0.85+w*0.62;
-    if(p.elbowR)p.elbowR.rotation.x=-0.45-Math.abs(w)*0.45;
-    if(p.shoulderL)p.shoulderL.rotation.x=-0.55+w*0.30;
-  } else if(task==="drum"){                    /* both sticks, and quick */
-    const d=Math.sin(t*7.5+seed);
-    if(p.shoulderR)p.shoulderR.rotation.x=-1.05+d*0.30;
-    if(p.shoulderL)p.shoulderL.rotation.x=-1.05-d*0.30;
-    if(p.elbowR)p.elbowR.rotation.x=-1.15-Math.abs(d)*0.30;
-    if(p.elbowL)p.elbowL.rotation.x=-1.15-Math.abs(-d)*0.30;
-  } else if(task==="cross"){                   /* holding it up while it is set */
-    if(p.shoulderL)p.shoulderL.rotation.x=-1.95+w*0.10;
-    if(p.shoulderR)p.shoulderR.rotation.x=-1.95-w*0.10;
-    if(p.elbowL)p.elbowL.rotation.x=-0.55;
-    if(p.elbowR)p.elbowR.rotation.x=-0.55;
-  } else if(task==="surgeon"){                 /* stooped over a man, hands low */
-    if(p.shoulderL)p.shoulderL.rotation.x=-0.95+w*0.16;
-    if(p.shoulderR)p.shoulderR.rotation.x=-1.05-w*0.20;
-    if(p.elbowL)p.elbowL.rotation.x=-1.30;
-    if(p.elbowR)p.elbowR.rotation.x=-1.35-Math.abs(w)*0.18;
-    if(p.neck)p.neck.rotation.y=0;
-  } else if(task==="guard"){                   /* watching the treeline */
-    if(p.neck)p.neck.rotation.y=Math.sin(t*0.45+seed)*0.55;
-    if(p.shoulderL)p.shoulderL.rotation.x=-0.12;
-    if(p.shoulderR)p.shoulderR.rotation.x=-0.12;
-  } else if(task==="boys"){                    /* errands, and never still */
-    const f=Math.sin(t*3.4+seed*2.1);
-    if(p.shoulderR)p.shoulderR.rotation.x=-0.30+f*0.40;
-    if(p.shoulderL)p.shoulderL.rotation.x=-0.30-f*0.34;
-    if(p.neck)p.neck.rotation.y=Math.sin(t*1.5+seed)*0.60;
-  } else if(task==="idle"||task==="camp"){      /* standing about, and talking */
-    if(p.neck)p.neck.rotation.y=Math.sin(t*0.55+seed*1.3)*0.62;
-    if(p.shoulderL)p.shoulderL.rotation.x=-0.10+w*0.09;
-    if(p.shoulderR)p.shoulderR.rotation.x=-0.10-w*0.09;
-    if(p.elbowL)p.elbowL.rotation.x=-0.22;
-    if(p.elbowR)p.elbowR.rotation.x=-0.22;
-  } else {                                     /* stores: lifting and stowing */
-    if(p.shoulderL)p.shoulderL.rotation.x=-0.50+w*0.34;
-    if(p.shoulderR)p.shoulderR.rotation.x=-0.50-w*0.34;
-    if(p.elbowL)p.elbowL.rotation.x=-0.60-Math.abs(w)*0.25;
-    if(p.elbowR)p.elbowR.rotation.x=-0.60-Math.abs(w)*0.25;
+function crowdWalk(p,ph,amp){figWalk(p,ph,amp);}
+/* A REPEATED ACTION, per task, out of phase per man so a row of them is not a chorus line.
+   ---- A MOTION FOR EVERY TASK, WHICH IT DID NOT HAVE ----
+   SHORE_TASKS defines TEN kinds of work and this once branched on three, so a drummer mimed a
+   crate and eight idlers stowed stores; audited by listing every task against the branch it
+   took. ---- AND NOW THE TRADES THEMSELVES (movement pass, 27 Nov) ----
+   The branches were single sines on the shoulders, read at twenty feet as men waving. Each is
+   a TASK_ANIM stroke now, with the back and knees in it: the shallop's carpenters saw and
+   hammer (alternately, with the tool in hand), the smith strikes at his anvil, the drummer
+   beats with both sticks, the cross party hold the timber up braced against it, the surgeon
+   crouches over his man, the stores party stoop, lift and turn. Guards, boys and idlers stand
+   alive - weight shifts, breath, a look round (figIdle) - and the idlers, who are "standing
+   about, and talking", talk: the talk layer's gestures, on a clock of their own. */
+const CROWD_ANIM={shallop:"saw",smith:"hammer",drum:"drum",cross:"brace",surgeon:"tend",stores:"stow"};
+function crowdWork(p,t,task,seed,c){
+  let a=CROWD_ANIM[task];
+  if(task==="shallop"&&(seed%2))a="hammer";
+  if(a){
+    if(c&&!c.prop&&(a==="saw"||a==="hammer")&&p.wristR){
+      c.prop=WORK_PROP[a]();c.prop.rotation.x=WORK_TILT[a]||0;c.prop.position.y=-0.07;p.wristR.add(c.prop);}
+    fmPose(p,TASK_ANIM[a],(t/TASK_ANIM[a].T+seed*0.137)%1,false,c&&c.prop?c.prop.rotation.x:0);
+    return;
   }
-  /* the legs go still and slightly apart, which is how a man stands to work */
-  if(p.hipL)p.hipL.rotation.x=0;if(p.hipR)p.hipR.rotation.x=0;
-  if(p.kneeL)p.kneeL.rotation.x=-0.06;if(p.kneeR)p.kneeR.rotation.x=-0.06;
+  /* standing about: guard, boys, idle, camp */
+  const st=c?c.fms:null;
+  if(!st){figIdle(p,FM_B0,t,seed,1);return;}
+  if(!st.b){figRest(p);poseFigure({userData:{parts:p}},"stand",seed);st.b=fmBase(p);}
+  figIdle(p,st.b,t*(task==="boys"?1.7:1),seed,task==="boys"?1.4:1);
+  if(task==="idle"||task==="camp"){
+    /* they talk among themselves: a few seconds' speech, then a few listening */
+    const cyc=t*0.11+seed*0.37, on=(cyc-Math.floor(cyc))<0.42;
+    st.te+=((on?1:0)-st.te)*0.04;
+    if(st.te>0.01)fmTalkClock(p,st.b,seed,st.te,(cyc-Math.floor(cyc))/0.11);
+  }
 }
+/* a neutral standing base, for anyone who has not been given his own */
+const FM_B0={sp:0,spy:0,nk:0,nky:0,sL:-0.05,sLz:-0.06,sR:-0.05,sRz:0.06,eL:-0.18,eR:-0.18,hL:0,hR:0,kL:0.04,kR:0.04,aL:-0.04,aR:-0.04,pel:0,py:0,pz:0};
 function crowdAim(c,tx,tz){          /* the shortest way round to a heading */
   const want=Math.atan2(tx-c.mesh.position.x,tz-c.mesh.position.z);
   let d=want-c.mesh.rotation.y;
@@ -19777,18 +20310,23 @@ function updateCrowd(dt){
        the button says can never disagree. */
     const attend=(named===c.id)||(dlg&&dlg.npc&&dlg.npc.id===c.id);
     if(attend){
-      const d=crowdAim(c,px,pz);
-      m.rotation.y+=Math.max(-2.6*dt,Math.min(2.6*dt,d));
-      /* he stands up out of his work to look at you */
-      if(p.body)p.body.rotation.x+=(0-p.body.rotation.x)*Math.min(1,dt*5);
-      crowdWork(p,0,"guard",c.seed);       /* still, hands down, watching */
-      if(p.neck)p.neck.rotation.y+=(0-p.neck.rotation.y)*Math.min(1,dt*6);
+      /* he stands up out of his work, turns to you - in a step or two, not on a pin - and
+         while his line is being said he talks with his hands */
+      const d=crowdAim(c,px,pz), turn=Math.max(-2.6*dt,Math.min(2.6*dt,d));
+      m.rotation.y+=turn;
+      if(!c.fms.b){figRest(p);poseFigure(m,"stand",c.seed);c.fms.b=fmBase(p);}
+      if(!figTurnStep(p,c.fms.st,turn,dt))figIdle(p,c.fms.b,IDLE_T,c.seed,0.6);
+      if(p.neck)p.neck.rotation.y*=0.3;
+      const tk=talking(c.id);
+      c.fms.te+=((tk?1:0)-c.fms.te)*Math.min(1,dt*5);
+      figTalk(p,c.fms.b,c.seed,c.fms.te);
+      if(c.prop)c.prop.visible=false;
       c.st="work";c.t=Math.max(c.t,1.2);   /* and he does not walk off mid-sentence */
       continue;
     }
+    if(c.prop)c.prop.visible=true;
     if(c.st==="work"){
-      if(p.body)p.body.rotation.x+=(c.tip-p.body.rotation.x)*Math.min(1,dt*4);
-      crowdWork(p,IDLE_T,c.task,c.seed);
+      crowdWork(p,IDLE_T,c.task,c.seed,c);
       /* FACE THE WORK FROM WHERE HE IS STANDING. If he has a station he turns to it, so
          a ring of men all look inward at the same thing from their own sides. Only a man
          with no station falls back to the bearing frozen at build time. */
@@ -19867,9 +20405,9 @@ function updateCrowd(dt){
     if(capeBlocked(nx,nz)){c.st="work";c.t=2;continue;}   /* never wade */
     m.position.x=nx;m.position.z=nz;
     const gy=capeGround(nx,nz);
-    c.ph+=dt*CROWD_SPEED*1.55;
-    m.position.y=gy+c.base-Math.abs(Math.sin(c.ph))*0.07;
-    if(p.body)p.body.rotation.x+=(0-p.body.rotation.x)*Math.min(1,dt*4);
+    /* the stride is paid for by the distance walked, so the planted foot does not skate */
+    c.ph+=step*figWalkRate(m,1);
+    m.position.y=gy+c.base;
     crowdWalk(p,c.ph,1);
     const d=crowdAim(c,c.toX,c.toZ);
     m.rotation.y+=Math.max(-3.0*dt,Math.min(3.0*dt,d));
@@ -19957,7 +20495,9 @@ function buildShoreParty(root){
         /* where the work is: he walks between his own spot and a place a little way
            toward the thing he is already facing, so the errand has a direction that
            agrees with what he was built to be doing */
-        toX:px, toZ:pz, out:false});
+        toX:px, toZ:pz, out:false,
+        /* the movement pass: his idle and talk state, and the tool in his hand */
+        fms:{te:0,b:null,st:{}}, prop:null});
       /* Every man ashore can be spoken to. Most have a line about the work,
          which is what a man on a beach would give you. Interactables are plain
          objects and their labels only render when you are close, so thirty-four
@@ -24396,10 +24936,10 @@ function updateBowmen(dt){
       /* along the dune, upright, one arrow against the bow - so five men do not read as
          five turrets */
       if(p){
-        const sw=Math.sin(IDLE_T*7.5+b.seed)*0.55;
-        if(p.ll)p.ll.rotation.x=-sw;
-        if(p.rl)p.rl.rotation.x=sw;
-        if(p.body)p.body.rotation.x+=(0.14-p.body.rotation.x)*Math.min(1,dt*5);
+        /* a quick walk along the crest, paid for by the ground covered */
+        b.wph=(b.wph||0)+7*dt*figWalkRate(f,0.9);
+        figWalk(p,b.wph,0.9);
+        if(p.spine)p.spine.rotation.x+=0.10;
       }
       f.position.y=capeGround(f.position.x,f.position.z);
       const dx=b.tx-f.position.x, dz=b.tz-f.position.z, L=Math.hypot(dx,dz)||1;
@@ -24417,12 +24957,9 @@ function updateBowmen(dt){
       /* back over the ridge and into the pines at a run, upright, shouting - Percy's
          "with a great noise" belongs HERE, to the withdrawal */
       if(p){
-        const sw=Math.sin(IDLE_T*11+b.seed)*0.8;
-        if(p.ll)p.ll.rotation.x=-sw;
-        if(p.rl)p.rl.rotation.x=sw;
-        if(p.la)p.la.rotation.x=sw*0.6;
-        if(p.ra)p.ra.rotation.x=-sw*0.6;
-        if(p.body)p.body.rotation.x+=(0.20-p.body.rotation.x)*Math.min(1,dt*5);
+        /* a run, the gait paid for by the seventeen feet a second he covers */
+        b.wph=(b.wph||0)+17*dt*figWalkRate(f,1.2,true);
+        figWalk(p,b.wph,1.2,true);
       }
       f.position.y=capeGround(f.position.x,f.position.z);
       f.rotation.y=Math.PI*0+0;                 /* away from the strand, into the wood */
@@ -28031,18 +28568,295 @@ function workMan(root,eq,x,z,yaw,task,opt){
   f.position.set(x,workFigureY({position:{x:x,z:z,y:0}}),z);f.rotation.y=yaw||0;root.add(f);
   return workAdd(f,task,opt||{});
 }
-const WORK_TILT={pan:1.2,spade:0.95,hammer:0.25,paddle:0.7,bar:0.8,trowel:0.9,bailer:1.0};
-const WORK_TOOL={dig:"spade",chop:"axe",hammer:"hammer",pan:"pan",stir:"paddle",bail:"bailer",trowel:"trowel",row:"paddle",pry:"bar",write:"quill"};
+/* ---- THE STROKE, NOT THE SWAY ----
+   Owner, 27 Nov: "people visibly do period work, not swaying or gimmicks". The motions here
+   were single sines on the shoulders - an arm going up and down at an even rate is a man
+   waving, not a man digging. Every task is now a keyed cycle (TASK_ANIM, read by fmPose) with
+   the three parts work has: a wind-up that goes slow and the other way (the axe goes up and
+   back, the spade comes up before it goes in), a stroke that is fast and committed (keys
+   close together), and a recovery. The weight is in the spine, which bows into the stroke,
+   and in the knees, which bend under it - the dig is a squat to lift the earth, the axe
+   comes down with the knees giving, the hammer with the back.
+   The tool moves WITH THE HANDS: it is held in the right hand as before, and the left hand
+   is put on its haft by the IK (grip, in the prop's own space), so a spade, an axe, a bar or
+   a paddle is held in two hands that travel with it.
+   Channels (radians): pel pelvis tilt, sp/spy/spz spine bow/turn/lean, nk/nky head,
+   sL sLz eL wL / sR sRz eR wR arms, h (both hips) or hL hR, k or kL kR knees. The ankles keep
+   the soles flat and fmPlant keeps the feet on their spot. The figure faces +Z; R is the arm
+   at +X that has always held the tool. T is the stroke's length in seconds. */
+WORK_PROP.pan=function(){const g=new Geo(), tin=RGB(0x8f8a80), sand=RGB(0xb59a5e);
+  /* held at its right-hand rim, so its middle is inboard of the hand and the left hand takes
+     the far rim */
+  g.oct(-0.27,0.03,-0.07,0.0,0.24,0.24,0.27,0.27,0.03,tin,tin);g.box(-0.27,-0.045,0.03,0.32,0.02,0.32,sand);return g.mesh(false,false);};
+WORK_PROP.saw=function(){const g=new Geo(), wood=RGB(0x7a5a3a), steel=RGB(0x9a9da0);
+  g.box(0,-0.02,0.02,0.05,0.12,0.12,wood);g.box(0,-0.42,0.03,0.018,0.72,0.15,steel);return g.mesh(false,false);};
+WORK_PROP.hoe=function(){const g=new Geo(), wood=RGB(0x7a5a3a), iron=RGB(0x6c6f72);
+  g.beam8([0,0.20,0],[0,-1.15,0.03],0.045,0.045,wood,wood);g.box(0,-1.17,0.13,0.20,0.05,0.24,iron);return g.mesh(false,false);};
+const WORK_TILT={pan:1.45,spade:0.95,hammer:0.25,paddle:0.7,bar:0.8,trowel:0.9,bailer:1.0,axe:0.05,saw:0,hoe:0.35};
+const WORK_TOOL={dig:"spade",chop:"axe",hammer:"hammer",pan:"pan",stir:"paddle",bail:"bailer",trowel:"trowel",pry:"bar",write:"quill",hoe:"hoe",saw:"saw"};
+/* where the left hand takes hold, in each tool's own space */
+const WORK_GRIP={spade:[0,-0.46,0.08],axe:[0,0.11,0],paddle:[0,-0.42,0.09],bar:[0,-0.30,0.04],hoe:[0,-0.42,0.015],pan:[-0.54,-0.03,0.03]};
+const TASK_ANIM={
+  /* set the blade, drive it in, lever back, squat and lift, turn and throw, come back */
+  dig:{T:2.4,
+    pel:[0,0.06, 0.12,0.08, 0.22,0.12, 0.36,0.08, 0.52,0.26, 0.66,0.10, 0.88,0.06],
+    sp: [0,0.16, 0.12,0.04, 0.22,0.40, 0.36,0.26, 0.52,0.50, 0.66,0.16, 0.76,0.12, 0.90,0.16],
+    spy:[0,0, 0.62,0, 0.74,0.60, 0.88,0.05],
+    nk: [0,0.25, 0.66,0.08, 0.76,0.0, 0.90,0.25],
+    nky:[0,0, 0.62,0, 0.74,0.30, 0.88,0],
+    sR: [0,-0.50, 0.12,-1.15, 0.22,-0.45, 0.36,-0.25, 0.52,-0.90, 0.66,-0.95, 0.76,-0.85, 0.88,-0.70],
+    eR: [0,-0.55, 0.12,-0.75, 0.22,-0.75, 0.36,-0.90, 0.52,-1.00, 0.66,-1.00, 0.76,-0.55, 0.88,-0.60],
+    ta: [0,-0.15, 0.12,-0.10, 0.22,-0.05, 0.36,-0.50, 0.52,-1.00, 0.66,-1.20, 0.76,-1.25, 0.88,-0.40],
+    h:  [0,-0.12, 0.22,-0.34, 0.36,-0.20, 0.52,-0.66, 0.66,-0.22, 0.88,-0.12],
+    k:  [0,0.18, 0.22,0.48, 0.36,0.28, 0.52,0.86, 0.66,0.30, 0.88,0.18],
+    grip:1},
+  /* the hoe: lifted high and brought down into the hill, drawn back toward him, again */
+  hoe:{T:1.6,
+    pel:[0,0.10, 0.40,0.04, 0.55,0.18, 0.80,0.16],
+    sp: [0,0.18, 0.40,0.02, 0.55,0.45, 0.80,0.36],
+    nk: [0,0.20, 0.40,0.05, 0.55,0.30],
+    sR: [0,-0.70, 0.40,-1.60, 0.55,-1.10, 0.80,-0.25],
+    eR: [0,-0.60, 0.40,-1.00, 0.55,-0.35, 0.80,-0.75],
+    ta: [0,-0.80, 0.40,-1.95, 0.55,-0.95, 0.80,-0.55],
+    h:  [0,-0.12, 0.40,-0.04, 0.55,-0.30, 0.80,-0.24],
+    k:  [0,0.16, 0.40,0.08, 0.55,0.40, 0.80,0.32],
+    grip:1},
+  /* the axe goes up slowly and back, holds, and comes down fast with the knees giving */
+  chop:{T:1.7,
+    pel:[0,0.14, 0.40,-0.02, 0.62,0.20, 0.85,0.14],
+    sp: [0,0.30, 0.40,-0.12, 0.50,-0.14, 0.62,0.42, 0.72,0.38, 0.88,0.30],
+    nk: [0,0.20, 0.40,-0.10, 0.62,0.25],
+    sR: [0,-1.20, 0.40,-2.65, 0.50,-2.70, 0.62,-1.60, 0.72,-1.50, 0.88,-1.20],
+    eR: [0,-0.45, 0.40,-0.95, 0.50,-1.00, 0.62,-0.10, 0.72,-0.30, 0.88,-0.45],
+    ta: [0,5.18, 0.40,2.55, 0.50,2.60, 0.62,4.93, 0.72,5.03, 0.88,5.18],
+    h:  [0,-0.20, 0.40,0.00, 0.62,-0.34, 0.85,-0.20],
+    k:  [0,0.22, 0.40,0.06, 0.62,0.46, 0.85,0.22],
+    grip:1},
+  /* one hand: the hammer back over the shoulder, a beat, down; the other hand holds the work */
+  hammer:{T:0.9,
+    pel:[0,0.10],
+    sp: [0,0.22, 0.45,0.16, 0.62,0.34, 0.75,0.28],
+    nk: [0,0.30],
+    sR: [0,-1.85, 0.45,-2.25, 0.62,-1.05, 0.72,-1.20, 0.90,-1.70],
+    sRz:[0,0.50, 0.45,0.55, 0.62,0.14, 0.72,0.16, 0.90,0.45],
+    eR: [0,-1.25, 0.45,-1.45, 0.62,-0.30, 0.72,-0.55, 0.90,-1.15],
+    ta: [0,2.70, 0.45,2.40, 0.62,5.23, 0.72,5.03, 0.90,2.80],
+    sL: [0,-0.80], eL:[0,-0.95], sLz:[0,-0.10],
+    h:  [0,-0.12], k:[0,0.16]},
+  /* push and draw: the saw arm drives forward from the shoulder, the other hand on the board */
+  saw:{T:1.1,
+    pel:[0,0.18, 0.5,0.24],
+    sp: [0,0.30, 0.5,0.46],
+    spy:[0,0.10, 0.5,-0.06],
+    nk: [0,0.30],
+    sR: [0,0.05, 0.5,-0.85],
+    eR: [0,-1.55, 0.5,-0.35],
+    ta: [0,-1.25, 0.5,-1.15],
+    sL: [0,-0.85], eL:[0,-0.70], sLz:[0,-0.10],
+    hL: [0,-0.32], hR:[0,0.08], kL:[0,0.28], kR:[0,0.10]},
+  /* squatting at the water: the pan swirled round in both hands, then tipped out */
+  pan:{T:4.5,
+    pel:[0,0.30], sp:[0,0.44, 0.85,0.44, 0.92,0.55],
+    spy:[0,0.10, 0.12,-0.10, 0.25,0.10, 0.37,-0.10, 0.50,0.10, 0.62,-0.10, 0.75,0.10, 0.85,0],
+    spz:[0,0.00, 0.06,0.05, 0.18,-0.05, 0.31,0.05, 0.43,-0.05, 0.56,0.05, 0.68,-0.05, 0.80,0],
+    nk: [0,0.35],
+    sR: [0,-0.95, 0.85,-0.95, 0.92,-1.15], eR:[0,-0.75, 0.85,-0.75, 0.92,-0.60],
+    ta: [0,0.05, 0.85,0.05, 0.92,-0.95],
+    h:  [0,-0.95], k:[0,1.45], grip:1},
+  /* a paddle round a kettle: a slow circle, the body following it */
+  stir:{T:2.6,
+    sp: [0,0.18, 0.25,0.26, 0.5,0.20, 0.75,0.12],
+    spy:[0,0.12, 0.25,0, 0.5,-0.12, 0.75,0],
+    sR: [0,-0.70, 0.25,-0.95, 0.5,-1.10, 0.75,-0.85],
+    eR: [0,-0.95, 0.25,-0.65, 0.5,-0.80, 0.75,-1.05],
+    ta: [0,-0.30, 0.25,-0.42, 0.5,-0.30, 0.75,-0.18],
+    h:[0,-0.08], k:[0,0.12], nk:[0,0.30], grip:1},
+  /* down into the bilge, up and over the side */
+  bail:{T:1.3,
+    pel:[0,0.30, 0.45,0.10, 0.70,0.24],
+    sp: [0,0.62, 0.45,0.20, 0.55,0.24, 0.80,0.55],
+    spy:[0,0, 0.45,0.55, 0.60,0.60, 0.85,0.05],
+    sR: [0,-0.35, 0.40,-1.15, 0.52,-1.30, 0.70,-0.60],
+    sRz:[0,0.08, 0.40,0.45, 0.52,0.50, 0.70,0.10],
+    eR: [0,-0.30, 0.40,-0.70, 0.52,-0.35, 0.70,-0.40],
+    wR: [0,0, 0.45,0, 0.52,-1.2, 0.65,0],
+    sL: [0,-0.50], eL:[0,-0.60],
+    h:  [0,-0.45, 0.45,-0.20, 0.70,-0.40], k:[0,0.60, 0.45,0.25, 0.70,0.55], nk:[0,0.30]},
+  /* a sieve shaken in both hands */
+  sift:{T:0.42,
+    sp:[0,0.22, 0.5,0.26], spz:[0,0.03, 0.5,-0.03],
+    sR:[0,-1.05, 0.5,-1.18], eR:[0,-0.55, 0.5,-0.45], sL:[0,-1.18, 0.5,-1.05], eL:[0,-0.45, 0.5,-0.55],
+    nk:[0,0.40], h:[0,-0.08], k:[0,0.12]},
+  /* kneeling at the ground: reach, scrape back toward the knees, lift the trowel, reach again */
+  trowel:{T:1.8,
+    sp:[0,0.50, 0.30,0.62, 0.70,0.44],
+    nk:[0,0.40],
+    sR:[0,-0.60, 0.30,-1.00, 0.70,-0.45, 0.85,-0.70],
+    eR:[0,-0.55, 0.30,-0.20, 0.70,-0.85, 0.85,-0.80],
+    ta:[0,-0.60, 0.30,-0.75, 0.70,-0.35, 0.85,-0.55],
+    sL:[0,-0.55], eL:[0,-0.60]},
+  /* bent to the table: the pen along a line in short strokes, back for the next */
+  write:{T:3.4,
+    sp:[0,0.24], nk:[0,0.42],
+    sR:[0,-0.78, 0.10,-0.80, 0.20,-0.84, 0.30,-0.86, 0.40,-0.90, 0.50,-0.92, 0.60,-0.96, 0.70,-1.00, 0.85,-0.78],
+    eR:[0,-1.05, 0.05,-1.00, 0.10,-1.06, 0.15,-1.00, 0.20,-1.06, 0.25,-1.00, 0.30,-1.06, 0.35,-1.00, 0.40,-1.06, 0.45,-1.00,
+        0.50,-1.06, 0.55,-1.00, 0.60,-1.06, 0.65,-1.00, 0.70,-1.04],
+    ta:[0,-0.45],
+    sL:[0,-0.62], eL:[0,-0.75], h:[0,-0.10], k:[0,0.10]},
+  /* hand over hand on a rope, leaning back against it, one foot set forward */
+  haul:{T:1.9,
+    pel:[0,-0.10, 0.5,-0.16], sp:[0,-0.16, 0.5,-0.24],
+    sR:[0,-1.55, 0.5,-0.80], eR:[0,-0.15, 0.5,-0.85],
+    sL:[0,-0.80, 0.5,-1.55], eL:[0,-0.85, 0.5,-0.15],
+    hL:[0,-0.42], hR:[0,0.26], kL:[0,0.42, 0.5,0.52], kR:[0,0.08], nk:[0,-0.05]},
+  /* the bar in, the weight thrown down on it, let up */
+  pry:{T:1.6,
+    pel:[0,0.20, 0.40,0.22, 0.55,0.30, 0.80,0.20],
+    sp:[0,0.40, 0.40,0.38, 0.55,0.62, 0.80,0.40],
+    sR:[0,-0.80, 0.40,-0.95, 0.55,-0.55, 0.80,-0.80],
+    eR:[0,-0.50, 0.40,-0.60, 0.55,-0.25, 0.80,-0.50],
+    ta:[0,-0.35, 0.40,-0.40, 0.55,-0.95, 0.80,-0.35],
+    h:[0,-0.30, 0.55,-0.45], k:[0,0.30, 0.55,0.55], nk:[0,0.30], grip:1},
+  /* bowls: a backswing, the step and the underhand delivery, held to watch it run */
+  bowl:{T:3.1,
+    pel:[0,0.06, 0.12,0.02, 0.25,0.30, 0.55,0.28, 0.80,0.06],
+    sp: [0,0.10, 0.12,0.05, 0.25,0.42, 0.55,0.40, 0.80,0.10],
+    sR: [0,-0.10, 0.12,0.85, 0.25,-0.75, 0.40,-0.95, 0.60,-0.40, 0.80,-0.10],
+    eR: [0,-0.20, 0.25,-0.10],
+    sL: [0,-0.10, 0.25,-0.55, 0.60,-0.30, 0.80,-0.10], sLz:[0,-0.10, 0.25,-0.40, 0.70,-0.10],
+    hL: [0,-0.05, 0.12,-0.05, 0.25,-0.75, 0.60,-0.70, 0.80,-0.05], hR:[0,0, 0.25,0.25, 0.60,0.25, 0.80,0],
+    kL: [0,0.06, 0.25,0.85, 0.60,0.80, 0.80,0.06], kR:[0,0.05, 0.25,0.30, 0.60,0.30, 0.80,0.05], nk:[0,0, 0.25,-0.10]},
+  /* CHAPTER II'S TRADES, for the men ashore (crowdWork) */
+  drum:{T:0.48,
+    sp:[0,0.04], nk:[0,0.06],
+    sR:[0,-1.00, 0.30,-1.35, 0.50,-0.95, 0.80,-1.30], eR:[0,-1.20, 0.30,-1.55, 0.50,-1.15, 0.80,-1.50],
+    sL:[0,-1.30, 0.30,-0.95, 0.50,-1.35, 0.80,-1.00], eL:[0,-1.50, 0.30,-1.15, 0.50,-1.55, 0.80,-1.20]},
+  /* holding a timber upright while it is set: arms high, braced, leaning into it */
+  brace:{T:3.2,
+    pel:[0,0.06], sp:[0,-0.10, 0.5,-0.04], nk:[0,-0.30, 0.5,-0.22],
+    sR:[0,-2.35, 0.5,-2.25], eR:[0,-0.40], sL:[0,-2.25, 0.5,-2.35], eL:[0,-0.45],
+    hL:[0,-0.40], hR:[0,0.30], kL:[0,0.40], kR:[0,0.10]},
+  /* crouched over a man, the hands low and busy */
+  tend:{T:2.2,
+    pel:[0,0.30], sp:[0,0.52, 0.5,0.58], nk:[0,0.40],
+    sR:[0,-0.70, 0.3,-0.90, 0.6,-0.75], eR:[0,-0.80, 0.3,-0.55, 0.6,-0.95],
+    sL:[0,-0.75, 0.4,-0.62], eL:[0,-0.70, 0.4,-0.95],
+    h:[0,-1.00], k:[0,1.50]},
+  /* the stores: stoop to a cask, lift it to the knee, turn, set it down */
+  stow:{T:3.0,
+    pel:[0,0.30, 0.30,0.32, 0.45,0.12, 0.65,0.14, 0.80,0.30],
+    sp:[0,0.55, 0.30,0.55, 0.45,0.20, 0.65,0.22, 0.80,0.55],
+    spy:[0,0, 0.45,0, 0.65,0.50, 0.80,0.50, 0.95,0],
+    sR:[0,-0.70, 0.30,-0.65, 0.45,-1.05, 0.80,-0.70], eR:[0,-0.40, 0.45,-1.00, 0.80,-0.40],
+    sL:[0,-0.70, 0.30,-0.65, 0.45,-1.05, 0.80,-0.70], eL:[0,-0.40, 0.45,-1.00, 0.80,-0.40],
+    h:[0,-0.75, 0.30,-0.80, 0.45,-0.25, 0.65,-0.25, 0.80,-0.75], k:[0,0.95, 0.30,1.00, 0.45,0.30, 0.65,0.30, 0.80,0.95],
+    nk:[0,0.30]}
+};
+/* the pose of a task at phase ph, written whole (every joint it owns, every axis), so nothing
+   another system left behind - an IK twist, a walk - survives into the stroke */
+function fmPose(p,A,ph,keepLegs,tilt){
+  const K=fmKey, rs=p.rest?p.rest.spine:0, rn=p.rest?p.rest.neck:0;
+  if(p.spine)p.spine.rotation.set(rs+(A.sp?K(A.sp,ph):0),A.spy?K(A.spy,ph):0,A.spz?K(A.spz,ph):0);
+  if(p.neck)p.neck.rotation.set(rn+(A.nk?K(A.nk,ph):0),A.nky?K(A.nky,ph):0,0);
+  if(p.shoulderR)p.shoulderR.rotation.set(A.sR?K(A.sR,ph):-0.05,0,A.sRz?K(A.sRz,ph):0.06);
+  if(p.elbowR)p.elbowR.rotation.set(A.eR?K(A.eR,ph):-0.15,0,0);
+  if(p.wristR)p.wristR.rotation.set(A.wR?K(A.wR,ph):0,0,0);
+  if(p.shoulderL)p.shoulderL.rotation.set(A.sL?K(A.sL,ph):-0.05,0,A.sLz?K(A.sLz,ph):-0.06);
+  if(p.elbowL)p.elbowL.rotation.set(A.eL?K(A.eL,ph):-0.15,0,0);
+  if(p.wristL)p.wristL.rotation.set(A.wL?K(A.wL,ph):0,0,0);
+  /* ta: the tool's own pitch in the world (0 hanging straight down from the hand, negative
+     pointing forward, about pi pointing up), turned into what the wrist must do to hold it
+     there whatever the back and the arm are doing */
+  if(A.ta&&p.wristR){
+    const W=(keepLegs?(p.body?p.body.rotation.x:0):(A.pel?K(A.pel,ph):0))+p.spine.rotation.x-rs+p.shoulderR.rotation.x+p.elbowR.rotation.x;
+    let w=K(A.ta,ph)-W-(tilt||0);
+    while(w>Math.PI)w-=Math.PI*2;while(w<-Math.PI)w+=Math.PI*2;
+    p.wristR.rotation.x=w;
+  }
+  if(keepLegs||!p.hipL)return;
+  const pel=A.pel?K(A.pel,ph):0;
+  const hb=A.h?K(A.h,ph):0, kb=A.k?K(A.k,ph):0;
+  const hl=A.hL?K(A.hL,ph):hb, hr=A.hR?K(A.hR,ph):hb, kl=A.kL?K(A.kL,ph):kb, kr=A.kR?K(A.kR,ph):kb;
+  p.hipL.rotation.set(hl,0,0);p.hipR.rotation.set(hr,0,0);
+  p.kneeL.rotation.set(kl,0,0);p.kneeR.rotation.set(kr,0,0);
+  if(p.ankleL)p.ankleL.rotation.set(-(pel+hl+kl),0,0);
+  if(p.ankleR)p.ankleR.rotation.set(-(pel+hr+kr),0,0);
+  if(p.body){p.body.rotation.y=0;p.body.rotation.z=0;}
+  fmPlant(p,pel,true);
+}
+/* the left hand onto the tool the right hand holds */
+function fmGrip(p,prop,tool){
+  const g=WORK_GRIP[tool];
+  if(!g||!prop||!p.wristR)return;
+  const V=fmPropPoint(p,prop,g[0],g[1],g[2],FM.v[6]);
+  figArmIK(p,-1,V.x,V.y,V.z,-0.7,-0.6,-0.4);
+}
+
+/* ---- LOADS: held at their ends, in both hands, against the chest ----
+   The load hangs on the SPINE, so it leans with the man; each hand is put on it by the IK.
+   at: where it rides (spine space); hands: the two holds, either side; up: how far the
+   hold is toward the carry (0 on the ground in front of him, 1 carried). The board is the
+   exception: a long board goes on the shoulder, steadied by one hand. */
+const LOAD_HOLD={
+  cask:  {at:[0,0.02,0.37],hx:0.44,hy:0.02,hz:0.37,ground:0.32},
+  chest: {at:[0,0.00,0.35],hx:0.34,hy:-0.04,hz:0.35,ground:0.17},
+  basket:{at:[0,-0.04,0.38],hx:0.32,hy:0.05,hz:0.38,ground:0.21},
+  wood:  {at:[0,0.02,0.33],hx:0.25,hy:-0.10,hz:0.33,ground:0.10},
+  board: {at:[-0.41,0.45,0.02],shoulder:true,ground:0.03}};
+function fmLoadAt(e,up,sq){
+  const p=e.p, H=LOAD_HOLD[e.loadKind]||LOAD_HOLD.cask, ld=e.load, V=FM.v[6];
+  if(!ld||!p.spine)return;
+  /* the squat to it: pelvis and back bend, knees under, as much as sq says */
+  if(sq===undefined){const d=1-up;sq=d*d*(3-2*d);}
+  const pel=0.30*sq, hh=-0.78*sq, kk=1.10*sq;
+  const rs=p.rest?p.rest.spine:0;
+  if(!e.walking){
+    p.hipL.rotation.set(hh,0,0);p.hipR.rotation.set(hh,0,0);p.kneeL.rotation.set(kk,0,0);p.kneeR.rotation.set(kk,0,0);
+    if(p.ankleL)p.ankleL.rotation.set(-(pel+hh+kk),0,0);if(p.ankleR)p.ankleR.rotation.set(-(pel+hh+kk),0,0);
+    fmPlant(p,pel,true);
+  }
+  p.spine.rotation.set(rs+0.48*sq-(H.shoulder?0:0.07)*up,0,0);
+  if(p.neck)p.neck.rotation.set((p.rest?p.rest.neck:0)+0.30*sq,0,0);
+  /* where it is: on the ground before him, or riding at the chest */
+  V.set(0,H.ground,0.52);fmToSpine(p,V);
+  const ax=H.at[0], ay=H.at[1], az=H.at[2];
+  ld.position.set(V.x+(ax-V.x)*up,V.y+(ay-V.y)*up,V.z+(az-V.z)*up);
+  /* it stays level however far he bends over it */
+  ld.rotation.x=-(p.spine.rotation.x+(p.body?p.body.rotation.x:0))*(1-up*0.6);
+  if(H.shoulder){
+    ld.rotation.y=Math.PI/2*up;ld.rotation.z=0.12*up;
+    if(up>0.6){
+      figArmIK(p,-1,ld.position.x+0.02,ld.position.y-0.06,ld.position.z+0.30,-0.6,-0.8,-0.2);
+    } else {
+      figArmIK(p,-1,ld.position.x-0.10,ld.position.y,ld.position.z,-0.8,-0.5,-0.4);
+      figArmIK(p,1,ld.position.x+0.30,ld.position.y,ld.position.z,0.8,-0.5,-0.4);
+    }
+    return;
+  }
+  figArmIK(p,-1,-H.hx,ld.position.y+(H.hy-H.at[1]),ld.position.z+(H.hz-H.at[2]),-1,-0.5,-0.35);
+  figArmIK(p,1,H.hx,ld.position.y+(H.hy-H.at[1]),ld.position.z+(H.hz-H.at[2]),1,-0.5,-0.35);
+  if(p.wristL)p.wristL.rotation.set(0,0,0);if(p.wristR)p.wristR.rotation.set(0,0,0);
+}
+function fmTakeLoad(e,kind){
+  if(!e.p||!e.p.spine||!WORK_LOAD[kind])return;
+  if(e.load&&e.load.parent)e.load.parent.remove(e.load);
+  e.load=WORK_LOAD[kind]();e.loadKind=kind;e.p.spine.add(e.load);
+}
+
 function workAdd(f,task,opt){
   const p=f.userData.parts;
   const e={f:f,p:p,task:task,opt:opt,seed:srand(f.position.x*1.7+f.position.z*3.1)*6.28,t:0,last:0,n:0,
-           st:"go",wait:0,home:[f.position.x,f.position.z],prop:null,load:null};
+           st:"go",wait:0,home:[f.position.x,f.position.z],prop:null,load:null,loadKind:null,tool:null,
+           keepLegs:false,walking:false};
   const tool=opt.prop||WORK_TOOL[task];
-  /* a tool hangs along the forearm; tipped back by this much it sits in the hands the way it
-     is used (measured off the first captures: the pan stood on edge like a tray and the spade
-     stuck out ahead like a pike) */
-  if(tool&&p&&p.wristR){e.prop=WORK_PROP[tool]();e.prop.rotation.x=WORK_TILT[tool]||0;p.wristR.add(e.prop);}
+  /* a tool hangs along the hand; tipped back by this much it sits in the hands the way it
+     is used. It rides a little down the hand, in the palm rather than at the wrist joint. */
+  if(tool&&p&&p.wristR&&WORK_PROP[tool]){e.tool=tool;e.prop=WORK_PROP[tool]();e.prop.rotation.x=WORK_TILT[tool]||0;
+    e.prop.position.y=-0.07;p.wristR.add(e.prop);}
   if(task==="trowel"||task==="sift"&&opt.kneel)poseFigure(f,"kneel",3);
+  /* a man already kneeling (a rower at the thwart, a man at the ground) keeps his legs */
+  if(p&&p.kneeL&&p.kneeL.rotation.x>1.2)e.keepLegs=true;
+  if(task==="row"&&p&&p.body)workOar(e);
   WORK.list.push(e);
   return e;
 }
@@ -28050,14 +28864,11 @@ function workRemove(e){
   const i=WORK.list.indexOf(e);if(i>=0)WORK.list.splice(i,1);
   if(e.prop&&e.prop.parent)e.prop.parent.remove(e.prop);
   if(e.load&&e.load.parent)e.load.parent.remove(e.load);
+  if(e.oar&&e.oar.parent)e.oar.parent.remove(e.oar);
   workRest(e.p);
 }
-function workRest(p){
-  if(!p)return;
-  for(const k of ["shoulderL","shoulderR","elbowL","elbowR","hipL","hipR","kneeL","kneeR","ankleL","ankleR","wristL","wristR"])if(p[k])p[k].rotation.set(0,0,0);
-  if(p.body){p.body.rotation.x=0;p.body.rotation.z=0;}
-  if(p.neck)p.neck.rotation.set(0,0,0);
-}
+function workRest(p){figRest(p);}
+
 /* something thrown off the work: earth from a spade, a chip from an axe */
 function workBit(x,y,z,tx,tz,col,land){
   if(WORK.bits.length>40)return;
@@ -28077,83 +28888,83 @@ function workGrow(e){
   h.mesh.scale.set(s,s,s);h.mesh.visible=true;
 }
 
+/* ---- AN OAR THAT PIVOTS ON THE GUNWALE ----
+   The rowers held a paddle in one hand and swung the arm overhead, so the blade went through
+   their faces. A shallop's oar is long and turns on a thole at the side of the boat: the
+   handle comes across in front of the man's chest, both hands on it, and he pulls it to him
+   leaning back, drops it to lift the blade, and pushes it away leaning forward for the next.
+   The oar hangs on the body (the pelvis), turned each frame to point from the thole to the
+   handle; the hands are put on the handle. Nothing rises above his chest. */
+function workOar(e){
+  const p=e.p, f=e.f;
+  /* the thole is on the boat's outboard side of him: away from the boat's centre line */
+  const lx=f.position.x*Math.cos(f.rotation.y)-f.position.z*Math.sin(f.rotation.y);
+  e.oarSide=(lx>=0)?-1:1;
+  if(Math.abs(f.position.x)<0.05)e.oarSide=1;
+  const g=new Geo(), wood=RGB(0x8a6a44), dark=RGB(0x6a4c30);
+  g.beam8([0.80,0,0],[-2.20,0,0],0.035,0.028,wood,wood);
+  g.box(-2.55,0,0,0.75,0.20,0.03,dark);
+  const m=g.mesh(false,false);
+  e.oar=new THREE.Group();e.oar.add(m);p.body.add(e.oar);
+}
+const ROW_Z=[0,0.56, 0.06,0.54, 0.40,0.15, 0.48,0.15, 0.95,0.56];
+const ROW_Y=[0,1.00, 0.06,1.10, 0.40,1.10, 0.48,0.99, 0.90,0.99];
+const ROW_SP=[0,0.42, 0.40,-0.14, 0.50,-0.10, 0.95,0.42];
+function workRow(e,t){
+  const p=e.p;if(!p||!e.oar)return;
+  const ph=(t/2.6+e.seed/6.28)%1, s=e.oarSide, V=FM.v[6], W=FM.v[7];
+  const rs=p.rest?p.rest.spine:0, sp=fmKey(ROW_SP,ph);
+  p.spine.rotation.set(rs+sp,0,0);
+  if(p.neck)p.neck.rotation.set((p.rest?p.rest.neck:0)-sp*0.55,0,0);
+  /* the thole, and the handle in front of his chest */
+  const tx=s*0.68, ty=0.92, tz=0.10;
+  const hz=fmKey(ROW_Z,ph), hy=fmKey(ROW_Y,ph), hx=-s*0.08;
+  e.oar.position.set(tx,ty,tz);
+  V.set(hx-tx,hy-ty,hz-tz).normalize();
+  W.set(1,0,0);
+  e.oar.quaternion.setFromUnitVectors(W,V);
+  /* both hands on the handle, a hand's width apart */
+  const d=Math.hypot(hx-tx,hy-ty,hz-tz);
+  for(let k=0;k<2;k++){
+    const along=k?0.04:0.26, side=k?-s:s;
+    W.set(hx-V.x*along,hy-V.y*along,hz-V.z*along);fmToSpine(p,W);
+    figArmIK(p,side,W.x,W.y-0.02,W.z,side*0.6,-0.7,-0.4);
+  }
+  return d;
+}
+
 function workPose(e,t){
   const p=e.p, task=e.task, sd=e.seed;
   if(!p)return;
-  const S=function(k,v){if(p[k])p[k].rotation.x=v;};
+  if(task==="row"){workRow(e,t);return;}
+  if(task==="lift"){
+    /* stoop to it, take hold, come up with it to the chest - and hold it there */
+    if(!e.load&&e.opt.load)fmTakeLoad(e,e.opt.load);
+    const u=fmS((t-0.55)/0.9);
+    fmLoadAt(e,u,t<0.55?fmS(t/0.55):1-u);
+    return;
+  }
+  const A=TASK_ANIM[task];
+  if(!A)return;
+  const ph=(t/A.T+sd/6.28)%1;
+  fmPose(p,A,ph,e.keepLegs,e.prop?e.prop.rotation.x:0);
+  if(A.grip&&e.prop)fmGrip(p,e.prop,e.tool);
   if(task==="dig"){
-    /* push in, lever, lift and throw: one stroke in 1.9 s */
-    const ph=(t*0.53+sd/6.28)%1;
-    const lift=ph<0.45?0:ph<0.75?(ph-0.45)/0.3:1-(ph-0.75)/0.25;
-    if(p.body)p.body.rotation.x=0.42-lift*0.18;
-    S("shoulderR",-0.5-lift*0.55);S("shoulderL",-0.7-lift*0.45);S("elbowR",-0.3-lift*0.85);S("elbowL",-0.45-lift*0.4);
-    S("kneeL",-0.25);S("kneeR",-0.1);
-    if(ph>0.72&&e.last<=0.72){const tip=workToolTip(e), h=e.opt.heap&&e.opt.heap.at;
+    if(ph>0.74&&e.last<=0.74){const tip=workToolTip(e), h=e.opt.heap&&e.opt.heap.at;
       if(h)workBit(tip[0],tip[1]+1.2,tip[2],h[0],h[1],RGB(0x5e4a32),function(){workGrow(e);});}
-    e.last=ph;
+  } else if(task==="hoe"){
+    if(ph>0.55&&e.last<=0.55){const tip=workToolTip(e);
+      workBit(tip[0],tip[1]+0.2,tip[2],tip[0]+(srand(t)-0.5)*1.5,tip[2]+(srand(t*3)-0.5)*1.5,RGB(0x5e4a32),null);}
   } else if(task==="chop"){
-    /* the axe goes up slowly and comes down fast */
-    const ph=(t*0.62+sd/6.28)%1;
-    const v=ph<0.72?ph/0.72:1-(ph-0.72)/0.28;
-    if(p.body)p.body.rotation.x=0.12+(1-v)*0.22;
-    S("shoulderR",-0.55-v*2.25);S("shoulderL",-0.55-v*2.05);S("elbowR",-0.3-v*0.5);S("elbowL",-0.3-v*0.5);
-    if(ph<0.06&&e.last>0.9){const tg=e.opt.target||workToolTip(e);
+    /* the chips fly at the moment the axe lands, not at the top of the swing */
+    if(ph>0.62&&e.last<=0.62){const tg=e.opt.target||workToolTip(e);
       for(let i=0;i<3;i++)workBit(tg[0],workFigureY(e.f)+1.4,tg[1],tg[0]+(srand(t*7+i)-0.5)*5,tg[1]+(srand(t*3+i)-0.5)*5,RGB(0xc8a878),null);
       e.n++;if(e.opt.onStrike)e.opt.onStrike(e.n);}
-    e.last=ph;
-  } else if(task==="hammer"){
-    const ph=(t*1.1+sd/6.28)%1, v=ph<0.6?ph/0.6:1-(ph-0.6)/0.4;
-    S("shoulderR",-1.1-v*1.3);S("elbowR",-0.7-v*0.6);S("shoulderL",-1.0);S("elbowL",-0.9);
-    if(p.body)p.body.rotation.x=0.08;
-  } else if(task==="pan"){
-    /* stooped at the water, the pan swirled in both hands, then tipped */
-    const ph=(t*0.18+sd/6.28)%1, sw=Math.sin(t*4.2+sd);
-    if(p.body)p.body.rotation.x=0.55;
-    S("shoulderR",-1.15+sw*0.12);S("shoulderL",-1.15-sw*0.12);S("elbowR",-0.55);S("elbowL",-0.55);
-    if(p.wristR){p.wristR.rotation.y=t*3.2;p.wristR.rotation.x=ph>0.85?-0.9:0;}
-    S("kneeL",-0.35);S("kneeR",-0.35);
-  } else if(task==="stir"){
-    const sw=Math.sin(t*1.6+sd);
-    S("shoulderR",-0.9+sw*0.35);S("shoulderL",-0.8-sw*0.35);S("elbowR",-0.6);S("elbowL",-0.7);
-    if(p.body){p.body.rotation.x=0.18+sw*0.06;}
   } else if(task==="bail"){
-    const ph=(t*0.8+sd/6.28)%1, v=Math.sin(ph*Math.PI);
-    if(p.body)p.body.rotation.x=0.5-v*0.3;
-    S("shoulderR",-0.6-v*1.4);S("elbowR",-0.4);S("shoulderL",-0.4);
-    if(ph>0.5&&e.last<=0.5){const tip=workToolTip(e);workBit(e.f.position.x,workFigureY(e.f)+2,e.f.position.z,e.f.position.x+Math.sin(e.f.rotation.y+1.6)*4,e.f.position.z+Math.cos(e.f.rotation.y+1.6)*4,RGB(0x6f8f96),null);}
-    e.last=ph;
-  } else if(task==="sift"){
-    const sh=Math.sin(t*9+sd);
-    S("shoulderR",-1.2+sh*0.12);S("shoulderL",-1.2+sh*0.12);S("elbowR",-0.5);S("elbowL",-0.5);
-    if(p.body)p.body.rotation.z=sh*0.03;
-  } else if(task==="trowel"){
-    const sc=Math.sin(t*2.4+sd);
-    S("shoulderR",-0.9+sc*0.25);S("elbowR",-0.6-Math.abs(sc)*0.2);S("shoulderL",-0.6);
-    if(p.neck)p.neck.rotation.x=0.35;
-  } else if(task==="write"){
-    /* bent over a table: the pen hand moves along a line in small strokes, and back for the next */
-    const ph=(t*0.45+sd/6.28)%1, sc=Math.sin(t*11+sd)*0.05;
-    if(p.body)p.body.rotation.x=0.24;
-    S("shoulderR",-0.85+ph*0.22+sc);S("elbowR",-1.0+sc);S("shoulderL",-0.55);S("elbowL",-0.7);
-    if(p.neck)p.neck.rotation.x=0.4;
-  } else if(task==="row"){
-    const sw=Math.sin(t*1.7+sd);
-    if(p.body)p.body.rotation.x=0.25*sw;
-    S("shoulderR",-1.3-sw*0.5);S("shoulderL",-1.3-sw*0.5);S("elbowR",-0.4-(1-sw)*0.35);S("elbowL",-0.4-(1-sw)*0.35);
-  } else if(task==="haul"){
-    const sw=Math.sin(t*1.3+sd);
-    if(p.body)p.body.rotation.x=-0.22+sw*0.08;
-    S("shoulderR",-1.25+sw*0.4);S("shoulderL",-1.25-sw*0.4);S("elbowR",-0.25);S("elbowL",-0.25);
-  } else if(task==="pry"){
-    const ph=(t*0.9+sd/6.28)%1, v=Math.sin(ph*Math.PI);
-    if(p.body)p.body.rotation.x=0.5;
-    S("shoulderR",-0.9-v*0.7);S("shoulderL",-0.9-v*0.6);S("elbowR",-0.4);S("elbowL",-0.4);
+    if(ph>0.52&&e.last<=0.52){workBit(e.f.position.x,workFigureY(e.f)+2,e.f.position.z,e.f.position.x+Math.sin(e.f.rotation.y+1.6)*4,e.f.position.z+Math.cos(e.f.rotation.y+1.6)*4,RGB(0x6f8f96),null);}
   } else if(task==="bowl"){
-    /* bowls on a Sunday: an underhand swing, and the bowl runs out along the street to the jack */
-    const ph=(t*0.32+sd/6.28)%1;
-    const sw=ph<0.25?ph/0.25:0;
-    if(p.body)p.body.rotation.x=0.15+sw*0.35;
-    S("shoulderR",0.9-sw*1.6);S("elbowR",-0.1);S("shoulderL",-0.3);S("kneeL",-0.4*sw);
+    /* bowls on a Sunday: the bowl leaves the hand at the bottom of the delivery and runs out
+       along the street to the jack */
     if(!e.ball){const g=new Geo(), wood=RGB(0x4a3424);g.oct(0,0,-0.45,0.45,0.45,0.45,0.45,0.45,0.15,wood,wood);
       e.ball=g.mesh(false,false);(worldRoot||scene).add(e.ball);
       const j=new Geo();j.box(0,0.2,0,0.4,0.4,0.4,RGB(0xe8e0c8));e.jack=j.mesh(false,false);
@@ -28162,28 +28973,29 @@ function workPose(e,t){
     const x0=f.position.x+Math.sin(f.rotation.y)*1.5, z0=f.position.z+Math.cos(f.rotation.y)*1.5;
     const bx=x0+(e.opt.to[0]-x0)*(1-(1-r)*(1-r)), bz=z0+(e.opt.to[1]-z0)*(1-(1-r)*(1-r));
     e.ball.position.set(bx,workFigureY({position:{x:bx,z:bz}})+0.45,bz);e.ball.rotation.x+=0.12*(r<1?1:0);
-  } else if(task==="lift"){
-    /* stoop to it, take it up, hold it at the chest */
-    const v=Math.min(1,t/1.4);
-    if(p.body)p.body.rotation.x=0.6*(1-v)+0.05;
-    S("shoulderR",-1.25);S("shoulderL",-1.25);S("elbowR",-1.1*v);S("elbowL",-1.1*v);
-    if(!e.load&&e.opt.load&&p.body){e.load=WORK_LOAD[e.opt.load]();e.load.position.set(0,1.0,0.42);p.body.add(e.load);}
-    if(e.load)e.load.position.y=0.55+v*0.5;
   }
+  e.last=ph;
 }
-/* a carrier: pick up at `from`, walk to `to`, set down, walk back empty */
+/* a carrier: pick up at `from`, walk to `to`, set down, walk back empty. He squats to take the
+   load and to set it down (the wait), walks under it leaning back a little with it held at its
+   ends, and walks back empty with his arms swinging. */
 function workCarry(e,dt){
   const f=e.f, p=e.p, o=e.opt;
   if(e.wait>0){
     e.wait-=dt;
-    /* stooping to pick up or set down */
-    if(p.body)p.body.rotation.x=0.5*Math.sin(Math.min(1,1-e.wait/1.2)*Math.PI);
+    const k=Math.min(1,1-e.wait/1.4);                     /* 0..1 through the stop */
+    e.walking=false;
+    if(!e.load)fmPose(p,TASK_ANIM.stow,0.30*fmS(k/0.5)*(1-fmS((k-0.5)/0.5)),false);
+    else if(e.st==="go"){                                /* arrived: down it goes, and he comes up */
+      const d=fmS(k/0.6);fmLoadAt(e,1-d,k<0.6?d:1-fmS((k-0.6)/0.4));
+    } else {                                             /* home: stoop to it and take it up */
+      const u=fmS((k-0.4)/0.6);fmLoadAt(e,u,k<0.4?fmS(k/0.4):1-u);
+    }
     if(e.wait<=0){
-      if(e.st==="go"){                                   /* arrived at the far end: set it down */
+      if(e.st==="go"){
         if(e.load&&e.load.parent)e.load.parent.remove(e.load);e.load=null;
         e.n++;if(o.drop)o.drop(e.n);e.st="back";
-      } else {                                           /* home: take up the next one */
-        if(p.body&&o.load){e.load=WORK_LOAD[o.load]();e.load.position.set(0,1.05,0.42);p.body.add(e.load);}
+      } else {
         e.st="go";
       }
     }
@@ -28191,16 +29003,20 @@ function workCarry(e,dt){
   }
   const dst=e.st==="go"?o.to:o.from;
   const dx=dst[0]-f.position.x, dz=dst[1]-f.position.z, d=Math.hypot(dx,dz);
-  if(d<0.6){e.wait=1.2;return;}
+  if(d<0.6){
+    e.wait=1.4;
+    /* the next load is on the ground at his feet before he bends for it */
+    if(e.st==="back"&&o.load&&!e.load){fmTakeLoad(e,o.load);fmLoadAt(e,0,0);}
+    return;
+  }
   const v=Math.min(d,(o.speed||3.2)*dt);
   f.position.x+=dx/d*v;f.position.z+=dz/d*v;f.position.y=workFigureY(f);
   const want=Math.atan2(dx,dz);let da=want-f.rotation.y;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
   f.rotation.y+=Math.max(-3*dt,Math.min(3*dt,da));
-  e.ph=(e.ph||0)+v*1.7;
-  crowdWalk(p,e.ph,e.load?0.55:0.9);
-  if(p.body)p.body.rotation.x=e.load?0.04:0;
-  if(e.load){if(p.shoulderL)p.shoulderL.rotation.x=-1.25;if(p.shoulderR)p.shoulderR.rotation.x=-1.25;
-    if(p.elbowL)p.elbowL.rotation.x=-1.15;if(p.elbowR)p.elbowR.rotation.x=-1.15;}
+  const amp=e.load?0.62:0.85;
+  e.ph=(e.ph||0)+v*figWalkRate(f,amp);
+  figWalk(p,e.ph,amp);
+  if(e.load){e.walking=true;fmLoadAt(e,1,0);e.walking=false;}
 }
 function updateWork(dt){
   if(!WORK.list.length&&!WORK.bits.length)return;
@@ -28210,7 +29026,7 @@ function updateWork(dt){
     if(!e.f.parent&&e.f!==player)continue;
     e.t+=dt;
     if(e.task==="carry"){
-      if(!e.started){e.started=true;if(e.p&&e.p.body&&e.opt.load){e.load=WORK_LOAD[e.opt.load]();e.load.position.set(0,1.05,0.42);e.p.body.add(e.load);}}
+      if(!e.started){e.started=true;if(e.opt.load)fmTakeLoad(e,e.opt.load);}
       workCarry(e,dt);
     }
     else workPose(e,e.t);
@@ -29969,9 +30785,9 @@ function starveNext(fromLedger){
 
 /* ---- THE CUTSCENES ---- */
 /* someone walking a line of points, driven by updateStarve, which the cutscene loop calls */
-function starveWalk(m,pts,v){
+function starveWalk(m,pts,v,arrive){
   m.position.set(pts[0][0],G7(pts[0][0],pts[0][1]),pts[0][1]);(worldRoot||scene).add(m);
-  STARVE.walk.push({m:m,pts:pts,i:1,v:v||2.4});return m;
+  STARVE.walk.push({m:m,pts:pts,i:1,v:v||2.4,ph:0,arrive:arrive||null});return m;
 }
 /* play-test, 27 Nov: Spelman was spawned inside the storehouse wall and walked off alone, while
    his standing double and Powhatan stayed at the baskets, and the second shot looked at him
@@ -30465,11 +31281,17 @@ function updateStarve(dt){
   });
   if(STARVE.boat&&STARVE.boat.go){const b=STARVE.boat;if(b.m.position.x<b.stop)b.m.position.x=Math.min(b.stop,b.m.position.x+dt*b.v);}
   for(const k of STARVE.walk){
-    if(k.i>=k.pts.length)continue;
+    const q=k.m.userData.parts;
+    if(k.i>=k.pts.length){
+      /* arrived: the stride settles, and whatever the scene has him do on arrival */
+      if(k.ph!==null&&q){figWalk(q,k.ph,0);k.ph=null;if(k.arrive){const a=k.arrive;k.arrive=null;a(k.m);}}
+      continue;}
     const p=k.pts[k.i], m=k.m, dx=p[0]-m.position.x, dz=p[1]-m.position.z, d=Math.hypot(dx,dz);
     if(d<0.05){k.i++;continue;}
     const s=Math.min(d,dt*k.v)/d;m.position.x+=dx*s;m.position.z+=dz*s;
     m.position.y=G7(m.position.x,m.position.z);m.rotation.y=Math.atan2(dx,dz);
+    /* walking, the stride paid for by the ground covered */
+    if(q){k.ph+=Math.min(d,dt*k.v)*figWalkRate(m,1,k.v>8);figWalk(q,k.ph,1,k.v>8);}
   }
   updateBlaze(dt);
 }
@@ -35544,7 +36366,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1415";
+const BUILD="20261127-1515";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
