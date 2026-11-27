@@ -1383,6 +1383,7 @@ function applyBlob(d){
     if(S.works.ch7&&S.works.ch7.done)S.reached["ch8"]=true;
     if(S.works.ch8&&S.works.ch8.done)S.reached["ch9"]=true;
     if(S.works.ch9&&S.works.ch9.done)S.reached["ch10"]=true;
+    if(S.works.ch10&&S.works.ch10.done)S.reached["ch11"]=true;
     if(typeof AMBUSH!=="undefined")AMBUSH.done=!!d.ambushDone;
     SAVED_WORLD=d.world||"ch1";
     return true;
@@ -3122,7 +3123,68 @@ const PEOPLE_LOOK={
   /* Uttamatomakkin, Powhatan's counsellor in London: a man of the better sort, mantle and
      beads (1.9). Nothing describes him */
   uttamatomakkin:{face:"long",hair:"powhatan",hairColor:HAIR.black,mood:"plain",
-    dress:"bare",feet:"moccasin",mantle:true,beads:true}
+    dress:"bare",feet:"moccasin",mantle:true,beads:true},
+
+  /* ---- Plymouth, 1620-1623 (look book 1.13 and 1.14). Not all-black: working and middling
+     English dress in "sadd colours", with the inventories' blue, violet, green and red ---- */
+  /* CLASS: no likeness survives. About thirty in 1621, governor from April; plain good cloth
+     and a capotain, his writing case the signature (his history). Imagined */
+  bradford:{born:1590,face:"long",hair:"long",hairColor:HAIR.brown,beard:"short",
+    hat:"capotain",dress:"doublet",mood:"keen",eqx:{accessory:"acc_satchel"},
+    colors:{torso:WOOL.tawny,breech:WOOL.russet,stock:WOOL.grey,hat:0x2e2a24}},
+  /* LIFE: the 1651 portrait, painted in London by an unknown artist of the school of Robert
+     Walker, Pilgrim Hall Museum: "the only portrait of a Pilgrim (Edward Winslow) painted from
+     life"; he wears black and white (Pilgrim Hall; Wikimedia catalogue entry, both read 27 Nov).
+     review, 27 Nov: the hair, moustache, small beard and white band are UNVERIFIED - no catalogue
+     text describing them could be read (Pilgrim Hall's portrait handout no longer loads); they
+     were written from memory. Black in 1651 London is fashion, so the 1621 colours stay dark,
+     not black. Twenty-six in 1621, bare-headed as painted */
+  winslow:{born:1595,face:"oval",hair:"long",hairColor:HAIR.brown,beard:"pointed",
+    hat:"none",dress:"doublet",mood:"keen",
+    colors:{torso:0x34303a,breech:0x2e2a2e,stock:WOOL.grey}},
+  /* CLASS: an older man of means, the first governor; good cloth and a cloak. Imagined */
+  carver:{face:"round",hair:"receding",hairColor:0x6a6050,beard:"full",build:"heavy",
+    hat:"capotain",dress:"merchant",cloak:true,mood:"mild",
+    colors:{torso:WOOL.murrey,breech:WOOL.black,stock:WOOL.grey,cloak:0x3a3236,hat:0x241f1f}},
+  /* DESCRIBED, one fact: "but a little man" (Pecksuot, as Winslow carries it, GN 1624). The
+     soldier of 1.2: a leather jack and a cap; a morion and breastplate from the fort year */
+  standish:{face:"square",hair:"cropped",hairColor:HAIR.chestnut,beard:"full",height:0.9,
+    hat:"cap",dress:"jack",mood:"stern",
+    colors:{torso:WOOL.leather,sleeve:WOOL.madder,breech:WOOL.russet,stock:WOOL.grey,hat:WOOL.russet},
+    by:[[1622,{hat:"morion",plate:true}]]},
+  /* CLASS: the elder, grey; the look book's inventory colours - a blue suit, and a murrey coat
+     for his violet one (no bright purple in the palette). Imagined */
+  brewster:{face:"long",hair:"receding",hairColor:HAIR.grey,beard:"full",build:"thin",
+    hat:"broad",dress:"doublet",cloak:true,mood:"kind",
+    colors:{torso:WOOL.woad,breech:WOOL.woad,stock:WOOL.grey,cloak:WOOL.murrey,hat:0x2a2622}},
+  /* CLASS: a London merchant for the investors: good black, a ruff. Imagined */
+  weston:{face:"oval",hair:"short",hairColor:HAIR.dark,beard:"pointed",
+    hat:"capotain",dress:"merchant",ruff:true,cloak:true,mood:"shrewd",
+    colors:{torso:WOOL.black,breech:WOOL.black,stock:WOOL.grey,cloak:0x262428,hat:0x1a1818}},
+  /* CLASS: the congregation's agent in London; plain grey cloth. Imagined */
+  cushman:{face:"narrow",hair:"short",hairColor:HAIR.sandy,beard:"short",build:"thin",
+    hat:"capotain",dress:"doublet",mood:"weary",
+    colors:{torso:WOOL.grey,breech:WOOL.russet,stock:WOOL.grey,hat:0x2e2a24}},
+  /* CLASS: Bradford's nephew, the colony's secretary, writing his Memoriall in 1669. Imagined */
+  nmorton:{born:1613,face:"oval",hair:"long",hairColor:HAIR.brown,beard:"moustache",
+    hat:"capotain",dress:"doublet",mood:"keen",eqx:{accessory:"acc_satchel"},
+    colors:{torso:0x3a3440,breech:WOOL.black,stock:WOOL.grey,hat:0x1e1c1c}},
+  /* DESCRIBED (Mourt, 1622, via the look book 1.14): "a tall straight man, the hair of his head
+     black, long behind, only short before, none on his face"; the English "cast a horsemans
+     coat about him". Never voiced */
+  samoset:{face:"long",hair:"loose",hairColor:HAIR.black,height:1.06,mood:"plain",
+    dress:"bare",feet:"moccasin",cloak:true,colors:{cloak:0x6a3a2e}},
+  /* CLASS: nothing describes him. The New England men's hair, a deerskin mantle. Never voiced */
+  tisquantum:{face:"oval",hair:"loose",hairColor:HAIR.black,mood:"plain",
+    dress:"bare",feet:"moccasin",mantle:true},
+  /* DESCRIBED: "a very lustie man, in his best yeares, an able body, graue of countenance", his
+     face painted "a sad red", "a great Chaine of white bone Beades" (Mourt p. [38]). The paint
+     is the builder's red. Never voiced */
+  massasoit:{face:"square",hair:"loose",hairColor:HAIR.black,build:"heavy",height:1.03,mood:"plain",
+    dress:"bare",feet:"moccasin",mantle:true,beads:true,paint:true},
+  /* DESCRIBED: "a proper lustie man, and a man of accounte for his vallour" (MS p. 63). Never voiced */
+  hobbamock:{face:"square",hair:"loose",hairColor:HAIR.black,height:1.04,mood:"plain",
+    dress:"bare",feet:"moccasin",beads:true}
 };
 /* who a named person is in a given year: his own look, the dress for that year, and his age */
 function personLook(key,yr,variant){
@@ -4568,7 +4630,9 @@ let SHIPV="susan";
 const SHIP_VARIANT={
   susan:    {name:"SUSAN CONSTANT",masts:3,cell:0.20,board:0x54401f,letter:0xe8dcb4},
   godspeed: {name:"GODSPEED",      masts:3,cell:0.30,board:0x4a3524,letter:0xe8dcb4},
-  discovery:{name:"DISCOVERY",     masts:2,cell:0.30,board:0x3f4a2c,letter:0xdcd2b6}
+  discovery:{name:"DISCOVERY",     masts:2,cell:0.30,board:0x3f4a2c,letter:0xdcd2b6},
+  /* Chapter XI: the same routines, her own name on the transom */
+  mayflower:{name:"MAYFLOWER",     masts:3,cell:0.20,board:0x4a3a22,letter:0xe8dcb4}
 };
 function shipv(){return SHIP_VARIANT[SHIPV]||SHIP_VARIANT.susan;}
 const LVL={HOLD:0,TWEEN:1,MAIN:2,CASTLE:3,QUARTER:4};
@@ -9826,7 +9890,7 @@ function animate(){
   /* play-test, 27 Nov: Chapter VI's ships, the boat from the falls, the rats and its night sky
      are driven by updatePres, which this branch never called - so "Captain Newport set sail"
      played over a ship riding at anchor, and the boat from the falls never came in */
-  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);updateCsTalk(dt);updateReacts(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
+  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);updateCsTalk(dt);updateReacts(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
   if(CAMLOCK.on){
     updateFx(dt);updateFlog(dt);updateShadows();updateReacts(dt);
     cam.position.lerp(CAMLOCK.pos,Math.min(1,dt*3.5));
@@ -9845,7 +9909,7 @@ function animate(){
     player.position.y=WORLD.ground(player.position.x,player.position.z)+JUMP.y;
   if(AMBUSH.on||DUSK.on){updateAmbush(dt);updateArrows(dt);}
   else if(FORT.on){updateFort(dt);updateArrows(dt);}
-  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updateWork(dt);
+  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateWork(dt);
   if(LESSON.on){
     updateFx(dt);updateLesson(dt);updateShadows();updateReacts(dt);
     renderer.render(scene,cam);return;
@@ -10020,6 +10084,7 @@ function animate(){
         :best.action==="leaf"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="price"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="sky"?((best.data&&best.data.verb)||"Go to it")
+        :best.action==="ply"?((best.data&&best.data.verb)||"Go to it")
         /* Named explicitly rather than inherited. A new action with no verb used
            to fall through to "Read the papers", which hid the mistake; now it
            reads "Use" and is obviously unfinished. */
@@ -10612,6 +10677,7 @@ function doInteract(){
   else if(a==="leaf"){leafAct(activeSpot.data);}
   else if(a==="price"){priceAct(activeSpot.data);}
   else if(a==="sky"){skyAct(activeSpot.data);}
+  else if(a==="ply"){plyAct(activeSpot.data);}
   else if(a==="reck"){
     if(chapterReady())openReckoning();
     else toast("The scrivener will not sit with you yet. Still to ask: "+reckMissing().join("; ")+".");}
@@ -12134,9 +12200,9 @@ const MUSIC_FILES={
   sickness:"assets/music/sickness.ogg", president:"assets/music/president.ogg",
   starving:"assets/music/starving.ogg", tobacco:"assets/music/tobacco.ogg"};
 const MUSIC_BY_WORLD={ch1:"voyage", ch2:"fort", comfort:"fort", archers:"fort", james:"fort", ch3:"fort",
-  ch4:"sickness", ch5:"sickness", ch6:"president", ch7:"starving", ch8:"tobacco", ch9:"tobacco", ch10:"sickness"};
+  ch4:"sickness", ch5:"sickness", ch6:"president", ch7:"starving", ch8:"tobacco", ch9:"tobacco", ch10:"sickness", ch11:"voyage"};
 /* places with no music (see above) - the `where` of a chapter's day */
-const MUSIC_SILENT={kecoughtan:true, york:true, orapakes:true, dig:true, pointcomfort:true, pace:true};   /* pointcomfort: Chapter IX, the Africans' arrival - documents only, quiet; pace: Chapter X, the night before 22 March 1622 */
+const MUSIC_SILENT={kecoughtan:true, york:true, orapakes:true, dig:true, pointcomfort:true, pace:true, patuxet:true};   /* pointcomfort: Chapter IX, the Africans' arrival - documents only, quiet; pace: Chapter X, the night before 22 March 1622 */
 const MUSIC_VOL=0.32, MUSIC_DUCK=0.2, MUSIC_FADE=2.4;
 const MUSIC_CAN=VO_CAN;
 const MUSIC={live:false, decks:[], i:0, cur:null, duck:-1, master:null};
@@ -12149,6 +12215,7 @@ function musicWhere(w){
     if(w==="ch7")return starveDay().where;
     if(w==="ch9")return priceDay().where;
     if(w==="ch10")return skyDay().where;
+    if(w==="ch11")return plyDay().where;
   }catch(e){}
   return null;
 }
@@ -15245,7 +15312,7 @@ function openIntro(worldId){
   $("introDate").textContent=c.d;
   $("introBody").textContent=c.intro?c.intro():"";
   $("introObj").textContent=c.obj?c.obj():"";
-  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":(worldId==="ch8")?"To the Fort":(worldId==="ch9")?"To Jamestown":(worldId==="ch10")?"To James City":"Into the Boats";
+  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":(worldId==="ch8")?"To the Fort":(worldId==="ch9")?"To Jamestown":(worldId==="ch10")?"To James City":(worldId==="ch11")?"To Southampton":"Into the Boats";
   show("intro");
 }
 function beginWorld(worldId){
@@ -15426,7 +15493,7 @@ const CONDITIONS={weather:0,fouling:0,supply:0};
    not evidenced: the ship's hold is still air, and every outdoor scene here is an
    open shore in April with wind coming off the water. */
 /* ch4: the summer of 1607 was a drought (Stahle et al. 1998) - the driest air the game has */
-const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22, ch8:0.10, ch9:0.10, ch10:0.10};   /* ch5: a wet winter on the rivers */
+const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22, ch8:0.10, ch9:0.10, ch10:0.10, ch11:0.10};   /* ch5: a wet winter on the rivers */
 function armState(arm){
   return {
     /* a match above 0.7 takes no penalty at all - good play is rewarded in
@@ -20297,7 +20364,7 @@ function crowdLook(kind,i,yr){
                 back in jacks and morions, half of them in buff coats (a plausible guess: the
                 look book finds no buff coat in the record before the 1620s).
    Nobody all in black: black is money, office or the pulpit. */
-const FIG_YEAR={ch1:1607,ch2:1607,ch3:1607,ch4:1607,ch5:1608,ch6:1608,ch7:1609,ch8:1613,ch9:1619,ch10:1622};
+const FIG_YEAR={ch1:1607,ch2:1607,ch3:1607,ch4:1607,ch5:1608,ch6:1608,ch7:1609,ch8:1613,ch9:1619,ch10:1622,ch11:1621};
 function figYear(){
   try{const c=CURRENT_WORLD?chapterOf(CURRENT_WORLD):null;return (c&&FIG_YEAR[c.world])||1607;}
   catch(e){return 1607;}
@@ -20975,6 +21042,8 @@ function siteGround(key,x,z){
   if(z>T.sea)        y=T.deep-(z-T.sea)*T.fall;
   else if(z>T.shore) y=(T.sea-z)/(T.sea-T.shore)*T.rise-0.5;
   else               y=T.inland+Math.sin(x*0.013)*T.roll+Math.cos(z*0.010)*T.roll*0.8;
+  /* T.hill: feet of rise over T.hillLen inland of the shore (Plymouth's street up to the hill) */
+  if(T.hill&&z<T.shore)y+=T.hill*smooth01(T.shore,T.shore-T.hillLen,z);
   y+=Math.sin(x*0.024)*0.35+Math.cos(z*0.019)*0.30;
   return y;
 }
@@ -24867,13 +24936,27 @@ const SCENE_LOOK={
       clouds:0,shade:0.8,wood:0x403c30}),                             /* the Pamunkey: cold, smoke on the river */
     lk("grey",{top:0x77858e,hor:0xbfc3bd,near:150,far:740,sunC:0xe6e2d6,elev:40,wood:0x3a4030}),  /* Martin's Hundred */
     lk("autumn",{top:0x5f7c92,hor:0xc6c6ba,sunC:0xf0e4cc,sun:0.76,elev:44,clouds:2})  /* May 1623 - February 1624 */
+  ],
+  /* XI. Plimoth Plantation, July 1620 to summer 1623 (PLY_DAYS) */
+  ch11:[
+    lk("summer",{top:0x3d72a2,hor:0xc8d0c8,elev:60,clouds:5}),       /* Southampton, August 1620 */
+    lk("grey",{top:0x76869a,hor:0xb6bec2,near:170,far:760,sun:0.64,sunC:0xe6e8ea,elev:40,clouds:2,
+      cloudC:0xe6eaec}),                                              /* the Atlantic, autumn: grey, wind */
+    lk("winter",{top:0x6f8aa0,hor:0xc8ccc8,sun:0.70,sunC:0xf0eee6,elev:30,clouds:3,
+      cloudC:0xeceeee}),                                              /* Cape Cod, November and December: cold, clear */
+    lk("winter",{top:0x868e94,hor:0xb4babc,near:150,far:700,hemi:0.50,sun:0.52,exp:0.98}),  /* the general sickness */
+    lk("spring",{top:0x5a7e9c,hor:0xc8cec6,sunC:0xf6ecda,sun:0.82,elev:46,wood:0x34402a}),  /* Patuxet, March and April */
+    lk("autumn",{top:0x44709a,hor:0xd0c8ae,sunC:0xffdca0,elev:42}),  /* the harvest */
+    lk("summer",{top:0x4a7898,hor:0xcacdbc,elev:58,clouds:3}),       /* 1622: the fort going up */
+    lk("summer",{top:0x5a809e,hor:0xd6d0b4,near:170,far:780,sunC:0xfff0c4,elev:62,clouds:1,
+      cloudC:0xf2eedf})                                               /* 1623: the drought */
   ]
 };
 /* which day of its chapter a world is showing - the same index each *_DAYS table uses */
 const LOOK_DAY={ch4:function(){return sickW().day;},ch5:function(){return captW().day;},
   ch6:function(){return presW().day;},ch7:function(){return starveW().day;},
   ch8:function(){return leafW().day;},ch9:function(){return priceW().day;},
-  ch10:function(){return skyW().day;}};
+  ch10:function(){return skyW().day;},ch11:function(){return plyW().day;}};
 function lookDay(w){const f=LOOK_DAY[w];try{return f?(f()|0):0;}catch(e){return 0;}}
 function sceneLook(){
   const w=CURRENT_WORLD;
@@ -29148,6 +29231,14 @@ const TASK_ANIM={
     eR:[0,-0.50, 0.40,-0.60, 0.55,-0.25, 0.80,-0.50],
     ta:[0,-0.35, 0.40,-0.40, 0.55,-0.95, 0.80,-0.35],
     h:[0,-0.30, 0.55,-0.45], k:[0,0.30, 0.55,0.55], nk:[0,0.30], grip:1},
+  /* play-test, 27 Nov: a bar through a screw's nut, pushed round: leaning into it, both hands
+     on the bar at the waist, a short driving step (the path round the screw is plyWindAt's) */
+  wind:{T:0.95,
+    pel:[0,0.16], sp:[0,0.24, 0.5,0.30], spy:[0,0.06, 0.5,-0.06], nk:[0,-0.20],
+    sR:[0,-1.30, 0.5,-1.20], eR:[0,-0.35, 0.5,-0.45], sRz:[0,0.16],
+    sL:[0,-1.20, 0.5,-1.30], eL:[0,-0.45, 0.5,-0.35], sLz:[0,-0.16],
+    hL:[0,-0.75, 0.5,-0.05], hR:[0,-0.05, 0.5,-0.75],
+    kL:[0,0.55, 0.25,0.70, 0.5,0.25], kR:[0,0.25, 0.5,0.55, 0.75,0.70]},
   /* bowls: a backswing, the step and the underhand delivery, held to watch it run */
   bowl:{T:3.1,
     pel:[0,0.06, 0.12,0.02, 0.25,0.30, 0.55,0.28, 0.80,0.06],
@@ -29480,8 +29571,12 @@ function playerDoes(task,secs,narr,opt,after){
   let a=player.rotation.y+0.9;
   if(WORLD.blocked)for(const o of [0.9,-0.9,2.0,-2.0,Math.PI]){const t=player.rotation.y+o;
     if(![0.4,0.7,1].some(function(k){return WORLD.blocked(px+Math.sin(t)*7*k,pz+Math.cos(t)*7*k);})){a=t;break;}}
-  playCutscene({skippable:true,steps:[
-    {cam:{to:[px+Math.sin(a)*7,py+5.5,pz+Math.cos(a)*7],look:[px,py+2.6,pz],cut:true},t:secs,narrate:narr}]},
+  /* play-test, 27 Nov (Chapter XI): a scene that knows its own room passes the shot, as
+     opt.cam [[x, height above ground, z], [x, height, z]] */
+  const C=opt&&opt.cam, G=WORLD.ground;
+  const shot=C?{to:[C[0][0],G(C[0][0],C[0][2])+C[0][1],C[0][2]],look:[C[1][0],G(C[1][0],C[1][2])+C[1][1],C[1][2]],cut:true}
+              :{to:[px+Math.sin(a)*7,py+5.5,pz+Math.cos(a)*7],look:[px,py+2.6,pz],cut:true};
+  playCutscene({skippable:true,steps:[{cam:shot,t:secs,narrate:narr}]},
     function(){workRemove(e);if(after)after();});
 }
 /* a heap that grows as a digger throws earth on it */
@@ -34834,6 +34929,1338 @@ CONTENT.ch10={
   targets:collectInsights(SKY_NPCS), unlocks:[]
 };
 
+/* ==================== CHAPTER XI: PLIMOTH PLANTATION ====================
+   July 1620 to summer 1623: the Leiden congregation at Southampton and the ten conditions,
+   the Mayflower's cracked beam and the Compact, Cape Cod's corn and grave and the first
+   encounter, the general sickness, Samoset, Tisquantum and Massasoit in Patuxet's old fields,
+   the harvest of 1621, the snakeskin, the fort and "the plague buried", Wessagusset, and the
+   end of the common field.
+   Design: notes docs/CH11-DESIGN.md. Every fact is in docs/CH11-RECORD.md, checked 27
+   November. Bradford (Gutenberg #24950), Mourt's Relation (Dexter 1865), Morton (NEC) and
+   Smith (Arber) were read on disk; every Good Newes line used here was re-read on 27 November
+   against the archive.org text of the 1624 printing (goodnewesfromnew00wins_0) and Young's
+   and Arber's editions; every web line (Pilgrim Hall, Wikipedia, Smithsonian, American Indian)
+   was re-read on its page the same day.
+
+   WHAT THE CHAPTER IS ABOUT. "Record or retelling?" After each scene the player places its
+   famous claims on a board - In the record / Added later / Not known - and the result names,
+   for each row placed differently, the right column, the writer, the year, and (for a
+   retelling) why a later teller told it that way. The traps are the record's: "turkey" is in
+   the record (Bradford) but not at the feast; "invited" is not known, not added later;
+   Plymouth Rock is added later (1741); "the God of the English had it in store" is in the
+   record. A fixed Jamestown card in scenes 0, 1 and 7 sets Plymouth beside Chapters I-X.
+
+   CONTENT. No killing on either side is drawn. The killings at Wessagusset are told in
+   documents; Winslow's "execution" and Morton's "Massacre" are both shown as their words; the
+   head is text only; the hanging, and the grave's bones, are behind "Read the source in full".
+   Samoset, Tisquantum, Massasoit and Hobbamock are drawn and never voiced: every Wampanoag
+   sentence here is carried by an English writer, attributed. Standish, Brewster and Carver
+   left no words of their own in the record, so Standish and Brewster are drawn and silent,
+   and Carver says only what Bradford reports him pleading at Southampton.
+
+   DEPARTURES FROM THE DESIGN, and why:
+   - The text budget wins over "Winslow's one paragraph, whole": the card shows its key line
+     and the whole paragraph is under "Read the source in full".
+   - Scene 4 has four duties: Samoset, Tisquantum, the seven terms (a sort, who must do each)
+     and the planting. The terms are the scene's sheet and carry the Friend-and-Alie dispute.
+   - The three asked are Cushman (scene 0, the conditions), Bradford (3) and Winslow (5).
+     Winslow speaks again in scene 7, carrying Hobbamock's words; he cannot be asked twice
+     (one person, one set of beats).
+   - Winslow's common-course sentence is quoted only from "the Governours that followed men to
+     their labours": the 1624 printing reads "no small hope" where the record gives "so small
+     hope", so that clause is left out. His drought passage is not quoted (the 1624 page is not
+     legible in the archive.org text); Bradford's is.
+   - The muster's "1669" is the design's frame: Nathaniel Morton is compiling his Memoriall.
+   - Plymouth Rock: Pilgrim Hall's page gives Faunce's age as "ninety-five" (Thacher, 1835),
+     not the record's "in his nineties"; ninety-five is used. */
+
+/* ---- THE SCENES ---- */
+const PLY_DAYS=[
+  {where:"quay",date:"July and August 1620 — Southampton",need:["reasons","stock","conditions"],next:"Record or Retelling?"},
+  {where:"ship",date:"September to November 1620 — the Mayflower",need:["beam","speeches","compact"],next:"Record or Retelling?"},
+  {where:"shore",date:"November and December 1620 — Cape Cod, and Plymouth harbour",need:["corn","encounter","sound"],next:"Record or Retelling?"},
+  {where:"plymouth",date:"January to March 1621 — Plymouth",need:["wood","water","sick"],next:"Record or Retelling?"},
+  {where:"patuxet",date:"March and April 1621 — Patuxet’s old fields",need:["samoset","tisquantum","terms","plant"],next:"Record or Retelling?"},
+  {where:"plymouth",date:"Summer to November 1621 — Plymouth",need:["harvest","fowling","winslow"],next:"Record or Retelling?"},
+  {where:"plymouth",date:"December 1621 to autumn 1622 — Plymouth",need:["snakeskin","fort","plague"],next:"Record or Retelling?"},
+  {where:"plymouth",date:"March to summer 1623 — Plymouth",need:["court","return","plot"],next:"Record or Retelling?"}];
+const PLY_DUTY={
+  reasons:"Read why they left Holland",stock:"Load the common stock",conditions:"Read the ten conditions",
+  beam:"Raise the cracked beam",speeches:"Read why the Compact was made",compact:"Read the Compact",
+  corn:"Read what they took",encounter:"Look at the barricade",sound:"Sound the harbour",
+  wood:"Fetch wood for the fires",water:"Carry water for the sick",sick:"Tend the sick",
+  samoset:"Hear who Samoset was",tisquantum:"Read Tisquantum’s story",terms:"Sort the terms",plant:"Set the corn, with fish",
+  harvest:"Bring in the corn",fowling:"Carry in the fowl",winslow:"Read Winslow’s letter",
+  snakeskin:"Read the snakeskin’s message",fort:"Square a timber for the fort",plague:"Weigh two accounts",
+  court:"Read what the court did",return:"Read two accounts of Wessagusset",plot:"Set corn in your own plot"};
+function plyW(){
+  S.works=S.works||{};
+  if(!S.works.ch11)S.works.ch11={day:0,did:{},board:{},marks:{},done:false};
+  return S.works.ch11;
+}
+function plyDay(){return PLY_DAYS[Math.min(plyW().day,PLY_DAYS.length-1)];}
+function plyNeed(){const w=plyW(), sd=plyDay();for(const k of sd.need)if(!w.did[k])return k;return null;}
+const PLY={later:[],t:0,plot:null,post:null,fort:null,fish:null};
+
+/* ---- THE PEOPLE ---- (only those whose own words, or words reported as theirs, survive) */
+const PLY_PEOPLE=[
+  {id:"bradford",name:"William Bradford",voice:"male",role:"governor from April 1621",eq:personEq("bradford",1621)},
+  {id:"winslow",name:"Edward Winslow",voice:"male",role:"a gentleman of the company",eq:personEq("winslow",1621)},
+  {id:"cushman",name:"Robert Cushman",voice:"male",role:"the congregation’s agent in London",eq:personEq("cushman",1620)},
+  {id:"weston",name:"Master Thomas Weston",voice:"male",role:"a merchant of London, for the investors",eq:personEq("weston",1620)},
+  {id:"carver",name:"Master John Carver",voice:"male",role:"an agent of the congregation",eq:personEq("carver",1620)}];
+function plyPerson(id){return PLY_PEOPLE.filter(function(p){return p.id===id;})[0];}
+
+const PLY_SAYS={
+  /* Bradford's report of Weston at Southampton: "tould them, they must then looke to stand on
+     their owne leggs" (MS p. 37) */
+  "weston":[["“These are the conditions. Confirm them, or you must look to stand on your own legs.”"],[],[],[],[],[],[],[]],
+  /* "Mr. Carver pleaded he was imployed hear at Hamton, and knew not well what ye other had don
+     at London" (MS p. 37) */
+  "carver":[["“I was employed here at Hampton, and know not well what the others did at London.”"],[],[],[],[],[],[],[]],
+  /* MS pp. 53-54; MS pp. 49-50; MS pp. 57-58; MS p. 65; MS p. 90; MS p. 96 */
+  "bradford":[[],["“Some of the strangers say that ashore none has power to command them. Our patent is for Virginia.”"],
+    ["“Here we got seed to plant next year, or else we might have starved. We mean to give them full satisfaction.”"],[],
+    ["“Squanto is a special instrument sent of God for our good, beyond our expectation.”"],
+    ["“We have cod and bass, and as winter comes, store of fowl, and great store of wild turkeys.”"],
+    ["“The rumours of the Narragansett, and the hearing of that great massacre in Virginia, made all hands willing to build.”"],
+    ["“Every family shall set corn for its own particular, only for present use.”"]],
+  /* Mourt pp. [36]-[37]; GN 1624 p. 40; GN 1624 pp. 32-33, 37 (Hobbamock's words, as Winslow carries them) */
+  "winslow":[[],[],[],[],["“I told Massasoit that King James saluted him with words of love and peace. The interpreters did not well express it.”"],[],
+    ["“Some would have dissuaded us, thinking the fort rather a work of superfluity and vain glory.”"],
+    ["“Massasoit called Hobbamock to him privately, and revealed the plot of the Massachusett. Hobbamock told me on the way home.”",
+     "“The governor would not undertake war without the consent of the body of the Company. He made it known in public court.”"]]};
+
+/* ---- THE THREE WHO ARE ASKED ---- */
+const PLY_NPCS=[
+  {id:"cushman",name:"Robert Cushman",voice:"male",role:"the congregation’s agent in London",at:0,eq:PLY_PEOPLE[2].eq,
+   /* MS p. 32 */
+   done:"“No one shall be poorer than another for seven years.”",
+   beats:[
+    /* Bradford reports the charge against him: "making conditions fitter for theeves & bondslaves then honest men" (MS p. 32) */
+    {npc:"“I agreed the conditions in London. At Leiden they say I made them fit for thieves and bondslaves. Ask.”",
+     choices:[
+      /* MS pp. 28-29, 37 */
+      {t:"What did you change?",wise:true,ink:8,
+       reply:"The houses and lands kept at the end, and two days a week for their own work. Both given up, “by necessitie, other wise all had bene dasht”.",
+       /* review, 27 Nov: was "everything shared after seven years"; the change was houses and lands divided with the investors (conditions 5, MS pp. 28-29) */
+       insight:{g:"known",b:"Theeves & Bondslaves",s:"Cushman agreed new conditions in London in 1620: no private days, and houses and lands divided with the investors after seven years. Leiden called them fit “for theeves & bondslaves”."}},
+      {t:"What is the common stock?",fair:true,ink:3,
+       reply:"His own words: “not giveing almes, but furnishing a store house; no one shall be porer then another for 7. years”."},
+      {t:"So the settlers chose to share everything.",wise:false,
+       reply:"Not by choice. The common stock was the investors’ contract, and Leiden resisted it."}]}]},
+  {id:"bradford",name:"William Bradford",voice:"male",role:"governor from April 1621",at:3,eq:PLY_PEOPLE[0].eq,
+   /* MS p. 55: "unto whom my selfe, & many others, were much beholden" */
+   done:"“Brewster and Standish nursed us. I was much beholden to them.”",
+   beats:[
+    {npc:"“I was sick myself this winter. Six or seven of us were sound, and they nursed the rest. Ask.”",
+     choices:[
+      /* MS p. 55 and his note [AK] */
+      {t:"Did the sailors help?",wise:true,ink:8,
+       reply:"A sick man asked the crew for beer and was told “if he were their owne father he should have none”. Bradford’s margin: “Which was this author him selfe”.",
+       insight:{g:"known",b:"A Small Cann of Beere",s:"Bradford, sick in 1621, was refused beer by the crew. His own margin note: “Which was this author him selfe”."}},
+      {t:"How many have died?",fair:true,ink:3,
+       reply:"“2. or 3. of a day”, he will write, until “of 100. & odd persons, scarce 50. remained”."},
+      {t:"Faith brought you through, then.",wise:false,
+       reply:"He gives God the thanks. He also names the six or seven who did the work, and the sailors who would not."}]}]},
+  {id:"winslow",name:"Edward Winslow",voice:"male",role:"a gentleman of the company",at:5,eq:PLY_PEOPLE[1].eq,
+   /* Mourt p. [61] */
+   done:"“By the goodness of God, we are so far from want.”",
+   beats:[
+    /* his letter of 11 Dec. 1621, to a friend in England, listing what to bring (Mourt pp. [60]-[64]) */
+    {npc:"“I am writing to a friend in England, to tell him how we do, and what to bring. Ask.”",
+     choices:[
+      {t:"Did you invite Massasoit?",wise:true,ink:8,
+       reply:"His letter says “many of the Indians coming amongst vs”. It does not say they were asked, nor why they came.",
+       insight:{g:"known",b:"Coming Amongst Vs",s:"Winslow, 1621: “many of the Indians coming amongst vs”. Neither an invitation nor a reason for their coming is recorded."}},
+      {t:"Was it a day of thanksgiving?",fair:true,ink:3,
+       reply:"He writes “reioyce together”. A thanksgiving, to these people, was a day of prayer for a particular mercy."},
+      {t:"So it was a turkey dinner.",wise:false,
+       reply:"He writes “fowle”, and five deer the Wampanoag brought. The turkeys are Bradford’s, as the season’s catch."}]}]}];
+
+function plySpeaker(id){
+  const day=plyW().day;
+  for(const n of PLY_NPCS)if(n.id===id&&n.at===day)return n;
+  const set=PLY_SAYS[id], lines=set&&set[day];
+  if(!lines||!lines.length)return null;
+  return Object.assign({},plyPerson(id),{lines:lines});
+}
+
+/* ---- THE RECORD THAT OPENS EACH SCENE ---- */
+const PLY_OPEN=[
+  /* MS pp. 33-37 */
+  /* play-test, 27 Nov: the content note here repeated, word for word in substance, the one on
+     the chapter's own card a moment before; it is kept there */
+  {t:"This Libertie",b:"<p>Southampton, 1620. The Leiden congregation meets its ship.</p>"},
+  /* MS p. 45; the Compact, MS p. 54 */
+  {t:"The Mayflower",b:"<p>6 September 1620. The <i>Mayflower</i> puts to sea from Plymouth in England, with “100. & odd persons”.</p><p>Bound, the Compact will say, for “ye Northerne parts of Virginia”.</p>"},
+  /* MS pp. 48-53 */
+  {t:"Cape Cod",b:"<p>November 1620. The ship lies in Cape Cod harbour. Captain Standish takes sixteen men ashore to look about.</p><p>In December the shallop goes to find a harbour.</p>"},
+  /* MS pp. 53-55, 61 */
+  {t:"The Generall Sicknes",b:"<p>January 1621. A few houses stand at Plymouth. The common house catches fire on the 14th.</p><p>Illness is shown here. No death is drawn.</p>"},
+  /* MS p. 63; Mourt p. [43] */
+  {t:"Patuxet",b:"<p>March 1621. Plymouth stands on the fields of Patuxet, a Wampanoag town emptied by sickness between 1616 and 1619.</p><p>Which disease is still not known.</p>"},
+  /* MS p. 62 */
+  {t:"Summer 1621",b:"<p>April 1621. Governor Carver dies, and William Bradford is chosen.</p><p>Through the summer the English and Massasoit’s people visit, trade and test each other.</p>"},
+  /* MS pp. 66, 69 */
+  {t:"Halfe Alowance",b:"<p>November 1621. The <i>Fortune</i> brings thirty-five more people, and no food. All go to “halfe alowance”.</p><p>That winter the Narragansett send a challenge.</p>"},
+  /* GN 1624 pp. 26-33 */
+  {t:"1623",b:"<p class=\"note\">The killings at Wessagusset are told here in documents. None is shown.</p><p>March 1623. Winslow goes to Massasoit, who is sick. Weston’s men at Wessagusset are starving.</p>"}];
+
+/* ---- THE JAMESTOWN CARD ---- the comparison TEKS 8.2(B) and 8.3(B) ask for, from Chapters I-X */
+const PLY_JAMES=[
+  "<div class=\"starveCard\"><b>Jamestown, 1607</b><p>A joint-stock company, for profit, under a royal charter.</p></div>"+
+  "<div class=\"starveCard\"><b>Plymouth, 1620</b><p>A church, paid for by investors who wanted fish. A joint stock too, for seven years.</p></div>",
+  "<div class=\"starveCard\"><b>Jamestown, 1619</b><p>An Assembly called by the Company in London: governor, council, and burgesses chosen by the plantations.</p></div>"+
+  "<div class=\"starveCard\"><b>Plymouth, 1620</b><p>A compact made by the settlers aboard ship, men signing. Both loyal to the King.</p></div>",
+  "<div class=\"starveCard\"><b>Jamestown, 1619</b><p>Tobacco, and land for every person a planter brought over: the headright.</p></div>"+
+  "<div class=\"starveCard\"><b>Plymouth, 1623</b><p>A common field ends: a plot for each family, “only for present use”.</p></div>"];
+
+/* ---- THINGS TO LOOK AT ---- [id, label, x, z, title, body] per scene */
+const PLY_LOOKS=[
+  /* MS pp. 24-25 (Cushman, 8 May 1619) */
+  [["blackwell","Word from Virginia",-34,24,"Packed togeather like herings",leafCard("Robert Cushman","London, 1619","A ship for Virginia, “packed togeather like herings”, lost “130. persons” of “180”, with “ye fluxe”.")+"<p>Leiden heard of Virginia as a place of death.</p>"],
+   ["james0","The Jamestown Card",26,24,"Founded for what?",PLY_JAMES[0]]],
+  /* MS p. 45; MS p. 46 */
+  [["seaman","A Proud Young Seaman",9.5,-12,"The just hand of God","<p>Bradford: a “proud & very profane yonge man” hoped “to help to cast halfe of them over board”.</p><p>He died first. “They noted it to be ye just hand of God upon him.”</p>"],
+   ["howland","John Howland",-9.5,-12,"Hald up by ye same rope","<p>Bradford: John Howland went overboard in a storm, caught the “top-saile halliards”, and was “hald up by ye same rope” until he was hauled aboard.</p>"],
+   ["james1","The Jamestown Card",-9.5,16.5,"Who started it?",PLY_JAMES[1]]],
+  /* Mourt pp. [11]-[12] (Dexter pp. 32-34); MS p. 52; Dexter index, "Plymouth Rock, landing on" */
+  [["grave","The Mound",-52,-14,"A grave opened",leafCard("Mourt’s Relation","1622","Under a mound: boards, mats, a bow. They “resolued to digge it vp”, took “sundry of the pretiest things”, and covered it again.",
+     "Two bundles held the bones of a man with “fine yellow haire” and of “a little childe”. They argued whether he was “an Indian Lord and King” or “a Christian of some speciall note”.")+"<p>Bradford’s history leaves this out.</p>"],
+   ["rock","Where They Landed",-14,46,"No rock","<p>Neither Bradford nor <i>Mourt’s Relation</i> mentions a rock at the landing.</p><p>In 1741 a church elder of ninety-five pointed one out. In 1865 an editor’s footnote put the landing on it.</p>"]],
+  /* MS p. 56; MS p. 61 */
+  [["crew","The Ship’s Crew",34,40,"Like doggs","<p>Bradford: the sailors “begane now to deserte one another”. One, dying, said: “you … shew your love like Christians indeed one to another, but we let one another lye & dye like doggs.”</p>"],
+   ["watch","At the Woods’ Edge",-50,-30,"Watched","<p>Bradford: “All this while ye Indians came skulking about them … And once they stoale away their tools.”</p><p class=\"note\">“Skulking” is Bradford’s word. No Wampanoag account of that winter survives.</p>"]],
+  /* Smith (Arber) p. 219; Mourt p. [34]; MS p. 63; Mourt p. [38] */
+  [["hunt","Hunt, in Two Accounts",104,26,"Sould in Spaine for slaues",priceCard("Smith","1616","Hunt “betrayed twenty seauen of these poore innocent soules, which he sould in Spaine for slaues”.")+
+     priceCard("Mourt’s Relation","1622","“twentie out of this very place … and seauen men from the Nausites”.")],
+   ["frames","Fallen Houses",134,-44,"Thousands of them dyed",leafCard("William Bradford","about 1645","The country was “dead & abundantly wasted in ye late great mortalitie … wherin thousands of them dyed, they not being able to burie one another”.",
+     "“ther sculs and bones were found in many places lying still above ground, where their houses & dwellings had been; a very sad spectackle to behould.”")],
+   ["massasoit","Ousamequin (Massasoit)",150,-60,"A very lustie man","<p>Ousamequin, the Massasoit. <i>Mourt’s Relation</i>: “a very lustie man, in his best yeares … graue of countenance”, his face painted “a sad red”.</p><p>It adds that he “trembled for feare”: the writer’s guess.</p>"]],
+  /* MS p. 64; Mourt p. [50]; Dexter n. 417; Pilgrim Hall, "National Day of Mourning" (re-read 27 Nov) */
+  [["corbitant","News from Namasket",-30,30,"In ye night",/* review, 27 Nov: was "Three wounded were"; the raiders wounded them (MS p. 64), and the passive hid who - equal words */
+     "<p>Bradford, August 1621: told Corbitant had threatened Tisquantum, the governor sent Standish’s men “in ye night”, to “cut of Corbitants head” if Tisquantum was dead.</p><p>He lived. Three hurt in the raid were “drest & cured”.</p>"],
+   ["woman","At Cummaquid",30,30,"Three sons","<p><i>Mourt’s Relation</i>, July 1621: at Cummaquid an old woman wept when she saw them. Through interpreters: Hunt had carried off her “three sons”.</p><p>She is not named.</p>"],
+   ["later","Two Later Voices",-40,4,"Long after",priceCard("Henry Dexter, an editor","1865","on Winslow’s “reioyce together”: “Here began that peculiar New-England festival, — the annual autumnal Thanksgiving”.")+
+     priceCard("Wamsutta James, Wampanoag","Plymouth, 1970","“This action by Massasoit was perhaps our biggest mistake.”")]],
+  /* MS p. 89; MS p. 92; GN 1624 pp. 9-10; MS p. 70 */
+  [["huddleston","News from Virginia",-30,30,"Hapie is he",leafCard("John Huddleston","1622","“my selfe, with many good freinds in ye south-collonie of Virginia, have received shuch a blow, that 400. persons large will not make good our losses”.")+"<p>Chapter X’s 22 March, arriving.</p>"],
+   ["knife","Massasoit’s Messengers",30,30,"His owne knife","<p>Winslow, 1622: Massasoit’s messengers demanded Tisquantum. Their sachem “had sent his owne knife, and them therewith, to cut off his head and hands”.</p><p>The governor would not “sell mens liues at a price”.</p>"],
+   ["tisquantum","Tisquantum",-40,4,"Pray for him","<p>Bradford, who was with him: dying, Tisquantum asked “ye Govr to pray for him, that he might goe to ye Englishmens God in heaven”, and left “sundrie of his things” to English friends.</p>"]],
+  /* Jamestown card; GN 1624 p. 32; MS p. 103 reverse; MS p. 114 */
+  [["james7","The Jamestown Card",-30,30,"Land and labour",PLY_JAMES[2]],
+   ["sickbed","Massasoit’s Sickbed",30,30,"Whilest I liue","<p>Winslow nursed Massasoit in March 1623. As Winslow reports it, Massasoit said: “Now I see the English are my friends and loue me, and whilest I liue I will never forget this kindnesse”.</p>"],
+   ["drought","A Day of Thanksgiveing",-40,4,"In time conveniente","<p>Bradford, summer 1623: in a drought they kept “a solemne day of humilliation”. Rain came, which “made ye Indeans astonished to behold”.</p><p>Then “they also sett aparte a day of thanksgiveing”.</p>"]]];
+
+/* ---- RECORD OR RETELLING? ----  per scene; k: 0 in the record, 1 added later, 2 not known.
+   res: the one line said for a row placed differently - fixed, so every one can be recorded.
+   An "added later" line says who and when, and why a teller might tell it that way */
+const PLY_K=["In the record","Added later","Not known"];
+const PLY_BOARD={
+  0:[{t:"“this libertie in Holland”: Bradford, begun about 1630",k:0,res:"Bradford’s own words. They had freedom of worship in Leiden, and left for four other reasons."},
+     {t:"They sailed to America for religious freedom",k:1,res:"True of the flight to Holland in 1608. For 1620 Bradford gives other reasons. A telling that praises the founders."},
+     {t:"The investors chose New England for its fish: Bradford",k:0,res:"“cheefly for ye hope of present profite to be made by ye fishing”. Profit, as at Jamestown."},
+     {t:"Why the women of the congregation agreed to go",k:2,res:"No woman of Plymouth left a letter or journal that survives. Bradford speaks for them all."}],
+  1:[{t:"“mutinous speeches” of the “strangers”: Bradford, about 1630 or after",k:0,res:"Bradford, years later. <i>Mourt’s Relation</i>, 1622, says only “some appearance of faction”."},
+     {t:"The Compact was America’s first democracy",k:1,res:"It promises “all due submission and obedience”, and never uses the word. A telling that praises the founders."},
+     {t:"The forty-one names of the signers",k:1,res:"First printed by Nathaniel Morton in 1669, 49 years later. The signed paper is lost."},
+     {t:"Who the “strangers” were who spoke",k:2,res:"Neither Bradford nor <i>Mourt’s Relation</i> names them."}],
+  /* review, 27 Nov: was "Bradford found graves, a house"; MS p. 48 has Standish's sixteen and "the ruin of a house" (MS p. 49) */
+  2:[{t:"They found an empty wilderness",k:1,res:"Bradford records graves, a ruined house, stored corn, and “5. or 6. persons with a dogg”, who ran. A telling that excuses the taking."},
+     {t:"They landed on Plymouth Rock",k:1,res:"Pointed out in 1741 by Elder Thomas Faunce, then ninety-five, from his father’s story. No 1620s source names a rock."},
+     {t:"They took the corn, “purposing to give them full satisfaction”: Bradford",k:0,res:"Bradford says they paid the Nauset “about some 6. months afterward”."},
+     {t:"They dug up a grave and took things from it",k:0,res:"<i>Mourt’s Relation</i>, 1622. Bradford leaves it out. In 1970 Wamsutta James, Wampanoag, called it robbing graves."}],
+  3:[{t:"Half the company died in two or three months: Bradford",k:0,res:"Bradford was there, and sick himself. His list of names is the best evidence."},
+     {t:"“fortie of them died”: John Smith, 1622",k:0,res:"Smith printed it in London, from reports. He was never at Plymouth; Bradford counts half."},
+     {t:"They survived by faith and hard work",k:1,res:"A softening: half died, six or seven nursed the rest, and the sailors let each other “dye like doggs”."},
+     {t:"How Bradford’s wife Dorothy died",k:2,res:"Bradford wrote only that she “dyed soone after their arivall”. The drowning story comes from later writers."}],
+  4:[{t:"Tisquantum was “a spetiall instrument sent of God”: Bradford",k:0,res:"Bradford’s words, about 1645. The same Bradford tells of his kidnapping, and later says he “plaid his owne game”."},
+     {t:"Hunt took him to sell “for slaves in Spaine”: Bradford",k:0,res:"<i>Mourt’s Relation</i>, 1622, counts twenty taken from Patuxet and seven from Nauset."},
+     {t:"He learned English in order to help the Pilgrims",k:1,res:/* review, 27 Nov: was "He learned it as a captive, and in London with"; the record has only that he "dwelt in Cornehill with master Iohn Slanie" (Mourt p. [36]) */"He had lived in London with the merchant John Slany, years before 1620. A telling that makes him a helper."},
+     {t:"What Massasoit understood the terms to mean",k:2,res:"The terms survive only in English. <i>Mourt</i> says the interpreters “did not well expresse” the speech."}],
+  5:[{t:"About ninety Wampanoag men with Massasoit, for three days: Winslow",k:0,res:"Winslow’s letter of 11 December 1621, one of only two sources, and the only one to describe the gathering."},
+     {t:"Five deer, brought by the Wampanoag: Winslow",k:0,res:"The Wampanoag men “killed fiue Deere” and gave them to the governor, the captain and others."},
+     {t:"“great store of wild Turkies” that autumn: Bradford",k:0,res:"In Bradford, years later, as the season’s food, not at the gathering. Winslow says only “fowle”."},
+     {t:"Turkey on the table at the gathering",k:2,res:"Winslow writes “fowle”: ducks, geese or turkeys. Nobody can say which."},
+     {t:"The English invited the Wampanoag",k:2,res:"Winslow writes “many of the Indians coming amongst vs”. A modern telling made with Wampanoag advisers says the guns drew them. Neither is recorded."},
+     /* review, 27 Nov: was "Some Wampanoag tellings say"; the source is the NMAI resource Wampanoag advisers consulted on (record, "Invited, or came because of the guns?") */
+     {t:"It was “the First Thanksgiving”",k:1,res:"Henry Dexter, an editor, in 1865, made it the start of the yearly Thanksgiving. A telling that makes a holiday."}],
+  6:[{t:"The snakeskin “was a threatening & a chaleng”: Bradford",k:0,res:"Bradford, as “their interpretours” told it: Tisquantum and Hobbamock."},
+     {t:"“the God of the English had it in store”: Winslow, 1624",k:0,res:"Winslow lived at Plymouth then. An Englishman told Hobbamock that God held the plague."},
+     {t:"The sachem begged the governor to let out the plague: Morton, 1637",k:1,res:"First told in 1637 by Thomas Morton, Plymouth’s enemy, not there. In Winslow’s 1624 account Hobbamock asks, and nobody begs. A telling that mocks Plymouth."},
+     /* review, 27 Nov: res said only "fifteen years later"; Bradford's rows (c. 1645) are later still, so the line now says why this one is a later addition: its version first appears in 1637 (record, "Morton's version") */
+     {t:"An unbroken friendship from 1621",k:1,res:"A softening. The alliance held, “this 24. years”, Bradford wrote, through a palisade, a fort and a demand for a man’s head."},
+     {t:"Why Tisquantum stirred fear among his own people",k:2,res:"“plaid his owne game” is Bradford’s judgement. No source has his reasons in his own words."}],
+  7:[{t:"Standish “cut of some few of ye cheefe conspirators”: Bradford",k:0,res:"Bradford ordered it, and wrote of it briefly, about 1645, because Winslow had printed it."},
+     {t:"Seven Massachusett killed, and the head set up at the fort: Winslow, 1624",k:0,res:"Winslow helped decide it and was not there. He wrote in London, to defend it."},
+     /* lead, 27 Nov: the design's fourth account (record, "Four accounts", 3; MS p. 114) */
+     {t:"“if you had converted some, before you had killed any”: Robinson, 1623",k:0,res:"Robinson wrote from Leiden in December 1623, from reports. Bradford copied the rebuke into his own history."},
+     {t:"A “pretended” feast, with pork: Morton, 1637",k:1,res:"Thomas Morton, Plymouth’s enemy, who was not there. He calls it “a Massacre”. A telling against Plymouth."},
+     /* review, 27 Nov: was "A plot to destroy Wessagusset"; the plot IS in the record (Winslow reports it), so the row now asks the open question (record, Disputes 12) */
+     {t:"Whether the Massachusett really plotted against Wessagusset",k:2,res:"Two Native informants, a frightened Englishman, and a confession made beside a head. It cannot now be settled."},
+     {t:"“Socialism failed at Plymouth”",k:1,res:"A modern telling. Bradford ended a common field the investors’ contract had set; Winslow blamed hunger."},
+     {t:"“a shining city upon a hill”: Winthrop, 1630",k:1,res:"Winthrop wrote “a citty upon a hill”, a warning that failure would be seen. “Shining” is not in his text."}]};
+/* Pilgrim Hall, "The 'First Thanksgiving'"; Smithsonian Torch, 25 Nov. 2021 (both re-read 27 Nov) */
+const PLY_CLOSE={
+  5:"<p>Pilgrim Hall Museum: “There are two – and only two – primary source descriptions”. Linda Coombs, Wampanoag, 2021: “In the written record, there’s just a single paragraph that describes it.”</p>",
+  7:"<p>No Wampanoag, Nauset or Massachusett person wrote anything in these years. Every Native sentence from those years reached us through an English writer.</p>"};
+/* review, 27 Nov: was "Every Native sentence here"; Wamsutta James's 1970 words are on screen too, in his own voice */
+
+/* ---- THE SEVEN TERMS, SORTED ---- c: 0 the English, 1 the Wampanoag, 2 both (Mourt pp. [37]-[38])
+   review, 27 Nov: the duty said "Sort the seven terms" over six rows; the play-test then added the seventh
+   (King James's "Friend and Alie", the one that binds the English), so there are seven again */
+const PLY_TERMS_K=["The English","The Wampanoag","Both"];
+const PLY_TERMS=[
+  {t:"Not “iniure or doe hurt to any of our people”",c:1},
+  {t:"“send the offender, that we might punish him”",c:1},
+  {t:"Tools taken restored; “if ours did any harme … wee should doe the like”",c:2},
+  {t:"“If any did vniustly warre against him, we would ayde him”; and he us",c:2},
+  {t:"Tell his “neighbour Confederates” of the peace",c:1},
+  {t:"Leave “Bowes and Arrowes behind”, “as wee should doe our Peeces”",c:2},
+  /* play-test, 27 Nov: the duty says seven and the sheet had six; Mourt's seventh is the one
+     that binds the English (the King) - without it "The English" was never the answer */
+  {t:"“King Iames would esteeme of him as his friend and Alie”",c:0}];
+
+function plyDone(id){
+  const w=plyW();
+  if(!w.did[id]){w.did[id]=true;S.ink+=6;updateInk();checkpoint("ch11-"+id);}
+  for(let i=interactables.length-1;i>=0;i--){
+    const it=interactables[i];
+    if(it.action==="ply"&&it.data&&it.data.kind===id){if(it.el)it.el.style.display="none";interactables.splice(i,1);}
+  }
+  for(let i=PLY.later.length-1;i>=0;i--)if(PLY.later[i].data.after===id){
+    const it=PLY.later[i], el=document.createElement("div");el.className="lbl";
+    el.innerHTML="<b>"+it.label+"</b><i></i>";$("labels").appendChild(el);it.el=el;
+    interactables.push(it);PLY.later.splice(i,1);}
+  const nx=interactables.filter(function(it){return it.id==="next";})[0];
+  if(nx)nx.data.verb=plyNeed()?"Not yet":"Go on";
+  updateGuide();
+}
+function plyQuiz(kick,title,body,opts,id,after){
+  sickSheet(kick,title,body,shuffle(opts.map(function(o){return {t:o[0],fn:function(){
+    plyDone(id);
+    if(o===opts[0])fortResult(o[1],o[2],["+6 Ink"],after||null);
+    else{result(false,o[1],"",["+6 Ink"],after||null);$("resBody").innerHTML=o[2];}}};})));
+}
+/* a sheet of rows, each marked with one of `keys`; marks kept in w.marks[id] */
+function plyRows(kick,title,intro,rows,keys,id,done){
+  const w=plyW();
+  w.marks[id]=(w.marks[id]&&w.marks[id].length===rows.length)?w.marks[id]:rows.map(function(){return null;});
+  let h=intro;
+  rows.forEach(function(r,i){
+    h+="<div class=\"captRow\"><span>"+r.t+"</span> <div class=\"captBtns\">"+keys.map(function(v,k){
+      return "<button class=\"btn small\" data-lr=\""+i+"\" data-v=\""+k+"\">"+v+"</button>";}).join(" ")+" <b class=\"captMark\" id=\"lr"+i+"\"></b></div></div>";});
+  sickSheet(kick,title,h,[{t:"Done",fn:function(){
+    const m=w.marks[id];
+    if(m.some(function(x){return x==null;})){toast("Mark every row first.");setTimeout(function(){plyRows(kick,title,intro,rows,keys,id,done);},50);return;}
+    done(m.filter(function(x,i){return x===(rows[i].k!=null?rows[i].k:rows[i].c);}).length);}}]);
+  rows.forEach(function(r,i){if(w.marks[id][i]!=null)$("lr"+i).textContent=keys[w.marks[id][i]];});
+  document.querySelectorAll("#sickBody [data-lr]").forEach(function(b){
+    b.onclick=function(){const i=+b.dataset.lr;w.marks[id][i]=+b.dataset.v;$("lr"+i).textContent=keys[w.marks[id][i]];saveGame();};});
+}
+/* a duty that is work first: the player does it, then the page */
+function plyWork(d,task,secs,narr,opt,then){
+  d.worked=true;priceFace(d,d.reach||2.6);   /* blocked() adds a foot of body to every collider */
+  playerDoes(task,secs,narr,Object.assign({},opt||{},d.cam?{cam:d.cam}:{}),function(){if(then)then();plyAct(d);});
+}
+
+function plyAct(d){
+  const w=plyW();
+  if(d.kind==="next"){plyNext();return;}
+  if(d.kind==="record"){if(w.done)showEnding("ch11");else openReckoning();return;}
+  if(d.kind==="look"){
+    const L=(PLY_LOOKS[w.day]||[]).filter(function(a){return a[0]===d.id;})[0];
+    if(L){w.did["look_"+L[0]]=true;saveGame();fortResult(L[4],L[5],[]);}
+    return;
+  }
+  /* 0 · southampton */
+  if(d.kind==="reasons"){
+    /* MS pp. 16-17; MS p. 7 */
+    plyQuiz("Southampton · 1620","This libertie",
+      leafCard("William Bradford","his history, begun about 1630","They left Holland “Not out of any newfanglednes”: hard work drove others away, old age crept on, the children were drawn off, and they hoped to spread “ye gospell”.")+
+      "<p>In Holland they had “this libertie”. So why go?</p>",
+      [["Hardship, age, children, the gospel","His four reasons","<p>Bradford’s four. They had freedom of worship in Leiden. They feared losing their children, their Englishness and their church’s future.</p>"],
+       ["To find religious freedom","They had it","<p>In Holland they had “this libertie”. Religious freedom was why they fled England, in 1608. For 1620 Bradford gives four other reasons.</p>"],
+       ["The Dutch drove them out","Not that","<p>Bradford says nothing of being driven out. He gives hardship, age, the children and the gospel.</p>"]],"reasons");
+    return;
+  }
+  if(d.kind==="stock"&&!d.worked){
+    plyWork(d,"lift",3,"Casks for the common stock. For seven years, everything goes into it.",{load:"cask"});
+    return;
+  }
+  if(d.kind==="stock"){
+    plyDone("stock");
+    /* MS p. 28, condition 1 */
+    fortResult("A Single Share","<p>The conditions of 1 July 1620: every person “aged 16. years & upward, be rated at 10li., and ten pounds to be accounted a single share”.</p><p>London merchants put up the money.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="conditions"){
+    /* MS pp. 27-29 */
+    plyQuiz("Southampton · the conditions","Fish, and a church",
+      priceCard("William Bradford","on the investors","they chose New England “cheefly for ye hope of present profite to be made by ye fishing”")+
+      priceCard("The conditions","1 July 1620","all profits “remaine still in ye commone stock untill ye division”, after seven years")+
+      "<p>Was Plymouth founded for religion, or for profit?</p>",
+      [["Both: a church, paid for by investors","Both","<p>The settlers were a church. The men who paid wanted fish and furs, as Jamestown’s Company wanted profit.</p>"],
+       ["For religion only","Not only","<p>The investors chose New England for its fish, Bradford says. A church sailed; merchants paid.</p>"],
+       ["For profit only","Not only","<p>The investors wanted profit. The settlers were a congregation, with Bradford’s four reasons.</p>"]],"conditions");
+    return;
+  }
+  /* 1 · the mayflower */
+  if(d.kind==="beam"&&!d.worked){plyTurnScrew(d);return;}
+  if(d.kind==="beam"){
+    plyDone("beam");
+    /* MS pp. 45-46 */
+    fortResult("Set Firme","<p>Bradford: “one of the maine beames in ye midd ships was bowed & craked”.</p><p>The passengers’ “great iron scrue” raised it, and “a post put under it, set firme in ye lower deck”.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="speeches"){
+    /* MS pp. 53-54; Mourt p. [2] */
+    plyQuiz("Cape Cod harbour · 11 November 1620","Mutinous speeches",
+      leafCard("William Bradford","about 1630 or after","Some “strangers” said that ashore “none had power to command them, the patente they had being for Virginia, and not for New-england”.")+
+      "<p>Why make a compact?</p>",
+      [["Their patent did not cover New England","A gap in the law","<p>Their patent was for Virginia. Some said no one could command them here. A compact filled the gap.</p>"],
+       ["To found a democracy","Not that word","<p>Neither source uses the word. Bradford gives two practical reasons: “mutinous speeches”, and a patent for the wrong place.</p>"],
+       ["The King ordered it","Nobody ordered it","<p>They made it themselves, “before they came ashore”, because their patent was for Virginia.</p>"]],"speeches");
+    return;
+  }
+  if(d.kind==="compact"){
+    /* MS p. 54 */
+    plyQuiz("Cape Cod harbour · 11 November 1620","In ye name of God, Amen",
+      priceCard("The Compact","Cape Cod harbour, 11 November 1620","“the loyall subjects of our dread soveraigne Lord, King James … unto which we promise all due submission and obedience”")+
+      "<p>The men signed. Women and children were bound by it. What is it mostly about?</p>",
+      [["Obedience to laws made for all","Order","<p>It makes “a civill body politick” to make “just & equall lawes”, and promises to obey them. No rights, no elections, no officers named.</p>"],
+       ["The rights of free men","No rights named","<p>It names no rights. Its promise is “all due submission and obedience”, from “loyall subjects” of the King.</p>"],
+       ["Freedom from the King","Loyal subjects","<p>They sign as “loyall subjects” of King James, and promise obedience to the laws they will make.</p>"]],"compact");
+    return;
+  }
+  /* 2 · cape cod and the harbour */
+  if(d.kind==="corn"){
+    /* Mourt p. [7]; Pilgrim Hall, "National Day of Mourning" (re-read 27 Nov) */
+    plyQuiz("Cape Cod · 15 November 1620","The corn and the kettle",
+      priceCard("<i>Mourt’s Relation</i>","printed 1622","they took the kettle and the corn, meaning, if they met the owners, to “giue them the Ketle againe, and satisfie them for their Corne”")+
+      priceCard("Wamsutta James, Wampanoag","Plymouth, 1970","the Pilgrims “robbed the graves of my ancestors and stolen their corn and beans”")+
+      "<p>Can both be true?</p>",
+      [["Yes: taken, and later paid for","Both","<p>The English took it without asking, and say they paid the Nauset about six months later. James, 350 years on, names the taking.</p>"],
+       ["No: the corn was a gift","Not a gift","<p>Nobody gave it. They dug it up and took it, meaning to pay, Bradford says, and later did.</p>"],
+       ["No: James made it up","Not made up","<p>The English record has the digging and the taking. James spoke in 1970, about memory, not as a witness.</p>"]],"corn");
+    return;
+  }
+  if(d.kind==="encounter"){
+    /* MS pp. 51-52, 60 */
+    plyQuiz("Cape Cod · 8 December 1620","The first encounter",
+      leafCard("William Bradford","about 1630 or after","At dawn: “Men, Indeans, Indeans; and withall, their arowes came flying”. Nobody was hurt; coats hung on the barricade “were shot throw & throw”.")+
+      "<p>Why did the Nauset attack? Who says?</p>",
+      [["Bradford, later: they remembered Hunt","Told later","<p>Bradford, years on: after Hunt’s kidnapping of 1614 and others, “they conceived this ship was now come to revenge it”, “as after them selvs made knowne”.</p>"],
+       ["Nobody gives a reason","One does","<p>Bradford gives one, years later: Hunt’s kidnapping of 1614 and others, “as after them selvs made knowne”. No Nauset account survives.</p>"],
+       ["The Nauset wrote it down","Not written","<p>No Nauset account survives. Bradford, years later, gives their reason as he heard it: Hunt’s kidnapping of 1614.</p>"]],"encounter");
+    return;
+  }
+  if(d.kind==="sound"){
+    playCutscene({skippable:true,steps:PLY_SOUND()},function(){plyDone("sound");
+      /* MS p. 53 */
+      fortResult("Fitt for Shipping","<p>Bradford, 11 December: they “sounded ye harbor, and founde it fitt for shipping”, and found “diverse cornfeilds, & litle runing brooks”.</p><p>The cornfields were Patuxet’s.</p>",["+6 Ink"]);});
+    return;
+  }
+  /* 3 · the general sickness */
+  if(d.kind==="wood"&&!d.worked){
+    plyWork(d,"lift",3,"Wood for the fires of the sick.",{load:"wood"});
+    return;
+  }
+  if(d.kind==="wood"){
+    plyDone("wood");
+    /* MS p. 55 */
+    fortResult("Six or Seven Sound","<p>Bradford: “ther was but 6. or 7. sound persons”, who “fetched them woode, made them fires, drest them meat, made their beads”.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="water"&&!d.worked){
+    plyWork(d,"lift",3,"Water from the brook, to dress their meat and wash their clothes.",{load:"cask"});
+    return;
+  }
+  if(d.kind==="water"){
+    plyDone("water");
+    /* MS p. 55 */
+    fortResult("Lothsome Cloaths","<p>The nurses “washed their lothsome cloaths, cloathed & uncloathed them”. Two were Elder William Brewster and Captain Myles Standish.</p><p>The same Standish led the killings of 1623.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="sick"&&!d.worked){
+    plyWork(d,"tend",4,"Some days two or three die. In two or three months, half the company.",{});/* review, 27 Nov: was "In three months"; Bradford: "in 2. or 3. moneths time" (MS p. 54) */
+    return;
+  }
+  if(d.kind==="sick"){
+    plyDone("sick");
+    /* MS pp. 54-55 */
+    fortResult("Two or Three of a Day","<p>Bradford: “ther dyed some times 2. or 3. of a day”, until “of 100. & odd persons, scarce 50. remained”.</p><p>Almost half the ship’s crew died too.</p>",["+6 Ink"]);
+    return;
+  }
+  /* 4 · patuxet */
+  if(d.kind==="samoset"){
+    /* Mourt p. [32]; MS p. 56 */
+    /* review, 27 Nov: was "at Monhegan, off Maine, where he came from"; the record has only that he "belonged to ye eastrene parts" (MS p. 56), not Monhegan as his home */
+    plyQuiz("Plymouth · 16 March 1621","Well-come",
+      priceCard("<i>Mourt’s Relation</i>","1622","Samoset “saluted vs in English, and bad vs well-come, for he had learned some broken English amongst the English men that came to fish at Monchiggon”")+
+      "<p>What does his English tell us?</p>",
+      [["English ships had come for years","Fishermen","<p>He learned it from English fishermen at Monhegan, off Maine. He came from those eastern parts. That coast knew English ships long before 1620.</p>"],
+       ["Tisquantum taught him","Not him","<p><i>Mourt</i> says the fishermen at Monhegan taught him. He “belonged to ye eastrene parts”, Bradford says.</p>"],
+       ["He had lived in England","Not recorded","<p>Not recorded. <i>Mourt</i> says he learned it from fishermen at Monhegan.</p>"]],"samoset");
+    return;
+  }
+  if(d.kind==="tisquantum"){
+    /* MS pp. 57-58 */
+    plyQuiz("Patuxet · March 1621","The onely natiue of Patuxat",
+      leafCard("William Bradford","about 1645","Hunt carried him off to sell “for slaves in Spaine; but he got away for England”, lived with a London merchant, went to Newfoundland, and was brought home by Dermer.")+
+      "<p>What did he find at home?</p>",
+      [["Almost no one left alive","Emptied","<p>“scarce any left alive besids him selfe”, Bradford wrote. Sickness had emptied Patuxet between 1616 and 1619.</p>"],
+       ["His family, waiting for him","Not so","<p>Bradford: “scarce any left alive besids him selfe”. Sickness had emptied Patuxet.</p>"],
+       ["An English town","Not yet","<p>Patuxet was empty when Dermer brought him home in 1619. The English built on its fields in 1620.</p>"]],"tisquantum");
+    return;
+  }
+  if(d.kind==="terms"){
+    plyRows("Plymouth · 22 March 1621","Who must do it?",
+      "<p>The terms agreed with Massasoit, as <i>Mourt’s Relation</i> prints them. Who does each bind?</p>",
+      PLY_TERMS,PLY_TERMS_K,"terms",function(right){
+        plyDone("terms");
+        /* Mourt pp. [37], [69] */
+        fortResult("Friend and Alie","<p>You placed "+right+" of "+PLY_TERMS.length+".</p><p>Only Wampanoag offenders are sent to be punished. <i>Mourt</i> calls him King James’s “Friend and Alie”; Cushman, months later, says the King is “his Master and Commander”.</p>",["+6 Ink"]);});
+    return;
+  }
+  if(d.kind==="plant"&&!d.worked){
+    plyWork(d,"trowel",4.5,"Corn set in hills, and fish in each hill, as Tisquantum showed them.",{},function(){
+      if(PLY.fish)PLY.fish.visible=true;if(PLY.tis)figReact(PLY.tis,"point",{dur:2.4});});
+    return;
+  }
+  if(d.kind==="plant"){
+    plyDone("plant");
+    /* MS p. 61 */
+    fortResult("In These Old Grounds","<p>Bradford: Tisquantum told them “excepte they gott fish & set with it (in these old grounds) it would come to nothing”.</p><p>The old grounds were Patuxet’s.</p>",["+6 Ink"]);
+    return;
+  }
+  /* 5 · the harvest */
+  if(d.kind==="harvest"&&!d.worked){
+    plyWork(d,"lift",3,"The corn in, from the fields Tisquantum showed them how to set.",{load:"basket"});
+    return;
+  }
+  if(d.kind==="harvest"){
+    plyDone("harvest");
+    /* Mourt p. [60]; MS p. 61 */
+    fortResult("Twentie Acres","<p>Winslow: “We set the last Spring some twentie Acres of Indian Corne, and sowed some six Acres of Barly & Pease”.</p><p>Their English seed “came not to good”, Bradford says.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="fowling"&&!d.worked){
+    plyWork(d,"lift",3,"In one day, four men killed enough fowl to feed the company almost a week.",{load:"fowl"});
+    return;
+  }
+  if(d.kind==="fowling"){
+    plyDone("fowling");
+    /* Mourt p. [61] */
+    fortResult("Foure Men on Fowling","<p>Winslow: “our Governour sent foure men on fowling, that so we might after a more speciall manner reioyce together”.</p><p>He writes “fowle”, not which birds.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="winslow"){
+    /* Mourt pp. [60]-[61], whole paragraph behind the link */
+    plyQuiz("Plymouth · 11 December 1621","One paragraph",
+      leafCard("Edward Winslow","a letter to a friend, 11 December 1621","“many of the Indians coming amongst vs, and amongst the rest their greatest King Massasoyt, with some ninetie men, whom for three dayes we entertained and feasted”",
+        "“our harvest being gotten in, our Governour sent foure men on fowling, that so we might after a more speciall manner reioyce together, after we had gathered the fruit of our labours; they foure in one day killed as much fowle, as with a little helpe beside, serued the Company almost a weeke, at which time amongst other Recreations, we exercised our Armes, many of the Indians coming amongst vs, and amongst the rest their greatest King Massasoyt, with some ninetie men, whom for three dayes we entertained and feasted, and they went out and killed fiue Deere, which they brought to the Plantation and bestowed on our Governour, and vpon the Captaine, and others. And although it be not alwayes so plentifull, as it was at this time with vs, yet by the goodnesse of God, we are so farre from want, that we often wish you partakers of our plentie.”")+
+      "<p>Which word is not in his paragraph?</p>",
+      [["“Thanksgiving”","Not in it","<p>Winslow never calls it a thanksgiving. To these people a thanksgiving was a day of prayer, and the colony kept one in 1623.</p>"],
+       ["“Massasoyt”","It is there","<p>He is there, with “some ninetie men”. The word that is missing is “thanksgiving”.</p>"],
+       ["“fowle”","It is there","<p>“foure men on fowling”, he writes. The word that is missing is “thanksgiving”.</p>"]],"winslow");
+    return;
+  }
+  /* 6 · 1622 */
+  if(d.kind==="snakeskin"){
+    /* MS p. 69 */
+    plyQuiz("Plymouth · winter 1622","A bundle of arrows",
+      leafCard("William Bradford","about 1645","The Narragansett sent “a bundl of arrows tyed aboute with a great sneak-skine; which their interpretours tould them was a threatening & a chaleng”. It went back “with bulits in it”.")+
+      "<p>Who told the English what it meant?</p>",
+      [["Their interpreters","Interpreters","<p>“their interpretours”: Tisquantum and Hobbamock. Each had reasons of his own to stress the danger.</p>"],
+       ["The Narragansett, in writing","Nothing written","<p>No letter came. The meaning reached the English through “their interpretours”, Tisquantum and Hobbamock.</p>"],
+       ["Nobody: it was plain","Through others","<p>Bradford says “their interpretours tould them” what it meant. Every Native message here comes through someone.</p>"]],"snakeskin");
+    return;
+  }
+  if(d.kind==="fort"&&!d.worked){
+    plyWork(d,"chop",4.5,"Squaring a timber for the fort on the hill.",{},function(){if(PLY.fort)PLY.fort.visible=true;});
+    return;
+  }
+  if(d.kind==="fort"){
+    plyDone("fort");
+    /* MS p. 90 */
+    fortResult("Strong & Comly","<p>Bradford: “a fort with good timber, both strong & comly … with a flate rofe & batllments, on which their ordnance were mounted”.</p><p>“It served them allso for a meeting house.”</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="plague"){
+    /* GN 1624 pp. 10-11 (re-read on the archive.org text, 27 Nov); NEC pp. 104-105 */
+    /* review, 27 Nov: was "he was there" / "who was there" / "Winslow was present" (here, board 6 and the muster);
+       Winslow went north to the fishing ships after Huddleston's letter in May 1622 (MS pp. 89-90) and the
+       episode is "about the end of May" (Arber p. 528), so his presence at it is not certain. "Lived there" holds */
+    plyQuiz("Plymouth · May 1622","The plague buried",
+      priceCard("Edward Winslow","1624; he lived there","Hobbamock asked an Englishman if the plague was buried in the store-house. “Who answered no; But the God of the English had it in store, and could send it at his pleasure”")+
+      priceCard("Thomas Morton","1637; he was not","the sachem himself asked, and begged the governor to let the plague out on his enemies")+
+      "<p>Which is the better witness?</p>",
+      [["Winslow, who lived there","Closer","<p>Winslow lived at Plymouth in 1622. Morton wrote fifteen years later, as Plymouth’s enemy. Winslow’s Englishman claims that God holds the plague.</p>"],
+       ["Morton, who disliked Plymouth","Further away","<p>Morton was not there, and wrote in 1637 against Plymouth. Winslow lived there.</p>"],
+       ["Neither: they agree","They differ","<p>In Winslow, Hobbamock asks and an Englishman boasts. In Morton, the sachem asks, and begs.</p>"]],"plague");
+    return;
+  }
+  /* 7 · 1623 */
+  if(d.kind==="court"){
+    /* GN 1624 p. 37 (re-read 27 Nov) */
+    plyQuiz("Plymouth · 23 March 1623","A yeerely Court-day",
+      leafCard("Edward Winslow","1624","Warned of a plot, the governor, “not being to vndertake warre without the consent of the bodie of the Company, made known the same in publique Court”.")+
+      "<p>What does the court show?</p>",
+      [["The Compact’s body, at work","Self-government","<p>The “civill body politick” of 1620 met in court. It left the matter to the governor, his assistant and Standish.</p>"],
+       ["A trial of the Massachusett","No trial","<p>No Massachusett was heard. The court left the matter to the governor, his assistant and Standish.</p>"],
+       ["An order from London","Not London","<p>No order came from London. The colony’s own court decided, under the Compact of 1620.</p>"]],"court");
+    return;
+  }
+  if(d.kind==="return"){
+    /* GN 1624 pp. 38, 45 (re-read 27 Nov); NEC p. 111 */
+    plyQuiz("Plymouth · March 1623","Two words for it",
+      leafCard("Edward Winslow","London, 1624; he was not there","Standish came home “and brought the head of Wituwamat with him”. He had orders to, “that hee might be a warning and terrour”. Winslow calls it an “execution”.",
+        "Winslow’s count: seven Massachusett killed. Three died in a shut room, taken by deception, and a youth of about eighteen, Wituwamat’s brother, was hanged.")/* review, 27 Nov: was "Four of them died in a shut room ... and a youth ... was hanged" (five); Winslow's four in the room include the youth (Arber pp. 568-569; record, "More deaths") */+
+      priceCard("Thomas Morton","Amsterdam, 1637; he was not there","his chapter: “Of a Massacre made upon the Salvages at Wessaguscus”")+
+      "<p>Why do their words differ?</p>",
+      [["Each wrote for a side","For a side","<p>Winslow helped decide it, and defended it in London. Morton was Plymouth’s enemy. Bradford, who ordered it, wrote of it briefly.</p>"],
+       ["Morton was there","Not there","<p>Neither Morton nor Winslow saw it. Winslow defends it; Morton, Plymouth’s enemy, accuses.</p>"],
+       ["They tell of different events","The same weeks","<p>The same weeks of March 1623. Winslow defends it; Morton, Plymouth’s enemy, accuses.</p>"]],"return");
+    return;
+  }
+  if(d.kind==="plot"&&!d.worked){
+    plyWork(d,"hoe",4.5,"Your family’s own plot, for corn, this year only. The women and children come to set it.",{});
+    return;
+  }
+  if(d.kind==="plot"){
+    /* MS p. 96; MS p. 29, condition 10; GN 1624 p. 49 */
+    plyQuiz("Plymouth · April 1623","The common course",
+      priceCard("William Bradford","about 1645","each family got a plot, “only for present use”. “The women now wente willingly into ye feild, and tooke their litle-ons with them to set corne”")+
+      priceCard("The conditions","1 July 1620","all to have their food “out of ye commone stock”, for seven years")+
+      "<p>Why had there been a common field?</p>",
+      [["The investors’ contract","A contract","<p>The London investors’ term, resisted at Leiden. Winslow blamed hunger: the governors “had nothing to giue men”. The women’s view is Bradford’s report.</p>"],
+       ["The colonists chose to share","Not chosen","<p>It was the investors’ seven-year contract, resisted at Leiden as fit “for theeves & bondslaves”.</p>"],
+       ["The King ordered it","Not the King","<p>It was the investors’ contract of 1 July 1620. Bradford ended it, for corn, in April 1623.</p>"]],"plot");
+    return;
+  }
+}
+
+/* the board: the way out of a scene */
+function plyNext(fromBoard){
+  const w=plyW(), need=plyNeed();
+  if(need){toast("Not yet: "+PLY_DUTY[need].charAt(0).toLowerCase()+PLY_DUTY[need].slice(1)+".");return;}
+  const rows=PLY_BOARD[w.day];
+  if(rows&&!fromBoard&&w.board[w.day]==null){
+    plyRows("Record or retelling?","In the record, added later, or not known?",
+      "<p>Did the earliest writers set it down, did someone add it later, or can nobody know?</p>",
+      rows,PLY_K,"board"+w.day,function(right){
+        w.board[w.day]=right;checkpoint("ch11-board"+w.day);
+        /* only the rows placed differently from the record are explained, each by its own
+           fixed sentence under the column it belongs in, so every line said has a recording */
+        const m=w.marks["board"+w.day]||[], off=rows.filter(function(r,i){return m[i]!==r.k;});
+        fortResult("Record or retelling?","<p>You placed "+right+" of "+rows.length+".</p>"+
+          (off.length?"<ul>"+off.map(function(r){return "<li><b>"+PLY_K[r.k]+"</b>. "+r.res+"</li>";}).join("")+"</ul>":"")+(PLY_CLOSE[w.day]||""),
+          [],function(){plyNext(true);});});
+    return;
+  }
+  if(w.day>=PLY_DAYS.length-1){w.did.closed=true;checkpoint("ch11-closed");enterWorld("ch11");return;}
+  w.day++;
+  checkpoint("ch11-day"+w.day);
+  const o=PLY_OPEN[w.day];
+  fortResult(o.t,"<p class=\"sickDate\">"+PLY_DAYS[w.day].date+"</p>"+o.b,[],function(){enterWorld("ch11");});
+}
+
+/* ---- THE SHALLOP SOUNDS THE HARBOUR ---- rowers at the thwarts, a man at the bow with the lead
+   line, moved by the cutscene; their work stops when it ends (MS p. 53) */
+const PLY_ROWERS=[];
+function plyBoat(){
+  const grp=new THREE.Group(), B=new Geo();
+  buildShallop(B,0,-0.3,0,0,0.02);
+  /* the lead line, from the leadsman's hand over the side into the water */
+  const rope=RGB(0xbfb094);B.beam8([1.9,3.6,-9.6],[3.6,-1.6,-9.9],0.05,0.05,rope,rope);
+  grp.add(B.mesh(false,false));
+  [0,1,2].forEach(function(i){
+    const f=buildFigure(crowdEq("hand",320+i,1615));poseFigure(f,"kneel",21+i);
+    f.position.set(i%2?0.75:-0.75,0.35,-2+i*3.4);f.rotation.y=Math.PI;grp.add(f);
+    PLY_ROWERS.push(workAdd(f,"row",{}));});
+  const ld=buildFigure(crowdEq("hand",324,1615));ld.position.set(0.9,0.2,-9.4);ld.rotation.y=Math.PI/2;grp.add(ld);
+  PLY_ROWERS.push(workAdd(ld,"haul",{}));
+  return grp;
+}
+function plyRowersOff(){while(PLY_ROWERS.length)workRemove(PLY_ROWERS.pop());}
+function PLY_SOUND(){
+  return [
+    {spawn:{id:"boat",make:plyBoat,at:[70,0,104],face:Math.PI/2}},
+    {fade:"in",cam:{to:[24,7,74],look:[56,1,104],cut:true},t:4.5,move:{id:"boat",to:[30,0,104],face:Math.PI/2},
+     narrate:"Monday, 11 December. The shallop sounds the harbour: the lead goes down, and the depth is called."},
+    {cam:{to:[-8,6,80],look:[0,1,106]},t:5,move:{id:"boat",to:[-30,0,106],face:Math.PI/2},
+     narrate:"Bradford: they found it “fitt for shipping”."},
+    {cam:{to:[-20,10,56],look:[-40,2,20]},t:5,
+     narrate:"Ashore were cornfields and running brooks: Patuxet’s, emptied by sickness."},/* review, 27 Nov: was "cleared fields ... Nobody was living there", which reads as the empty-wilderness telling board 2 corrects; MS p. 53 "cornfeilds", Patuxet's (record) */
+    {fade:"out",t:1,do:function(){plyRowersOff();}}];
+}
+
+/* ---- NEW THINGS IN THE WORLD ---- */
+/* fowl tied by the feet, carried in two hands (body space) */
+WORK_LOAD.fowl=function(){const g=new Geo(), fe=RGB(0x5e5444), feD=RGB(0x3e3a30), bill=RGB(0x8a6a3a);
+  for(let i=0;i<3;i++){const x=(i-1)*0.17;
+    g.oct(x,-0.05,-0.12,0.10,0.13,0.18,0.10,0.14,0.03,feD,fe);
+    g.beam8([x,0.10,0.02],[x,0.2,0.05],0.05,0.04,fe,fe);g.box(x,0.22,0.09,0.03,0.03,0.07,bill);}
+  return g.mesh(false,false);};
+LOAD_HOLD.fowl={at:[0,-0.04,0.38],hx:0.32,hy:0.05,hz:0.38,ground:0.12};
+/* a piece shouldered, as the board rides: the load's +x ends up forward, so the barrel is laid
+   along +x and tipped up, the muzzle high and the butt behind the shoulder */
+WORK_LOAD.piece=function(){const g=new Geo(), wood=RGB(0x5a4128), iron=RGB(0x3a3a3e);
+  g.beam8([-0.55,0,0],[0.95,0,0],0.04,0.045,iron,iron);g.box(-0.75,-0.03,0,0.45,0.1,0.06,wood);
+  const m=g.mesh(false,false);m.rotation.z=0.55;const w=new THREE.Group();w.add(m);return w;};
+LOAD_HOLD.piece={at:[-0.41,0.45,0.02],shoulder:true,ground:0.03};
+
+/* a footing under a house on sloping ground, so its downhill sill does not stand on air */
+function plyHouse(root,G,x,z,yaw,kind){
+  leafHouse(root,G,x,z,yaw,kind||"thatch");
+  const c=Math.abs(Math.cos(yaw)), s=Math.abs(Math.sin(yaw)), hx=7*c+4.5*s, hz=7*s+4.5*c;
+  const ys=[G(x-hx,z-hz),G(x+hx,z-hz),G(x-hx,z+hz),G(x+hx,z+hz)], lo=Math.min.apply(null,ys), gy=G(x,z);
+  if(gy-lo>0.25){const f=new Geo(), stone=RGB(0x6a6458);f.box(x,(lo-0.3+gy+0.2)/2,z,hx*2+0.6,gy+0.5-lo,hz*2+0.6,stone);
+    f.shade(function(px,py){return 0.7+0.3*smooth01(lo,gy,py);});root.add(f.mesh(false,false));}
+}
+/* the height of the DRAWN ground at (x,z): captLand's grid is 18.75 ft cells, each two
+   triangles split on the diagonal from its (min x, min z) corner, and the live ground pass
+   subdivides them without moving them. A ribbon laid on G itself dips under that surface
+   wherever the terrain curves, which is how the first street came out in patches */
+function plyGroundY(G,x,z){
+  const st=18.75, i=Math.floor((x+450)/st), j=Math.floor((z+450)/st), ax=-450+i*st, az=-450+j*st, u=(x-ax)/st, v=(z-az)/st;
+  const yA=G(ax,az), yB=G(ax,az+st), yC=G(ax+st,az+st), yD=G(ax+st,az);
+  return v>=u?yA+v*(yB-yA)+u*(yC-yB):yA+u*(yD-yA)+v*(yC-yD);
+}
+/* the street up the hill: trodden earth, a ribbon on the drawn ground */
+function plyStreet(root,G,z0,z1){
+  const g=new Geo(), mud=RGB(0x6a5a40), mudL=RGB(0x7c6a4a), Y=function(x,z){return plyGroundY(G,x,z)+0.1;};
+  for(let z=z0;z>z1;z-=1.5){const za=z, zb=z-1.5, c0=(Math.floor(za/6)%2)?mud:mudL, c1=(Math.floor(zb/6)%2)?mud:mudL;
+    for(const [x0,x1] of [[-4.5,0],[0,4.5]])
+      g.quad4([x0,Y(x0,za),za],[x1,Y(x1,za),za],[x1,Y(x1,zb),zb],[x0,Y(x0,zb),zb],c0,c0,c1,c1);}
+  root.add(g.mesh(false,false));
+}
+/* the brook: a narrow strip of dark water in a cut, opaque (no new transparency) */
+function plyBrook(root,G,pts){
+  const g=new Geo(), wat=RGB(0x34505a), bank=RGB(0x5a5038);
+  const Y=function(x,z){return plyGroundY(G,x,z)+0.14;};
+  for(let i=0;i<pts.length-1;i++){const p0=pts[i], p1=pts[i+1], n=Math.ceil(Math.hypot(p1[0]-p0[0],p1[1]-p0[1])/2);
+    for(let k=0;k<n;k++){const t0=k/n, t1=(k+1)/n, a=[p0[0]+(p1[0]-p0[0])*t0,p0[1]+(p1[1]-p0[1])*t0], b=[p0[0]+(p1[0]-p0[0])*t1,p0[1]+(p1[1]-p0[1])*t1];
+      const q=function(o0,o1,c,up){g.quad([a[0]+o0,Y(a[0]+o0,a[1])+up,a[1]],[a[0]+o1,Y(a[0]+o1,a[1])+up,a[1]],[b[0]+o1,Y(b[0]+o1,b[1])+up,b[1]],[b[0]+o0,Y(b[0]+o0,b[1])+up,b[1]],c);};
+      q(-2.2,2.2,wat,0);q(-3.4,-2.2,bank,0.01);q(2.2,3.4,bank,0.01);}}
+  root.add(g.mesh(false,false));
+}
+/* a lean-to of boards on posts, open on its front (+x of its own frame), for the sick */
+function plyShed(root,G,x,z,yaw){
+  const g=new Geo(), post=RGB(0x5a4630), board=RGB(0x8a7050), thatch=RGB(0x9e8c64), gy=G(x,z);
+  const c=Math.cos(yaw), s=Math.sin(yaw), P=function(a,b,y){return [x+a*c+b*s,gy+y,z-a*s+b*c];};
+  for(const b of [-8,0,8]){g.beam8(P(-4,b,-0.3),P(-4,b,5.2),0.4,0.35,post,post);g.beam8(P(4,b,-0.3),P(4,b,7.6),0.4,0.35,post,post);}
+  /* the back wall, boards, and a thatched roof sloping down to it */
+  for(let i=0;i<6;i++)g.box(P(-4.3,0,0)[0],gy+0.5+i*0.85,P(-4.3,0,0)[2],Math.abs(c)*0.25+Math.abs(s)*17,0.8,Math.abs(s)*0.25+Math.abs(c)*17,board);
+  quadOut4(g,P(-5,-9,4.9),P(5,-9,7.9),P(5,9,7.9),P(-5,9,4.9),thatch,thatch,thatch,thatch,P(0,0,2));
+  quadOut4(g,P(-5,-9,5.2),P(-5,9,5.2),P(5,9,8.2),P(5,-9,8.2),shadeRGB(thatch,1.08),shadeRGB(thatch,1.08),shadeRGB(thatch,1.12),shadeRGB(thatch,1.12),P(0,0,20));
+  root.add(g.mesh(false,false));leafSolid(x-c*3.6,z+s*3.6,1,9,yaw);
+}
+/* one of the sick, lying under a cover with the head out: the cover is drawn over the body */
+function plySick(root,G,x,z,yaw,i){
+  const f=buildFigure(crowdEq(i%3?"hand":"planter",400+i,1615));
+  f.rotation.order="YXZ";f.rotation.y=yaw;f.rotation.x=-Math.PI/2;
+  f.position.set(x,G(x,z)+0.4,z);root.add(bakeFigure(f));
+  const g=new Geo(), cov=RGB([0x7a6a52,0x6a5a4a,0x8a7a60][i%3]), straw=RGB(0xa89468), c=Math.cos(yaw), s=Math.sin(yaw), gy=G(x,z);
+  /* the figure's origin is its feet, and it lies with its head toward -z of its own frame turned
+     by yaw (as Chapter I's sleeper): the cover runs from the feet to the chest, the head out */
+  const cx=x-s*2.0, cz=z-c*2.0;
+  g.box(x-s*2.8,gy+0.08,z-c*2.8,2.8*Math.abs(c)+6.4*Math.abs(s),0.16,2.8*Math.abs(s)+6.4*Math.abs(c),straw);
+  /* play-test, 27 Nov: the cover was a near-upright box 1.15 high, and four in a row read as
+     coffins. It is now low and drawn in toward its top, as a blanket over a body */
+  g.oct(cx,cz,gy+0.1,gy+0.85,2.3*Math.abs(c)+4.7*Math.abs(s),2.3*Math.abs(s)+4.7*Math.abs(c),1.1*Math.abs(c)+3.6*Math.abs(s),1.1*Math.abs(s)+3.6*Math.abs(c),0.5,shadeRGB(cov,0.8),cov);
+  root.add(g.mesh(false,false));
+}
+/* old corn hills gone to grass, the ground of an emptied town */
+function plyOldField(root,G,x,z,cols,rows){
+  const g=new Geo(), hill=RGB(0x6a6040), grass=RGB(0x9a9458), grassD=RGB(0x7a7a44);
+  for(let r=0;r<rows;r++)for(let k=0;k<cols;k++){
+    const px=x+k*3.2+srand(r*3+k)*0.6, pz=z+r*3.2+srand(k*5+r)*0.6, gy=G(px,pz);
+    g.oct(px,pz,gy-0.2,gy+0.35,1.0,1.0,0.6,0.6,0.1,hill,hill);
+    for(let i=0;i<4;i++){const a=i*1.6+srand(r*7+k*3+i)*0.9, sx=px+Math.cos(a)*0.5, sz=pz+Math.sin(a)*0.5;
+      g.beam8([sx,gy+0.2,sz],[sx+Math.cos(a)*0.6,gy+1.6+srand(k+r*2+i)*1.2,sz+Math.sin(a)*0.6],0.12,0.04,grassD,grass);}
+  }
+  root.add(g.mesh(false,false));
+}
+/* the bent frame of a house, its covering gone and half of it fallen (no bones: the record
+   says the dead were left unburied, and that stays text) */
+function plyFrame(root,G,x,z,yaw,fallen){
+  const g=new Geo(), pole=RGB(0x6a5a44), poleD=RGB(0x4e4232), gy=G(x,z), c=Math.cos(yaw), s=Math.sin(yaw);
+  const P=function(a,b,y){return [x+a*c+b*s,gy+y,z-a*s+b*c];};
+  for(let i=0;i<5;i++){const a=-7+i*3.5;
+    if(fallen&&i>=2){g.beam8(P(a,-5,0.2),P(a+3.5,4,0.3+i*0.1),0.28,0.2,poleD,pole);continue;}
+    let prev=P(a,-6,-0.2);
+    for(let k=1;k<=6;k++){const t=k/6, ang=Math.PI*t, p=P(a,-6*Math.cos(ang),Math.sin(ang)*9);
+      g.beam8(prev,p,0.28,0.24,poleD,pole);prev=p;}}
+  g.beam8(P(-7,0,8.8),P(fallen?-0.5:7,0,fallen?6:8.8),0.24,0.22,poleD,pole);
+  root.add(g.mesh(false,false));
+}
+/* the hills of the new planting, and a fish in each: the fish are hidden until it is done */
+function plyPlanting(root,G,x,z,cols,rows){
+  const g=new Geo(), earth=RGB(0x5a4630), fish=new Geo(), silver=RGB(0x9aa4a6), dark=RGB(0x5e6668);
+  for(let r=0;r<rows;r++)for(let k=0;k<cols;k++){
+    const px=x+k*3.2, pz=z+r*3.2, gy=G(px,pz);
+    g.oct(px,pz,gy-0.2,gy+0.55,1.1,1.1,0.55,0.55,0.12,earth,earth);
+    for(let i=0;i<2;i++){const a=i*2.4+srand(r*5+k)*0.8, fx=px+Math.cos(a)*0.65, fz=pz+Math.sin(a)*0.65;
+      fish.beam8([fx-Math.sin(a)*0.45,gy+0.4,fz+Math.cos(a)*0.45],[fx+Math.sin(a)*0.45,gy+0.32,fz-Math.cos(a)*0.45],0.2,0.06,silver,dark);}
+  }
+  root.add(g.mesh(false,false));
+  const m=fish.mesh(false,false);root.add(m);return m;
+}
+/* the fort of 1622 on the hill: timber walls, a flat roof with battlements, ordnance on it (MS p. 90) */
+function plyFort(root,G,x,z){
+  const g=new Geo(), wall=RGB(0x7a6248), wallD=RGB(0x5a4630), roof=RGB(0x6a5a46), iron=RGB(0x2e2e32), gy=G(x,z), H=13, W=11;
+  for(const [nx,nz] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    for(let i=0;i<14;i++){const t=-W+0.8+i*(2*W-1.6)/13, px=nx?x+nx*W:x+t, pz=nz?z+nz*W:z+t;
+      const B=new Geo();B.box(px,gy+H/2-0.4,pz,nx?0.9:1.7,H+0.8,nx?1.7:0.9,shadeRGB(wall,0.9+srand(i*3+nx+nz*2)*0.18));
+      B.shade(function(qx,qy){return 0.6+0.4*smooth01(gy,gy+3,qy);});g.p.push.apply(g.p,B.p);g.c.push.apply(g.c,B.c);}
+  }
+  g.box(x,gy+H+0.2,z,2*W+1.2,0.6,2*W+1.2,roof);
+  /* the battlements: merlons round the roof's edge */
+  for(let i=0;i<8;i++){const t=-W+1.2+i*(2*W-2.4)/7;
+    for(const sg of [-1,1]){g.box(x+t,gy+H+1.3,z+sg*W,1.4,1.8,0.8,wallD);g.box(x+sg*W,gy+H+1.3,z+t,0.8,1.8,1.4,wallD);}}
+  /* the door, toward the town */
+  g.box(x,gy+3.2,z+W+0.5,4,6.6,0.3,RGB(0x3a2c20));
+  for(const a of [0,Math.PI/2,Math.PI,-Math.PI/2]){const cx=x+Math.sin(a)*(W-3), cz=z+Math.cos(a)*(W-3), y=gy+H+0.5;
+    g.box(cx,y+0.5,cz,1.6,1.0,1.6,RGB(0x5a4128));
+    g.beam8([cx-Math.sin(a)*1.4,y+1.3,cz-Math.cos(a)*1.4],[cx+Math.sin(a)*3.6,y+1.45,cz+Math.cos(a)*3.6],0.6,0.46,iron,iron);}
+  const m=g.mesh(false,false);root.add(m);solid(x,z,W+0.5,W+0.5,LVL.MAIN,0);return m;
+}
+/* timbers on trestles, for squaring, and a stack of squared ones */
+function plyTimbers(root,G,x,z){
+  const g=new Geo(), bark=RGB(0x5a4630), hewn=RGB(0xb8986a), wood=RGB(0x6a5038), gy=G(x,z);
+  for(const dx of [-3,3]){g.box(x+dx,gy+1.2,z-0.9,0.3,2.4,0.3,wood);g.box(x+dx,gy+1.2,z+0.9,0.3,2.4,0.3,wood);g.box(x+dx,gy+2.4,z,0.4,0.3,2.2,wood);}
+  g.box(x,gy+2.95,z,10,0.9,0.9,hewn);
+  for(let i=0;i<4;i++)g.box(x+(i%2)*0.3,gy+0.45+Math.floor(i/2)*0.9,z+4+(i%2)*1.0,11,0.85,0.85,i%3?hewn:bark);
+  root.add(g.mesh(false,false));solid(x,z,5.2,1.2,LVL.MAIN,0);solid(x,z+4.5,5.6,1.2,LVL.MAIN,0);
+}
+/* play-test, 27 Nov: the sawyer sawed the air. A board on two trestles across his front,
+   (x,z) his feet, yaw his facing, the board's top at h above the ground */
+function plySawBench(root,G,x,z,yaw,h){
+  const g=new Geo(), wood=RGB(0x6a5038), hewn=RGB(0xb8986a), gy=G(x,z);
+  const fx=Math.sin(yaw), fz=Math.cos(yaw), rx=Math.cos(yaw), rz=-Math.sin(yaw), d=1.75;
+  const P=function(f,r,y){return [x+fx*f+rx*r,gy+y,z+fz*f+rz*r];};
+  for(const r of [-2.6,2.4]){
+    g.beam8(P(d-0.7,r,-0.1),P(d,r,h-0.35),0.22,0.2,wood,wood);g.beam8(P(d+0.7,r,-0.1),P(d,r,h-0.35),0.22,0.2,wood,wood);}
+  g.beam8(P(d,-3.6,h-0.3),P(d,3.4,h-0.3),0.6,0.6,hewn,hewn);
+  root.add(g.mesh(false,false));solid(x+fx*d,z+fz*d,1.6,1.6,LVL.MAIN,0);
+}
+/* the opened sand heaps and the corn baskets in them; the kettle beside (MS p. 49) */
+function plyCornHeaps(root,G,x,z){
+  const g=new Geo(), sand=RGB(0xc8b48a), sandD=RGB(0xa89470), iron=RGB(0x2e2c2a), gy=G(x,z);
+  for(const [dx,dz] of [[-3,0],[2.5,-1.5],[0,3]]){
+    g.oct(x+dx,z+dz,gy-0.2,gy+0.9,3.2,3.0,1.4,1.2,0.4,sandD,sand);
+    const b=WORK_LOAD.basket();b.scale.setScalar(FIG_SCALE);b.position.set(x+dx,gy+1.0,z+dz);root.add(b);}
+  g.oct(x+6,z+2,gy,gy+1.1,1.6,1.6,1.9,1.9,0.3,iron,iron);
+  root.add(g.mesh(false,false));solid(x,z,4.5,4,LVL.MAIN,0);
+}
+/* a mound with boards and mats on it, as Mourt describes it before it was opened */
+function plyGrave(root,G,x,z){
+  const g=new Geo(), sand=RGB(0xb8a47c), board=RGB(0x8a7050), mat=RGB(0xa8925e), gy=G(x,z);
+  g.oct(x,z,gy-0.3,gy+1.4,6,4,3.6,2.2,0.6,shadeRGB(sand,0.85),sand);
+  for(let i=0;i<3;i++)g.box(x-1.6+i*1.6,gy+1.45,z,1.2,0.12,3.2,board);
+  g.box(x+3.6,gy+0.08,z+1.6,2.4,0.08,3.0,mat);
+  root.add(g.mesh(false,false));solid(x,z,3,2,LVL.MAIN,0);
+}
+/* the barricade of logs and boughs, with coats hung on stakes, shot through (MS pp. 50-52) */
+function plyBarricade(root,G,x,z){
+  const g=new Geo(), log=RGB(0x5a4630), bough=RGB(0x3e5230), arrow=RGB(0x8a7050), feather=RGB(0xd8d0c0);
+  for(let i=0;i<9;i++){const a=-1.2+i*0.3, px=x+Math.sin(a)*9, pz=z+Math.cos(a)*9, gy=G(px,pz);
+    g.beam8([px-Math.cos(a)*1.8,gy+0.5,pz+Math.sin(a)*1.8],[px+Math.cos(a)*1.8,gy+0.6,pz-Math.sin(a)*1.8],0.9,0.8,log,log);
+    g.oct(px,pz,gy+0.8,gy+3.2,2.8,1.6,1.6,1.0,0.3,shadeRGB(bough,0.8),bough);}
+  const coats=[[-0.8,0x6e5236],[0.0,0x4e6076],[0.8,0x8a3b2f]];
+  coats.forEach(function(cA,i){const a=cA[0], px=x+Math.sin(a)*9.6, pz=z+Math.cos(a)*9.6, gy=G(px,pz), col=RGB(cA[1]);
+    g.beam8([px,gy-0.3,pz],[px,gy+5.6,pz],0.25,0.2,log,log);g.box(px,gy+5.2,pz,2.2,0.2,0.2,log);
+    g.oct(px,pz,gy+2.6,gy+5.1,1.9,0.5,2.1,0.6,0.1,shadeRGB(col,0.8),col);
+    for(let k=0;k<2;k++){const ax=px+(k?0.4:-0.5), ay=gy+3.4+k*0.8, s2=Math.sin(a), c2=Math.cos(a);
+      g.beam8([ax-s2*0.9,ay,pz-c2*0.9],[ax+s2*1.1,ay-0.05,pz+c2*1.1],0.05,0.05,arrow,arrow);
+      g.box(ax+s2*1.1,ay,pz+c2*1.1,0.08,0.18,0.18,feather);}});
+  root.add(g.mesh(false,false));
+}
+/* a chest with papers on a deck, at a given level */
+function plyDeckChest(root,lvl,x,z){
+  const g=new Geo(), wood=RGB(0x6b5236), band=RGB(0x3a2c20), paper=RGB(0xe9e0c8), gy=LVL_Y[lvl];
+  g.box(x,gy+0.7,z,2.6,1.4,1.5,wood);g.box(x,gy+1.45,z,2.7,0.12,1.6,band);
+  g.box(x-0.5,gy+1.53,z,0.9,0.04,1.2,paper);g.box(x+0.6,gy+1.53,z+0.1,0.9,0.04,1.2,paper);
+  root.add(g.mesh(false,false));solid(x,z,1.4,0.9,lvl,0);
+}
+/* the cracked main beam under the deck above, the great iron screw under it, and the post
+   (hidden until it is set). On the 'tween deck, whose deckhead is the main deck's beams */
+/* play-test, 27 Nov: the screw was turned with a downward bar stroke, which read as prying.
+   It is now a jack: the nut with its long bar through it turns (PLY.nut), the player pushes
+   the bar round in quarter turns (task "wind"), and the thread, its cap and the bowed beam rise
+   together (PLY.ram) until the beam is back in its place; then the post goes under it */
+const PLY_SAG=0.6;
+function plyBeam(root,x,z,done){
+  const g=new Geo(), oak=RGB(0x6a5236), crack=RGB(0x1e1610), iron=RGB(0x3a3a3e), ironL=RGB(0x5a5a5e);
+  const y0=LVL_Y[LVL.TWEEN], yT=LVL_Y[LVL.MAIN]-0.35, hb=halfBeam(z,yT)-0.6;
+  /* the ram: beam, crack, the iron thread and the cap under the beam, raised as one */
+  const r=new Geo();
+  r.box(0,yT-0.55,z,hb*2,1.1,1.0,oak);
+  r.box(x+0.2,yT-0.75,z,0.5,0.7,1.04,crack);r.box(x+0.9,yT-0.95,z,0.9,0.12,1.04,crack);
+  r.beam8([x,y0-0.4,z],[x,yT-1.6,z],0.42,0.42,iron,iron);
+  for(let k=0;k<10;k++)r.box(x,y0+0.9+k*0.62,z,0.52,0.08,0.52,ironL);
+  r.box(x,yT-1.4,z,1.0,0.4,1.0,iron);
+  const ram=r.mesh(false,false);ram.position.y=done?0:-PLY_SAG;root.add(ram);
+  /* the foot it stands on */
+  g.box(x,y0+0.15,z,1.6,0.3,1.6,oak);
+  root.add(g.mesh(false,false));solid(x,z,1.0,1.0,LVL.TWEEN,0);
+  /* the nut and its bar, turned about the thread */
+  const n=new Geo();n.box(0,0,0,0.9,0.5,0.9,iron);n.beam8([-2.7,0,0],[2.7,0,0],0.14,0.14,ironL,ironL);
+  const nut=n.mesh(false,false);nut.position.set(x,y0+2.9,z);nut.rotation.y=0.7;root.add(nut);
+  const p=new Geo();p.box(x+1.6,(y0+yT-1.1)/2,z,0.85,yT-1.1-y0,0.85,RGB(0x8a6c48));
+  const m=p.mesh(false,false);root.add(m);
+  PLY.ram=ram;PLY.nut=nut;PLY.screwAt=[x,z];
+  return m;
+}
+/* the bar is pushed a quarter turn along the open side of the 'tween deck (bunks to one
+   side, chests to the other, so not walked all the way round), then drawn and set in the
+   nut's next hole - the nut is square, so the bar goes back to where it started - twice */
+function plyTurnScrew(d){
+  d.worked=true;
+  const c=PLY.screwAt, y0=LVL_Y[LVL.TWEEN], e=workAdd(player,"wind",{});
+  PLY.wind={e:e,t:0,T:4.6,push:1.9,back:0.4,a0:-0.26};
+  plyWindAt(0);
+  playCutscene({skippable:true,steps:[
+    {cam:{to:[c[0]+8.6,y0+6.6,c[1]-1.6],look:[c[0]+0.4,y0+4.6,c[1]+1.2],cut:true},t:PLY.wind.T,
+     narrate:"The great iron screw from Holland. Turn by turn, the beam goes back into its place."}]},
+    function(){workRemove(e);plyWindAt(PLY.wind.T);PLY.wind=null;if(PLY.post)PLY.post.visible=true;plyAct(d);});
+}
+function plyWindAt(t){
+  const W=PLY.wind, c=PLY.screwAt;
+  if(!W||!c)return;
+  const cyc=W.push+W.back, r=t>=W.T?W.push:t%cyc, pushing=r<W.push;
+  const f=pushing?r/W.push:1-(r-W.push)/W.back, th=W.a0+Math.PI/2*fmS(f), rh=2.3, back=1.4;
+  if(PLY.nut)PLY.nut.rotation.y=(pushing?th:W.a0)-Math.PI/2;
+  if(PLY.ram)PLY.ram.position.y=-PLY_SAG*(1-Math.min(1,t/W.T));
+  const x=c[0]+Math.sin(th)*rh-Math.cos(th)*back, z=c[1]+Math.cos(th)*rh+Math.sin(th)*back;
+  player.position.set(x,LVL_Y[LVL.TWEEN],z);player.rotation.y=th+Math.PI/2;
+}
+
+/* ---- THE TERRAIN ---- */
+SITE_TERRAIN.solent={sea:70,shore:36,flat:-20,deep:-2.4,fall:0.03,rise:1.6,inland:1.4,roll:0.6,
+  sky:0xa9c2d2,fog:0xbccfda,water:0x42606a,near:0x86905a,far:0x6e7a4a,back:0x56603e,wet:0x76745a,
+  trees:0,treeZ:-60,treeH:44,seed:211};
+SITE_TERRAIN.capecod={sea:58,shore:20,flat:-34,deep:-1.8,fall:0.03,rise:1.8,inland:1.6,roll:1.2,
+  sky:0xa9c0cc,fog:0xbccad2,water:0x3d5a62,near:0xbaa87c,far:0x8e8a5e,back:0x5c6040,wet:0x9a8e6a,
+  trees:0,treeZ:-30,treeH:40,seed:223};
+/* Plymouth: one street up from the harbour to the hill (hill: feet of rise over hillLen, see siteGround) */
+SITE_TERRAIN.plymouth={sea:62,shore:44,flat:-30,deep:-2.0,fall:0.03,rise:2.2,inland:2.0,roll:0.5,hill:14,hillLen:140,
+  sky:0xa8c2d2,fog:0xbccfda,water:0x3e5e66,near:0x828c54,far:0x6c7846,back:0x525c38,wet:0x7c7a56,
+  trees:0,treeZ:-40,treeH:48,seed:229};
+
+/* play-test, 27 Nov: "they went out and killed fiue Deere, which they brought to the
+   Plantation" (Mourt p. [61]). The one-man carrier read as a club and was cut; this is the
+   carry that reads: a deer slung by its tied feet under a pole, the pole on the shoulders of
+   two Wampanoag men walking in from the east. They stop by Massasoit's company and stand
+   holding it. The deer is the game's own model (the doe of Chapter III), turned over */
+function plyDeerCarry(root,G,from,to){
+  const pole=new THREE.Group();root.add(pole);
+  const b=new Geo(), wood=RGB(0x6a5038);b.beam8([0,0,-5.2],[0,0,5.2],0.22,0.22,wood,wood);pole.add(b.mesh(false,false));
+  const turn=new THREE.Group();turn.rotation.y=Math.PI/2;pole.add(turn);
+  const flip=new THREE.Group();flip.rotation.x=Math.PI;flip.scale.setScalar(0.8);flip.position.y=0.1;turn.add(flip);
+  placeModel(flip,"assets/animals/deer_standing.glb","deer_standing",0,0,0,0,1,1,1);
+  /* the cords at the tied feet */
+  const c=new Geo(), cord=RGB(0x8a7a5a);for(const zz of [-1.1,1.1])c.box(0,-0.2,zz,0.5,0.5,0.35,cord);pole.add(c.mesh(false,false));
+  const men=[0,1].map(function(i){const f=tidewaterFigure(plyWampLook({mantle:false}));root.add(f);return f;});
+  PLY.deer={pole:pole,men:men,G:G,from:from,to:to,s:0,ph:0,
+    L:Math.hypot(to[0]-from[0],to[1]-from[1]),dir:Math.atan2(to[0]-from[0],to[1]-from[1])};
+  plyDeerStep(0);
+}
+function plyDeerStep(dt){
+  const D=PLY.deer, G=D.G, moving=D.s<D.L;
+  if(moving){D.s=Math.min(D.L,D.s+2.3*dt);D.ph+=2.3*dt*figWalkRate(D.men[0],0.7);}
+  const u=D.s/D.L, cx=D.from[0]+(D.to[0]-D.from[0])*u, cz=D.from[1]+(D.to[1]-D.from[1])*u;
+  const fx=Math.sin(D.dir), fz=Math.cos(D.dir), rx=Math.cos(D.dir), rz=-Math.sin(D.dir);
+  /* the pole rides on each man's right shoulder: half a foot to his right, at its height */
+  D.men.forEach(function(f,i){const k=i?-3.9:3.9, x=cx+fx*k, z=cz+fz*k, p=f.userData.parts;
+    f.position.set(x,G(x,z),z);f.rotation.y=D.dir;
+    if(moving)figWalk(p,D.ph+i*Math.PI,0.7);else figWalk(p,0,0);
+    if(p.shoulderR){p.shoulderR.rotation.set(-2.55,0,0.30);p.elbowR.rotation.set(-2.25,0,0);}});
+  D.pole.position.set(cx+rx*0.6,G(cx,cz)+4.25,cz+rz*0.6);D.pole.rotation.y=D.dir;
+}
+/* the speakers and the figures who stand silent: they face the player's start */
+function plyFace(x,z,at){return Math.atan2(at[0]-x,at[1]-z);}
+/* a Wampanoag man of 1621: the New England look (look book 1.14) - hair worn loose, not the
+   Powhatan cut; no paint unless the record gives it; a deerskin mantle in the cold months */
+let PLY_TW=0;
+function plyWampLook(over){
+  const k=PLY_TW++, L=twCrowdLook();
+  return Object.assign(L,{hair:"loose",hairColor:HAIR.black,paint:false,ear:null,beads:k%4===1},over||{});
+}
+
+registerWorld("ch11",function(root){
+  const w=plyW(), sd=plyDay(), where=sd.where, day=w.day;
+  PLY.later=[];PLY.plot=null;PLY.post=null;PLY.fort=null;PLY.fish=null;PLY.tis=null;BLAZE.fires.length=0;
+  PLY.ram=null;PLY.nut=null;PLY.screwAt=null;PLY.wind=null;PLY.deer=null;
+  plyRowersOff();
+  let G, spots={}, at=[0,42], face=Math.PI, nextAt=null, look0=0, pitch0=0.30, ship=false;
+  const duty=function(id,label,x,z,data){
+    if(data.kind&&PLY_DUTY[data.kind]&&w.did[data.kind])return;
+    const lvl=data.lvl!==undefined?data.lvl:LVL.MAIN;
+    const it={id:id,label:label,x:x,z:z,y:ship?LVL_Y[lvl]:G(x,z),lvl:lvl,r:ship?6:8,action:"ply",data:data};
+    if(data.after&&!w.did[data.after]){PLY.later.push(it);return;}
+    interactables.push(it);};
+  /* a figure who is drawn and never voiced: the Wampanoag, and the English whose own words do
+     not survive (Standish, Brewster) */
+  const stand=function(eq,x,z,yaw,live){
+    const f=buildFigure(eq);f.position.set(x,G(x,z),z);f.rotation.y=yaw;root.add(live?f:bakeFigure(f));solid(x,z,1,1,LVL.MAIN,0);return f;};
+  const wamp=function(x,z,yaw,over,live){
+    const f=tidewaterFigure(plyWampLook(over));f.position.set(x,G(x,z),z);f.rotation.y=yaw;root.add(live?f:bakeFigure(f));solid(x,z,1,1,LVL.MAIN,0);return f;};
+
+  if(where==="quay"){
+    /* Southampton: a row of town houses, the church, the Mayflower alongside, the Speedwell
+       further off; the stores carried down to the ship (MS pp. 36-37) */
+    G=captLand(root,"solent",{trees:40,winter:false,clear:function(x,z){return Math.hypot(x,z)<150;}});
+    for(let k=0;k<6;k++)leafHouse(root,G,-75+k*25,-28,0,"eng");
+    leafChurch(root,G,-108,6,Math.PI/2,true);
+    placeShip(root,"mayflower",1,-10,112,Math.PI/2);
+    placeShip(root,"godspeed",1,130,170,Math.PI/2);
+    priceLanding(root,G,-4,56,98);
+    const pile=workStack(root,6,33,"cask",9);for(let i=0;i<6;i++)pile.drop();
+    /* play-test, 27 Nov: the pile had no collider, so the player stood in it to lift a cask
+       out of it, and the shot over the shoulder was taken from behind the pile */
+    solid(6.9,33,3.4,1.3,LVL.MAIN,0);
+    const foot=workStack(root,-11,50,"cask",9);
+    workMan(root,crowdEq("hand",300,1615),10,39,0,"carry",{from:[10,39],to:[-3,52],load:"cask",speed:2.6,drop:foot.drop});
+    workMan(root,crowdEq("hand",301,1615),14,41,0,"carry",{from:[13,40.5],to:[0,53.5],load:"cask",speed:2.9});
+    workMan(root,crowdEq("hand",302,1615),-25,-21.2,Math.PI,"hammer");
+    [[-44,40,2.4,0],[-41,42.5,2.9,1],[-47,43,2.0,0]].forEach(function(a,i){
+      const f=englishWoman(false);f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));solid(a[0],a[1],1,1,LVL.MAIN,0);});
+    starveChest(root,G,-50,40);
+    starveChest(root,G,-18,20.5);duty("reasons","Bradford’s Reasons",-18,24,{kind:"reasons",verb:"Read them"});
+    duty("stock","The Common Stock",6,38,{kind:"stock",verb:"Carry a cask",face:[6,33],stand:[6,37.6],
+      cam:[[13,6.5,43],[5.5,2.4,35]]});
+    presTable(root,G,24,12);duty("conditions","The Ten Conditions",24,16,{kind:"conditions",after:"reasons",verb:"Read them"});
+    starveChest(root,G,-34,20.5);starveChest(root,G,26,20.5);
+    spots={weston:[34,32],carver:[-30,34],cushman:[-6,4]};
+    nextAt=[44,8];starveChest(root,G,44,4.5);
+    /* play-test, 27 Nov: (0,46) is two feet off the first carrier's path; he walked through the
+       player while the first page was still open */
+    at=[-8,42];
+  }
+  if(where==="ship"){
+    /* the Mayflower: Chapter I's ship, built by the same routines, named for her. The beam is
+       on the 'tween deck, where the passengers lived (MS pp. 45-46) */
+    ship=true;
+    buildRiver(root);
+    SHIPV="mayflower";
+    const sg=new THREE.Group(), n0=interactables.length;
+    buildHull(sg);buildDecks(sg);buildBeakAndRig(sg);buildFittings(sg);
+    buildInnerShell(sg);buildHoldLevel(sg);buildTweenLevel(sg);buildCabins(sg);buildPoop(sg);
+    root.add(sg);buildLadders(sg);
+    SHIPV="susan";
+    /* the builders also leave Chapter I's things to use - the bell, the guns, the chart, the
+       helm, the ration casks. Only the ladders belong to this scene */
+    for(let i=interactables.length-1;i>=n0;i--)if(interactables[i].action!=="ladder")interactables.splice(i,1);
+    G=function(){return LVL_Y[LVL.MAIN];};
+    PLY.post=plyBeam(root,-5.4,2.7,!!w.did.beam);PLY.post.visible=!!w.did.beam;
+    duty("beam","The Cracked Beam",-5.4,6.4,{kind:"beam",verb:"Turn the screw",lvl:LVL.TWEEN,face:[-5.4,2.7],reach:3.4});
+    plyDeckChest(root,LVL.MAIN,-6.5,5);duty("speeches","Mutinous Speeches",-6.5,8.5,{kind:"speeches",verb:"Read it"});
+    plyDeckChest(root,LVL.MAIN,6.5,-2);duty("compact","The Compact",6.5,1.5,{kind:"compact",after:"speeches",verb:"Read it"});
+    plyDeckChest(root,LVL.MAIN,9.5,-15.5);plyDeckChest(root,LVL.MAIN,-9.5,-15.5);plyDeckChest(root,LVL.MAIN,-9.5,13);
+    /* the passengers: men on the main deck, women and children below, where they lodged */
+    const put=function(f,lvl,x,z,yaw){f.position.set(x,LVL_Y[lvl],z);f.rotation.y=yaw;root.add(bakeFigure(f));solid(x,z,0.5*K,0.5*K,lvl,0);};
+    put(buildFigure(personEq("carver",1620)),LVL.MAIN,-3.5,-6,0.5);
+    put(buildFigure(crowdEq("planter",330,1615)),LVL.MAIN,9,7,-2.4);
+    put(buildFigure(crowdEq("planter",331,1615)),LVL.MAIN,-8,-2,1.2);
+    put(englishWoman(false),LVL.TWEEN,5,-3,-1.8);put(englishWoman(true),LVL.TWEEN,-8.5,-6,1.0);
+    {const f=englishWoman(false,{age:"child"});put(f,LVL.TWEEN,6.5,-0.8,-2.2);}
+    {const s=buildFigure(crowdEq("hand",332,1615),{lod:1});s.position.set(8,LVL_Y[LVL.TWEEN]+0.24,6);s.rotation.y=-1.6;root.add(s);figReact(s,"sitSick",{instant:true});}
+    /* play-test, 27 Nov: the player started at (2.5,8) and Bradford stood at (5,12), both inside
+       the sweep of the capstan's bars (centre z=10.8, bars to 6.6 ft); and the camera, 29 ft
+       straight aft, sat against the mizzen. Both now stand clear of the bars; the player starts
+       forward of the mainmast by the main hatch (the way down to the beam), so the camera
+       behind sits in the clear air between the main and the mizzen */
+    spots={bradford:[-11,7]};
+    nextAt=[-9,26];plyDeckChest(root,LVL.MAIN,-9,22.5);
+    at=[6,-5];look0=0.15;
+  }
+  if(where==="shore"){
+    /* Cape Cod: the corn heaps, the grave, the barricade of 8 December; the shallop that went on
+       to sound Plymouth harbour (MS pp. 48-53; Mourt pp. [6]-[12]) */
+    G=captLand(root,"capecod",{trees:110,winter:true,clear:function(x,z){return Math.hypot(x,z)<80;}});
+    plyCornHeaps(root,G,-30,-8);
+    plyGrave(root,G,-52,-20);
+    plyBarricade(root,G,34,0);
+    captBarge(root,G,12,64,0.4);
+    stand(personEq("standish",1620),40,-8,-0.6);
+    [[28,-10,0.5],[44,-2,-1.4],[22,4,1.2]].forEach(function(a,i){stand(crowdEq("soldier",340+i,1615),a[0],a[1],a[2]);});
+    duty("corn","The Corn and the Kettle",-30,0,{kind:"corn",verb:"Read it",face:[-30,-8]});
+    duty("encounter","The Barricade",34,-4,{kind:"encounter",after:"corn",verb:"Look"});
+    duty("sound","The Shallop",10,57,{kind:"sound",after:"encounter",verb:"Sound the harbour"});
+    starveChest(root,G,-14,42.5);
+    spots={bradford:[16,24]};
+    nextAt=[-6,20];starveChest(root,G,-6,16.5);
+    at=[0,36];
+  }
+  if(where==="plymouth"||where==="patuxet"){
+    G=captLand(root,"plymouth",{trees:150,winter:day===3,clear:function(x,z){return Math.hypot(x,z+20)<105||(x>55&&x<180&&z>-100&&z<45);}});
+    plyStreet(root,G,46,where==="patuxet"||day===3?-12:-96);
+    plyBrook(root,G,[[-62,62],[-60,40],[-64,20],[-61,0],[-66,-20],[-63,-40],[-68,-60],[-70,-90]]);
+    const early=where==="patuxet"||day===3;
+    const HOUSES=early?[[-18,24],[18,24],[-18,2]]:[[-18,24],[18,24],[-18,2],[18,2],[-18,-20],[18,-20],[-18,-42]];
+    HOUSES.forEach(function(h){plyHouse(root,G,h[0],h[1],0,"thatch");});
+    if(day===3)presPalace(root,G,18,2,0.5);
+    else if(early)plyHouse(root,G,18,2,0,"thatch");
+    if(day>=6){skyPale(root,G,0,-24,76,0.28);PLY.fort=plyFort(root,G,0,-84);PLY.fort.visible=day>=7||!!w.did.fort;}
+  }
+  if(where==="plymouth"&&day===3){
+    /* the general sickness: a lean-to for the sick, a fire, the two named nurses at work; the
+       ship still in the harbour (MS pp. 54-56). No death is drawn */
+    placeShip(root,"mayflower",1,30,210,Math.PI/2);
+    plyShed(root,G,-36,8,0);
+    [1.5,5.5,9.5,13.5].forEach(function(z,i){plySick(root,G,-33.6,z,Math.PI/2,i);});
+    {const s=buildFigure(crowdEq("hand",405,1615),{lod:1});s.position.set(-35.6,G(-35.6,16.4)+0.24,16.4);s.rotation.y=1.4;root.add(s);figReact(s,"sitSick",{instant:true});}
+    {const ring=new Geo(), stone=RGB(0x6a6458), gy=G(-25,8);for(let i=0;i<8;i++){const a=i/8*Math.PI*2;ring.box(-25+Math.sin(a)*1.4,gy+0.2,8+Math.cos(a)*1.4,0.7,0.4,0.6,stone);}root.add(ring.mesh(false,false));
+     blazeAt(root,-25,gy+0.3,8,2.6,2.2).smoke=false;solid(-25,8,1.6,1.6,LVL.MAIN,0);}
+    workMan(root,personEq("brewster",1621),-30.8,3.5,-Math.PI/2,"tend",{hero:true});
+    workMan(root,personEq("standish",1621),-30.8,11.5,-Math.PI/2,"tend",{hero:true});
+    priceLogs(root,G,[[34,-14,0.2,8],[-50,-34,0.3,6]]);
+    const wp=workStack(root,30,-9,"wood",9);for(let i=0;i<4;i++)wp.drop();
+    workMan(root,crowdEq("hand",406,1615),40,-20,2.6,"chop",{target:[37.5,-16.5]});
+    duty("wood","The Woodpile",32,-5,{kind:"wood",verb:"Carry wood",face:[30,-9]});
+    duty("water","The Brook",-57,30,{kind:"water",after:"wood",verb:"Carry water",face:[-61,30]});
+    /* play-test, 27 Nov: the duty faced the bed Brewster was already tending, and the player
+       crouched inside him with the camera under the roof against a post: now the next bed,
+       clear of him and of the posts, shot from outside the open front */
+    duty("sick","The Sick",-28,6,{kind:"sick",after:"water",verb:"Tend them",face:[-33.5,5.6],stand:[-30.4,6.2],
+      cam:[[-21,5.5,12],[-31.5,1.6,5.8]]});
+    starveChest(root,G,34,36.5);
+    spots={bradford:[8,32]};
+    nextAt=[-6,36];starveChest(root,G,-6,32.5);
+    at=[0,42];
+  }
+  if(where==="patuxet"){
+    /* Patuxet's old fields beside the new town: corn hills gone to grass, fallen house frames,
+       the new planting with fish in the hills; Samoset, Tisquantum, and Massasoit's men on the
+       hill (MS pp. 56-61; Mourt pp. [32]-[38]). No bones are drawn */
+    plyOldField(root,G,70,-42,14,10);plyOldField(root,G,118,-24,8,12);
+    plyFrame(root,G,134,-52,0.4,true);plyFrame(root,G,152,-32,1.2,false);plyFrame(root,G,116,-64,2.0,true);
+    PLY.fish=plyPlanting(root,G,80,0,6,3);PLY.fish.visible=!!w.did.plant;
+    /* Samoset: "a tall straight man, the hair of his head black, long behind, only short before";
+       they "cast a horsemans coat about him" (Mourt, via the look book 1.14) */
+    stand(personEq("samoset",1621),40,30,plyFace(40,30,[56,42]));
+    PLY.tis=stand(personEq("tisquantum",1621),99,11,plyFace(99,11,[88,12]),true);
+    stand(personEq("massasoit",1621),156,-68,-2.2);
+    [[160,-62],[150,-72],[164,-72],[146,-64],[158,-78]].forEach(function(a,i){wamp(a[0],a[1],-2.2+(i%3)*0.3,{mantle:true});});
+    duty("samoset","Samoset",40,33.5,{kind:"samoset",verb:"Hear who he is"});
+    starveChest(root,G,72,22.5);duty("tisquantum","Tisquantum’s Story",72,26,{kind:"tisquantum",after:"samoset",verb:"Read it"});
+    presTable(root,G,112,18);duty("terms","The Seven Terms",112,22,{kind:"terms",after:"tisquantum",verb:"Sort them"});
+    /* play-test, 27 Nov: the player knelt between two hills, setting nothing; now at one, with
+       the shot from the side so the hill, the trowel and Tisquantum are all in it */
+    duty("plant","The Planting",88,12,{kind:"plant",after:"terms",verb:"Set the corn",face:[89.6,6.4],stand:[89.6,8.7],
+      cam:[[95.5,5.0,13.5],[90.5,1.4,7.2]]});
+    starveChest(root,G,104,22.5);
+    spots={bradford:[60,36],winslow:[80,38]};
+    nextAt=[60,8];starveChest(root,G,60,4.5);
+    at=[56,42];face=Math.atan2(1,-0.4);look0=Math.atan2(-1,0.4);
+  }
+  if(where==="plymouth"&&day===5){
+    /* the harvest: corn in, four men fowling, arms exercised, Massasoit and his men come in with
+       five deer (Mourt pp. [60]-[61]) */
+    leafCorn(root,G,42,-26,9,9);
+    skyBaskets(root,G,40,7,4);
+    workMan(root,crowdEq("hand",410,1615),54,-4,0,"carry",{from:[54,-4],to:[43,10],load:"basket",speed:2.6});
+    workMan(root,crowdEq("boy",411,1615),48,-6,0,"carry",{from:[48,-6],to:[37,10],load:"basket",speed:2.4});
+    /* the fowl hung on a pole, and two of the four bringing more in */
+    {const r=new Geo(), pole=RGB(0x5a4630), gy=G(-54,-16);for(const dx of [-2.5,2.5])r.beam8([-54+dx,gy-0.3,-16],[-54+dx,gy+5.2,-16],0.3,0.25,pole,pole);
+     r.beam8([-57,gy+5,-16],[-51,gy+5,-16],0.25,0.25,pole,pole);root.add(r.mesh(false,false));
+     for(let i=0;i<4;i++){const m=WORK_LOAD.fowl();m.scale.setScalar(FIG_SCALE);m.position.set(-55.8+i*1.2,gy+3.9,-16);m.rotation.x=Math.PI;root.add(m);}
+     solid(-54,-16,3,0.6,LVL.MAIN,0);}
+    workMan(root,crowdEq("planter",412,1615),-78,-22,0,"carry",{from:[-80,-24],to:[-58,-12],load:"fowl",speed:2.5});
+    workMan(root,crowdEq("planter",413,1615),-76,-28,0,"carry",{from:[-78,-30],to:[-56,-20],load:"fowl",speed:2.3});
+    /* "we exercised our Armes": men with their pieces shouldered */
+    [[-32,-31],[-32,-35],[-36,-31],[-36,-35]].forEach(function(a,i){workMan(root,crowdEq("soldier",414+i,1615),a[0],a[1],-Math.PI*0.5,"lift",{load:"piece"});solid(a[0],a[1],1,1,LVL.MAIN,0);});
+    stand(personEq("massasoit",1621),16,42,plyFace(16,42,[0,30]));
+    [[22,46],[10,47],[26,40],[6,44],[30,47],[19,50],[12,52],[28,53]].forEach(function(a,i){wamp(a[0],a[1],plyFace(a[0],a[1],[0,30])+(i%3-1)*0.3,{mantle:i%4===0});});
+    stand(personEq("hobbamock",1621),40,22,plyFace(40,22,[0,40]));
+    plyDeerCarry(root,G,[88,31],[40,31]);
+    /* play-test, 27 Nov: at (44,0) the player stood across both carriers' paths, and they walked
+       through him with their baskets; he takes his basket at the field's east end instead */
+    duty("harvest","The Corn",60,4.5,{kind:"harvest",verb:"Carry it in",face:[60,-2],stand:[60,1.4]});
+    duty("fowling","The Fowl",-54,-11,{kind:"fowling",after:"harvest",verb:"Carry them in",face:[-54,-16]});
+    presTable(root,G,10,-62);duty("winslow","Winslow’s Letter",10,-58,{kind:"winslow",after:"fowling",verb:"Read it"});
+    starveChest(root,G,-30,26.5);starveChest(root,G,30,26.5);starveChest(root,G,-40,0.5);
+    spots={winslow:[-6,-56],bradford:[8,-28]};
+    nextAt=[-6,36];starveChest(root,G,-6,32.5);
+    at=[0,42];
+  }
+  if(where==="plymouth"&&day===6){
+    /* 1622: the palisade, the fort going up on the hill (MS pp. 69-70, 90) */
+    plyTimbers(root,G,14,-66);
+    priceLogs(root,G,[[-24,-66,0.4,9],[34,-58,1.1,8]]);
+    workMan(root,crowdEq("hand",420,1615),-24,-62,Math.PI,"chop",{target:[-24,-66]});
+    workMan(root,crowdEq("hand",421,1615),30,-55,-2.2,"saw");plySawBench(root,G,30,-55,-2.2,2.8);
+    workMan(root,crowdEq("hand",422,1615),-40,-50,0,"carry",{from:[-42,-48],to:[-12,-70],load:"board",speed:2.4});
+    stand(personEq("standish",1622),24,-74,plyFace(24,-74,[14,-62]));
+    stand(personEq("hobbamock",1622),24,40,plyFace(24,40,[0,40]));
+    starveChest(root,G,6,-12.5);duty("snakeskin","The Snakeskin",6,-9,{kind:"snakeskin",verb:"Read it"});
+    duty("fort","The Fort Timbers",14,-61.2,{kind:"fort",after:"snakeskin",verb:"Square it",face:[14,-66]});
+    starveChest(root,G,-6,-34.5);duty("plague","The Plague Buried",-6,-31,{kind:"plague",after:"fort",verb:"Read them"});
+    starveChest(root,G,-30,26.5);starveChest(root,G,30,26.5);starveChest(root,G,-40,0.5);
+    spots={bradford:[10,-28],winslow:[-14,44]};
+    nextAt=[-6,36];starveChest(root,G,-6,32.5);
+    at=[0,42];
+  }
+  if(where==="plymouth"&&day===7){
+    /* 1623: the fort on the hill, where Standish came back in March; the family plots in April.
+       Nothing of the killings, and no head, is drawn (GN 1624 pp. 37-49; MS p. 96) */
+    stand(personEq("standish",1623),12,-68,plyFace(12,-68,[0,-40]));
+    [[18,-70,-0.6],[6,-70,0.4],[22,-66,-1.0]].forEach(function(a,i){stand(crowdEq("soldier",430+i,1615),a[0],a[1],a[2]);});
+    PLY.plot=plyPlanting(root,G,40,-6,6,4);PLY.plot.visible=false;
+    {const wf=englishWoman(false);wf.position.set(50,G(50,-2),-2);wf.rotation.y=-2.6;root.add(wf);workAdd(wf,"trowel",{});}
+    [[54,1,-2.4,433],[45,-3,2.8,434]].forEach(function(a){const ch=buildFigure(Object.assign(crowdEq("boy",a[3],1615),{look:Object.assign(crowdLook("boy",a[3],1615),{age:"child"})}),{lod:1});
+      ch.position.set(a[0],G(a[0],a[1]),a[1]);ch.rotation.y=a[2];root.add(ch);workAdd(ch,"trowel",{});});
+    stand(personEq("hobbamock",1623),-26,46,plyFace(-26,46,[0,40]));
+    presTable(root,G,-14,-66);duty("court","The Court",-14,-62,{kind:"court",verb:"Read it"});
+    starveChest(root,G,14,-62.5);duty("return","Two Accounts",14,-59,{kind:"return",after:"court",verb:"Read them"});
+    duty("plot","Your Family’s Plot",44,8,{kind:"plot",after:"return",verb:"Hoe it",face:[44,3]});
+    starveChest(root,G,-30,26.5);starveChest(root,G,30,26.5);starveChest(root,G,-40,0.5);
+    spots=w.did.closed?{bradford:[-20,-54]}:{winslow:[-14,44],bradford:[-20,-54]};
+    nextAt=[-6,36];
+    if(w.did.closed){nextAt=null;
+      duty("record","Nathaniel Morton",-6,30,{kind:"record",verb:"Close the chapter’s record"});
+      presTable(root,G,-6,35);
+      const nm=buildFigure(personEq("nmorton",1669));nm.position.set(-6,G(-6,37.9),37.9);nm.rotation.y=Math.PI;root.add(nm);solid(-6,37.9,1,1,LVL.MAIN,0);}
+    else starveChest(root,G,-6,32.5);
+    at=[0,42];
+  }
+
+  const LOOK_AFTER={james0:"reasons",james1:"speeches",grave:"corn",crew:"wood",hunt:"tisquantum",massasoit:"samoset",
+    woman:"harvest",later:"winslow",knife:"snakeskin",tisquantum:"plague",james7:"court",drought:"plot"};
+  (PLY_LOOKS[day]||[]).forEach(function(L){duty("look_"+L[0],L[1],L[2],L[3],{kind:"look",id:L[0],verb:"Look",after:LOOK_AFTER[L[0]]||null});});
+  for(const id in spots){
+    const d=plySpeaker(id);
+    if(!d)continue;
+    const a=spots[id], x=a[0], z=a[1], gy=G(x,z);
+    const f=buildFigure(d.eq);f.position.set(x,gy,z);f.rotation.y=plyFace(x,z,at);root.add(f);
+    npcMeshes.push({npc:d,mesh:f});solid(x,z,ship?0.5*K:1,ship?0.5*K:1,LVL.MAIN,0);
+    interactables.push({id:id,label:d.name,x:x,z:z+3,y:gy,lvl:LVL.MAIN,r:ship?6:7,action:"talk",data:d});
+  }
+  if(nextAt&&sd.next)duty("next",sd.next,nextAt[0],nextAt[1],{kind:"next",verb:plyNeed()?"Not yet":"Go on"});
+
+  if(day===0&&!w.did.open0){
+    w.did.open0=true;
+    setTimeout(function(){if(CURRENT_WORLD==="ch11")
+      fortResult(PLY_OPEN[0].t,"<p class=\"sickDate\">"+PLY_DAYS[0].date+"</p>"+PLY_OPEN[0].b,[]);},500);
+  }
+  player=buildFigure(S.equip);root.add(player);playerParts=player.userData.parts;dressCarried(player);
+  player.position.set(at[0],G(at[0],at[1]),at[1]);player.rotation.y=face;
+  camYaw=look0;camPitch=pitch0;
+});
+
+function updatePly(dt){
+  if(CURRENT_WORLD!=="ch11")return;
+  PLY.t+=dt;
+  /* the sick's fire at Plymouth; the light of each scene is SCENE_LOOK.ch11, via applyLook */
+  updateBlaze(dt);
+  if(PLY.wind){PLY.wind.t+=dt;plyWindAt(Math.min(PLY.wind.t,PLY.wind.T));}
+  if(PLY.deer)plyDeerStep(dt);
+}
+
+/* ---- CHAPTER XI'S CONTENT, AND ITS MUSTER ----
+   Sat with Nathaniel Morton, Bradford's nephew and the colony's secretary, compiling New
+   Englands Memoriall (1669) - itself a retelling, and the source of the Compact's list of
+   signers. Every item is ungated. Written off CH11-RECORD.md §Teaching hooks and §Disputes;
+   keyed a:0, shuffled at runtime, and no keyed option is the longest of its four.
+   review, 27 Nov: items 1, 9, 10, 14, 21 and 22 had the key as the longest option; a distractor in each was
+   lengthened or replaced. */
+CONTENT.ch11={
+  people:PLY_PEOPLE,
+  npcs:PLY_NPCS,
+  charter:{insight:{b:"Plimoth Plantation"}},
+  reck:{seal:"records",kick:"Nathaniel Morton",title:"Record or Retelling?",
+    frame:"Plymouth, 1669. Nathaniel Morton, Bradford’s nephew and the colony’s secretary, is writing a history of New England. “Which of these stories are in the record? Six questions; I’ll bear two wrong, no more.”",
+    lockLine:"Not yet. Nathaniel Morton will sit with you after the summer of 1623.",
+    pass:{title:"The Record Kept",body:"Morton dips his pen. “What they wrote, what was added after, and what nobody knows. I shall try to keep them apart.”"},
+    fail:{title:"Not Yet Sorted",body:"“You took the story for the record,” says Morton. “Ask who first wrote it down, and when.”"},
+    onPass:function(){plyW().done=true;},
+    q:[
+      {stim:"Bradford: in Holland they had “this libertie”. They left “Not out of any newfanglednes”, but for hardship, old age, their children and the gospel.",
+       /* review, 27 Nov: was "Why did they leave Holland?", answered word for word by the stim, and the keyed
+          option was the longest; now it asks what the passage shows (record, "What the list does not say") */
+       q:"What does the passage show about religious freedom?",
+       o:["They had it already in Holland","They sailed to America to find it","The Dutch had taken it away","Bradford never mentions religion"],a:0},
+      {stim:"Bradford: the investors chose New England “cheefly for ye hope of present profite to be made by ye fishing”.",
+       q:"What did the investors want?",
+       o:["Profit, from fish","A church in America","New land for the King","Gold, as Spain had found"],a:0},
+      {stim:"The conditions of 1 July 1620: all profits “remaine still in ye commone stock untill ye division”, after seven years.",
+       q:"Who set the common stock?",
+       o:["The investors’ contract","The settlers, by free choice","King James’s charter","Massasoit, in 1621"],a:0},
+      {stim:"Bradford: some “strangers” said ashore “none had power to command them, the patente they had being for Virginia”.",
+       q:"Why was the Compact made?",
+       o:["To fill a gap in the law","To declare independence","To found a new church","To buy land from Massasoit"],a:0},
+      {stim:"The Compact: “the loyall subjects of our dread soveraigne Lord, King James … all due submission and obedience”.",
+       q:"Is it mostly about freedom, or order?",
+       o:["Order: obeying laws","Freedom from the King","Rights for every person","Votes for women"],a:0},
+      {stim:"The list of the Compact’s forty-one signers first appears in your own book, sir, the Memoriall of 1669. The signed paper is lost.",
+       q:"How should a historian treat the list?",
+       o:["As printed 49 years later","As the signed paper itself","As Bradford’s 1620 notes","As the King’s copy"],a:0},
+      {stim:"Jamestown’s Assembly of 1619 was called by the Virginia Company in London. The Compact was made aboard ship by the settlers.",
+       q:"What is the main difference?",
+       o:["Who started each","Only one was loyal to the King","Only Plymouth had any laws","Neither had a governor"],a:0},
+      {stim:"Mourt’s Relation, 1622: they took the corn, meaning to “satisfie them for their Corne”. Bradford: they paid the Nauset “about some 6. months afterward”.",
+       q:"What does the record show?",
+       o:["Taken, then paid for","A gift from the Nauset","A trade made on the spot","Corn they grew themselves"],a:0},
+      {stim:"Mourt’s Relation, printed in 1622, tells of a grave dug up and things taken. Bradford’s later history leaves it out.",
+       q:"What does that difference teach?",
+       o:["Writers choose what to keep","Mourt invented the grave","Nothing was taken","Bradford’s account came out first"],a:0},
+       /* review, 27 Nov: was "Bradford never heard of it", which the record cannot rule out; and the key was the longest */
+      {stim:"Neither Bradford nor Mourt mentions a rock. In 1741 Elder Thomas Faunce, ninety-five, pointed one out, from his father’s story.",
+       /* lead, 27 Nov: the play-test found the stimulus answered "when"; it now asks what kind of evidence */
+       q:"What kind of evidence is the Rock?",
+       o:["A memory told 121 years later","A landing Bradford recorded","A detail printed in Mourt","A map made in 1620"],a:0},
+      {stim:"Bradford: half the company died in two or three months. John Smith, in London, 1622: “fortie of them died”.",
+       q:"Whose count is the better evidence?",
+       o:["Bradford’s; he was there","Smith’s; it was printed first","An average of the two","Neither; both guessed"],a:0},
+      {stim:"Bradford: Tisquantum was carried off by Hunt, “who thought to sell them for slaves in Spaine”, got to England, lived with a merchant, went to Newfoundland.",
+       q:"What does “Squanto the helper” leave out?",
+       o:["His kidnapping and slavery","That he spoke English","His help with the corn","His years among the English"],a:0},
+       /* review, 27 Nov: was "His name"; arguable, since "Squanto" is not the name Tisquantum */
+      {stim:"Bradford calls Tisquantum “a spetiall instrument sent of God”, and later says he “plaid his owne game”.",
+       q:"What do the two lines show?",
+       o:["One writer, two judgements","Two different men","That Bradford never met him","That he wrote his own story"],a:0},
+      {stim:"Term 2 of the 1621 agreement: Massasoit should “send the offender, that we might punish him”.",
+       q:"Who could be sent for punishment?",
+       o:["Only Wampanoag offenders","Only English offenders","Offenders on both sides","Nobody: it set no punishment"],a:0},
+      {stim:"Mourt calls Massasoit King James’s “Friend and Alie”. Cushman, months later: the King is “his Master and Commander”.",
+       q:"What is missing from the record?",
+       o:["Massasoit’s own reading","The English reading","The year of the meeting","The number of his men"],a:0},
+      {stim:"Cushman, 1621: “their land is spatious and void”. In the same pages he names Massasoit, whose land it was.",
+       q:"What is “void” doing in his argument?",
+       o:["Justifying taking land","Praising Massasoit’s rule","Reporting a careful survey","Quoting Massasoit"],a:0},
+       /* review, 27 Nov: was "Describing an empty country"; arguable, since the epidemic had emptied much of it (MS p. 63) */
+      {stim:"Winslow’s letter: “many of the Indians coming amongst vs … with some ninetie men, whom for three dayes we entertained”.",
+       q:"What does the record say of an invitation?",
+       o:["Nothing either way","They were invited","They were turned away","They sent word ahead"],a:0},
+      {stim:"Henry Dexter, an editor, in 1865, on Winslow’s “reioyce together”: “Here began that peculiar New-England festival, — the annual autumnal Thanksgiving”.",
+       q:"Who called it a thanksgiving?",
+       o:["A later editor","Winslow himself","Bradford, in 1621","Massasoit"],a:0},
+      {stim:"Bradford: “great store of wild Turkies” that autumn. Winslow: four men killed “fowle” for the gathering.",
+       q:"Were turkeys eaten at the gathering?",
+       o:["Not known","Yes: Winslow says so","No: Bradford says so","Only at Christmas"],a:0},
+      {stim:"Winslow, at Plymouth in 1622: an Englishman said “the God of the English had it in store”. Morton, 1637, not there: the sachem begged for the plague.",
+       q:"Which account is closer to the event?",
+       o:["Winslow’s","Morton’s","Both equally","Neither was written"],a:0},
+      {stim:"Bradford, who ordered it: “cut of some few”. Winslow: seven dead, an “execution”. Morton: “a Massacre”. Robinson, in Leiden: “so many”.",
+       q:"What explains the different words?",
+       o:["Each writer’s place and purpose","A printer’s mistake","They tell of four different events","All four were there"],a:0},
+      {stim:"Bradford ended the common field in 1623. The investors’ contract had set it; Winslow blamed hunger. A modern telling: “socialism failed at Plymouth”.",
+       q:"What does that telling leave out?",
+       o:["The contract and the hunger","Bradford’s own words on Plato","The year it happened","Which crop was planted"],a:0},
+      {stim:"John Winthrop, 1630: “wee shall be as a citty upon a hill. The eies of all people are uppon us”.",
+       q:"Is it a boast, or a warning?",
+       o:["A warning: failure shows","A boast of a shining city","A law of the colony","A treaty with Massasoit"],a:0}]},
+  ready:function(){
+    const w=plyW();
+    return (w.day>=PLY_DAYS.length-1&&w.did.closed)?{ok:true,missing:[]}:{ok:false,missing:["the summer of 1623"]};
+  },
+  targets:collectInsights(PLY_NPCS), unlocks:[]
+};
+
 const CHAPTERS=[
   /* Percy: "The six and twentieth day of Aprill, about foure a clocke in the
      morning, wee descried the Land of Virginia." The ships stand into the bay at
@@ -35291,11 +36718,39 @@ const CHAPTERS=[
      return null; },
    /* EV (Wolfe): "on May 24 of that year, the Crown formally revoked the company's charter"; Hotten
       p. 244; GH, Tyler p. 406, the close of Smith's Virginia books */
-   end:{head:"The Sky Should Sooner Fall — Complete",yr:"Chapter X · 24 May 1624",nextWorld:null,
+   end:{head:"The Sky Should Sooner Fall — Complete",yr:"Chapter X · 24 May 1624",nextWorld:"ch11",nextLabel:"Plimoth Plantation — Chapter XI",
      body:"<p>On 24 May 1624 the Crown revoked the Virginia Company’s charter, and took Virginia under its own rule.</p>"+
        "<p>The next muster, in Captain William Tucker’s household: “ANTONEY Negro: ISABELL Negro: and WILLIAM theire Child Baptised”.</p>"+
        "<p>Smith’s book closes its Virginia story: “Thus far I have travelled in this Wildernesse of Virginia”.</p>"+
        "<p class=\"note\">“Negro” is the clerk’s word.</p>"}},
+  {n:"XI",yr:"1620–23",t:"Plimoth Plantation",d:"Southampton, the Mayflower, Cape Cod and Plymouth — July 1620 to summer 1623",
+   ready:true,world:"ch11",pace:2.5,near:9,
+   intro:function(){ return "In 1620 a congregation from Leiden sailed on the Mayflower. You may know the First Thanksgiving, Plymouth Rock, “Squanto the helper” and “religious freedom”: here is what the record supports. Disease, a grave opened, kidnapping into slavery, killings on both sides, a head displayed, period words: in the sources’ words, none of it shown."; },
+   obj:function(){ return "Live eight scenes, 1620 to 1623. After each, place the famous stories: in the record, added later, or not known? Then sit with Nathaniel Morton."; },
+   goals:function(){
+     const w=plyW(), need=plyNeed();
+     return [
+       {t:"Live the three years ("+(w.day+1)+" of "+PLY_DAYS.length+")",done:w.day>=PLY_DAYS.length-1&&!!w.did.closed},
+       {t:need?PLY_DUTY[need]:"Go on",done:!need},
+       {t:"Ask Robert Cushman, William Bradford and Edward Winslow what they know",done:PLY_NPCS.every(function(n){return npcDone(n.id);}),opt:true},
+       {t:"Sit with Nathaniel Morton",done:!!w.done,goal:true,locked:!(w.day>=PLY_DAYS.length-1&&w.did.closed)}
+     ]; },
+   status:function(){ const w=plyW(), sd=plyDay(), need=plyNeed();
+     if(w.done)return "Chapter complete";
+     if(w.did.closed)return "1669 · Nathaniel Morton is waiting";
+     return sd.date.split(" — ")[0]+" · "+(need?PLY_DUTY[need].charAt(0).toLowerCase()+PLY_DUTY[need].slice(1):"go on when you are ready"); },
+   next:function(){ const w=plyW(), need=plyNeed();
+     if(need){const c=findSpot(function(it){return it.action==="ply"&&it.data&&it.data.kind===need;});if(c)return {it:c,why:"what the day asks"};}
+     const o=findSpot(function(it){return it.id==="next"||it.id==="record";});
+     if(o)return {it:o,why:w.did.closed?"the chapter ends here":"the next date"};
+     return null; },
+   /* Robinson to Bradford, 19 Dec. 1623 (MS p. 114); Winthrop, "Modell" (MHS Coll. 3:VII p. 47);
+      Bradford on the Pequot fort, 1637 (MS p. 223), the rest of his sentence behind the link */
+   end:{head:"Plimoth Plantation — Complete",yr:"Chapter XI · summer 1623",nextWorld:null,
+     body:"<p>John Robinson, from Leiden, December 1623: “if you had converted some, before you had killed any”.</p>"+
+       "<p>John Winthrop, 1630: “wee shall be as a citty upon a hill. The eies of all people are uppon us”.</p>"+
+       "<p>In 1637 the English burned a Pequot fort: about four hundred Pequot people, many burned in their houses, by Bradford’s report.</p>"+
+       "<details><summary>Read the source in full <small>(teachers: graphic)</small></summary><p>Bradford, who was not there: “It was conceived they thus destroyed about 400. at this time. It was a fearfull sight to see them thus frying in ye fyer”.</p></details>"}},
 ];
 /* The title screen is shown before any world begins, so it needs painting once here.
    Safe at this point and not one line earlier: CHAPTERS is closed above. */
@@ -35387,6 +36842,17 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"27 November 2026 · latest",
+   head:"Chapter XI: Plimoth Plantation",
+   lines:[
+     "<b>A new chapter: Plymouth, 1620 to 1623</b>",
+     "The Leiden congregation and its investors, the Mayflower’s cracked beam and the Compact, Cape Cod, the first winter, Samoset, Tisquantum and Massasoit, the harvest of 1621, the fort, Wessagusset, and the end of the common field.",
+     "<b>A note for teachers</b>",
+     "This chapter includes deaths from disease, including children, a grave opened, kidnapping and sale into slavery, killings on both sides, including by deception, a head displayed, and period words for Native people. All of it is told in words, with the writer named, and none of it is drawn.",
+     "<b>Record or retelling?</b>",
+     "After each scene you sort the famous stories: in the record, added later, or not known? The First Thanksgiving, Plymouth Rock and “Squanto the helper” are among them.",
+     "<b>Where to find it</b>",
+     "Pass Chapter X’s muster and its ending leads on to Chapter XI. If you passed it before today, Chapter XI is already open in the chapter list."]},
+  {when:"27 November 2026",
    head:"New people",
    lines:[
      "<b>Faces, hands and real clothes</b>",
@@ -36824,7 +38290,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-1536";
+const BUILD="20261127-1715";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

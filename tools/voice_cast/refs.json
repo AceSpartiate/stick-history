@@ -186,5 +186,25 @@
  "frethorne": {
   "text": "I am not halfe a quarter so strong as I was in England, and all is for want of victualls.",
   "desc": "A young English servant boy in his teens, starving and homesick, begging his parents for help: thin, pleading and earnest, a young country voice, an English accent of the early 1600s, not American."
+ },
+ "bradford": {
+  "text": "The rumours of the Narragansett, and the hearing of that great massacre in Virginia, made all hands willing to build.",
+  "desc": "An English yeoman's son of about thirty, recovering from sickness, soon the colony's governor: grave, plain-spoken and devout, a steady country voice, an English accent of the early 1600s, not American."
+ },
+ "winslow": {
+  "text": "I am writing to a friend in England, to tell him how we do, and what to bring.",
+  "desc": "A young English gentleman in his mid twenties, educated and ambitious: quick, articulate and persuasive, a bright clear voice, an English accent of the early 1600s, not American."
+ },
+ "cushman": {
+  "text": "His own words: not giveing almes, but furnishing a store house; no one shall be porer then another for 7.",
+  "desc": "An English tradesman and church agent in his forties, defending a hard bargain he made: earnest, weary and a little defensive, a plain worn voice, an English accent of the early 1600s, not American."
+ },
+ "weston": {
+  "text": "Confirm them, or you must look to stand on your own legs.",
+  "desc": "An English London merchant, impatient with people who will not sign his terms: brisk, sharp and businesslike, a clipped city voice, an English accent of the early 1600s, not American."
+ },
+ "carver": {
+  "text": "I was employed here at Hampton, and know not well what the others did at London.",
+  "desc": "An English merchant and church agent in his forties, caught between two quarrelling sides: mild, careful and courteous, a soft older voice, an English accent of the early 1600s, not American."
  }
 }

@@ -124,6 +124,17 @@ CAST = {
                f"precise, a dry measured voice, {ENG}.",
     'frethorne': f"A young English servant boy in his teens, starving and homesick, begging his parents for "
                  f"help: thin, pleading and earnest, a young country voice, {ENG}.",
+    # Chapter XI, 27 Nov. Plymouth. Bradford was born 1590 and Winslow 1595; the others' ages are what the parts call for.
+    'bradford': f"An English yeoman's son of about thirty, recovering from sickness, soon the colony's governor: grave, "
+                f"plain-spoken and devout, a steady country voice, {ENG}.",
+    'winslow': f"A young English gentleman in his mid twenties, educated and ambitious: quick, articulate and "
+               f"persuasive, a bright clear voice, {ENG}.",
+    'cushman': f"An English tradesman and church agent in his forties, defending a hard bargain he made: earnest, "
+               f"weary and a little defensive, a plain worn voice, {ENG}.",
+    'weston': f"An English London merchant, impatient with people who will not sign his terms: brisk, sharp "
+              f"and businesslike, a clipped city voice, {ENG}.",
+    'carver': f"An English merchant and church agent in his forties, caught between two quarrelling sides: mild, "
+              f"careful and courteous, a soft older voice, {ENG}.",
 }
 REEL_GAP = 0.6
 

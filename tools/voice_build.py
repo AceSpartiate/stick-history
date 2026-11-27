@@ -47,6 +47,8 @@ VOICES = {
     "yeardley": (25, 0.97), "pory": (24, 1.04), "persey": (26, 0.99), "spence": (27, 0.92),
     # Chapter X
     "wyatt": (24, 0.96), "pace": (27, 0.99), "nuce": (26, 0.93), "gsandys": (25, 0.95), "frethorne": (25, 1.08),
+    # Chapter XI
+    "bradford": (27, 0.95), "winslow": (24, 1.04), "cushman": (26, 0.97), "weston": (25, 1.02), "carver": (24, 0.93),
 }
 FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 
