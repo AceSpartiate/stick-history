@@ -93,7 +93,7 @@ def junk(t):
     # "B." (voice drill, 27 Nov)
     if re.fullmatch(r"[A-D]\.", t.strip()):
         return False
-    return bool(re.search(r"\S{28,}", t) or re.search(r"\w_\w", t) or not re.search(r"[aeiouy0-9]", t, re.I))
+    return bool(re.search(r"\S{28,}", t) or re.search(r"\w_\w", t) or re.search(r"\w@\w", t) or not re.search(r"[aeiouy0-9]", t, re.I))
 
 
 def one(item, npcs, redo=False):
