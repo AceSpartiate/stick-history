@@ -1382,6 +1382,7 @@ function applyBlob(d){
     if(S.works.ch6&&S.works.ch6.done)S.reached["ch7"]=true;
     if(S.works.ch7&&S.works.ch7.done)S.reached["ch8"]=true;
     if(S.works.ch8&&S.works.ch8.done)S.reached["ch9"]=true;
+    if(S.works.ch9&&S.works.ch9.done)S.reached["ch10"]=true;
     if(typeof AMBUSH!=="undefined")AMBUSH.done=!!d.ambushDone;
     SAVED_WORLD=d.world||"ch1";
     return true;
@@ -8551,7 +8552,7 @@ function animate(){
   /* play-test, 27 Nov: Chapter VI's ships, the boat from the falls, the rats and its night sky
      are driven by updatePres, which this branch never called - so "Captain Newport set sail"
      played over a ship riding at anchor, and the boat from the falls never came in */
-  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
+  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
   if(CAMLOCK.on){
     updateFx(dt);updateFlog(dt);updateShadows();
     cam.position.lerp(CAMLOCK.pos,Math.min(1,dt*3.5));
@@ -8570,7 +8571,7 @@ function animate(){
     player.position.y=WORLD.ground(player.position.x,player.position.z)+JUMP.y;
   if(AMBUSH.on||DUSK.on){updateAmbush(dt);updateArrows(dt);}
   else if(FORT.on){updateFort(dt);updateArrows(dt);}
-  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateWork(dt);
+  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updateWork(dt);
   if(LESSON.on){
     updateFx(dt);updateLesson(dt);updateShadows();
     renderer.render(scene,cam);return;
@@ -8742,6 +8743,7 @@ function animate(){
         :best.action==="starve"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="leaf"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="price"?((best.data&&best.data.verb)||"Go to it")
+        :best.action==="sky"?((best.data&&best.data.verb)||"Go to it")
         /* Named explicitly rather than inherited. A new action with no verb used
            to fall through to "Read the papers", which hid the mistake; now it
            reads "Use" and is obviously unfinished. */
@@ -9333,6 +9335,7 @@ function doInteract(){
   else if(a==="starve"){starveAct(activeSpot.data);}
   else if(a==="leaf"){leafAct(activeSpot.data);}
   else if(a==="price"){priceAct(activeSpot.data);}
+  else if(a==="sky"){skyAct(activeSpot.data);}
   else if(a==="reck"){
     if(chapterReady())openReckoning();
     else toast("The scrivener will not sit with you yet. Still to ask: "+reckMissing().join("; ")+".");}
@@ -10808,9 +10811,9 @@ const MUSIC_FILES={
   sickness:"assets/music/sickness.ogg", president:"assets/music/president.ogg",
   starving:"assets/music/starving.ogg", tobacco:"assets/music/tobacco.ogg"};
 const MUSIC_BY_WORLD={ch1:"voyage", ch2:"fort", comfort:"fort", archers:"fort", james:"fort", ch3:"fort",
-  ch4:"sickness", ch5:"sickness", ch6:"president", ch7:"starving", ch8:"tobacco", ch9:"tobacco"};
+  ch4:"sickness", ch5:"sickness", ch6:"president", ch7:"starving", ch8:"tobacco", ch9:"tobacco", ch10:"sickness"};
 /* places with no music (see above) - the `where` of a chapter's day */
-const MUSIC_SILENT={kecoughtan:true, york:true, orapakes:true, dig:true, pointcomfort:true};   /* pointcomfort: Chapter IX, the Africans' arrival - documents only, quiet */
+const MUSIC_SILENT={kecoughtan:true, york:true, orapakes:true, dig:true, pointcomfort:true, pace:true};   /* pointcomfort: Chapter IX, the Africans' arrival - documents only, quiet; pace: Chapter X, the night before 22 March 1622 */
 const MUSIC_VOL=0.32, MUSIC_DUCK=0.2, MUSIC_FADE=2.4;
 const MUSIC_CAN=VO_CAN;
 const MUSIC={live:false, decks:[], i:0, cur:null, duck:-1, master:null};
@@ -10822,6 +10825,7 @@ function musicWhere(w){
     if(w==="ch6")return presDay().where;
     if(w==="ch7")return starveDay().where;
     if(w==="ch9")return priceDay().where;
+    if(w==="ch10")return skyDay().where;
   }catch(e){}
   return null;
 }
@@ -13889,7 +13893,7 @@ function openIntro(worldId){
   $("introDate").textContent=c.d;
   $("introBody").textContent=c.intro?c.intro():"";
   $("introObj").textContent=c.obj?c.obj():"";
-  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":(worldId==="ch8")?"To the Fort":(worldId==="ch9")?"To Jamestown":"Into the Boats";
+  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":(worldId==="ch8")?"To the Fort":(worldId==="ch9")?"To Jamestown":(worldId==="ch10")?"To James City":"Into the Boats";
   show("intro");
 }
 function beginWorld(worldId){
@@ -14070,7 +14074,7 @@ const CONDITIONS={weather:0,fouling:0,supply:0};
    not evidenced: the ship's hold is still air, and every outdoor scene here is an
    open shore in April with wind coming off the water. */
 /* ch4: the summer of 1607 was a drought (Stahle et al. 1998) - the driest air the game has */
-const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22, ch8:0.10, ch9:0.10};   /* ch5: a wet winter on the rivers */
+const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22, ch8:0.10, ch9:0.10, ch10:0.10};   /* ch5: a wet winter on the rivers */
 function armState(arm){
   return {
     /* a match above 0.7 takes no penalty at all - good play is rewarded in
@@ -30968,6 +30972,923 @@ CONTENT.ch9={
   targets:collectInsights(PRICE_NPCS), unlocks:[]
 };
 
+/* ==================== CHAPTER X: THE SKY SHOULD SOONER FALL ====================
+   October 1621, Wyatt's fleet and the Marmaduke's women, to the list of the living and the
+   dead of 16 February 1624: the women sent to marry planters, Nemattanew's death, the night
+   at Pace's house, the list of 347, Captain Nuce's well, the war of revenge at Pamunkey,
+   Frethorne's letters from Martin's Hundred, the poisoning at the peace talks, Butler and
+   the planters' answer, and the Company's fall.
+   Design: notes docs/CH10-DESIGN.md. Every fact is in docs/CH10-RECORD.md, checked 27
+   November; every Kingsbury, Hotten and Encyclopedia Virginia line used here was re-read on
+   the page (archive.org full texts; EV's Chauco and Virginia Company entries) on 27 November.
+
+   WHAT THE CHAPTER IS ABOUT. Sourcing: "Whose account?" After each scene the player places
+   its key claims on a board - Saw it / Was told it / Wrote from far away, or later - and the
+   result names, for each row placed differently, the document and what its writer wanted.
+   The traps are the record's: the famous account of 22 March is Waterhouse's, written in
+   London; Frethorne's "26 slayne" is hearsay and his hunger is not; the warner is three men
+   in three documents; the poisoning is in a private letter and not in the official one.
+   Every Powhatan sentence here is carried by an English writer, and the chapter says so.
+
+   CONTENT. No killing on either side is drawn. "Massacre" appears only in quotation marks,
+   as the English writers' word; in our voice it is "the attack of 22 March" and "the
+   poisoning at the peace talks", and the Council's "stratageme" is quoted as its word.
+   Mutilation and heads are behind "Read the source in full". A content note opens the
+   chapter and the night at Pace's. The women, Opechancanough, Nemattanew, Chauco and the
+   Africans are never voiced; their words appear only with the English writer's name on them.
+
+   DEPARTURES FROM THE DESIGN, and why:
+   - The title's words, "the Skye should sooner falle", are the Council's letter of January
+     1623 (Kingsbury IV:11); Smith's book has "the sky should fall or he dissolved it" (Tyler
+     p. 358). Credited to the Council.
+   - Scene 3 is at Elizabeth City, not the fort: the well is "a faire Well of fresh water
+     mantled with bricke" there (Tyler p. 378), and Nuce, who speaks in that scene, commanded
+     there. Elizabeth City is built with Martin's Hundred's builder.
+   - Scene 1: the player watches the youths' boat from the fort, and does not row it. Smith's
+     book puts the dying Nemattanew in that boat, "to have him before the Governor" (not to
+     Thorpe's), and the killing stays offstage.
+   - George Sandys is asked in scene 6 at James City, where he was, not at Pamunkey; nothing
+     places him on Yeardley's march. Yeardley, who led it, speaks at Pamunkey.
+   - The muster is sat with one of the King's two commissioners, unnamed: John Harvey is not
+     in the record. Smith's book: "two Commissioners strictly to examine the true estate of
+     the Colony" (Tyler p. 405). */
+
+/* ---- THE SCENES ---- */
+const SKY_DAYS=[
+  {where:"fort",date:"October and November 1621 — James City",need:["chests","book","muster"],next:"Whose Account?"},
+  {where:"fort",date:"March 1622 — James City",need:["cap","youths","sky"],next:"Whose Account?"},
+  {where:"pace",date:"Night of 21 to 22 March 1622 — Pace’s house, across the river",need:["warning","house","crossing"],next:"Whose Account?",night:true},
+  {where:"nuce",date:"April to September 1622 — Elizabeth City",need:["list","well","count"],next:"Whose Account?"},
+  {where:"pamunkey",date:"Autumn 1622 to April 1623 — the Pamunkey River",need:["corn","letters","chauco"],next:"Whose Account?"},
+  {where:"martins",date:"March and April 1623 — Martin’s Hundred",need:["boat","gruel","letter"],next:"Whose Account?"},
+  {where:"fort",date:"May 1623 to February 1624 — James City",need:["stratageme","butler","living"],next:"Whose Account?"}];
+const SKY_DUTY={
+  chests:"Carry the chests up from the boat",book:"Enter the tobacco in the book",muster:"Read why Yeardley mustered the men",
+  cap:"Read Master Wimp’s account",youths:"Watch the boat on the river",sky:"Weigh the two reports",
+  warning:"Hear the warning",house:"Secure the house",crossing:"Row across to James City",
+  list:"Read the list of the dead",well:"Dig Captain Nuce’s well",count:"Weigh the three counts",
+  corn:"Carry and measure the corn",letters:"Read the two letters",chauco:"Read Chauco’s message",
+  boat:"Work the boat to James Town",gruel:"Read who died in his master’s house",letter:"Sort Frethorne’s letter",
+  stratageme:"Read the two reports",butler:"Read Butler, and the answer",living:"Read the list of the living and the dead"};
+function skyW(){
+  S.works=S.works||{};
+  if(!S.works.ch10)S.works.ch10={day:0,did:{},board:{},marks:{},done:false};
+  return S.works.ch10;
+}
+function skyDay(){return SKY_DAYS[Math.min(skyW().day,SKY_DAYS.length-1)];}
+function skyNeed(){const w=skyW(), sd=skyDay();for(const k of sd.need)if(!w.did[k])return k;return null;}
+const SKY={later:[],lit:false,night:false,plot:null,cut:null,t:0};
+
+/* ---- THE PEOPLE ---- */
+const SKY_PEOPLE=[
+  {id:"wyatt",name:"Sir Francis Wyatt",voice:"male",role:"governor, from October 1621",eq:crowdEq("gent",41)},
+  {id:"yeardley",name:"Sir George Yeardley",voice:"male",role:"governor until October 1621",eq:crowdEq("soldier",36)},
+  {id:"pace",name:"Master Pace",voice:"male",role:"a planter, across the river from James City",eq:crowdEq("hand",44)},
+  {id:"nuce",name:"Captain Nuce",voice:"male",role:"commands at Elizabeth City",eq:crowdEq("soldier",46)},
+  {id:"gsandys",name:"Master George Sandys",voice:"male",role:"Treasurer of the colony",eq:crowdEq("gent",45)},
+  {id:"frethorne",name:"Richard Frethorne",voice:"male",role:"a servant at Martin’s Hundred",eq:crowdEq("boy",47)}];
+function skyPerson(id){return SKY_PEOPLE.filter(function(p){return p.id===id;})[0];}
+
+const SKY_SAYS={
+  /* "In them nine Ships that went with Sir Francis Wyat not one Passenger died" (GH, Tyler p. 349);
+     the Council, 20 Jan. 1623 (Kingsbury IV:11); its report "After April 4, 1623" (IV:102) */
+  "wyatt":[["“Nine ships came in with me, and not one passenger died.”"],
+    ["“Opechancanough sends word: the death of one man shall be no breach of the peace.”"],[],[],[],[],
+    ["“By a stratagem we have our people back. So the Council writes to London.”"]],
+  /* the march to Pamunkey, from one of Yeardley's men (GH, Tyler pp. 385-386) */
+  "yeardley":[[],[],[],[],["“They promised to bring Sara and the rest of the English, and put us off ten or twelve days, till their corn was away.”"],[],[]],
+  /* the Elizabeth City settler, in Smith's book (GH, Tyler p. 378) */
+  "nuce":[[],[],[],["“The river and the creeks here are brackish. So we dig a well, and line it with brick.”",
+    "“I called my neighbours in and entrenched. Within fourteen days we could defend ourselves.”"],[],[],[]],
+  /* his letter to his father and mother, 20 March 1623, his own words (Kingsbury IV:60, 62) */
+  "frethorne":[[],[],[],[],[],["“I am not halfe a quarter so strong as I was in England, and all is for want of victualls.”","“the Answeare of this letter wilbee life or death to me”"],[]]};
+
+/* ---- THE THREE WHO ARE ASKED ---- */
+const SKY_NPCS=[
+  {id:"yeardley",name:"Sir George Yeardley",voice:"male",role:"governor until October 1621",at:0,eq:SKY_PEOPLE[1].eq,
+   done:"“I mustered every man and his arms. Then the peace held.”",
+   beats:[
+    /* the Council, 20 Jan. 1623 (Kingsbury IV:10) */
+    {npc:"“Before Sir Francis came, the King of the Eastern Shore warned me of a plot. I went to every plantation and mustered the men. Ask.”",
+     choices:[
+      {t:"What was the plot?",wise:true,ink:8,
+       reply:"At “the takinge vpp of Powhatans bones”, he says the king told him, great numbers were to fall on every plantation.",
+       insight:{g:"known",b:"Powhatan’s Bones",s:"The Council wrote in 1623 that the King of the Eastern Shore warned of a plot for “the takinge vpp of Powhatans bones”. Only Yeardley and Pountis could vouch for it."}},
+      {t:"Did the others believe you?",fair:true,ink:3,
+       reply:"Some of the Council will later write they “cann say nothinge vnto yt”. Only he and Master Pountis vouch for it."},
+      /* GH, after Waterhouse (Tyler p. 358) */
+      {t:"So the colony stood on guard all winter.",wise:false,
+       reply:"Not by March. Smith’s book: there was “seldome or never a sword, and seldomer a peece”."}]}]},
+  {id:"pace",name:"Master Pace",voice:"male",role:"a planter, across the river from James City",at:2,eq:SKY_PEOPLE[2].eq,
+   done:"“Secure the house. Then the boat.”",
+   beats:[
+    /* Waterhouse (Kingsbury III:555): all Pace's words here are Waterhouse's account, in his mouth */
+    {npc:"“He woke me in the night. His brother lay with him, and told him to kill me. I must cross before day. Ask, quickly.”",
+     choices:[
+      {t:"Who is he, the one who warned you?",wise:true,ink:8,
+       reply:"Waterhouse will write: “an Indian belonging to one Perry”, living in Pace’s house, whom Pace “vsed … as a Sonne”. No name.",
+       insight:{g:"known",b:"Perry’s Indian",s:"Waterhouse, in London, 1622: an Indian “belonging to one Perry”, living with Richard Pace, warned him in the night. No 1622 source names him."}},
+      {t:"How far is James City?",fair:true,ink:3,
+       reply:"Across the river, “neere three miles in bredth”, Waterhouse writes. Rowed in the dark, before day."},
+      /* EV (Fausz): Stith, 1747, first gave the name */
+      {t:"Is his name Chanco?",wise:false,
+       reply:"No 1622 source gives a name. “Chanco” comes from a history written in 1747."}]}]},
+  {id:"gsandys",name:"Master George Sandys",voice:"male",role:"Treasurer of the colony",at:6,eq:SKY_PEOPLE[4].eq,
+   /* "I haue lost by sicknes 23 men of my small Nomber" (Kingsbury IV:72) */
+   done:"“Sickness killed twenty-three of my own men this year.”",
+   beats:[
+    /* to Sir Miles Sandys, 30 March 1623 (Kingsbury IV:71-72) */
+    {npc:"“I am Treasurer here. Last March I wrote to my brother, privately, what we meant by the peace. Ask.”",
+     choices:[
+      {t:"What did you write him?",wise:true,ink:8,
+       reply:"He reads it: we “will trie if wee can make them as secure as wee were, that wee may follow their example in destroying them”.",
+       insight:{g:"known",b:"As Secure as Wee Were",s:"George Sandys, privately, 30 March 1623: use a peace to make the Powhatan “as secure as wee were”, then destroy them. In May it was done."}},
+      /* the Council, 4 April 1623 (Kingsbury IV:98) */
+      {t:"Why did they ask for peace?",fair:true,ink:3,
+       reply:"Chauco’s message, the Council wrote: “many of his People were starued, by our takinge Away theire Corne”."},
+      {t:"So the peace was meant honestly.",wise:false,
+       reply:"“Wee seeme to bee inclineable thereunto,” he wrote. Seem. For the prisoners’ sakes."}]}]}];
+
+function skySpeaker(id){
+  const day=skyW().day;
+  for(const n of SKY_NPCS)if(n.id===id&&n.at===day)return n;
+  const set=SKY_SAYS[id], lines=set&&set[day];
+  if(!lines||!lines.length)return null;
+  return Object.assign({},skyPerson(id),{lines:lines});
+}
+
+/* ---- THE RECORD THAT OPENS EACH SCENE ---- */
+const SKY_OPEN=[
+  /* GH, Tyler p. 348; Company to Governor, 12 Aug. 1621 (Kingsbury III:493) */
+  {t:"Maids for Wiues",b:"<p class=\"note\">Killings on both sides, including of children; a poisoning; heads taken; captives held and enslaved; hunger; period words. In the sources’ words, none of it shown.</p><p>October 1621. Sir Francis Wyatt, the new governor, arrives with nine ships. The <i>Marmaduke</i> has brought women sent to marry planters.</p>"},
+  /* GH, Tyler p. 357 */
+  {t:"Jack of the Feather",b:"<p>Early March 1622. Word comes that Nemattanew, whom the English call Jack of the Feather, has been shot.</p><p>Nothing of it is shown.</p>"},
+  /* Waterhouse (Kingsbury III:555); 22 March 1622 OS was a Friday */
+  {t:"Pace’s house",b:"<p class=\"note\">This scene is the night before a day of killing, 22 March 1622. The killing is not shown. It is told in documents.</p><p>Thursday 21 March, at night. Richard Pace’s house, across the James from James City.</p>"},
+  /* GH, Tyler pp. 369, 377-378 */
+  {t:"Drawing in",b:"<p>Spring 1622. The outlying plantations are abandoned. “For want of Boats” their cattle and goods are left.</p><p>At Elizabeth City, Captain Nuce takes his neighbours in.</p>"},
+  /* the Company, 1 Aug. 1622 (Kingsbury III:672); GH, Tyler pp. 385-386 */
+  {t:"The war",b:"<p>Autumn 1622. The Company in London has ordered war. Sir George Yeardley takes men up the Pamunkey River.</p><p>The English take the corn and burn the houses. Fire, far off, is all that is shown.</p>"},
+  /* Frethorne (Kingsbury IV:58-61) */
+  {t:"Martin’s Hundred",b:"<p>March 1623. Martin’s Hundred, down the river from James City.</p><p>Richard Frethorne, a servant, came at Christmas. He is writing home.</p>"},
+  /* Bennett (Kingsbury IV:221) */
+  {t:"Two reports",b:"<p>May 1623. Captain William Tucker goes with twelve men to a peace parley, to bring home English prisoners.</p><p>It is told in two letters. Nothing of it is shown.</p>"}];
+
+/* ---- THINGS TO LOOK AT ---- [id, label, x, z, title, body] per scene */
+const SKY_LOOKS=[
+  /* Company to Governor, 11 Sept. 1621 (Kingsbury III:505); the record: the lists were not found */
+  [["names","The Women’s Names",-44,6,"Their names","<div class=\"starveCard leafBlank\"><b>The women’s names</b><p>Not found.</p></div><p>The Company wrote: “theire names we send here inclosed”. The lists have not been found. No letter from any of the women survives.</p>"]],
+  /* the Council, 20 Jan. 1623 (Kingsbury IV:11); GH, Tyler p. 359 */
+  [["skye","Opechancanough’s Word",14,11.5,"The sky","<p>The Council, in 1623: after the death, Opechancanough sent word “that the Skye should sooner falle then [the] Peace be broken”.</p><p>The Council was answering London’s blame.</p>"],
+   ["lock","Master Thorpe’s Gift",-30,8,"A lock and key","<p>Smith’s book: George Thorpe built Opechancanough “a faire house after the English fashion”.</p><p>He was so taken with the lock and key, it says, he locked it “a hundred times a day”.</p>"]],
+  /* Waterhouse (Kingsbury III:551); GH, Tyler pp. 359-361 */
+  [["work","Elsewhere, at Work",-20,30,"At their work",leafCard("Edward Waterhouse","London, 1622","Across the colony, people were killed “at their seuerall workes … some in planting Corne and Tobacco, some in gardening, some in making Bricke, building, sawing”.",
+     "“they basely and barbarously murthered, not sparing eyther age or sexe, man, woman or childe”. Smith’s copy goes on: “they fell againe upon the dead bodies … carrying some parts away in derision”.")],
+   ["stood","Those Who Stood",24,30,"Spades, axes, and brickbats","<p>Smith’s book, after Waterhouse: “they hurt not any that did either fight or stand upon their guard”.</p><p>Captain Hamor held a half-built house “onely with spades, axes, and brickbats”.</p>"]],
+  /* GH, Tyler p. 370 */
+  [["proctor","Mistress Proctor",-14,34,"Forced out","<p>Smith’s book: Mistress Proctor held her house “a moneth or three weekes after the Massacre”.</p><p>Then “the English Officers forced her … to goe with them, or they would fire her house themselves”.</p>"]],
+  /* GH, Tyler pp. 379, 383-384 */
+  [["patawomeck","Elsewhere in the War",-28,46,"Thus to abuse their friends",leafCard("Smith’s book","1624, from a man with Captain Madison","At Patawomeck, friends of the English, Madison’s men “slew thirty or forty men, women and children”. A man with him: nothing could better “bring them all to ruine, then thus to abuse their friends”.",
+     "Captain Powell, the same year, met three men “by chance, whose heads hee cut off, burnt their houses”.")]],
+  /* Frethorne (Kingsbury IV:58) */
+  [["slaves","Two Taken",12,22,"Make slaves of them","<p>Frethorne: in a fight in February, “wee tooke two alive, and make slaves of them”.</p><p>He uses “slaves” for those captives, and as an insult. The word is his.</p>"]],
+  /* the Council to Lord Mandeville, 30 March 1623 (Kingsbury IV:69) */
+  [["slaues","Made Slaues",-30,8,"Whose slaves?","<p>The Council in Virginia, March 1623: they lived “in feare to be made slaues” to the men who ran the Company in London.</p><p>The same planters held servants, and Africans.</p>"]]];
+
+/* ---- WHOSE ACCOUNT? ----  per scene; k: 0 saw it, 1 was told it, 2 wrote from far away, or later.
+   res: the one line said for a row placed differently - fixed, so every one can be recorded */
+const SKY_K=["Saw it","Was told it","Far away, or later"];
+const SKY_BOARD={
+  0:[{t:"“on[e] Widdow and eleven Maid[s] for Wiues”: the Company’s letter",k:2,res:"The Company wrote from London. It wanted its tobacco repaid."},
+     {t:"The maids placed “w[i]thowt any pvisione at all”: the Council in Virginia",k:0,res:"The Council was at James City when they landed. It wanted supplies."},
+     {t:"They “were sold with their consent”: Tyler’s note, 1907",k:2,res:"Tyler wrote in 1907. “Sold” is his word, not the Company’s."},
+     {t:"The Eastern Shore king’s warning: the Council’s letter, 1623",k:1,res:"The rest of the Council could “say nothinge vnto yt”. Yeardley told them."}],
+  1:[{t:"Nemattanew wore Morgan’s cap: Smith’s book",k:2,res:"Printed in London in 1624, from Master Wimp, whom nobody can identify."},
+     {t:"Opechancanough “much grieved … with great threats of revenge”: Smith’s book",k:2,res:"Smith’s book, London, 1624. It does not say who heard the threats."},
+     {t:"He “could be contented his throte were Cutt”: the Council",k:1,res:"A message through an interpreter. The Council wanted to show it had no warning."},
+     {t:"“the Skye should sooner falle”: the Council",k:1,res:"Opechancanough’s word, carried by a messenger, written down by the Council."}],
+  2:[{t:"An Indian “belonging to one Perry” warned Pace: Waterhouse, 1622",k:2,res:"Waterhouse wrote in London, from letters. He never crossed the Atlantic."},
+     {t:"Chauco warned “divers” on the day: the Council, 1623",k:1,res:"The Council had it from those he saved, a year later."},
+     {t:"“Chanco” saved James City: William Stith’s history, 1747",k:2,res:"Stith wrote 125 years later. His name may be a misreading of “Chauco”."},
+     {t:"“at the sight of a Peece they all ranne away”: Waterhouse",k:2,res:"Waterhouse again: London, from letters, to calm the Company’s investors."}],
+  3:[{t:"“aboue three hundred men women and Children”: the Council, April 1622",k:0,res:"The Council was in the colony, weeks after. A first count, not names."},
+     {t:"“The whole number is 347.”: Waterhouse’s list",k:2,res:"Made in London from the colony’s reports, so heirs could claim estates."},
+     {t:"“about 400 of or People were slayne”: the <i>Discourse</i>, 1625",k:2,res:"Sandys’s party, three years later, asking to be put back in charge."},
+     {t:"A well “mantled with bricke”: a settler at Elizabeth City",k:0,res:"He lived there and saw it built. Smith printed his letter."}],
+  4:[{t:"“roote out from being any longer a people”: the Company, 1 August 1622",k:2,res:"Written in London, by men who would not fight the war."},
+     {t:"“make them as secure as wee were”: George Sandys to his brother",k:0,res:"Sandys was there, writing privately: his own plan, not a report."},
+     {t:"Chauco’s message, “blud inough had already been shedd”: the Council",k:1,res:"Opechancanough to Chauco, Chauco to the Council: told twice over."},
+     {t:"“three bushels apeece”: one of Yeardley’s men, in Smith’s book",k:0,res:"“for our paines we had three bushels”: he was on the march."}],
+  5:[{t:"His hunger and his rags: Frethorne’s letter",k:0,res:"He lived it. He wanted his parents to buy him out."},
+     {t:"“26 of English men slayne”: Frethorne’s letter",k:1,res:"“wee heare”, he writes: news that reached Martin’s Hundred."},
+     {t:"“they slew 80 Persons” at Martin’s Hundred: Frethorne’s letter",k:1,res:"He came at Christmas, nine months after. He heard it."},
+     {t:"His letter, endorsed “Coppie”: Sir Nathaniel Rich’s papers",k:2,res:"Kept in London by an enemy of the Company, to use against it."}],
+  6:[{t:"The sack was sent “to poysen them”: Robert Bennett’s letter",k:1,res:"Bennett was not at the parley. A private letter, weeks later."},
+     {t:"“by a succesfull stratageme”: the Council’s report",k:1,res:"The Council had it from Tucker’s men. Its report leaves the poison out."},
+     {t:"“RICHARD FRETHRAM”, dead: the list of February 1624",k:0,res:"Officers in the colony, counting the living and the dead."},
+     {t:"Virginia will “gett the name of a Slaughterhouse”: Captain Butler",k:0,res:"Butler was there that winter, and in trouble. His attack helped bring the inquiry."}]};
+const SKY_CLOSE={
+  6:"<p>Every Powhatan sentence in this chapter reached us through an English writer. Ask who wrote it down, and why.</p>"};
+
+/* ---- FRETHORNE'S LETTER, SORTED ---- c: 0 saw, 1 heard, 2 feared (Kingsbury IV:41, 58-61) */
+const SKY_LETTER_K=["Saw","Heard","Feared"];
+const SKY_LETTER=[
+  {t:"“I haue nothing at all, no not a shirt to my backe, but two Ragges”",c:0},
+  {t:"“this day wee heare that there is 26 of English men slayne”",c:1},
+  {t:"“wee are but 32 to fight against 3000 if they should Come”",c:2},
+  {t:"“a mouthfull of bread for a pennie loafe must serve for 4 men”",c:0},
+  {t:"“the Saylers say that ther is two thirds of the 150 dead already”",c:1},
+  {t:"“they may easilie take vs”",c:2}];
+
+function skyDone(id){
+  const w=skyW();
+  if(!w.did[id]){w.did[id]=true;S.ink+=6;updateInk();checkpoint("ch10-"+id);}
+  for(let i=interactables.length-1;i>=0;i--){
+    const it=interactables[i];
+    if(it.action==="sky"&&it.data&&it.data.kind===id){if(it.el)it.el.style.display="none";interactables.splice(i,1);}
+  }
+  for(let i=SKY.later.length-1;i>=0;i--)if(SKY.later[i].data.after===id){
+    const it=SKY.later[i], el=document.createElement("div");el.className="lbl";
+    el.innerHTML="<b>"+it.label+"</b><i></i>";$("labels").appendChild(el);it.el=el;
+    interactables.push(it);SKY.later.splice(i,1);}
+  const nx=interactables.filter(function(it){return it.id==="next";})[0];
+  if(nx)nx.data.verb=skyNeed()?"Not yet":"Go on";
+  updateGuide();
+}
+function skyQuiz(kick,title,body,opts,id,after){
+  sickSheet(kick,title,body,shuffle(opts.map(function(o){return {t:o[0],fn:function(){
+    skyDone(id);
+    if(o===opts[0])fortResult(o[1],o[2],["+6 Ink"],after||null);
+    else{result(false,o[1],"",["+6 Ink"],after||null);$("resBody").innerHTML=o[2];}}};})));
+}
+/* a sheet of rows, each marked with one of `keys`; marks kept in w.marks[id] */
+function skyRows(kick,title,intro,rows,keys,id,done){
+  const w=skyW();
+  w.marks[id]=(w.marks[id]&&w.marks[id].length===rows.length)?w.marks[id]:rows.map(function(){return null;});
+  let h=intro;
+  rows.forEach(function(r,i){
+    h+="<div class=\"captRow\"><span>"+r.t+"</span> <div class=\"captBtns\">"+keys.map(function(v,k){
+      return "<button class=\"btn small\" data-lr=\""+i+"\" data-v=\""+k+"\">"+v+"</button>";}).join(" ")+" <b class=\"captMark\" id=\"lr"+i+"\"></b></div></div>";});
+  sickSheet(kick,title,h,[{t:"Done",fn:function(){
+    const m=w.marks[id];
+    if(m.some(function(x){return x==null;})){toast("Mark every row first.");setTimeout(function(){skyRows(kick,title,intro,rows,keys,id,done);},50);return;}
+    done(m.filter(function(x,i){return x===(rows[i].k!=null?rows[i].k:rows[i].c);}).length);}}]);
+  rows.forEach(function(r,i){if(w.marks[id][i]!=null)$("lr"+i).textContent=keys[w.marks[id][i]];});
+  document.querySelectorAll("#sickBody [data-lr]").forEach(function(b){
+    b.onclick=function(){const i=+b.dataset.lr;w.marks[id][i]=+b.dataset.v;$("lr"+i).textContent=keys[w.marks[id][i]];saveGame();};});
+}
+
+function skyAct(d){
+  const w=skyW();
+  if(d.kind==="next"){skyNext();return;}
+  if(d.kind==="record"){if(w.done)showEnding("ch10");else openReckoning();return;}
+  if(d.kind==="look"){
+    const L=(SKY_LOOKS[w.day]||[]).filter(function(a){return a[0]===d.id;})[0];
+    if(L){w.did["look_"+L[0]]=true;saveGame();fortResult(L[4],L[5],[]);}
+    return;
+  }
+  /* 0 · maids for wiues */
+  if(d.kind==="chests"&&!d.worked){
+    d.worked=true;priceFace(d,2);
+    playerDoes("lift",3,"The women’s chests, up from the boat. Each woman’s passage is owed in tobacco.",{load:"chest"},function(){skyAct(d);});
+    return;
+  }
+  if(d.kind==="chests"){
+    /* Kingsbury III:493, 583; Tyler p. 339 n. 2 */
+    skyQuiz("James City · November 1621","Three writers",
+      priceCard("The Company","a letter from London, August 1621","“Wee send youe in this Shipp on[e] Widdow and eleven Maid[s] for Wiues”")+
+      priceCard("The Council in Virginia","a letter, January 1622","the maids placed “w[i]thowt any pvisione at all”")+
+      priceCard("Lyon G. Tyler","an editor’s note, 1907","“sold with their consent to the settlers as wives”")+
+      "<p>Who calls it a sale?</p>",
+      [["Tyler, in 1907","A later word","<p>The Company wrote “Wiues”, and set a price. “Sold” is Tyler’s word, three centuries later. “Tobacco brides” is a modern label.</p>"],
+       ["The Company","Not its word","<p>The Company wrote “Maid[s] for Wiues”, and set a price. “Sold” is Tyler’s word, in 1907.</p>"],
+       ["The Council in Virginia","Not its word","<p>The Council wrote of placing them with no supplies. “Sold” is Tyler’s word, in 1907.</p>"]],"chests");
+    return;
+  }
+  if(d.kind==="book"){
+    /* Kingsbury III:494, 505 */
+    skyQuiz("James City · the tobacco book","120 pounds of leaf",
+      priceCard("The Company","August 1621","each man who marries one must “giue 120[li] waight of the best leafe Tobbacco”")+
+      priceCard("The Company","the same letter","“not enforecing them to Marrie against theire will[s]”")+
+      "<p>Can both be true?</p>",
+      [["Yes: a price, and a choice","Both, in one letter","<p>The leaf repaid her passage. The next ship’s women cost 150 pounds. The same letter forbids forcing any woman to marry.</p>"],
+       ["No: a price means a sale","Not quite","<p>The leaf repaid her passage. The same letter says she may not be forced. Price and consent, side by side.</p>"],
+       ["No: they were sent as servants","Not servants","<p>The Company did not send them “to be servants, saue in case of extremitie”. A price and a choice, in one letter.</p>"]],"book");
+    return;
+  }
+  if(d.kind==="muster"){
+    /* the Council, 20 Jan. 1623 (Kingsbury IV:10); the Company's charge (III:666) */
+    skyQuiz("James City · 1621","The muster",
+      "<p>The Council, in 1623: warned of a plot, Yeardley “went to every Plantatione and tooke a generall muster of all the men and theire Armes”.</p><p>Why did the Council write this down for London?</p>",
+      [["To answer London’s blame","Blame","<p>The Company charged it with being “secure” in a time of danger. The muster shows it had acted. A letter can defend its writer.</p>"],
+       ["To count tobacco","Men and arms","<p>It counted men and arms. The Council wrote of it in 1623 to answer the Company’s blame.</p>"],
+       ["To plan an attack","Not that","<p>It was a defence. The Council wrote of it in 1623 to answer the Company’s blame.</p>"]],"muster");
+    return;
+  }
+  /* 1 · jack of the feather */
+  if(d.kind==="cap"){
+    /* GH, Tyler p. 357, and its margin: "writ by Master Wimp" */
+    skyQuiz("James City · March 1622","Morgan’s cap",
+      leafCard("Smith’s book","1624, “writ by Master Wimp”","Nemattanew took the trader Morgan to Pamunkey, “but the Salvage murdered him by the way”. Days later he came back in Morgan’s cap. Morgan’s two servants: “they shot him”.")+
+      "<p>Who saw it?</p>",
+      [["Nobody we can name","Second-hand","<p>Smith was in England. Master Wimp is unknown, and does not say he was there. Morgan’s death is an accusation, never tried.</p>"],
+       ["Captain Smith","In England","<p>Smith left Virginia in 1609. He printed Master Wimp’s account, and nobody knows who Wimp was.</p>"],
+       ["Nemattanew’s people","Not written","<p>They left no written account. What they believed of him is reported only by the English.</p>"]],"cap");
+    return;
+  }
+  if(d.kind==="youths"){
+    playCutscene({skippable:true,steps:SKY_YOUTHS()},function(){skyDone("youths");
+      /* GH, Tyler p. 357 */
+      fortResult("Two things","<p>Smith’s book: Nemattanew’s people thought him “immortall from any hurt could bee done him by the English”.</p><p>That is the English report of what they believed.</p>",["+6 Ink"]);});
+    return;
+  }
+  if(d.kind==="sky"){
+    /* GH, Tyler p. 357; Kingsbury IV:11, III:666 */
+    skyQuiz("James City · March 1622","Did he care?",
+      priceCard("Smith’s book","1624, from Master Wimp","Opechancanough “much grieved and repined, with great threats of revenge”")+
+      priceCard("The Council in Virginia","a letter, January 1623","he had said “he could be contented his throte were Cutt”")+
+      "<p>Why might the Council stress how little he cared?</p>",
+      [["London blamed it","Blame","<p>The Company charged the Council with being “secure” after Nemattanew’s death. A calm Opechancanough made it look less to blame.</p>"],
+       ["It was there; Smith was not","Half of it","<p>True. But the Council was answering London’s blame. Both are English reports, each written for a purpose.</p>"],
+       ["Opechancanough wrote to it","No letter","<p>He sent word by an interpreter. Nothing he wrote survives. Both are English reports, each with a purpose.</p>"]],"sky");
+    return;
+  }
+  /* 2 · pace's house */
+  if(d.kind==="warning"){
+    /* Kingsbury III:554-555 */
+    skyQuiz("Pace’s house · night","The warning",
+      leafCard("Edward Waterhouse","London, 1622","An Indian “belonging to one Perry”, living in Pace’s house, was urged by his brother to kill Pace. He “rose out of his bed and reueales it to Pace, that vsed him as a Sonne”.")+
+      "<p>Waterhouse was in London. Where did he get it?</p>",
+      [["From letters sent home","Letters","<p>From the Council’s letters, and people home on the <i>Seaflower</i>. He never crossed the Atlantic. Nobody in this house wrote anything down.</p>"],
+       ["He was in Pace’s house","In London","<p>He never crossed the Atlantic. He wrote from letters, and from passengers home on the <i>Seaflower</i>.</p>"],
+       ["From the man who warned","Not him","<p>No word of the warner’s survives. Waterhouse wrote from the Council’s letters and returning passengers.</p>"]],"warning");
+    return;
+  }
+  if(d.kind==="house"&&!d.worked){
+    d.worked=true;priceFace(d,2);
+    playerDoes("hammer",3.5,"The door barred, the shutters fast. Waterhouse: Pace, “securing his house”.",{},function(){skyAct(d);});
+    return;
+  }
+  if(d.kind==="house"){
+    skyDone("house");
+    fortResult("Securing his house","<p>Waterhouse: “Pace vpon this discouery, securing his house, before day rowed ouer the Riuer”.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="crossing"){
+    playCutscene({skippable:true,steps:SKY_CROSSING()},function(){skyDone("crossing");
+      /* Kingsbury III:555 */
+      fortResult("Warned in time","<p>Waterhouse: Pace “gaue notice thereof to the Gouernor”. Where people stood on guard, “at the sight of a Peece they all ranne away”.</p><p>Elsewhere there was no warning.</p>",["+6 Ink"]);});
+    return;
+  }
+  /* 3 · elizabeth city */
+  if(d.kind==="list"){
+    /* Kingsbury III:541 (title page), 570-571 */
+    skyQuiz("Elizabeth City · 1622","The list of the dead",
+      leafCard("Edward Waterhouse","London, 1622","“Persons slaine at Martins-Hundred”: “Master Tho: Boise, & Mistris Boise his wife, & a sucking Childe. 4 of his men. A Maide. 2 Children.” … “The whole number is 347.”")+
+      "<p>Why print the names?</p>",
+      [["So heirs could claim land","For the heirs","<p>The title page: “that their lawfull heyres … may take order for the inheriting of their lands”. It names the English only. Nobody counted the Powhatan dead.</p>"],
+       ["To count both sides","English only","<p>It names the English only. No count of the Powhatan dead exists. It was printed so heirs could claim land.</p>"],
+       ["To recruit soldiers","For the heirs","<p>The title page says why: “that their lawfull heyres … may take order for the inheriting of their lands”.</p>"]],"list");
+    return;
+  }
+  if(d.kind==="well"&&!d.worked){
+    d.worked=true;priceFace(d,2);
+    playerDoes("dig",4.5,"A well for fresh water. The river and creeks here are brackish.",{},function(){
+      if(SKY.plot)SKY.plot.visible=true;skyAct(d);});
+    return;
+  }
+  if(d.kind==="well"){
+    skyDone("well");
+    /* GH, Tyler pp. 378, 380 */
+    fortResult("Mantled with bricke","<p>A settler here, in Smith’s book: “a faire Well of fresh water mantled with bricke, because the River and Cricks are there brackish or salt”.</p><p>By summer, “no meat, no worke”.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="count"){
+    /* Kingsbury III:612, 571; Discourse, Tyler p. 437 */
+    skyQuiz("Elizabeth City · 1622","How many?",
+      "<p>The Council, April 1622: “aboue three hundred men women and Children”. Waterhouse’s list: “The whole number is 347.” The <i>Discourse</i>, 1625: “about 400”.</p><p>Which would a historian use?</p>",
+      [["347: a list of names","Names","<p>Names can be checked. The first count came within weeks; “about 400” three years later, from men asking to be put back in charge.</p>"],
+       ["About 400: the latest","Later is not better","<p>Written in 1625 by Sandys’s party. A list of names, 347, can be checked.</p>"],
+       ["An average of the three","Not that","<p>Use the best evidence, the list of names: 347. And say the others exist.</p>"]],"count");
+    return;
+  }
+  /* 4 · the pamunkey */
+  if(d.kind==="corn"&&!d.worked){
+    d.worked=true;priceFace(d,2);
+    playerDoes("lift",3,"Three bushels a man. And ten shillings a bushel for the freight.",{load:"basket"},function(){skyAct(d);});
+    return;
+  }
+  if(d.kind==="corn"){
+    skyDone("corn");
+    /* GH, Tyler pp. 385-386 */
+    fortResult("Three bushels apeece","<p>One of Yeardley’s men, in Smith’s book: they “seised on all the Corne there was, set fire on their houses”.</p><p>Each man got “three bushels apeece”, and paid “ten shillings the bushell for fraught”.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="letters"){
+    /* Kingsbury III:672; IV:71-72 */
+    skyQuiz("The Pamunkey · 1622–23","Two letters",
+      priceCard("The Company","an order from London, 1 August 1622","“roote out from being any longer a people, so cursed a nation … let them haue a p[er]petuall warre w[i]thout peace or truce”")+
+      priceCard("George Sandys","privately, to his brother, 30 March 1623","“will trie if wee can make them as secure as wee were, that wee may follow their example in destroying them”")+
+      "<p>One is an order, one a private letter. What does the private one add?</p>",
+      [["How a peace would be used","A plan","<p>London ordered war openly. Sandys, privately, planned a false peace. In May it was done.</p>"],
+       ["That he disagreed with London","He agreed","<p>He planned to use the peace to destroy them, “their example”. In May it was done.</p>"],
+       ["Nothing new","A plan","<p>London ordered war. Sandys planned a false peace to fight it. In May it was done.</p>"]],"letters");
+    return;
+  }
+  if(d.kind==="chauco"){
+    /* Kingsbury IV:98-99 */
+    skyQuiz("The Pamunkey · April 1623","Chauco’s message",
+      leafCard("The Council in Virginia","a letter, 4 April 1623","Chauco, who warned “divers” on the day, brings word from Opechancanough: “blud inough had already been shedd one both sides”. Mrs Boyse is sent home “appareled like one of theire Queens”.")+
+      "<p>Whose words are these?</p>",
+      [["Opechancanough’s, carried twice","Told, twice","<p>Opechancanough to Chauco, Chauco to the Council, the Council to London. Every Powhatan sentence here reaches us through an English writer.</p>"],
+       ["Chauco’s own letter","No letter","<p>Chauco wrote nothing that survives. The Council wrote down what he said.</p>"],
+       ["Mrs Boyse’s account","Not hers","<p>She left no account. The Council wrote down Chauco’s message.</p>"]],"chauco");
+    return;
+  }
+  /* 5 · martin's hundred */
+  if(d.kind==="boat"&&!d.worked){
+    d.worked=true;priceFace(d,2);
+    playerDoes("lift",2.6,"Load the boat for James Town.",{load:"cask"},function(){
+      playCutscene({skippable:true,steps:SKY_BOAT()},function(){skyAct(d);});});
+    return;
+  }
+  if(d.kind==="boat"){
+    skyDone("boat");
+    /* Kingsbury IV:59 */
+    fortResult("Lye in the boate","<p>Frethorne: “goe home in the afternoone, and vnload, and then away againe in the night”.</p><p>“if it rayned, or blowed never so hard wee must lye in the boate on the water”.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="gruel"){
+    /* Kingsbury IV:58, 60-61; the names are those the OCR reads cleanly */
+    skyQuiz("Martin’s Hundred · 20 March 1623","His master’s house",
+      leafCard("Richard Frethorne","to his father and mother, 20 March 1623","“John Flower … John Butcher … a litle Dutchman … one woman … one child”. “All theis died out of my m[aste]rs house, since I came, and wee came in but at Christmas.”")+
+      "<p>What does he blame?</p>",
+      [["Sickness, and short food","His words","<p>“the scurvie and the bloody flix”, he writes, and “a mouthfull of bread for a pennie loafe must serve for 4 men”.</p>"],
+       ["The attack of 22 March","Before he came","<p>He came at Christmas, nine months after. He blames “the scurvie and the bloody flix”, and short food.</p>"],
+       ["The cold of the crossing","Not that","<p>They died here, in his master’s house. He blames sickness and short food.</p>"]],"gruel");
+    return;
+  }
+  if(d.kind==="letter"){
+    skyRows("Martin’s Hundred · the letter home","Saw, heard, or feared?",
+      "<p>Frethorne’s own lines. Did he see it, hear it, or fear it?</p>",
+      SKY_LETTER,SKY_LETTER_K,"letter",function(right){
+        skyDone("letter");
+        fortResult("One letter, three kinds","<p>You placed "+right+" of "+SKY_LETTER.length+".</p><p>He saw his own hunger and rags. He heard the killings, and the sailors’ count. He feared the 3,000. One letter is evidence of three different things.</p>",["+6 Ink"]);});
+    return;
+  }
+  /* 6 · two reports, and the list */
+  if(d.kind==="stratageme"){
+    /* Kingsbury IV:221-222, 102 */
+    skyQuiz("James City · June 1623","Two reports",
+      leafCard("Robert Bennett","a private letter to his brother, 9 June 1623","The peace was to be sealed “in a helthe or tooe in sacke which was sente of porpose … to poysen them”. “yt is thought some tooe hundred weare poysned”.",
+        "“and thaye comyng backe killed som 50 more and brought hom parte of ther heades”.")+
+      leafCard("The Council in Virginia","its report to London, 1623","“Wee haue by a succesfull stratageme, not onely regayned our People, but cutt of some kings, and divers of the greatest Comanders of the Eniniy”")+
+      "<p>Why might the official report leave the poison out?</p>",
+      [["London would read it","An official report","<p>Only a private letter, by a man not at the parley, names the poison. Both wrongly believed Opechancanough dead.</p>"],
+       ["There was no poison","Not settled","<p>Bennett says there was. He was not there, and wrote weeks later. The official report says “stratageme”, nothing more.</p>"],
+       ["Bennett wrote the report","No","<p>Bennett was a merchant-planter, writing privately to his brother. The poisoning was his “Newse”.</p>"]],"stratageme");
+    return;
+  }
+  if(d.kind==="butler"){
+    /* Tyler pp. 413-418 */
+    skyQuiz("James City · 1623","Butler, and the answer",
+      priceCard("Captain Butler","“The Unmasked Face of our Colony”, 1623","newcomers “seen dyinge under hedges”; Virginia “will shortly gett the name of a Slaughterhouse”")+
+      priceCard("The planters’ answer","London, 1623, under oath","“there is no hedge in all Virginia”")+
+      "<p>Does the answer disprove Butler?</p>",
+      [["No: it answers a word","A word","<p>No hedges, perhaps. But on the numbers the planters declined to answer, “being ignorant how many have been transported”.</p>"],
+       ["Yes: under oath","Sworn, not proof","<p>They swore to the hedges. On the numbers they declined to answer, “being ignorant how many have been transported”.</p>"],
+       ["Yes: Butler was not there","He was","<p>Butler was there that winter. The answer quarrels with a word; on the numbers it declined to answer.</p>"]],"butler");
+    return;
+  }
+  if(d.kind==="living"){
+    /* Hotten pp. 169, 174, 193, 224 */
+    skyQuiz("James City · 16 February 1624","The living and the dead",
+      priceCard("Lists of the Livinge and Dead in Virginia","“Febr: 16th 1623” (our 1624)","Living, at James City: “ANGELO a Negar”. Dead, “At martins hundred”: “RICHARD FRETHRAM”, almost surely Frethorne.")+
+      "<p class=\"note\">“Negar” is the clerk’s word.</p><p>What does the list tell us about Angelo?</p>",
+      [["Her name, and that she lived","Little","<p>A first name, a place, alive. The next muster adds “a Negro Woman in the Treasurer”, her ship. No age, no term, no word of hers.</p>"],
+       ["Her age and her term","Not given","<p>The lists give a first name, a place and, in 1625, a ship. Never an age or a term.</p>"],
+       ["What she thought of Virginia","Nothing","<p>No word of hers survives. A first name, a place and a ship: that is all.</p>"]],"living");
+    return;
+  }
+}
+
+/* the board: the way out of a scene */
+function skyNext(fromBoard){
+  const w=skyW(), need=skyNeed();
+  if(need){toast("Not yet: "+SKY_DUTY[need].charAt(0).toLowerCase()+SKY_DUTY[need].slice(1)+".");return;}
+  const rows=SKY_BOARD[w.day];
+  if(rows&&!fromBoard&&w.board[w.day]==null){
+    skyRows("Whose account?","Saw it, told it, or far away?",
+      "<p>Did the writer see it, was he told it, or did he write from far away, or later?</p>",
+      rows,SKY_K,"board"+w.day,function(right){
+        w.board[w.day]=right;checkpoint("ch10-board"+w.day);
+        /* only the rows placed differently from the record are explained, each by its own
+           fixed sentence, so every line said here has a recording */
+        const m=w.marks["board"+w.day]||[], off=rows.filter(function(r,i){return m[i]!==r.k;});
+        fortResult("Whose account?","<p>You placed "+right+" of "+rows.length+".</p>"+
+          (off.length?"<ul>"+off.map(function(r){return "<li>"+r.res+"</li>";}).join("")+"</ul>":"")+(SKY_CLOSE[w.day]||""),
+          [],function(){skyNext(true);});});
+    return;
+  }
+  if(w.day>=SKY_DAYS.length-1){w.did.closed=true;checkpoint("ch10-closed");enterWorld("ch10");return;}
+  w.day++;
+  checkpoint("ch10-day"+w.day);
+  const o=SKY_OPEN[w.day];
+  fortResult(o.t,"<p class=\"sickDate\">"+SKY_DAYS[w.day].date+"</p>"+o.b,[],function(){enterWorld("ch10");});
+}
+
+/* ---- BOATS ON THE RIVER ---- a shallop with rowers in it, one group, moved by the cutscene.
+   The rowers kneel at the thwarts and pull; their work stops when the scene ends */
+const SKY_ROWERS=[];
+function skyBoat(eqs){
+  const grp=new THREE.Group(), B=new Geo();
+  buildShallop(B,0,-0.3,0,0,0.02);grp.add(B.mesh(false,false));
+  eqs.forEach(function(eq,i){
+    const f=buildFigure(eq);poseFigure(f,"kneel",11+i);
+    f.position.set(i%2?0.75:-0.75,0.35,-5+i*3.2);f.rotation.y=Math.PI;grp.add(f);
+    SKY_ROWERS.push(workAdd(f,"row",{}));});
+  return grp;
+}
+function skyRowersOff(){while(SKY_ROWERS.length)workRemove(SKY_ROWERS.pop());}
+/* GH, Tyler p. 357: Morgan's two youths take him "to have him before the Governor". Seen
+   from the fort's river gate, at a distance; nobody lying in the boat is drawn */
+function SKY_YOUTHS(){
+  return [
+    {spawn:{id:"boat",make:function(){return skyBoat([crowdEq("boy",50),crowdEq("boy",51)]);},at:[-150,0,112],face:Math.PI/2}},
+    {fade:"in",cam:{to:[-4,11,58],look:[-120,1,112],cut:true},t:4.5,move:{id:"boat",to:[-95,0,112],face:Math.PI/2},
+     narrate:"Morgan’s two servants put Nemattanew in a boat, to take him before the Governor."},
+    {cam:{to:[-6,10,62],look:[-60,1,112]},t:5,move:{id:"boat",to:[-45,0,112],face:Math.PI/2},
+     narrate:"On the way, Smith’s book says, he asked the boys two things."},
+    {cam:{to:[-8,10,64],look:[-20,1,112]},t:5,move:{id:"boat",to:[-5,0,112],face:Math.PI/2},
+     narrate:"That they not tell he was killed by a bullet. And that they bury him among the English."},
+    {fade:"out",t:1,do:function(){skyRowersOff();}}];
+}
+/* Waterhouse (Kingsbury III:555): "before day rowed ouer the Riuer to Iames-City" */
+function SKY_CROSSING(){
+  const me=Object.assign({},S.equip);
+  return [
+    {spawn:{id:"boat",make:function(){return skyBoat([SKY_PEOPLE[2].eq,me]);},at:[18,0,84],face:0}},
+    {fade:"in",cam:{to:[-4,8,60],look:[18,1,100],cut:true},t:4.5,move:{id:"boat",to:[18,0,120],face:0},
+     narrate:"Before day, Pace rowed over the river to James City."},
+    {cam:{to:[30,9,110],look:[18,1,160]},t:5,move:{id:"boat",to:[18,0,180],face:0},
+     narrate:"Waterhouse: the river there is “neere three miles in bredth”."},
+    {cam:{to:[2,7,170],look:[18,1,230]},t:5,move:{id:"boat",to:[18,0,240],face:0},
+     narrate:"He gave notice to the Governor. Places that got word in time stood on guard."},
+    {fade:"out",t:1,do:function(){skyRowersOff();}}];
+}
+/* Frethorne (Kingsbury IV:59): the boat up to James Town and home again by night */
+function SKY_BOAT(){
+  const me=Object.assign({},S.equip);
+  return [
+    {spawn:{id:"boat",make:function(){return skyBoat([crowdEq("hand",52),me,crowdEq("hand",53),crowdEq("boy",54)]);},at:[20,0,78],face:Math.PI/2}},
+    {fade:"in",cam:{to:[2,8,58],look:[30,1,78],cut:true},t:4.5,move:{id:"boat",to:[70,0,78],face:Math.PI/2},
+     narrate:"Up to James Town by night, load the next day, home in the afternoon."},
+    {cam:{to:[70,8,60],look:[110,1,80]},t:5,move:{id:"boat",to:[140,0,78],face:Math.PI/2},
+     narrate:"Then away again in the night. Rain or wind, they lie in the boat."},
+    {fade:"out",t:1,do:function(){skyRowersOff();}}];
+}
+
+/* ---- NEW THINGS IN THE WORLD ---- */
+/* a sea chest, carried against the chest like a cask */
+WORK_LOAD.chest=function(){const g=new Geo(), wood=RGB(0x6b5236), band=RGB(0x3a2c20);
+  g.box(0,0,0,0.62,0.34,0.36,wood);g.box(0,0.18,0,0.64,0.04,0.38,band);return g.mesh(false,false);};
+/* a palisade of split stakes round a settlement, open on the river side (+z) */
+function skyPale(root,G,cx,cz,r,gap){
+  const P=new Geo(), stake=RGB(0x6a543a);
+  const n=Math.round(Math.PI*2*r/1.15);
+  for(let i=0;i<n;i++){
+    const a=i/n*Math.PI*2;
+    if(Math.abs(Math.atan2(Math.sin(a),Math.cos(a)))<gap)continue;   /* a about 0 is +z */
+    const x=cx+Math.sin(a)*r, z=cz+Math.cos(a)*r, gy=G(x,z);
+    P.beam8([x,gy-0.3,z],[x,gy+8.5+srand(i*1.3+r)*0.8,z],0.7,0.55,stake,stake);
+  }
+  root.add(P.mesh(false,false));
+  /* colliders along the ring, a few feet each, leaving the gap open */
+  for(let k=0;k<40;k++){const a=(k+0.5)/40*Math.PI*2;
+    if(Math.abs(Math.atan2(Math.sin(a),Math.cos(a)))<gap+0.05)continue;
+    solid(cx+Math.sin(a)*r,cz+Math.cos(a)*r,2.4,2.4,LVL.MAIN,0);}
+}
+/* a piece of ordnance on its carriage, pointing along yaw */
+function skyGun(root,G,x,z,yaw){
+  const g=new Geo(), wood=RGB(0x5a4128), iron=RGB(0x2e2e32), gy=G(x,z), c=Math.cos(yaw), s=Math.sin(yaw);
+  g.box(x,gy+0.8,z,1.6,1.0,1.6,wood);
+  g.beam8([x-s*1.6,gy+1.6,z-c*1.6],[x+s*3.2,gy+1.75,z+c*3.2],0.62,0.48,iron,iron);
+  root.add(g.mesh(false,false));solid(x,z,1.4,1.4,LVL.MAIN,0);
+}
+/* Nuce's well: a ring of brick, hidden until it is dug */
+function skyWell(root,G,x,z){
+  const g=new Geo(), brick=RGB(0x9a4e34), brickD=RGB(0x7a3c28), gy=G(x,z);
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2;g.box(x+Math.sin(a)*1.6,gy+0.55,z+Math.cos(a)*1.6,1.1,1.1,0.5,i%2?brick:brickD);}
+  g.box(x,gy+0.05,z,2.4,0.1,2.4,RGB(0x1e2a2c));
+  const m=g.mesh(false,false);root.add(m);return m;
+}
+/* bricks stacked ready for the well */
+function skyBricks(root,G,x,z){
+  const g=new Geo(), brick=RGB(0x9a4e34), brickD=RGB(0x7a3c28), gy=G(x,z);
+  for(let t=0;t<3;t++)for(let i=0;i<4;i++)g.box(x+(i-1.5)*0.55+(t%2)*0.2,gy+0.15+t*0.3,z,0.5,0.28,1.0,(i+t)%2?brick:brickD);
+  root.add(g.mesh(false,false));solid(x,z,1.2,0.6,LVL.MAIN,0);
+}
+/* a field burnt off: dark hills, black stubble */
+function skyBurnt(root,G,x,z,cols,rows){
+  const g=new Geo(), ash=RGB(0x3a3530), char=RGB(0x1c1a18);
+  for(let r=0;r<rows;r++)for(let k=0;k<cols;k++){
+    const px=x+k*3, pz=z+r*3, gy=G(px,pz);
+    g.oct(px,pz,gy-0.2,gy+0.45,0.9,0.9,0.5,0.5,0.1,ash,ash);
+    for(let i=0;i<2;i++){const a=i*2.6+srand(r*5+k+x)*0.8, sx=px+Math.cos(a)*0.3, sz=pz+Math.sin(a)*0.3;
+      g.beam8([sx,gy+0.3,sz],[sx+Math.cos(a)*0.4,gy+1.1+srand(k*3+r+i)*0.5,sz+Math.sin(a)*0.4],0.12,0.06,char,char);}
+  }
+  root.add(g.mesh(false,false));
+}
+/* "a peece of a Church" at Martin's Hundred (Frethorne, Kingsbury IV:41): an end wall standing */
+function skyRuin(root,G,x,z){
+  const g=new Geo(), wall=RGB(0x8a6c48), wallD=RGB(0x5e4a32), gy=G(x,z);
+  g.box(x,gy+4.5,z,12,9,0.8,wall);g.box(x-3.5,gy+10.5,z,4,3,0.8,wallD);g.box(x+5.8,gy+2,z+3,0.8,4,6,wallD);
+  root.add(g.mesh(false,false));solid(x,z,6.2,0.8,LVL.MAIN,0);
+}
+/* a penny loaf cut four ways, on a chest */
+function skyLoaf(root,G,x,z){
+  const g=new Geo(), crust=RGB(0x9a6a3a), crumb=RGB(0xd8c08a), gy=G(x,z)+1.5;
+  for(let i=0;i<4;i++){const ox=(i%2?0.22:-0.22), oz=(i<2?0.22:-0.22);
+    g.oct(x+ox,z+oz,gy,gy+0.3,0.36,0.36,0.3,0.3,0.06,crust,crumb);}
+  root.add(g.mesh(false,false));
+}
+/* the seized corn in baskets, set down by the boats */
+function skyBaskets(root,G,x,z,n){
+  for(let i=0;i<n;i++){const m=WORK_LOAD.basket();m.scale.setScalar(FIG_SCALE);
+    m.position.set(x+(i%3)*1.7-1.7,G(x,z)+0.6+Math.floor(i/3)*1.1,z+Math.floor(i/3)*0.4);root.add(m);}
+}
+
+/* ---- THE TERRAIN ---- */
+SITE_TERRAIN.martins={sea:58,shore:30,flat:-12,deep:-1.2,fall:0.015,rise:1.6,inland:1.5,roll:0.9,
+  sky:0xaebfc8,fog:0xbac8cf,water:0x3d5c60,near:0x868a52,far:0x6c7644,back:0x515a36,wet:0x787650,
+  trees:0,treeZ:-40,treeH:50,seed:191};
+SITE_TERRAIN.nuce={sea:58,shore:30,flat:-12,deep:-1.4,fall:0.015,rise:1.4,inland:1.2,roll:0.8,
+  sky:0xa9c6d6,fog:0xbcd2dc,water:0x3e6064,near:0x8f9456,far:0x737c46,back:0x535c38,wet:0x7e7a54,
+  trees:0,treeZ:-40,treeH:46,seed:203};
+
+registerWorld("ch10",function(root){
+  const w=skyW(), sd=skyDay(), where=sd.where;
+  SKY.lit=false;SKY.night=!!sd.night;SKY.later=[];SKY.plot=null;SKY.cut=null;BLAZE.fires.length=0;
+  skyRowersOff();
+  let G, spots={}, at=[0,20], face=Math.PI, nextAt=null, look0=0, pitch0=0.30;
+  const duty=function(id,label,x,z,data){
+    if(data.kind&&SKY_DUTY[data.kind]&&w.did[data.kind])return;
+    const it={id:id,label:label,x:x,z:z,y:G(x,z),lvl:LVL.MAIN,r:8,action:"sky",data:data};
+    if(data.after&&!w.did[data.after]){SKY.later.push(it);return;}
+    interactables.push(it);};
+
+  if(where==="fort"){
+    const view=Object.assign({},fortW(),{epi:true,stretch:4,attack:null});
+    buildFortWorld(root,view,{ships:["discovery"],people:false,record:false,winter:w.day===6});
+    G=fortGround;nextAt=[-44,23];at=[0,-2];presTable(root,G,-44,19.5);
+    /* the 1607 tents go and framed houses stand on their sites, as in Chapter IX */
+    SKY.cut={tents:STARVE_TENTS.slice()};
+    STARVE_TENTS.filter(function(t){return !(t[0]===22&&t[1]===-22);}).forEach(function(t){leafHouse(root,G,t[0],t[1],0);});
+    if(w.day===0){
+      spots={wyatt:[-20,-2,2.6],yeardley:[-36,-2,2.4]};
+      /* the women land at a distance, by the boat at the shore; the chests come in at the river gate.
+         Nothing of any bargain is drawn (the record: no sale is described) */
+      captBarge(root,G,10,80,0.2);
+      [[4,60,3.0,1],[7,61.5,-2.9,0],[1,62,2.8,0],[10,59.5,-2.6,1]].forEach(function(a,i){
+        const f=englishWoman(!!a[3]);f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));});
+      workMan(root,crowdEq("hand",260),0,40,Math.PI,"carry",{from:[0,46],to:[0,15],load:"chest",speed:2.8,drop:workStack(root,-3.4,13.6,"chest",6).drop});
+      starveChest(root,G,5,16);
+      duty("chests","The Women’s Chests",5,19.5,{kind:"chests",verb:"Carry one",face:[5,16]});
+      duty("book","The Tobacco Book",-30,8,{kind:"book",verb:"Write it in"});presTable(root,G,-30,4);
+      duty("muster","The Muster Roll",14,11.5,{kind:"muster",after:"book",verb:"Read it"});starveChest(root,G,14,8);
+      starveChest(root,G,-44,2.5);
+      workMan(root,crowdEq("hand",261),20,-20,0.4,"hammer");
+    }
+    if(w.day===1){
+      spots={wyatt:[-20,-2,2.6]};
+      duty("cap","Master Wimp’s Account",-24,10,{kind:"cap",verb:"Read it"});presTable(root,G,-24,6);
+      duty("youths","The River Gate",3,34,{kind:"youths",after:"cap",verb:"Look"});
+      duty("sky","Two Reports",-44,6,{kind:"sky",after:"youths",verb:"Read them"});starveChest(root,G,-44,2.5);
+      starveChest(root,G,14,8);presTable(root,G,-30,4);
+      workMan(root,crowdEq("hand",262),34,-26,-0.6,"dig");
+      workMan(root,crowdEq("hand",263),0,40,Math.PI,"carry",{from:[0,46],to:[0,15],load:"wood",speed:3});
+    }
+    if(w.day===6){
+      spots=w.did.closed?{gsandys:[-36,-2,2.4]}:{gsandys:[-36,-2,2.4],wyatt:[-20,-2,2.6]};
+      duty("stratageme","Two Reports",-24,10,{kind:"stratageme",verb:"Read them"});presTable(root,G,-24,6);
+      duty("butler","Butler’s Paper",-44,6,{kind:"butler",after:"stratageme",verb:"Read it"});starveChest(root,G,-44,2.5);
+      duty("living","The List",14,11.5,{kind:"living",after:"butler",verb:"Read it"});starveChest(root,G,14,8);
+      starveChest(root,G,-30,4.5);
+      workMan(root,crowdEq("hand",264),20,-20,0.4,"chop",{target:[21.5,-17]});
+      priceLogs(root,G,[[22,-16.5,0.3,6]]);
+      if(w.did.closed){nextAt=null;
+        duty("record","The King’s Commissioner",-44,23,{kind:"record",verb:"Close the chapter’s record"});
+        const cm=buildFigure(crowdEq("gent",48));cm.position.set(-44,G(-44,16.6),16.6);cm.rotation.y=0;root.add(cm);solid(-44,16.6,1,1,LVL.MAIN,0);}
+    }
+  }
+  if(where==="pace"){
+    /* Richard Pace's house across the James, at night: the house, his tobacco, a landing */
+    G=captLand(root,"dividend",{trees:150,winter:false,clear:function(x,z){return Math.hypot(x,z-18)<62;}});
+    leafHouse(root,G,-10,4,0);
+    priceLeaves(root,G,12,-16,5,3);
+    priceLanding(root,G,8,60,92);
+    spots={pace:[6,16,-2.2]};
+    starveChest(root,G,-2,14.5);
+    duty("warning","The Warning",-2,18,{kind:"warning",verb:"Hear it"});
+    duty("house","Pace’s Door",-10,11,{kind:"house",after:"warning",verb:"Bar it",face:[-10,8.6],stand:[-10,11]});
+    duty("crossing","The Landing",8,58,{kind:"crossing",after:"house",verb:"Row"});
+    starveChest(root,G,-20,26.5);starveChest(root,G,24,26.5);
+    at=[6,40];nextAt=[22,46];starveChest(root,G,22,42.5);
+  }
+  if(where==="nuce"){
+    /* Elizabeth City: Nuce's house, the two houses built "for them he daily expected from England",
+       his entrenchment and "three peece of Ordnance" (GH, Tyler p. 378) */
+    G=captLand(root,"nuce",{trees:110,winter:false,clear:function(x,z){return Math.hypot(x,z)<70;}});
+    skyPale(root,G,0,0,46,0.42);
+    leafHouse(root,G,-24,-14,0);leafHouse(root,G,6,-28,0);leafHouse(root,G,28,-8,Math.PI/2);
+    skyGun(root,G,-12,38,0);skyGun(root,G,0,40,0);skyGun(root,G,12,38,0);
+    spots={nuce:[-6,12,2.6]};
+    SKY.plot=skyWell(root,G,12,12);SKY.plot.visible=!!w.did.well;
+    /* the bricks for it, stacked by the spot: the well is not a label over bare grass before it is dug */
+    skyBricks(root,G,16,11);
+    duty("well","The Well",12,15.5,{kind:"well",verb:"Dig it",face:[12,12]});
+    presTable(root,G,-30,14);duty("list","The List of the Dead",-30,18,{kind:"list",verb:"Read it"});
+    starveChest(root,G,16,30.5);duty("count","Three Counts",16,34,{kind:"count",after:"list",verb:"Weigh them"});
+    starveChest(root,G,-14,30.5);
+    workMan(root,crowdEq("hand",270),8,-18,Math.PI,"hammer");
+    workMan(root,crowdEq("hand",271),-34,4,0,"carry",{from:[-34,4],to:[-4,-14],load:"wood",speed:2.6});
+    at=[0,28];nextAt=[26,22];starveChest(root,G,26,18.5);
+  }
+  if(where==="pamunkey"){
+    /* the towns emptied, the fields burnt; fire only far down the shore; no bodies */
+    G=captLand(root,"chick",{trees:120,winter:false,clear:function(x,z){return Math.hypot(x,z-30)<50||Math.hypot(x+10,z+20)<50;}});
+    [[-40,-28,18,10,9,0],[-4,-46,20,11,9,1],[32,-30,18,10,9,0]].forEach(function(h){
+      yehakin(root,h[0],G(h[0],h[1]),h[1],h[2],h[3],h[4],h[5]);solid(h[0],h[1],(h[5]?h[3]:h[2])/2,(h[5]?h[2]:h[3])/2,LVL.MAIN,h[4]);});
+    skyBurnt(root,G,-34,-6,6,4);skyBurnt(root,G,14,-10,6,4);
+    [[-260,-20],[-240,-40],[-280,-50],[-225,-10]].forEach(function(a,i){
+      yehakin(root,a[0],G(a[0],a[1]),a[1],18,10,9,i%2);blazeAt(root,a[0],G(a[0],a[1])+6,a[1],14,10);});
+    [[20,80],[60,90]].forEach(function(a){captBarge(root,G,a[0],a[1],0.2);});
+    skyBaskets(root,G,-4,26,6);
+    spots={yeardley:[6,40,-1.6]};
+    workMan(root,crowdEq("hand",280),-2,8,0,"carry",{from:[-2,8],to:[16,58],load:"basket",speed:2.6});
+    workMan(root,crowdEq("soldier",281),10,6,0,"carry",{from:[10,4],to:[24,60],load:"basket",speed:2.4});
+    [[12,57,2.8],[30,58,-2.7],[-6,52,1.4]].forEach(function(a,i){
+      const f=buildFigure(crowdEq("soldier",282+i));f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=a[2];root.add(bakeFigure(f));});
+    duty("corn","The Corn",-4,30,{kind:"corn",verb:"Carry it",face:[-4,26]});
+    starveChest(root,G,-12,40.5);duty("letters","Two Letters",-12,44,{kind:"letters",after:"corn",verb:"Read them"});
+    starveChest(root,G,22,42.5);duty("chauco","Chauco’s Message",22,46,{kind:"chauco",after:"letters",verb:"Read it"});
+    starveChest(root,G,-28,42.5);
+    at=[8,52];nextAt=[-20,30];starveChest(root,G,-20,26.5);
+    face=Math.atan2(-258,-82);look0=Math.atan2(258,82);pitch0=0.12;
+  }
+  if(where==="martins"){
+    /* Martin's Hundred in 1623: "of all theyr houses there is butt 2 lefte and a peece of a Church"
+       (Frethorne, Kingsbury IV:41); a pale; corn, not tobacco, "all corne for breade" */
+    G=captLand(root,"martins",{trees:130,winter:false,clear:function(x,z){return Math.hypot(x,z)<64;}});
+    skyPale(root,G,0,-4,38,0.4);
+    leafHouse(root,G,-16,-18,0);leafHouse(root,G,16,-22,0);
+    skyRuin(root,G,0,-34);
+    leafCorn(root,G,18,-2,3,3);
+    workMan(root,crowdEq("hand",290),29,2,-1.57,"dig");
+    priceLanding(root,G,6,52,82);
+    spots={frethorne:[2,12,2.8]};
+    duty("boat","The Boat",6,49,{kind:"boat",verb:"Load it",face:[6,53]});
+    starveChest(root,G,-6,16.5);skyLoaf(root,G,-6,16.5);
+    duty("gruel","His Master’s House",-6,20,{kind:"gruel",after:"boat",verb:"Read it"});
+    presTable(root,G,-18,6);duty("letter","The Letter Home",-18,10,{kind:"letter",after:"gruel",verb:"Sort it"});
+    starveChest(root,G,12,18.5);
+    at=[0,26];nextAt=[-22,22];starveChest(root,G,-22,18.5);
+  }
+
+  const LOOK_AFTER={skye:"sky",lock:"cap",work:"crossing",stood:"crossing",proctor:"list",patawomeck:"corn",slaves:"gruel",slaues:"stratageme"};
+  (SKY_LOOKS[w.day]||[]).forEach(function(L){duty("look_"+L[0],L[1],L[2],L[3],{kind:"look",id:L[0],verb:"Look",after:LOOK_AFTER[L[0]]||null});});
+  for(const id in spots){
+    const d=skySpeaker(id);
+    if(!d)continue;
+    const a=spots[id], x=a[0], z=a[1], gy=G(x,z);
+    const f=buildFigure(d.eq);f.position.set(x,gy,z);f.rotation.y=a[2];root.add(f);
+    npcMeshes.push({npc:d,mesh:f});solid(x,z,1,1,LVL.MAIN,0);
+    interactables.push({id:id,label:d.name,x:x,z:z+3,y:gy,lvl:LVL.MAIN,r:7,action:"talk",data:d});
+  }
+  if(nextAt&&sd.next)duty("next",sd.next,nextAt[0],nextAt[1],{kind:"next",verb:skyNeed()?"Not yet":"Go on"});
+
+  if(w.day===0&&!w.did.open0){
+    w.did.open0=true;
+    setTimeout(function(){if(CURRENT_WORLD==="ch10")
+      fortResult(SKY_OPEN[0].t,"<p class=\"sickDate\">"+SKY_DAYS[0].date+"</p>"+SKY_OPEN[0].b,[]);},500);
+  }
+  if(where!=="fort"){player=buildFigure(S.equip);root.add(player);playerParts=player.userData.parts;dressCarried(player);}
+  player.position.set(at[0],G(at[0],at[1]),at[1]);player.rotation.y=face;
+  camYaw=look0;camPitch=pitch0;
+});
+
+function updateSky(dt){
+  if(CURRENT_WORLD!=="ch10")return;
+  SKY.t+=dt;
+  if(SKY.cut&&FORT.parts){
+    const p=FORT.parts.camp_shelters, C=SKY.cut;
+    if(p&&!p.userData.skyCut){p.userData.skyCut=true;starveCut(p,function(x,z){return C.tents.some(function(h){return Math.hypot(x-h[0],z-h[1])<9;});});}
+    const aw=FORT.parts.awning;if(aw&&aw.visible)aw.visible=false;
+  }
+  if(!SKY.lit){
+    if(SKY.night){scene.background=new THREE.Color(0x1a2030);if(scene.fog){scene.fog.color=new THREE.Color(0x1a2030);scene.fog.near=80;scene.fog.far=520;}
+      if(hemiLight)hemiLight.intensity*=0.35;if(sunLight)sunLight.intensity*=0.25;
+      if(skyDome){
+        const pp=skyDome.geometry.attributes.position, cc=skyDome.geometry.attributes.color;
+        for(let i=0;i<pp.count;i++){
+          const t=Math.max(0,Math.min(1,pp.getY(i)/60)), h=lerpHex(0x2a3244,0x0e121c,Math.pow(t,0.6));
+          cc.setXYZ(i,s2l(((h>>16)&255)/255),s2l(((h>>8)&255)/255),s2l((h&255)/255));
+        }
+        cc.needsUpdate=true;
+      }}
+    SKY.lit=true;
+  }
+  updateBlaze(dt);
+}
+
+/* ---- CHAPTER X'S CONTENT, AND ITS MUSTER ----
+   Sat with one of the King's two commissioners of 1624, after the list of the living and the
+   dead. Every item is ungated. Written off CH10-RECORD.md §Teaching hooks and §Disputes; keyed
+   a:0, shuffled at runtime, and no keyed option is the longest of its four. */
+CONTENT.ch10={
+  people:SKY_PEOPLE,
+  npcs:SKY_NPCS,
+  charter:{insight:{b:"The Sky Should Sooner Fall"}},
+  reck:{seal:"records",kick:"The King’s Commissioner",title:"Whose Account?",
+    frame:"The King has sent two commissioners “strictly to examine the true estate of the Colony”. One sits down with you. “Whose account should the King believe? Six questions; I’ll bear two wrong, no more.”",
+    lockLine:"Not yet. The commissioner will sit with you after the list of the living and the dead.",
+    pass:{title:"The Accounts Weighed",body:"The commissioner folds his papers. “Who saw it, who was told it, who wrote from far away. The King shall hear all three.”"},
+    fail:{title:"Not Yet Weighed",body:"“You believed the loudest paper,” says the commissioner. “Ask again who wrote each one, and where he stood.”"},
+    onPass:function(){skyW().done=true;},
+    q:[
+      {stim:"Sir Edwin Sandys, 1619: men in Virginia “stay there but to gett something and then to returne for England”. So he proposed sending women “to make wifes”.",
+       q:"What was a wife meant to do, in the Company’s eyes?",
+       o:["Keep men in Virginia","Teach the Powhatan English","Grow tobacco for London","Run the Company’s store"],a:0},
+      {stim:"The Company, 1621: “120[li] waight of the best leafe Tobbacco” for each woman, and “not enforecing them to Marrie against theire will[s]”.",
+       q:"What do the two lines show together?",
+       o:["A price and a choice","That they were sold at auction","That no tobacco changed hands","That the women had no say at all"],a:0},
+      {stim:"Lyon G. Tyler, an editor, 1907: the women “were sold with their consent to the settlers as wives”.",
+       q:"Whose word is “sold”?",
+       o:["Tyler’s, in 1907","The Company’s, in its letters","The women’s, in their letters","The Council’s, in Virginia"],a:0},
+      {stim:"The Discourse, 1625: about two thousand people at the end of 1621. Wroth, for the Company’s enemies: “about 1240 and rather vnder” in 1622.",
+       q:"Why might two counts differ?",
+       o:["Different dates and aims","One clerk could not count at all","Both were copied from Smith’s book","The Powhatan made the second one"],a:0},
+      {stim:"Edward Waterhouse wrote the account of 22 March in London, in 1622. Smith copied it almost word for word in 1624.",
+       q:"Who of the two saw that day?",
+       o:["Neither of them","Waterhouse, who was there","Smith, who was there","Both, from James City"],a:0},
+      {stim:"The Council, 1623, names “Chauco”, who warned “divers” on the day. The name “Chanco” first appears in William Stith’s history of 1747.",
+       q:"Which name has the earlier source?",
+       o:["Chauco, in 1623","Chanco, in 1622","Chanco, from Pace","Neither is written"],a:0},
+      {stim:"The Council: the cause was “the dayly feare that possest them, that in time we by our growing continually vpon them, would dispossesse them of this Country”.",
+       q:"Whose reason is this?",
+       o:["An English guess at theirs","Opechancanough’s own letter","Chauco’s sworn statement","A Powhatan history"],a:0},
+      {stim:"The Company, 1622: “a p[er]petuall warre w[i]thout peace or truce”, sparing the young “whose bodies may, by labo[ur] and service become profitable”.",
+       q:"What did the Company want from the war?",
+       o:["Their land, and labour","Peace on any terms","To punish the guilty only","To leave Virginia"],a:0},
+      {stim:"George Sandys, privately, March 1623: “make them as secure as wee were, that wee may follow their example in destroying them”.",
+       q:"What was the peace for?",
+       o:["A trap","To end the war honestly","To trade for more corn","To free Powhatan captives"],a:0},
+      {stim:"Robert Bennett’s private letter says the sack was sent “to poysen them”. The Council’s report says “by a succesfull stratageme”.",
+       q:"Why might the official report leave the poison out?",
+       o:["London would read it","There was no poison at all","Bennett wrote the report","The sack was never sent"],a:0},
+      {stim:"Bennett, who was not at the parley: “yt is thought some tooe hundred weare poysned”.",
+       q:"How should a historian use that number?",
+       o:["As a guess","As an exact count","As the Council’s own figure","As a Powhatan count"],a:0},
+      {stim:"Frethorne, at Martin’s Hundred: “this day wee heare that there is 26 of English men slayne”.",
+       q:"Did he see this?",
+       o:["No: he heard it","Yes: he was there","Yes: he counted them","No: he made it up"],a:0},
+      {stim:"Frethorne: “I haue nothing at all, no not a shirt to my backe, but two Ragges”.",
+       q:"Saw, heard, or feared?",
+       o:["Saw","Heard from the sailors","Feared, not yet true","Told by his master"],a:0},
+      {stim:"Frethorne’s letters survive as copies in the papers of Sir Nathaniel Rich, a leader of the attack on the Company.",
+       q:"Why might Rich have kept them?",
+       o:["To use against the Company","To send Frethorne money","To print in Smith’s book","To give back to his parents"],a:0},
+      {stim:"Frethorne: “wee tooke two alive, and make slaves of them”. The Council in Virginia feared “to be made slaues” to London’s merchants.",
+       q:"Does “slave” mean the same in both?",
+       o:["No: captives; and a fear","Yes, both times","Yes: paid servants","Yes: Africans, both times"],a:0},
+      {stim:"The list of 1624: “ANGELO a Negar”, living, at James City. The muster of 1625: “ANGELO a Negro Woman in the Treasurer”.",
+       q:"What can the lists not tell us?",
+       o:["Her age, term or words","Her first name, Angelo","The ship she came in","That she was alive in 1624"],a:0},
+      {stim:"The muster of 1625, Captain William Tucker’s household: “ANTONEY Negro: ISABELL Negro: and WILLIAM theire Child Baptised”. Tucker led the parley of May 1623.",
+       q:"What may a historian say of the two facts?",
+       o:["Only what each states","That he freed them in 1625","That they came on his own ship","That they were at the parley"],a:0},
+      {stim:"Smith, 1624: “The cause of the Massacre was the want of marshall discipline”. He was asking for soldiers, and a command.",
+       q:"Why does Smith’s purpose matter?",
+       o:["He wanted the job","He was there that day","He was Opechancanough’s friend","He wrote the Council’s letters"],a:0},
+      {stim:"A man with Captain Madison, at Patawomeck: they “slew thirty or forty men, women and children”, a people friendly to the English. He calls it a way “to bring them all to ruine”.",
+       q:"What does this source show?",
+       o:["English blame for English acts","That the Patawomeck attacked first","That every town was an enemy","That Madison was hanged for it"],a:0},
+      {stim:"Opechancanough’s “the Skye should sooner falle”, and Chauco’s “blud inough had already been shedd”, are known only from the Council’s letters.",
+       q:"What should a reader ask of each?",
+       o:["Who wrote it, and why","Whether it rhymes","How old the ink is","Which king said it first"],a:0},
+      {stim:"Butler: Virginia will “gett the name of a Slaughterhouse”. The planters’ answer: “there is no hedge in all Virginia”.",
+       q:"Does the answer disprove Butler?",
+       o:["No: it answers one word","Yes: nobody died that year","Yes: Butler was never there","No: Butler wrote the answer"],a:0},
+      {stim:"22 March 1622 was a Friday. Easter that year fell on 21 April. Tyler’s note of 1907 calls the day “Good Friday”.",
+       q:"What does this show about editors’ notes?",
+       o:["They can be wrong","They are always right","The attack was at Easter","Tyler was there in 1622"],a:0}]},
+  ready:function(){
+    const w=skyW();
+    return (w.day>=SKY_DAYS.length-1&&w.did.closed)?{ok:true,missing:[]}:{ok:false,missing:["the list of the living and the dead, in 1624"]};
+  },
+  targets:collectInsights(SKY_NPCS), unlocks:[]
+};
+
 const CHAPTERS=[
   /* Percy: "The six and twentieth day of Aprill, about foure a clocke in the
      morning, wee descried the Land of Virginia." The ships stand into the bay at
@@ -31397,9 +32318,39 @@ const CHAPTERS=[
    /* Pory to Carleton, 30 Sept. 1619 (Tyler pp. 285-287); GH, Tyler p. 339 */
    /* review, 27 Nov: was "January 1620"; the chapter's last scene is the March 1620 muster. Was "The Company's records
       for that year list"; the line is Smith's book, citing "the Companies records" (GH, Tyler p. 339) */
-   end:{head:"The Price of Tobacco — Complete",yr:"Chapter IX · March 1620",nextWorld:null,
+   end:{head:"The Price of Tobacco — Complete",yr:"Chapter IX · March 1620",nextWorld:"ch10",nextLabel:"The Sky Should Sooner Fall — Chapter X",
      body:"<p>Pory’s letter went home on the Dutch ship: “Our principall wealth (I should have said) consisteth in servants.” Of the Africans, not a word.</p>"+
        "<p>Smith’s book, from the Company’s records, lists among the people sent that year: “young women to make wives ninety”.</p>"}},
+  {n:"X",yr:"1621–24",t:"The Sky Should Sooner Fall",d:"James City, Pace’s house, Elizabeth City, the Pamunkey and Martin’s Hundred — October 1621 to February 1624",
+   ready:true,world:"ch10",pace:2.5,near:9,
+   intro:function(){ return "Women sent to marry planters. An attack on 22 March 1622, a war of revenge, a poisoning at peace talks. You may know “the Jamestown massacre”, “Chanco” and “tobacco brides”: the record supports none of them as told. Killings on both sides, a poisoning, captives, hunger, period words: in the sources’ words, none of it shown."; },
+   obj:function(){ return "Live seven scenes, 1621 to 1624. After each, place what you read: did the writer see it, was he told it, or did he write from far away, or later? Then sit with the King’s commissioner."; },
+   goals:function(){
+     const w=skyW(), need=skyNeed();
+     return [
+       {t:"Live the three years ("+(w.day+1)+" of "+SKY_DAYS.length+")",done:w.day>=SKY_DAYS.length-1&&!!w.did.closed},
+       {t:need?SKY_DUTY[need]:"Go on",done:!need},
+       {t:"Ask Sir George Yeardley, Master Pace and Master George Sandys what they know",done:SKY_NPCS.every(function(n){return npcDone(n.id);}),opt:true},
+       {t:"Sit with the King’s commissioner",done:!!w.done,goal:true,locked:!(w.day>=SKY_DAYS.length-1&&w.did.closed)}
+     ]; },
+   status:function(){ const w=skyW(), sd=skyDay(), need=skyNeed();
+     if(w.done)return "Chapter complete";
+     if(w.did.closed)return "1624 · the King’s commissioner is waiting";
+     return sd.date.split(" — ")[0]+" · "+(need?SKY_DUTY[need].charAt(0).toLowerCase()+SKY_DUTY[need].slice(1):"go on when you are ready"); },
+   next:function(){ const w=skyW(), need=skyNeed();
+     /* in the fort the arrow routes by the gate, as Chapters VI to IX do */
+     const fort=skyDay().where==="fort", R=function(it){return fort?presRoute(it,true):it;};
+     if(need){const c=findSpot(function(it){return it.action==="sky"&&it.data&&it.data.kind===need;});if(c)return {it:R(c),why:"what the day asks"};}
+     const o=findSpot(function(it){return it.id==="next"||it.id==="record";});
+     if(o)return {it:R(o),why:w.did.closed?"the chapter ends here":"the next date"};
+     return null; },
+   /* EV (Wolfe): "on May 24 of that year, the Crown formally revoked the company's charter"; Hotten
+      p. 244; GH, Tyler p. 406, the close of Smith's Virginia books */
+   end:{head:"The Sky Should Sooner Fall — Complete",yr:"Chapter X · 24 May 1624",nextWorld:null,
+     body:"<p>On 24 May 1624 the Crown revoked the Virginia Company’s charter, and took Virginia under its own rule.</p>"+
+       "<p>The next muster, in Captain William Tucker’s household: “ANTONEY Negro: ISABELL Negro: and WILLIAM theire Child Baptised”.</p>"+
+       "<p>Smith’s book closes its Virginia story: “Thus far I have travelled in this Wildernesse of Virginia”.</p>"+
+       "<p class=\"note\">“Negro” is the clerk’s word.</p>"}},
 ];
 /* The title screen is shown before any world begins, so it needs painting once here.
    Safe at this point and not one line earlier: CHAPTERS is closed above. */
@@ -31491,6 +32442,17 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"27 November 2026 · latest",
+   head:"Chapter X: The Sky Should Sooner Fall",
+   lines:[
+     "<b>A new chapter: 1621 to 1624</b>",
+     "The women the Virginia Company sent to marry planters, the attack of 22 March 1622, the night at Richard Pace’s house, the war of revenge, Richard Frethorne’s letters home from Martin’s Hundred, the poisoning at the peace talks of May 1623, and the end of the Company.",
+     "<b>A note for teachers</b>",
+     "This chapter includes killings on both sides, including of children, a poisoning, heads taken, captives held and enslaved, hunger and disease, and period words for Indians and Africans. All of it is in the words of the people who wrote it, with the writer named, and none of it is drawn. The worst details stay folded inside the document cards. “Massacre” appears only as the English writers’ word.",
+     "<b>Whose account?</b>",
+     "After each scene you place what you read: did the writer see it, was he told it, or did he write from far away, or later? The famous account of 22 March was written in London. Every Powhatan sentence comes to us through an English writer.",
+     "<b>Where to find it</b>",
+     "Pass Chapter IX’s muster and its ending leads on to Chapter X. If you passed it before today, Chapter X is already open in the chapter list."]},
+  {when:"27 November 2026",
    head:"Chapter IX: The Price of Tobacco",
    lines:[
      "<b>A new chapter: 1617 to 1620</b>",
@@ -32903,7 +33865,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0954";
+const BUILD="20261127-1039";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
