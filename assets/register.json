@@ -41,6 +41,78 @@
       "source": "made for this game: a white-tailed deer. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 11; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI; auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py; antlers cut away, reduced and colour-baked by tools/blender/bake_glb.py (2026-11-26)",
       "licence": "own",
       "notes": "binary glTF, vertex colours only, 1,500 triangles per pose (standing, grazing, startled); placed by addDeer() in index.html"
+    },
+    {
+      "path": "assets/animals/hog_standing.glb",
+      "source": "made for this game: a lean, dark, long-snouted hog of the period. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI (E:/VN-Tools/asset-toolkit/_stick_props/hog_s7); auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py (SWING=16); reduced and colour-baked by tools/blender/bake_glb.py, every frame on the standing pose's centre (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,500 triangles; pose \"standing\" of 4 (standing, walk_a, walk_b, rooting), flipped as a walk cycle; placed by hogSty() and starveHog() in index.html"
+    },
+    {
+      "path": "assets/animals/hog_walk_a.glb",
+      "source": "made for this game: a lean, dark, long-snouted hog of the period. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI (E:/VN-Tools/asset-toolkit/_stick_props/hog_s7); auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py (SWING=16); reduced and colour-baked by tools/blender/bake_glb.py, every frame on the standing pose's centre (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,500 triangles; pose \"walk_a\" of 4 (standing, walk_a, walk_b, rooting), flipped as a walk cycle; placed by hogSty() and starveHog() in index.html"
+    },
+    {
+      "path": "assets/animals/hog_walk_b.glb",
+      "source": "made for this game: a lean, dark, long-snouted hog of the period. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI (E:/VN-Tools/asset-toolkit/_stick_props/hog_s7); auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py (SWING=16); reduced and colour-baked by tools/blender/bake_glb.py, every frame on the standing pose's centre (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,500 triangles; pose \"walk_b\" of 4 (standing, walk_a, walk_b, rooting), flipped as a walk cycle; placed by hogSty() and starveHog() in index.html"
+    },
+    {
+      "path": "assets/animals/hog_rooting.glb",
+      "source": "made for this game: a lean, dark, long-snouted hog of the period. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI (E:/VN-Tools/asset-toolkit/_stick_props/hog_s7); auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py (SWING=16); reduced and colour-baked by tools/blender/bake_glb.py, every frame on the standing pose's centre (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,500 triangles; pose \"rooting\" of 4 (standing, walk_a, walk_b, rooting), flipped as a walk cycle; placed by hogSty() and starveHog() in index.html"
+    },
+    {
+      "path": "assets/animals/horse_standing.glb",
+      "source": "made for this game: a small bay horse, about thirteen hands. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 11; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI (E:/VN-Tools/asset-toolkit/_stick_props/mare_s11); auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py (grazing: GRAZE=72,-42 GRAZE_BONES=bone_2:28,bone_6:-28,bone_11:-28); reduced and colour-baked by tools/blender/bake_glb.py, every frame on the standing pose's centre (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,500 triangles; pose \"standing\" of 4 (standing, walk_a, walk_b, grazing), flipped as a walk cycle; placed by addAnimal() in index.html, Chapter VI, August 1609"
+    },
+    {
+      "path": "assets/animals/horse_walk_a.glb",
+      "source": "made for this game: a small bay horse, about thirteen hands. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 11; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI (E:/VN-Tools/asset-toolkit/_stick_props/mare_s11); auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py (grazing: GRAZE=72,-42 GRAZE_BONES=bone_2:28,bone_6:-28,bone_11:-28); reduced and colour-baked by tools/blender/bake_glb.py, every frame on the standing pose's centre (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,500 triangles; pose \"walk_a\" of 4 (standing, walk_a, walk_b, grazing), flipped as a walk cycle; placed by addAnimal() in index.html, Chapter VI, August 1609"
+    },
+    {
+      "path": "assets/animals/horse_walk_b.glb",
+      "source": "made for this game: a small bay horse, about thirteen hands. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 11; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI (E:/VN-Tools/asset-toolkit/_stick_props/mare_s11); auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py (grazing: GRAZE=72,-42 GRAZE_BONES=bone_2:28,bone_6:-28,bone_11:-28); reduced and colour-baked by tools/blender/bake_glb.py, every frame on the standing pose's centre (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,500 triangles; pose \"walk_b\" of 4 (standing, walk_a, walk_b, grazing), flipped as a walk cycle; placed by addAnimal() in index.html, Chapter VI, August 1609"
+    },
+    {
+      "path": "assets/animals/horse_grazing.glb",
+      "source": "made for this game: a small bay horse, about thirteen hands. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 11; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI (E:/VN-Tools/asset-toolkit/_stick_props/mare_s11); auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py (grazing: GRAZE=72,-42 GRAZE_BONES=bone_2:28,bone_6:-28,bone_11:-28); reduced and colour-baked by tools/blender/bake_glb.py, every frame on the standing pose's centre (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,500 triangles; pose \"grazing\" of 4 (standing, walk_a, walk_b, grazing), flipped as a walk cycle; placed by addAnimal() in index.html, Chapter VI, August 1609"
+    },
+    {
+      "path": "assets/animals/dog_standing.glb",
+      "source": "made for this game: a short-coated mastiff-type dog. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI (E:/VN-Tools/asset-toolkit/_stick_props/dog_s7); auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py (SWING=24); reduced and colour-baked by tools/blender/bake_glb.py, every frame on the standing pose's centre (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,500 triangles; pose \"standing\" of 3 (standing, walk_a, walk_b), flipped as a walk cycle; placed by addAnimal() in index.html"
+    },
+    {
+      "path": "assets/animals/dog_walk_a.glb",
+      "source": "made for this game: a short-coated mastiff-type dog. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI (E:/VN-Tools/asset-toolkit/_stick_props/dog_s7); auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py (SWING=24); reduced and colour-baked by tools/blender/bake_glb.py, every frame on the standing pose's centre (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,500 triangles; pose \"walk_a\" of 3 (standing, walk_a, walk_b), flipped as a walk cycle; placed by addAnimal() in index.html"
+    },
+    {
+      "path": "assets/animals/dog_walk_b.glb",
+      "source": "made for this game: a short-coated mastiff-type dog. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI (E:/VN-Tools/asset-toolkit/_stick_props/dog_s7); auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py (SWING=24); reduced and colour-baked by tools/blender/bake_glb.py, every frame on the standing pose's centre (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 1,500 triangles; pose \"walk_b\" of 3 (standing, walk_a, walk_b), flipped as a walk cycle; placed by addAnimal() in index.html"
+    },
+    {
+      "path": "assets/animals/rat_standing.glb",
+      "source": "made for this game: a black rat, the ship rat. Picture painted by Z-Image Turbo (Apache-2.0, Tongyi-MAI), seed 7; turned into a mesh by TRELLIS.2 (MIT, Microsoft; DINOv3 image encoder under the Meta DINOv3 License, commercial use allowed) through ComfyUI (E:/VN-Tools/asset-toolkit/_stick_props/rat_s7); auto-rigged by SkinTokens/TokenRig (MIT, VAST-AI) and posed by E:/VN-Tools/skintokens/pose_quadruped.py; reduced and colour-baked by tools/blender/bake_glb.py, every frame on the standing pose's centre (2026-11-27)",
+      "licence": "own",
+      "notes": "binary glTF, vertex colours only, 300 triangles; pose \"standing\" of one; placed by presRats() in index.html"
     }
   ]
 }

@@ -7747,6 +7747,7 @@ function disposeWorld(){
   CH1_SHORE=null;               /* a coastline must not outlive the world it is in */
   shootables=[];                /* nor may last chapter's casks stop this chapter's ball */
   DEER.length=0;                /* the deer belong to the world they were placed in */
+  ANIMALS.length=0;             /* animals, 27 Nov: and so do the hogs, horses and dog */
   CROWD_HITS.length=0;
   /* CROWD too, and it was leaking: it is filled by buildShoreParty and was only
      emptied there, so standing in Chapter I the registry still held all thirty-six
@@ -8532,7 +8533,7 @@ function animate(){
   /* play-test, 27 Nov: Chapter VI's ships, the boat from the falls, the rats and its night sky
      are driven by updatePres, which this branch never called - so "Captain Newport set sail"
      played over a ship riding at anchor, and the boat from the falls never came in */
-  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateWork(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}
+  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
   if(CAMLOCK.on){
     updateFx(dt);updateFlog(dt);updateShadows();
     cam.position.lerp(CAMLOCK.pos,Math.min(1,dt*3.5));
@@ -8542,6 +8543,7 @@ function animate(){
   IDLE_T+=dt;
   strayCheck();
   updateBell(dt);updateFalling(dt);updateJump(dt);updateCrowd(dt);updateNpcIdles(dt);updateDeer(dt);
+  updateAnimals(dt);   /* animals, 27 Nov */
   /* The deck under you plus whatever the jump has added - set every frame, not
      only while walking, or a jump from standstill would never leave the ground.
      Not during a cutscene: those place the player deliberately, and overwriting
@@ -19708,6 +19710,118 @@ function updateDeer(dt){
     }
   }
 }
+/* ========== ANIMALS THAT MOVE (animals, 27 Nov) ==========
+   The hogs, the horses and a dog, each one the record puts there:
+   - hogs: Smith's friends, of 1609, "of 3 sowes in one yeare increased 60 and od pigges";
+     their list of October 1609 has "5 or 600 swine"; and Percy found Davis's at Point
+     Comfort fed on crabs. So a sty at the fort from spring 1609 until the winter empties
+     it, and Davis's hogs in his yard.
+   - horses: Archer's ship of August 1609 carried "sixe Mares and two Horses". Small
+     horses, plain bay: English horses of the time stood about thirteen hands.
+   - a dog: Percy's "doggs Catts Ratts and myce", and the dogs' bones in the cellar.
+   Each model is TRELLIS.2 from a Z-Image picture, rigged by SkinTokens/TokenRig and posed
+   by pose_quadruped.py into still poses, baked like the deer.
+   A FLIPBOOK, NOT A SKIN. parseGLB refuses skins, and teaching it them would mean bone
+   matrices, a skinned shader program for every Chromebook to compile, and the GPU skinning
+   each vertex every frame. A walk is instead three baked poses shown in turn - one pair of
+   legs forward, standing, the other pair forward, standing - stepped by the distance
+   walked, so the feet do not slide. One mesh is drawn at a time: an animal costs one draw
+   call and one pose's triangles, about 1,500, exactly what a deer standing still costs.
+   ceiling: three frames to a stride reads as a walk at game distance; up close it is a
+   flicker. A fourth frame per pair (feet passing) is the way out, at ~150 KB a frame.
+   Behaviour is plain: an animal stands, roots or grazes, then walks a few feet somewhere
+   else inside its pen or yard; the dog trots from one man to another. None has a
+   collider, and each one moves off when the player comes close, so none is in the way.
+   The models face -x, as the deer do. */
+const ANIMALS=[];
+/* whole paths, so tools/check.py can see every file the game asks for */
+const ANIMAL_KINDS={
+  hog:{files:{standing:"assets/animals/hog_standing.glb",walk_a:"assets/animals/hog_walk_a.glb",
+              walk_b:"assets/animals/hog_walk_b.glb",rest:"assets/animals/hog_rooting.glb"},
+       speed:1.6,stride:1.5,idle:[3,9],step:[3,8],shy:6},
+  horse:{files:{standing:"assets/animals/horse_standing.glb",walk_a:"assets/animals/horse_walk_a.glb",
+                walk_b:"assets/animals/horse_walk_b.glb",rest:"assets/animals/horse_grazing.glb"},
+         speed:2.6,stride:3.0,idle:[7,18],step:[2,6],shy:9},
+  dog:{files:{standing:"assets/animals/dog_standing.glb",walk_a:"assets/animals/dog_walk_a.glb",
+              walk_b:"assets/animals/dog_walk_b.glb"},
+       speed:6.5,stride:2.2,idle:[2,6],step:[0,0],shy:4}
+};
+const WALK_CYCLE=["walk_a","standing","walk_b","standing"];
+function animalPose(a,p){if(a.pose===p)return;a.pose=p;for(const k in a.parts)a.parts[k].visible=(k===p);}
+/* o.area [cx,cz,hw,hd]: the pen or yard it stays in; o.way [[x,z],...]: the people a dog
+   goes between, in turn, so a round laid outside a crowd keeps it from running through it; o.avoid [[x,z],...]: where men stand, not to be walked into; o.scale: a
+   young one */
+function addAnimal(root,G,kind,x,z,ry,o){
+  o=o||{};
+  const K=ANIMAL_KINDS[kind], s=o.scale||1, grp=new THREE.Group();
+  grp.position.set(x,G(x,z),z);grp.rotation.y=ry||0;grp.scale.setScalar(s);root.add(grp);
+  const a={K:K,g:grp,G:G,s:s,parts:{},pose:"",state:"idle",t:0,t0:0,tx:x,tz:z,dist:0,
+           area:o.area||null,way:o.way||null,avoid:o.avoid||[],last:-1};
+  for(const p in K.files){const f=K.files[p];
+    a.parts[p]=placeModel(grp,f,f.split("/").pop().slice(0,-4),0,0,0,0,1,1,1);a.parts[p].visible=false;}
+  a.t=a.t0=K.idle[0]+srand(x*1.3+z*0.7)*(K.idle[1]-K.idle[0]);
+  animalPose(a,K.files.rest?"rest":"standing");
+  ANIMALS.push(a);
+  return a;
+}
+/* somewhere to go: six tries, scored by room from the player, then a little room from the
+   others and the men, then chance - so they spread about the pen rather than packing its corners */
+function animalPick(a){
+  const K=a.K, p=a.g.position, px=player?player.position.x:1e4, pz=player?player.position.z:1e4;
+  let best=null, bs=-1;
+  for(let i=0;i<6;i++){
+    let x,z,wi=-1;
+    if(a.way){
+      wi=(a.last+1)%a.way.length;
+      const an=Math.random()*6.283;x=a.way[wi][0]+Math.cos(an)*1.5;z=a.way[wi][1]+Math.sin(an)*1.5;
+    } else {
+      const A=a.area;
+      x=A[0]+(Math.random()*2-1)*A[2];z=A[1]+(Math.random()*2-1)*A[3];
+      const d=Math.hypot(x-p.x,z-p.z);
+      if(d>K.step[1]){x=p.x+(x-p.x)*K.step[1]/d;z=p.z+(z-p.z)*K.step[1]/d;}
+    }
+    let sep=3;
+    for(const b of ANIMALS)if(b!==a)sep=Math.min(sep,Math.hypot(x-b.tx,z-b.tz));
+    for(const m of a.avoid)sep=Math.min(sep,Math.hypot(x-m[0],z-m[1]));
+    const sc=Math.min(8,Math.hypot(x-px,z-pz))+sep*1.5+Math.random()*2;
+    if(sc>bs){bs=sc;best=[x,z,wi];}
+  }
+  a.tx=best[0];a.tz=best[1];if(best[2]>=0)a.last=best[2];
+}
+function updateAnimals(dt){
+  if(!ANIMALS.length||!player)return;
+  const px=player.position.x,pz=player.position.z;
+  for(let i=0;i<ANIMALS.length;i++){
+    const a=ANIMALS[i], K=a.K, p=a.g.position, near=Math.hypot(p.x-px,p.z-pz)<K.shy*a.s+1;
+    if(a.state==="idle"){
+      a.t-=dt;
+      if(a.t<=0||(near&&a.t0-a.t>1.5)){animalPick(a);a.state="walk";continue;}
+      /* the head comes up a moment after it stops, and before it moves on */
+      animalPose(a,K.files.rest&&a.t>1.2&&a.t0-a.t>0.8?"rest":"standing");
+    } else {
+      const dx=a.tx-p.x,dz=a.tz-p.z,d=Math.hypot(dx,dz);
+      if(d<0.15){a.state="idle";a.t=a.t0=K.idle[0]+Math.random()*(K.idle[1]-K.idle[0]);animalPose(a,"standing");continue;}
+      const v=Math.min(d,K.speed*(near?1.6:1)*(0.55+0.45*a.s)*dt);
+      p.x+=dx/d*v;p.z+=dz/d*v;p.y=a.G(p.x,p.z);
+      /* turn toward the way it is going, not snap: local -x onto (dx,dz) */
+      let dy=Math.atan2(dz,-dx)-a.g.rotation.y;
+      while(dy>Math.PI)dy-=Math.PI*2;while(dy<-Math.PI)dy+=Math.PI*2;
+      a.g.rotation.y+=dy*Math.min(1,dt*4);
+      a.dist+=v;animalPose(a,WALK_CYCLE[Math.floor(a.dist/(K.stride*a.s/4))%4]);
+    }
+  }
+}
+/* a sty of hurdles, the one the winter leaves empty (see "The Empty Sties"), with its hogs
+   in it. The hurdles stop the player, so the hogs are never underfoot. */
+function hogSty(root,G,x,z,hogs){
+  const P=new Geo(), wood=RGB(0x6a543a), py=G(x,z), C=[[-6,-6],[6,-6],[6,6],[-6,6]];   /* the winter's empty one is this size */
+  for(let i=0;i<4;i++){const a=C[i],b=C[(i+1)%4];
+    P.beam8([x+a[0],py-0.3,z+a[1]],[x+a[0],py+2.6,z+a[1]],0.4,0.4,wood,wood);
+    for(const h of [0.9,2.0])P.beam8([x+a[0],py+h,z+a[1]],[x+b[0],py+h,z+b[1]],0.25,0.25,wood,wood);}
+  root.add(P.mesh(false,false));
+  solid(x,z-6,6,0.3,LVL.MAIN,0);solid(x,z+6,6,0.3,LVL.MAIN,0);solid(x-6,z,0.3,6,LVL.MAIN,0);solid(x+6,z,0.3,6,LVL.MAIN,0);
+  hogs.forEach(function(h,i){addAnimal(root,G,"hog",x+h[0],z+h[1],h[2],{area:[x,z,3.6,3.6],scale:h[3]||1});});
+}
 SITE_TERRAIN.comfort.dress=function(root,G){
   /* THE FLEET, riding at anchor off the point. They really did anchor here on the
      last day of April, and it is the argument for the place standing in the water:
@@ -27316,12 +27430,15 @@ function presStingray(){
 function presRats(x,z){
   /* the rats out of a cask: small grey shapes running out across the floor, then gone */
   const scn=FORT.root||scene;
+  /* animals, 27 Nov: a black rat - the ship rat; the brown reached England a century
+     later - from the same chain as the hogs, 300 triangles. At four inches high its legs
+     cannot be seen, so it has one pose and runs with a quick bob, not a flipbook. It faces
+     -x, so it sits a quarter-turn round inside a group whose +z is its way */
   for(let i=0;i<9;i++){
-    const g=new Geo(), fur=RGB(i%2?0x4f4a44:0x3d3934);
-    g.box(0,0.18,0,0.32,0.28,0.62,fur);g.box(0,0.22,0.38,0.2,0.2,0.2,fur);g.beam8([0,0.15,-0.31],[0,0.08,-0.95],0.06,0.03,fur,fur);
-    const m=g.mesh(false,false), a=srand(i*7.7+PRES.t)*Math.PI*2;
+    const m=new THREE.Group(), a=srand(i*7.7+PRES.t)*Math.PI*2;
+    const body=placeModel(m,"assets/animals/rat_standing.glb","rat_standing",0,0,0,Math.PI/2,0.85+srand(i*1.7)*0.3);
     m.position.set(x,G6(x,z),z);m.rotation.y=a;scn.add(m);
-    PRES.rats.push({m:m,a:a,v:9+srand(i*3.1)*6,t:0});
+    PRES.rats.push({m:m,a:a,v:9+srand(i*3.1)*6,t:0,body:body});
   }
   playSfx("click",0.25);
 }
@@ -27453,6 +27570,12 @@ registerWorld("ch6",function(root){
       if(!w.did.disperse)[[6,44],[-6,48]].forEach(function(a,i){
         workMan(root,crowdEq("hand",95+i),a[0],a[1],0,"carry",{from:[a[0],40],to:[a[0]+28,74],load:"basket",speed:2.8});});
       presTable(root,G,-42,11);
+      /* animals, 27 Nov: "of 3 sowes in one yeare increased 60 and od pigges" - the sows, and
+         a few of that year's pigs, in a sty behind the tents (most ran in the woods and on Hog
+         Island); and a dog going about the company */
+      hogSty(root,G,70,-66,[[-2,-2,0.4],[2,1,2.0],[0,3,-0.8],[-3,2,1.2,0.45],[3,-3,2.6,0.45],[1,-1,0.3,0.4]]);
+      /* round the company, never through its ranks or the palisade */
+      addAnimal(root,G,"dog",-21,47,0.5,{way:[[-21,47],[-8,51],[8,51],[21,47],[20,35],[-20,35]]});
       duty("disperse","The Gate",0,30,{kind:"disperse",verb:"Go where you are sent"});
     }
     if(w.day===7){
@@ -27665,7 +27788,8 @@ function updatePres(dt){
     const r=PRES.rats[i];r.t+=dt;
     r.m.position.x+=Math.sin(r.a)*r.v*dt;r.m.position.z+=Math.cos(r.a)*r.v*dt;r.a+=(srand(i+r.t)-0.5)*dt*3;r.m.rotation.y=r.a;
     r.m.position.y=G6(r.m.position.x,r.m.position.z);
-    if(r.t>2.6){if(r.m.parent)r.m.parent.remove(r.m);r.m.geometry.dispose();PRES.rats.splice(i,1);}
+    if(r.body){r.body.position.y=Math.abs(Math.sin(r.t*r.v*2.2))*0.06;r.body.rotation.z=Math.sin(r.t*r.v*2.2)*0.08;}   /* animals, 27 Nov: the scurry */
+    if(r.t>2.6){if(r.m.parent)r.m.parent.remove(r.m);if(r.m.geometry)r.m.geometry.dispose();PRES.rats.splice(i,1);}   /* animals, 27 Nov: the model's geometry is shared; not disposed */
   }
   updateBlaze(dt);
 }
@@ -30643,7 +30767,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0231";
+const BUILD="20261127-0511";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
