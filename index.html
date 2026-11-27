@@ -30297,7 +30297,8 @@ function priceAct(d){
   if(d.kind==="edict"){
     /* Kingsbury III:69, an abstract by a later clerk */
     priceQuiz("Jamestown · 7 June 1617","Argall’s edict",
-      "<p>Argall’s first orders, as a clerk later copied them: “Tob° at 3/ p [lb] & not under or over penalty 3 years Slavery to the Colony”.</p><p>Three shillings a pound, by law. Who gains from a fixed price?</p>",
+      /* review, 27 Nov: was "first orders"; these are his first recorded edicts, abstracts of a lost register (Kingsbury III:69) */
+      "<p>Argall’s first recorded orders, as a clerk later copied them: “Tob° at 3/ p [lb] & not under or over penalty 3 years Slavery to the Colony”.</p><p>Three shillings a pound, by law. Who gains from a fixed price?</p>",
       [["The planter: he knows his price","A known price","<p>A planter knew what a pound would fetch before he planted. “Slavery” here is an Englishman’s sentence: unpaid work for the colony, for three years, with an end.</p>"],
        ["The buyer: he pays what he likes","Not under or over","<p>The buyer could pay neither less nor more. “Slavery” here is an Englishman’s sentence of unpaid work, with an end.</p>"],
        ["Nobody: tobacco had no price","It had one","<p>Three shillings a pound, fixed by law. “Slavery” here is an Englishman’s sentence of unpaid work, with an end.</p>"]],"edict");
@@ -32773,7 +32774,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-0633";
+const BUILD="20261127-0634";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
