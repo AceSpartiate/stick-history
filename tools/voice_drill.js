@@ -1,8 +1,8 @@
-/* voice_drill.js - play Chapters I to XII start to finish and write down every line
+/* voice_drill.js - play Chapters I to XIII start to finish and write down every line
    the game speaks that has no recording (it would fall back to the browser's flat voice).
    Load the game over http (no save needed), then in the console:
 
-     window.DRILL_ONLY=['ch1'];   // optional: any of ch1..ch12
+     window.DRILL_ONLY=['ch1'];   // optional: any of ch1..ch13
      fetch('tools/voice_drill.js').then(r=>r.text()).then(eval)
 
    and read window.DRILL ({log, spoke, read, miss:[[text, world, how]], errs}) when log ends
@@ -13,6 +13,18 @@
    A miss list that is not empty: lines the harvest cannot see go in tools/voice_extra.json;
    then run tools/voice_harvest.js, voice_build.py / voice_cast.py clone. 27 Nov 2026. */
 (function(){
+  /* SILENT. The drill only checks that each line HAS a recording; it never needs to hear one.
+     Played aloud, it sounded through the owner's speakers for an hour (27 Nov). Every media
+     element, the speech engine and every audio context are muted before anything plays. */
+  try{const P=HTMLMediaElement.prototype;if(!P.__drillMute){P.__drillMute=P.play;
+    P.play=function(){this.muted=true;this.volume=0;return P.__drillMute.apply(this,arguments);};}
+    document.querySelectorAll('audio,video').forEach(function(a){a.muted=true;a.volume=0;});}catch(e){}
+  try{window.speechSynthesis.cancel();window.speechSynthesis.speak=function(){};}catch(e){}
+  try{const AC=window.AudioContext||window.webkitAudioContext;
+    if(AC&&!AC.prototype.__drillMute){AC.prototype.__drillMute=1;AC.prototype.resume=function(){return this.suspend();};}}catch(e){}
+  /* the game's own context (index.html: AC=AC||new AudioContext) may already be running */
+  try{if(typeof AC!=="undefined"&&AC&&AC.suspend)AC.suspend();}catch(e){}
+  try{if(typeof S!=="undefined"&&S)S.musicOn=false;}catch(e){}
   const bak=localStorage.getItem("stickhistory.save.v1");
   try{saveGame=function(){};checkpoint=function(){};}catch(e){}
   const D=window.DRILL={log:[],spoke:0,read:0,miss:[],errs:[]};
@@ -40,7 +52,8 @@
     document.querySelectorAll('#sickBody .captRow').forEach(r=>{const b=r.querySelector('button');if(b)b.click();});
     const b=[...document.querySelectorAll('#sickOpts button')];if(b.length){b[0].click();await sleep(300);}}
   async function cont(){for(let k=0;k<12;k++){if(on('mResult')){document.getElementById('resBtn').click();await sleep(350);continue;}
-    if(CS.active){document.getElementById('cineSkip').click();await sleep(500);continue;}if(on('mSick')){await opt();continue;}break;}}
+    if(CS.active){document.getElementById('cineSkip').click();await sleep(500);continue;}if(on('mSick')){await opt();continue;}
+    if(on('mBoard')){document.getElementById('boardClose').click();await sleep(300);continue;}break;}}
   const actF=(action,fn)=>async kind=>{const it=interactables.find(i=>i.action===action&&i.data&&(i.data.kind===kind||i.id===kind));
     if(!it)return false;fn(it.data);await sleep(350);return true;};
   async function step(act,need,did){const ok=await act(need);if(!ok){D.log.push('MISSING '+need);return false;}
@@ -85,6 +98,15 @@
       if(!need){await next(act);continue;}
       if(!await step(act,need,w.did))break;}
     D.log.push('ch12 day '+w.day+' closed '+!!w.did.closed);}
+  /* Chapter XIII: the scenes as XII's, plus the comparison board each scene ends on (cont closes it),
+     the three asked people (talkAll), the muster both ways and the ending */
+  async function ch13(){if(typeof midW!=='function')return;const act=actF("mid",midAct);delete S.works.ch13;S.compare={cells:{},sent:{}};beginWorld("ch13");await sleep(1500);await cont();const w=midW();
+    for(let g=0;g<120&&!w.did.closed;g++){const need=midNeed();
+      if(!need){await talkAll();await cont();await next(act);continue;}
+      if(!await step(act,need,w.did))break;}
+    D.log.push('ch13 day '+w.day+' closed '+!!w.did.closed);
+    await sleep(1500);await cont();await muster();await ending("ch13");
+    D.log.push('ch13 done '+!!w.done+' board '+Object.keys(S.compare.cells).length+' sent '+Object.keys(S.compare.sent).length);}
   /* ==================== CHAPTERS I TO V ====================
      Older chapters have no need() function to follow, so each is played by hand from its own
      act functions: every person spoken to (wrong answers too), every document, sheet and
@@ -352,9 +374,9 @@
     D.log.push('ch5 done '+!!w.done);}
 
   const only=window.DRILL_ONLY;   /* e.g. ['ch9'] or ['ch1'] to play one chapter */
-  const all={ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,ch10,ch11,ch12};
+  const all={ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,ch10,ch11,ch12,ch13};
   (async()=>{if(!only||only.some(k=>/^ch[1-5]$/.test(k)))genFixed();
-    for(const f of (only?only.map(k=>all[k]):[ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,ch10,ch11,ch12])){try{await f();}catch(e){D.log.push('ERR '+e+' '+(e.stack||'').split('\n')[1]);}}
+    for(const f of (only?only.map(k=>all[k]):[ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,ch10,ch11,ch12,ch13])){try{await f();}catch(e){D.log.push('ERR '+e+' '+(e.stack||'').split('\n')[1]);}}
     if(bak)localStorage.setItem("stickhistory.save.v1",bak);else localStorage.removeItem("stickhistory.save.v1");
     D.log.push('ALL DONE');})();
   return 'drill started';

@@ -238,5 +238,21 @@
  "hutchinson": {
   "text": "You have power over my body, but the Lord Jesus hath power over my body and soul.",
   "desc": "An English woman in her mid forties, with a teacher's calm confidence, questioned by a court of men: composed, sharp and unafraid, a clear mature female voice, an English accent of the early 1600s, not American."
+ },
+ "devries": {
+  "text": "I told the Director that such work could not be done without the approbation of the Twelve Men.",
+  "desc": "A Dutch sea captain and landowner in his fifties, warning a governor who will not listen: blunt, weathered and indignant, a strong low voice, a Dutch accent of the 1600s."
+ },
+ "hart": {
+  "text": "Tobias Feake, the schout, was banished or fined two hundred florins, for a seditious, mutinous and detestable letter of defiance.",
+  "desc": "An English town clerk in his thirties on Long Island, reading out his town's letter: plain, steady and quietly firm, a clear medium voice, an English accent of the early 1600s, not American."
+ },
+ "penn": {
+  "text": "How Powerful the Kings are, and yet how they move by the Breath of their People.",
+  "desc": "An English Quaker gentleman of about forty, proprietor of a colony: earnest, warm and persuasive, a cultured medium voice, an English accent of the early 1600s, not American."
+ },
+ "pastorius": {
+  "text": "is right and reasonable; here ought to be likewise liberty of ye body, except of evildoers, wch is an other case.",
+  "desc": "A German scholar and Quaker in his late thirties, a village clerk and schoolmaster: careful, grave and gentle, a thoughtful medium voice, a German accent of the 1600s."
  }
 }

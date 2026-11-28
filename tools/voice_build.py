@@ -52,6 +52,8 @@ VOICES = {
     # Chapter XII (Hutchinson is voice:"female", so FEMALE is used for her whatever this says)
     "winthrop": (26, 0.94), "dudley": (27, 0.93), "williams": (24, 1.05), "endecott": (25, 1.00),
     "gardener": (27, 0.99), "mason": (26, 0.96), "underhill": (25, 1.04), "hutchinson": (21, 1.0),
+    # Chapter XIII
+    "devries": (27, 0.95), "hart": (24, 1.02), "penn": (26, 1.00), "pastorius": (25, 0.97),
 }
 FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 

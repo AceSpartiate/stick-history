@@ -726,6 +726,20 @@
   .leafBlank{border-style:dashed;background:rgba(255,255,255,.25);color:#5a4a3a}
   /* its own block, so the read-aloud gives "Her own account" a stop instead of running it into the line (27 Nov) */
   .leafBlank>b{display:block}
+  /* the comparison board (Chapters XIII-XIV): eight colonies by six questions, scrolled sideways on a small screen */
+  /* play-test, 27 Nov: taller on a short screen, the colonies' row held at the top while scrolling */
+  .cmpWrap{overflow:auto;max-height:calc(100vh - 20em);min-height:9em;margin:.4em 0}
+  .cmpHint{margin:.1em 0 .3em;font-size:.9em;color:#5a4a3a}
+  .cmp tr:first-child>th{position:sticky;top:0;background:#ece0c2;z-index:2}
+  .cmp tr:first-child>th:first-child{z-index:3}
+  .cmp{border-collapse:collapse;font-size:.74em;line-height:1.25}
+  .cmp th,.cmp td{border:1px solid rgba(90,58,26,.35);padding:.35em .45em;vertical-align:top;text-align:left;min-width:9.5em}
+  .cmp th{background:rgba(120,90,40,.10)}
+  .cmp th small,.cmp td small{display:block;color:#6a5836;font-size:.9em;margin-top:.2em}
+  .cmp td.hi{background:rgba(214,182,96,.38)}
+  .cmp td.blank{color:#9a8a6a;text-align:center}
+  .cmp td.not{font-style:italic;color:#5a4a3a}
+  .cmp tr>th:first-child{position:sticky;left:0;background:#ece0c2;z-index:1;min-width:8em}
   .captMark{min-width:3em;color:#5a3a1a}
   .sickDate{font-variant:small-caps;letter-spacing:.06em;opacity:.8;margin-top:0}
   .fortWho{color:#3f5c4f}
@@ -808,6 +822,15 @@
       <h3 id="sickTitle"></h3>
       <div class="vNote" id="sickBody"></div>
       <div id="sickOpts"></div>
+    </div>
+  </div>
+  <!-- the comparison board (Chapters XIII-XIV): openable from the pause menu at any time -->
+  <div class="modal mid" id="mBoard">
+    <div class="parchment deckle sheet" style="max-width:980px" data-read>
+      <div class="kick">Same question, different colony</div>
+      <h3 id="boardTitle">The Comparison Board</h3>
+      <div id="boardBody"></div>
+      <button class="btn wide mt" id="boardClose">Close the board</button>
     </div>
   </div>
   <div class="modal mid" id="mFire">
@@ -1070,6 +1093,7 @@
       <button class="btn ghost wide mt" id="pauseVoices">Choose Voices</button>
       <div id="voiceList" style="display:none"></div>
       <button class="btn ghost wide mt" id="pauseCodex">Historian's Notes</button>
+      <button class="btn ghost wide mt" id="pauseBoard">The Comparison Board</button>
       <button class="btn ghost wide mt" id="pauseFull">Full screen</button>
       <button class="btn ghost wide mt" id="pauseVoice">Narration: on</button>
       <button class="btn ghost wide mt" id="pauseMusic">Music: on</button>
@@ -1277,6 +1301,7 @@ const S={ink:0,unlocked:new Set(["none_cloak","none_torso","none_acc","none_head
      built, how the fight went - and the bag is saved as one key, so a new outcome never
      needs a new line in saveBlob and applyBlob. The twelve booleans above are the last
      of their kind. */
+  compare:{cells:{},sent:{}},
   works:{}};
 
 /* ========== SAVE AND RESUME ==========
@@ -1335,6 +1360,8 @@ function saveBlob(){
        stranded behind a chapter they already finished */
     reached:S.reached,
     works:S.works||{},
+    /* the comparison board (Chapters XIII-XIV), kept across chapters */
+    compare:S.compare||{cells:{},sent:{}},
     admin:!!S.admin
   };
 }
@@ -1374,6 +1401,7 @@ function applyBlob(d){
     S.reached["ch1"]=true;
     S.admin=!!d.admin;
     S.works=d.works||{};
+    S.compare=d.compare||{cells:{},sent:{}};
     /* Chapter IV arrived after people had already passed Chapter III's muster: they have
        reached it, though no ending ever offered it to them */
     if(S.works.ch3&&S.works.ch3.done)S.reached["ch4"]=true;
@@ -1385,6 +1413,7 @@ function applyBlob(d){
     if(S.works.ch9&&S.works.ch9.done)S.reached["ch10"]=true;
     if(S.works.ch10&&S.works.ch10.done)S.reached["ch11"]=true;
     if(S.works.ch11&&S.works.ch11.done)S.reached["ch12"]=true;
+    if(S.works.ch12&&S.works.ch12.done)S.reached["ch13"]=true;
     if(typeof AMBUSH!=="undefined")AMBUSH.done=!!d.ambushDone;
     SAVED_WORLD=d.world||"ch1";
     return true;
@@ -1433,6 +1462,7 @@ function newRun(){
   S.reached={ch1:true};
   S.corrections=0;S.reckTries=0;S.lashCount=0;S.chartSeen={};
   S.works={};
+  S.compare={cells:{},sent:{}};
   /* THREE GATES THAT SURVIVED A NEW RUN. S.spoke is npcDone's high-water mark and is saved,
      so a second voyage began with every crewman already "asked out" - found by playing
      Chapter I twice: the clerk counted as done before a word was said to him. And the
@@ -3268,8 +3298,75 @@ const PEOPLE_LOOK={
      behaviour". Unnamed in the source, and no name is borrowed from later books. Dress imagined:
      a New England woman's deerskin, a mantle. No marks, no paint. Never voiced */
   mononottowife:{sex:"f",face:"oval",hair:"plait",hairColor:HAIR.black,mood:"plain",
-    dress:"tw",feet:"moccasin",mantle:true,paint:false,beads:false}
+    dress:"tw",feet:"moccasin",mantle:true,paint:false,beads:false},
+
+  /* ---- New Netherland and Pennsylvania, 1626-1688 (Chapter XIII). The look book's rule for
+     the Dutch and the Quakers is the Plymouth one (1.13): no all-black clothes, black only for
+     office and then with colour beside it; Quaker plainness is plain cut and sadd colours, not a
+     uniform. No likeness was checked for anyone below except Penn ---- */
+  /* CLASS: no likeness was checked. A patroon and ship's master, one of the Twelve Men: plain good
+     cloth in tawny and russet, a falling band, a capotain. Imagined */
+  devries:{face:"square",hair:"short",hairColor:HAIR.sandy,beard:"short",
+    hat:"capotain",dress:"doublet",cloak:true,mood:"stern",
+    colors:{torso:WOOL.tawny,breech:WOOL.russet,stock:WOOL.grey,cloak:0x4a4236,hat:0x2e2a24}},
+  /* CLASS: no likeness was checked. The Company's Director: a merchant's dark cloth with murrey
+     beside it, a lace band. Drawn, never voiced (his words survive only in De Vries). Imagined */
+  kieft:{face:"long",hair:"long",hairColor:HAIR.dark,beard:"pointed",
+    hat:"capotain",dress:"merchant",lace:true,mood:"shrewd",
+    colors:{torso:WOOL.murrey,breech:WOOL.black,stock:WOOL.grey,hat:0x1e1c1c}},
+  /* CLASS: no likeness was checked, and no body fact is in the record read. The Director General,
+     "like a peacock, with great state and pomp" in the 1650 Representation (hostile): a sash of
+     office over a dark doublet. Drawn, never voiced. Imagined */
+  stuyvesant:{born:1610,face:"square",hair:"long",hairColor:HAIR.brown,beard:"moustache",build:"heavy",
+    hat:"capotain",dress:"merchant",lace:true,sash:0xb0692e,cloak:true,mood:"stern",
+    colors:{torso:0x2e2a30,breech:WOOL.murrey,stock:WOOL.grey,cloak:0x3a3236,hat:0x1e1c1c}},
+  /* CLASS: Flushing's town clerk; an English settler's plain cloth and a writing case. Imagined */
+  hart:{face:"oval",hair:"short",hairColor:HAIR.chestnut,beard:"short",
+    hat:"capotain",dress:"doublet",mood:"keen",eqx:{accessory:"acc_satchel"},
+    colors:{torso:WOOL.green,breech:WOOL.russet,stock:WOOL.grey,hat:0x2e2a24}},
+  /* LIFE, at 22: the portrait "in armour aged 22", 1666 (Historical Society of Pennsylvania; the
+     Lely attribution doubted, and called a copy by one catalogue; a later pastel by Francis Place
+     is the other likeness). Catalogue entries read 27 Nov describe neither face nor hair, so the
+     long brown hair and clean face are from the portrait as reproduced, not from a description.
+     In 1682-83 he is a Quaker of 38: plain good cloth in grey and brown, a broad hat, no armour
+     (armour is for war, look book Part 3.8).
+     review, 27 Nov (historian): Wikimedia Commons, "William Penn at 22 1666.jpg" (from the Library of
+     Congress exhibit, credit HSP), reads: "Oil on canvas portrait of William Penn at age 22 in 1666,
+     portrayed in suit of armor"; "possibly" Peter Lely; "Eighteenth-century copy of a seventeenth-century
+     portrait". Bridgeman lists it as "English School", 76.2 x 63.5 cm. None describes hair, face or build.
+     UNVERIFIED, therefore: the hair colour and length (Wikipedia, unsourced on the page, says smallpox
+     cost him his hair and he "wore wigs for much of his life", so the portrait's hair may be a wig), and
+     build "heavy" at 38 (no description of his build in 1682-83 was read). Left as drawn for the lead
+     to decide */
+  penn:{born:1644,face:"oval",hair:"long",hairColor:HAIR.brown,beard:"none",build:"heavy",
+    hat:"broad",dress:"doublet",cloak:true,mood:"mild",
+    colors:{torso:WOOL.grey,breech:WOOL.russet,stock:WOOL.grey,cloak:0x5a5448,hat:0x2a2622}},
+  /* CLASS: no likeness was checked. Germantown's "bailiff or clerk", schoolmaster and scrivener
+     (Myers): a German Friend's plain cloth, a writing case. Imagined */
+  pastorius:{born:1651,face:"narrow",hair:"long",hairColor:HAIR.dark,beard:"none",build:"thin",
+    hat:"broad",dress:"doublet",mood:"keen",eqx:{accessory:"acc_satchel"},
+    colors:{torso:WOOL.russet,breech:WOOL.grey,stock:WOOL.grey,hat:0x2e2a24}},
+  /* CLASS: the clerk of the Philadelphia Yearly Meeting, 1688, not named in the record. Plain
+     Quaker cloth. Imagined */
+  meetingclerk:{face:"round",hair:"receding",hairColor:HAIR.grey,beard:"none",
+    hat:"broad",dress:"doublet",mood:"mild",eqx:{accessory:"acc_satchel"},
+    colors:{torso:WOOL.grey,breech:WOOL.frieze,stock:WOOL.grey,hat:0x2a2622}}
 };
+/* THE ELEVEN of 1644 (O'Callaghan, Laws pp. 36-37), each by the name the grant gives him. No record
+   describes any of them (look book 1.12): each is "Imagined. No record describes what the eleven
+   wore; shown in the plain working dress of their neighbours", at work as free farmers. Faces and
+   hair from the shared set, varied only so they are not one man eleven times; no African dress,
+   chains or marks. Drawn, never voiced: their own words do not survive */
+["pauloangola","bigmanuel","littlemanuel","manueldereus","simoncongo","anthonyportugis","gracia",
+ "petersantomee","janfrancisco","littleanthony","janfortorange"].forEach(function(k,i){
+  const W=WOOL;
+  PEOPLE_LOOK[k]={face:["oval","long","square","round","narrow"][i%5],hair:["cropped","short"][i%2],hairColor:HAIR.black,
+    beard:["none","short","stubble","none"][i%4],build:k==="bigmanuel"?"heavy":(k.indexOf("little")===0?"thin":"normal"),
+    height:k==="bigmanuel"?1.05:(k.indexOf("little")===0?0.95:1),skin:[0x5a3a26,0x6a442c,0x4e3222][i%3],
+    hat:i%3===1?"cap":"none",dress:i%2?"shirt":"doublet",mood:"plain",
+    colors:{torso:[W.canvas,W.linen,W.grey,W.canvas][i%4],breech:[W.russet,W.grey,W.canvas][i%3],stock:W.grey,hat:W.russet}};
+});
+
 /* who a named person is in a given year: his own look, the dress for that year, and his age */
 function personLook(key,yr,variant){
   const P=PEOPLE_LOOK[key];
@@ -9975,7 +10072,7 @@ function animate(){
   /* play-test, 27 Nov: Chapter VI's ships, the boat from the falls, the rats and its night sky
      are driven by updatePres, which this branch never called - so "Captain Newport set sail"
      played over a ship riding at anchor, and the boat from the falls never came in */
-  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateBay(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);updateCsTalk(dt);updateReacts(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
+  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateBay(dt);updateMid(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);updateCsTalk(dt);updateReacts(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
   if(CAMLOCK.on){
     updateFx(dt);updateFlog(dt);updateShadows();updateReacts(dt);
     cam.position.lerp(CAMLOCK.pos,Math.min(1,dt*3.5));
@@ -9994,7 +10091,7 @@ function animate(){
     player.position.y=WORLD.ground(player.position.x,player.position.z)+JUMP.y;
   if(AMBUSH.on||DUSK.on){updateAmbush(dt);updateArrows(dt);}
   else if(FORT.on){updateFort(dt);updateArrows(dt);}
-  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateBay(dt);updateWork(dt);
+  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateBay(dt);updateMid(dt);updateWork(dt);
   if(LESSON.on){
     updateFx(dt);updateLesson(dt);updateShadows();updateReacts(dt);
     renderer.render(scene,cam);return;
@@ -10179,6 +10276,7 @@ function animate(){
         :best.action==="sky"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="ply"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="bay"?((best.data&&best.data.verb)||"Go to it")
+        :best.action==="mid"?((best.data&&best.data.verb)||"Go to it")
         /* Named explicitly rather than inherited. A new action with no verb used
            to fall through to "Read the papers", which hid the mistake; now it
            reads "Use" and is obviously unfinished. */
@@ -10518,7 +10616,7 @@ function refreshPlayer(){
 /* ========== CONTROLS ==========
    Left half of the screen is a floating stick; right half turns the view.
    Keyboard: WASD to move, Q/E or drag to turn, Space/E to act, Esc to back out. */
-const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes","mAtlas","mGoals","mKit","mGun","mFire","mFort","mSick"];
+const MODALS=["mDlg","mDoc","mMap","mSteal","mLash","mReck","mResult","mPause","mAdmin","mChapters","mNotes","mAtlas","mGoals","mKit","mGun","mFire","mFort","mSick","mBoard"];
 function anyModalOpen(){for(let i=0;i<MODALS.length;i++)if($(MODALS[i]).classList.contains("on"))return true;return false;}
 function closeAllModals(){
   for(let i=0;i<MODALS.length;i++)$(MODALS[i]).classList.remove("on");
@@ -10773,6 +10871,7 @@ function doInteract(){
   else if(a==="sky"){skyAct(activeSpot.data);}
   else if(a==="ply"){plyAct(activeSpot.data);}
   else if(a==="bay"){bayAct(activeSpot.data);}
+  else if(a==="mid"){midAct(activeSpot.data);}
   else if(a==="reck"){
     if(chapterReady())openReckoning();
     else toast("The scrivener will not sit with you yet. Still to ask: "+reckMissing().join("; ")+".");}
@@ -12295,9 +12394,9 @@ const MUSIC_FILES={
   sickness:"assets/music/sickness.ogg", president:"assets/music/president.ogg",
   starving:"assets/music/starving.ogg", tobacco:"assets/music/tobacco.ogg"};
 const MUSIC_BY_WORLD={ch1:"voyage", ch2:"fort", comfort:"fort", archers:"fort", james:"fort", ch3:"fort",
-  ch4:"sickness", ch5:"sickness", ch6:"president", ch7:"starving", ch8:"tobacco", ch9:"tobacco", ch10:"sickness", ch11:"voyage", ch12:"president"};
+  ch4:"sickness", ch5:"sickness", ch6:"president", ch7:"starving", ch8:"tobacco", ch9:"tobacco", ch10:"sickness", ch11:"voyage", ch12:"president", ch13:"fort"};
 /* places with no music (see above) - the `where` of a chapter's day */
-const MUSIC_SILENT={kecoughtan:true, york:true, orapakes:true, dig:true, pointcomfort:true, pace:true, patuxet:true, march:true};   /* pointcomfort: Chapter IX, the Africans' arrival - documents only, quiet; pace: Chapter X, the night before 22 March 1622 */
+const MUSIC_SILENT={kecoughtan:true, york:true, orapakes:true, dig:true, pointcomfort:true, pace:true, patuxet:true, march:true, pavonia:true};   /* pointcomfort: Chapter IX, the Africans' arrival - documents only, quiet; pace: Chapter X, the night before 22 March 1622 */
 const MUSIC_VOL=0.32, MUSIC_DUCK=0.2, MUSIC_FADE=2.4;
 const MUSIC_CAN=VO_CAN;
 const MUSIC={live:false, decks:[], i:0, cur:null, duck:-1, master:null};
@@ -12312,6 +12411,7 @@ function musicWhere(w){
     if(w==="ch10")return skyDay().where;
     if(w==="ch11")return plyDay().where;
     if(w==="ch12")return bayDay().where;
+    if(w==="ch13")return midDay().where;
   }catch(e){}
   return null;
 }
@@ -15245,6 +15345,10 @@ function objectivesInto(host){
 }
 function renderObjectives(){objectivesInto($("pauseObj"));}
 function openPause(){$("mPause").classList.add("on");setPaused(true);renderObjectives();
+  /* play-test, 27 Nov: the comparison board is Chapter XIII's; before it, the button opened a
+     board of later chapters' quotations in Chapter I */
+  const cs=S.compare&&S.compare.cells;
+  $("pauseBoard").style.display=(CURRENT_WORLD==="ch13"||(S.reached&&S.reached.ch13)||(cs&&Object.keys(cs).length))?"":"none";
 }
 $("pauseResume").onclick=function(){$("mPause").classList.remove("on");setPaused(false);};
 $("pauseVoices").onclick=function(){
@@ -15263,6 +15367,9 @@ $("pauseInv").onclick=function(){
 };
 $("pauseWardrobe").onclick=function(){$("mPause").classList.remove("on");backTo="scene";openWardrobe();};
 $("pauseCodex").onclick=function(){$("mPause").classList.remove("on");backTo="scene";openCodex();};
+/* the comparison board, from the pause menu: closing it goes back to the game */
+$("pauseBoard").onclick=function(){$("mPause").classList.remove("on");openBoard(null,null);};
+$("boardClose").onclick=function(){closeBoard();};
 $("pauseVoice").onclick=function(){
   if(!SPEECH_OK){toast(NO_SPEECH_NOTE);return;}
   setVoiceOn(!VOICE_ON);
@@ -15408,7 +15515,7 @@ function openIntro(worldId){
   $("introDate").textContent=c.d;
   $("introBody").textContent=c.intro?c.intro():"";
   $("introObj").textContent=c.obj?c.obj():"";
-  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":(worldId==="ch8")?"To the Fort":(worldId==="ch9")?"To Jamestown":(worldId==="ch10")?"To James City":(worldId==="ch11")?"To Southampton":(worldId==="ch12")?"To England":"Into the Boats";
+  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":(worldId==="ch8")?"To the Fort":(worldId==="ch9")?"To Jamestown":(worldId==="ch10")?"To James City":(worldId==="ch11")?"To Southampton":(worldId==="ch12")?"To England":(worldId==="ch13")?"To Amsterdam":"Into the Boats";
   show("intro");
 }
 function beginWorld(worldId){
@@ -15589,7 +15696,7 @@ const CONDITIONS={weather:0,fouling:0,supply:0};
    not evidenced: the ship's hold is still air, and every outdoor scene here is an
    open shore in April with wind coming off the water. */
 /* ch4: the summer of 1607 was a drought (Stahle et al. 1998) - the driest air the game has */
-const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22, ch8:0.10, ch9:0.10, ch10:0.10, ch11:0.10, ch12:0.10};   /* ch5: a wet winter on the rivers */
+const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22, ch8:0.10, ch9:0.10, ch10:0.10, ch11:0.10, ch12:0.10, ch13:0.10};   /* ch5: a wet winter on the rivers */
 function armState(arm){
   return {
     /* a match above 0.7 takes no penalty at all - good play is rewarded in
@@ -20460,7 +20567,7 @@ function crowdLook(kind,i,yr){
                 back in jacks and morions, half of them in buff coats (a plausible guess: the
                 look book finds no buff coat in the record before the 1620s).
    Nobody all in black: black is money, office or the pulpit. */
-const FIG_YEAR={ch1:1607,ch2:1607,ch3:1607,ch4:1607,ch5:1608,ch6:1608,ch7:1609,ch8:1613,ch9:1619,ch10:1622,ch11:1621,ch12:1634};
+const FIG_YEAR={ch1:1607,ch2:1607,ch3:1607,ch4:1607,ch5:1608,ch6:1608,ch7:1609,ch8:1613,ch9:1619,ch10:1622,ch11:1621,ch12:1634,ch13:1660};
 function figYear(){
   try{const c=CURRENT_WORLD?chapterOf(CURRENT_WORLD):null;return (c&&FIG_YEAR[c.world])||1607;}
   catch(e){return 1607;}
@@ -25060,13 +25167,24 @@ const SCENE_LOOK={
     lk("grey",{top:0x6e7c86,hor:0xb4b8b0,near:140,far:700,sun:0.60,sunC:0xe4ddd0,elev:24,
       wood:0x34402a}),                                                /* the march: grey dawn, woods, far smoke */
     lk("grey",{top:0x7d8890,hor:0xc2c4bc,hemi:0.70,sun:0.62,sunC:0xf2e8d8,elev:20,exp:1.02})  /* November, the court room: window light */
+  ],
+  /* XIII. Liberty of ye body, November 1626 to September 1688 (MID_DAYS) */
+  ch13:[
+    lk("grey",{top:0x7a8894,hor:0xbcc0bc,near:150,far:700,sun:0.62,sunC:0xe8e2d4,elev:26,clouds:3}),  /* Amsterdam in November: a low grey quay */
+    lk("night",{top:0x0e1420,hor:0x262c38,curve:0.5,hSky:0x5a6478,sunC:0x7a88a8,exp:1.0}),           /* the fort at midnight, the water dark */
+    lk("winter",{top:0x8894a0,hor:0xccd0d0,near:140,far:680,sun:0.58,sunC:0xf0eee6,elev:24,hemi:0.62,clouds:3}),  /* February on the farms: cold, flat */
+    lk("winter",{top:0x6f8aa0,hor:0xc8ccc8,sun:0.70,sunC:0xf0eee6,elev:30,clouds:2}),               /* Flushing in December: clear and cold */
+    lk("summer",{top:0x5a809e,hor:0xd6d0b4,near:170,far:760,sunC:0xfff0c4,elev:56,clouds:2}),        /* August 1664: heat haze over the bay */
+    lk("autumn",{top:0x4f7898,hor:0xcec6b0,sunC:0xf6e0c0,sun:0.80,elev:36,clouds:3}),                /* the Delaware, autumn 1682 */
+    lk("summer",{top:0x3d74a6,hor:0xc8d2c8,elev:60,clouds:4}),                                      /* a land council in summer: bright, green */
+    lk("spring",{top:0x4a7aa4,hor:0xcad2ce,sunC:0xf8f0e0,sun:0.84,elev:48,wood:0x34402a})           /* Germantown in April */
   ]
 };
 /* which day of its chapter a world is showing - the same index each *_DAYS table uses */
 const LOOK_DAY={ch4:function(){return sickW().day;},ch5:function(){return captW().day;},
   ch6:function(){return presW().day;},ch7:function(){return starveW().day;},
   ch8:function(){return leafW().day;},ch9:function(){return priceW().day;},
-  ch10:function(){return skyW().day;},ch11:function(){return plyW().day;},ch12:function(){return bayW().day;}};
+  ch10:function(){return skyW().day;},ch11:function(){return plyW().day;},ch12:function(){return bayW().day;},ch13:function(){return midW().day;}};
 function lookDay(w){const f=LOOK_DAY[w];try{return f?(f()|0):0;}catch(e){return 0;}}
 function sceneLook(){
   const w=CURRENT_WORLD;
@@ -32299,7 +32417,8 @@ function leafQuiz(kick,title,body,opts,id,after){
 /* lead, 27 Nov: the play-test found "(teachers: graphic)" on every fold, even a court order; it is
    now shown only when the full text holds violence, read by the period words for it - erring toward
    the label, since a plain text that carries it costs less than a graphic one that does not */
-const GRAPHIC_RE=/kill|slay|slew|slain|murther|murder|burn|fire[ds]?\b|blood|head|scalp|skin|wound|dead|dying|death|sword|knife|shot|hang|tortur|body|bodies|bones|flesh|fry|massacre|execut|poison|poysen|smite|smote|stab/i;
+const GRAPHIC_RE=/kill|slay|slew|slain|murther|murder|burn|fire[ds]?\b|blood|head|scalp|skin|wound|dead|dying|death|sword|knife|shot|hang|tortur|body|bodies|bones|flesh|fry|massacre|execut|poison|poysen|smite|smote|stab|hack|torn/i;
+/* play-test, 27 Nov: "hack|torn" added - the Breeden Raedt passage (Chapter XIII) went unlabelled */
 function graphicTag(full){return GRAPHIC_RE.test(String(full||"").replace(/<[^>]*>/g," "))?" <small>(teachers: graphic)</small>":"";}
 function leafCard(who,when,plain,full){
   return "<div class=\"starveCard\"><b>"+who+"</b> <i>— "+when+"</i><p>"+plain+"</p>"+
@@ -37680,6 +37799,1271 @@ CONTENT.ch12={
   targets:collectInsights(BAY_NPCS), unlocks:[]
 };
 
+
+/* ==================== THE COMPARISON BOARD (Chapters XIII and XIV) ====================
+   "Same question, different colony" (CH13-RECORD, "Testing the proposed skill"): the TEKS verb
+   "compare" (8.2(B)) made into a mechanic, with 8.3, 8.11-8.12 and 8.25 as its rows. One board,
+   kept for good in S.compare (saveBlob/applyBlob), opened from the pause menu at any time.
+
+   THE PARTS, so Chapter XIV can extend it without touching this code:
+     COMPARE_ROWS   the six fixed questions; never added to
+     COMPARE_COLS   one column a colony; XIV's three are already here, empty until it fills them
+     COMPARE_CELLS  "col.row" -> {q, who, when, there, fixed?, res?, alt?}. A fixed cell arrives
+                    filled (Jamestown, Plymouth, the Bay: one quoted line each from CH9-CH12's
+                    records, exactly as those records give them). A cell to be filled carries
+                    `res`, the fixed line said when the right evidence is chosen, and `alt`, two
+                    wrong lines [[button text, the one fixed line that explains it]].
+     COMPARE_SENT   id -> {o:[[sentence, result line] x3]}, the first supported by the board.
+     compareFill(key, after)   the evidence pick for one cell; the right line is entered whatever
+                               is chosen, and state records whether it was right first time
+     compareSay(id, after)     one comparison sentence on the frame "Like ___ ... unlike ___"
+     openBoard(hi, after)      the board, `hi` a key or list of keys to mark as just entered
+   XIV adds its cells and sentences with Object.assign(COMPARE_CELLS,{...}) and calls the same
+   three functions. State: S.compare = {cells:{key: 1 right first time | 2 corrected},
+   sent:{id: index chosen, 0 the supported one}}. Every line said is fixed, so every one can be
+   recorded. */
+const COMPARE_ROWS=[
+  {id:"came",t:"Who came?"},{id:"why",t:"Why did they come?"},{id:"worked",t:"Who worked the land?"},
+  {id:"gov",t:"Who governed (who had a say)?"},{id:"free",t:"Who was free?"},{id:"land",t:"Whose land was it?"}];
+const COMPARE_COLS=[
+  {id:"james",t:"Jamestown",ch:"I–X"},{id:"ply",t:"Plymouth",ch:"XI"},{id:"bay",t:"Massachusetts Bay",ch:"XII"},
+  {id:"nn",t:"New Netherland",ch:"XIII"},{id:"pa",t:"Pennsylvania",ch:"XIII"},
+  {id:"md",t:"Maryland",ch:"XIV"},{id:"car",t:"Carolina",ch:"XIV"},{id:"ga",t:"Georgia",ch:"XIV"}];
+/* the row that never fills: Chapter VIII's question, "whose voice is missing?", kept in view */
+const COMPARE_NOT={t:"Who is not on this board?",b:"No column is theirs: the Native nations whose land it was, and the enslaved. Every word of theirs here was written down by someone else."};
+const COMPARE_CELLS={
+  /* ---- Jamestown: CH9-RECORD and CH10-RECORD ---- */
+  /* CH9: the Instructions of 18 Nov. 1618, Kingsbury III:108 */
+  "james.came":{fixed:true,q:"fifty acres for every person … at whose charges the said persons going to Inhabite in Virginia shall be transported",who:"The Virginia Company’s instructions",when:"London, 1618",there:"Written in London"},
+  /* CH10: Butler, Tyler p. 416 */
+  "james.why":{fixed:true,q:"Tobacco onely was the buisines",who:"Nathaniel Butler, ex-governor of Bermuda",when:"1623",there:"He was there that winter"},
+  /* CH9: Pory, Tyler p. 285 */
+  "james.worked":{fixed:true,q:"Our principall wealth (I should have said) consisteth in servants",who:"John Pory, the colony’s secretary",when:"September 1619",there:"He was there"},
+  /* CH9: Pory, Tyler p. 249 */
+  "james.gov":{fixed:true,q:"his sumons all over the Country … for the election of Burgesses",who:"John Pory, of Governor Yeardley",when:"1619",there:"He was there"},
+  /* CH9: Rolfe, Kingsbury III:243 */
+  "james.free":{fixed:true,q:"20. and odd Negroes, w’ch the Governo’r and Cape Marchant bought for victualls",who:"John Rolfe",when:"January 1620",there:"He was there"},
+  /* CH10: the Council's letters, as Waterhouse reports them, Kingsbury III:556 */
+  "james.land":{fixed:true,q:"that in time we by our growing continually vpon them, would dispossesse them of this Country",who:"The Council in Virginia, as Edward Waterhouse printed it",when:"London, 1622",there:"Printed in London"},
+  /* ---- Plymouth: CH11-RECORD ---- */
+  /* Bradford's passenger list (MS appendix) */
+  "ply.came":{fixed:true,q:"Edward Doty & Edward Litster, the servants of Mr. Hopkins",who:"William Bradford’s list of the Mayflower’s passengers",when:"written later",there:"He was there"},
+  /* MS p. 17 */
+  "ply.why":{fixed:true,q:"for ye propagating & advancing ye gospell of ye kingdom of Christ in those remote parts of ye world",who:"William Bradford, of 1617–20",when:"written later",there:"He was there"},
+  /* MS pp. 96-97 */
+  "ply.worked":{fixed:true,q:"The women now wente willingly into ye feild, and tooke their litle-ons with them to set corne",who:"William Bradford, of 1623",when:"written later",there:"He was there"},
+  /* MS p. 54 */
+  "ply.gov":{fixed:true,q:"unto which we promise all due submission and obedience",who:"The Mayflower Compact, in Bradford’s copy",when:"November 1620",there:"Signed aboard"},
+  /* MS p. 32 */
+  "ply.free":{fixed:true,q:"making conditions fitter for theeves & bondslaves then honest men",who:"Robert Cushman, reporting Leiden’s charge against the investors’ terms",when:"1620",there:"Written in England"},
+  /* MS p. 17 */
+  "ply.land":{fixed:true,q:"some of those vast & unpeopled countries of America",who:"William Bradford, of the Leiden debate",when:"written later",there:"Said in Leiden"},
+  /* ---- Massachusetts Bay: CH12-RECORD ---- */
+  /* the Humble Request, Young p. 296 */
+  "bay.came":{fixed:true,q:"to call the Church of England, from whence we rise, our dear mother",who:"The governor and company, the Humble Request",when:"April 1630",there:"Aboard the Arbella"},
+  /* the General Considerations, Young pp. 271-273 */
+  "bay.why":{fixed:true,q:"the land grows weary of her inhabitants",who:"The General Considerations, for recruits",when:"1629",there:"Written in England"},
+  /* Dudley, Young p. 312 */
+  "bay.worked":{fixed:true,q:"to give them all liberty, who had cost us about £16 or £20 a person",who:"Thomas Dudley, of the servants",when:"1631",there:"He was there"},
+  /* MBR i p. 87 */
+  "bay.gov":{fixed:true,q:"noe man shalbe admitted to the freedome of this body polliticke, but such as are members of some of the churches",who:"The General Court’s records",when:"May 1631",there:"The court was there"},
+  /* the Body of Liberties (Whitmore 1889) */
+  "bay.free":{fixed:true,q:"There shall never be any bond slaverie … unles it be lawfull Captives taken in just warres",who:"The Body of Liberties",when:"1641",there:"The colony’s own law"},
+  /* Objection 5's answer, Young pp. 275-277 */
+  "bay.land":{fixed:true,q:"That which is common to all is proper to none",who:"The General Considerations",when:"1629",there:"Written in England"}
+};
+const COMPARE_SENT={};
+function compareState(){
+  if(!S.compare||!S.compare.cells)S.compare={cells:{},sent:{}};
+  if(!S.compare.sent)S.compare.sent={};
+  return S.compare;
+}
+function compareHas(key){const c=COMPARE_CELLS[key];return !!(c&&(c.fixed||compareState().cells[key]));}
+function compareRow(id){return COMPARE_ROWS.filter(function(r){return r.id===id;})[0];}
+function compareCol(id){return COMPARE_COLS.filter(function(c){return c.id===id;})[0];}
+function compareTag(c){return c.who+", "+c.when+". "+c.there+".";}
+/* play-test, 27 Nov: on a Chromebook (1366x768) the board showed two and a half rows of eight
+   columns, three of them Chapter XIV's and empty, and the cell just entered was often off the
+   bottom. Now: a column shows only once a chapter has defined cells for it (XIV's appear when
+   XIV adds them); one line says how to read it; the first new cell is scrolled into view; and
+   Read aloud, after a scene, reads the new cells only, not thirty cells in the browser voice */
+function compareTable(hi){
+  const H=[].concat(hi||[]);
+  const cols=COMPARE_COLS.filter(function(c){return COMPARE_ROWS.some(function(r){return !!COMPARE_CELLS[c.id+"."+r.id];});});
+  let h="<div class=\"cmpWrap\"><table class=\"cmp\"><tr><th class=\"noRead\"></th>"+cols.map(function(c){return "<th"+(H.length?" class=\"noRead\"":"")+">"+c.t+"<small>Chapter "+c.ch+"</small></th>";}).join("")+"</tr>";
+  COMPARE_ROWS.forEach(function(r){
+    h+="<tr data-row=\""+r.id+"\"><th"+(H.length?" class=\"noRead\"":"")+">"+r.t+"</th>"+cols.map(function(c){
+      const k=c.id+"."+r.id, cell=COMPARE_CELLS[k];
+      if(cell&&compareHas(k))return "<td data-k=\""+k+"\""+(H.indexOf(k)>=0?" class=\"hi\"":(H.length?" class=\"noRead\"":""))+">“"+cell.q+"”<small>"+compareTag(cell)+"</small></td>";
+      return "<td class=\"blank noRead\">"+(cell?"…":"")+"</td>";}).join("")+"</tr>";});
+  h+="<tr><th"+(H.length?" class=\"noRead\"":"")+">"+COMPARE_NOT.t+"</th><td class=\"not"+(H.length?" noRead":"")+"\" colspan=\""+cols.length+"\">"+COMPARE_NOT.b+"</td></tr></table></div>";
+  return h;
+}
+const BOARD={after:null};
+function openBoard(hi,after,title,hint,focus){
+  BOARD.after=after||null;
+  const H=[].concat(hi||[]);
+  $("boardTitle").textContent=title||"The Comparison Board";
+  $("boardBody").innerHTML="<p class=\"cmpHint\">"+(hint||(H.length?"Read across a row: one question, colony by colony. The gold cells are new.":"Read across a row: one question, colony by colony."))+"</p>"+compareTable(H);
+  openModal("mBoard");setPaused(true);
+  /* the new cell into view, below the sticky row of colonies and right of the questions */
+  const wrap=$("boardBody").querySelector(".cmpWrap"), td=wrap&&wrap.querySelector(focus?"[data-k=\""+focus+"\"]":"td.hi");
+  if(wrap&&td){const w=wrap.getBoundingClientRect(), t=td.getBoundingClientRect(), th=wrap.querySelector("tr>th:first-child");
+    wrap.scrollTop=Math.max(0,t.top-w.top-(th?th.offsetHeight:0)-4);
+    wrap.scrollLeft=Math.max(0,t.left-w.left-(th?th.offsetWidth:0)-4);}
+}
+function closeBoard(){
+  $("mBoard").classList.remove("on");setPaused(false);
+  const f=BOARD.after;BOARD.after=null;if(f)f();
+}
+/* the evidence for one cell: three quoted lines, one right */
+function compareFill(key,after){
+  if(compareHas(key)){if(after)after();return;}
+  const c=COMPARE_CELLS[key], parts=key.split("."), col=compareCol(parts[0]), row=compareRow(parts[1]);
+  /* play-test, 27 Nov: the right line carried its writer's full title ("Pieter Schaghen, to the
+     States General") and the wrong ones a short "(Wassenaer, 1626)": the longest button was the
+     answer. Now all three read (name, year); and a wrong pick says so, not just the row's name */
+  const yr=(String(c.when).match(/1[0-9]{3}/)||[""])[0];
+  const opts=[["“"+c.q+"” ("+String(c.who).split(",")[0]+(yr?", "+yr:"")+")",null]].concat(c.alt||[]);
+  sickSheet(col.t+" · the comparison board",row.t,
+    "<p>Which line answers this for "+col.t+"?</p>",
+    shuffle(opts.map(function(o,i){return {t:o[0],fn:function(){
+      compareState().cells[key]=i===0?1:2;S.ink+=4;updateInk();saveGame();
+      const body=(i===0?"<p>"+c.res+"</p>":"<p>"+o[1]+"</p>")+"<p>On the board: “"+c.q+"” "+compareTag(c)+"</p>";
+      if(i===0)fortResult(row.t,body,["+4 Ink"],after||null);
+      else{result(false,"Not that line","",["+4 Ink"],after||null);$("resBody").innerHTML=body;}}};})));
+}
+/* one comparison sentence: one supported by the board, two that fall into the record's traps */
+function compareSay(id,after){
+  const s=COMPARE_SENT[id];
+  if(!s||compareState().sent[id]!=null){if(after)after();return;}
+  /* play-test, 27 Nov: the prompt was the bare frame "Like ___, ___ because ___", and the board
+     itself could not be seen while choosing. Plain words now, and a way to look at the board */
+  sickSheet("Same question, different colony","Compare",
+    "<p>Which comparison do the lines on the board support?</p>"+
+    "<button class=\"btn ghost small noRead\" id=\"cmpPeek\">Look at the board</button>",
+    shuffle(s.o.map(function(o,i){return {t:o[0],fn:function(){
+      compareState().sent[id]=i;S.ink+=4;updateInk();saveGame();
+      if(i===0)fortResult("Supported","<p>"+o[1]+"</p>",["+4 Ink"],after||null);
+      else{result(false,"Not supported","",["+4 Ink"],after||null);$("resBody").innerHTML="<p>"+o[1]+"</p>";}}};})));
+  const pk=$("cmpPeek");
+  if(pk)pk.onclick=function(){$("mSick").classList.remove("on");openBoard(null,function(){compareSay(id,after);},null,"Read across a row. Close the board to choose your sentence.");};
+}
+
+/* ==================== CHAPTER XIII: LIBERTY OF YE BODY ====================
+   1626 to 1688: the West India Company's furs and its purchase of Manhattan, Kieft's war, the
+   eleven Company slaves freed on conditions in 1644, Flushing's remonstrance, the English
+   takeover of 1664; then Penn's charter and Frame, the land councils of 1683, and the
+   Germantown protest of 1688. Design: notes docs/CH13-DESIGN.md. Every fact is in
+   docs/CH13-RECORD.md. RE-READ 27 November, on the page, before anything went on screen:
+   - Jameson, Narratives of New Netherland (1909, archive.org narrativesofnewn00jame): pp. 83 n.,
+     84, 129 and n., 209, 226, 227-228 and n. (the Breeden Raedt note and the borrowed passage's
+     opening), 259-260, 392, 400-401 and n. Page corrections from the re-reading: "Saw nothing but
+     firing" is p. 227; Megapolensis is p. 392; the book spells "Corler's Hook".
+   - DRCNY i p. 37 (Schaghen; the cargo's "178½" from the editor's introduction, the OCR reads 1783).
+   - O'Callaghan, Laws and Ordinances (1868, cu31924080779402) pp. 33, 36-37.
+   - ERNY i pp. 338, 413 (the remonstrance; the record's "412-414", all lines here on p. 413), 415,
+     555-558.
+   - Avalon: the Pennsylvania charter (pa01) and the Frame and Laws of 1682 (pa04).
+   - Myers, Narratives of Early Pennsylvania (1912) pp. 233, 235, 236, 260, 395 n.
+   - NPS Independence NHP, the Germantown protest transcript; the Tri-College "Quakers & Slavery"
+     page (the Yearly Meeting's answer; the 1696 advice); the Gotham Center ($24); PHMC (the
+     Walking Purchase); the Delaware Tribe's Walking Purchase PDF (2026); the NNI (the Gideon);
+     the Municipal Archives blog (2017, the twenty-five); Newman on Shackamaxon.
+   LEFT OUT, because they could not be re-read: Penn's letter to the Kings of the Indians (HSP
+   refuses the fetch), so scene 5's work is the charter and the Frame, not reading the letter;
+   the NMAI handout's "gifts ... to share the land" (its PDF could not be read); Christoph and
+   the court minutes on the 1641 lottery; the Journal of New Netherland's causes; Stuyvesant's
+   1654 letter (never read); Penn's enslaved workers and his will (Turner's paraphrase, Billy
+   Penn: not re-read); the 1780 act (not read); Voltaire's words; the Great Law's text.
+
+   WHAT THE CHAPTER IS ABOUT. "Same question, different colony": the comparison board (above).
+   Each scene's way out fills its cells and asks one comparison sentence; the closing board is
+   "Liberty for whom?".
+
+   CONTENT. No killing is drawn, on any side, and the one verb is "killed". The Pavonia night is
+   the ramparts in the dark, firing far off across the water, nobody drawn there; the borrowed
+   1649 passage only behind "Read the source in full", labelled. No chained or captive figures:
+   the Gideon is a ship at anchor. The eleven are drawn as free farmers at work, in the plain
+   clothes of their neighbours, faces from the shared set (look book 1.12). Period words only
+   inside quotation, attributed. The Lenape and the enslaved never speak: their words are
+   carried, attributed, by the men who wrote them down.
+
+   DEPARTURES FROM THE DESIGN, and why:
+   - Penn's letter of 1681 could not be re-read, so it is not read aloud in council; scene 5 is
+     the charter's beaver skins, the Frame copied fair, and the freemen's test.
+   - The board's cells are each filled once: New Netherland's "whose land" in scene 0 and "who
+     came" in scene 3, so scene 1 fills one cell and scene 4 none (its sentence is what changed);
+     Pennsylvania's "who was free" waits for Germantown (scene 7), where the record has it, with
+     "who came" and "who worked".
+   - The ramparts night and Kieft's table are at the fort; the Tappan corn of 1640 is the
+     Company's corn measured at the fort's storehouse, with De Vries's account of Tappan. */
+
+/* ---- THE SCENES ---- */
+const MID_DAYS=[
+  {where:"quay",date:"November 1626 — Amsterdam",need:["cargo","ledger","purchase"],next:"The Comparison Board"},
+  {where:"pavonia",date:"February 1643 — Fort Amsterdam, at night",need:["corn","table","ramparts"],next:"The Comparison Board"},
+  {where:"farms",date:"25 February 1644 — the farms north of the fort",need:["tribute","plots","grant"],next:"The Comparison Board"},
+  {where:"flushing",date:"1654 to 1663 — New Amsterdam and Flushing",need:["languages","remonstrance","letter"],next:"The Comparison Board"},
+  {where:"fort",date:"August and September 1664 — New Amsterdam",need:["count","ship","articles"],next:"The Comparison Board"},
+  {where:"river",date:"1681 to 1682 — by the Delaware",need:["charter","frame","freemen"],next:"The Comparison Board"},
+  {where:"council",date:"Summer 1683 — a land council by the Delaware",need:["goods","council","elm"],next:"The Comparison Board"},
+  {where:"germantown",date:"April to September 1688 — Germantown",need:["copy","meetings","protest"],next:"Liberty for Whom?"}];
+const MID_DUTY={
+  cargo:"Carry a bale of pelts",ledger:"Enter the cargo in the ledger",purchase:"Read the letter",
+  corn:"Measure the Company’s corn",table:"Read what De Vries told Kieft",ramparts:"Go up on the ramparts",
+  tribute:"Measure a year’s tribute",plots:"Stake the farm plots",grant:"Read the grant",
+  languages:"Read what Jogues was told",remonstrance:"Copy the remonstrance fair",letter:"Read the directors’ letters",
+  count:"Count the men who can bear arms",ship:"Read about the ship at anchor",articles:"Read the articles",
+  charter:"Pack the beaver skins",frame:"Copy the laws fair",freemen:"Read who may vote",
+  goods:"Bring out the goods",council:"Read how the councils decided",elm:"Read about the elm",
+  copy:"Copy the protest",meetings:"Read what the meetings did",protest:"Read the protest"};
+function midW(){
+  S.works=S.works||{};
+  if(!S.works.ch13)S.works.ch13={day:0,did:{},board:{},done:false};
+  return S.works.ch13;
+}
+function midDay(){return MID_DAYS[Math.min(midW().day,MID_DAYS.length-1)];}
+function midNeed(){const w=midW(), sd=midDay();for(const k of sd.need)if(!w.did[k])return k;return null;}
+const MID={later:[],t:0,flash:null,flashOn:0,stakes:null};
+
+/* ---- THE PEOPLE ---- (only those whose own words survive in the record read) */
+const MID_PEOPLE=[
+  {id:"devries",name:"David de Vries",voice:"male",role:"a patroon, one of the Twelve Men",eq:personEq("devries",1643)},
+  {id:"hart",name:"Edward Hart",voice:"male",role:"town clerk of Flushing",eq:personEq("hart",1657)},
+  {id:"penn",name:"William Penn",voice:"male",role:"proprietor of Pennsylvania",eq:personEq("penn",1683)},
+  {id:"pastorius",name:"Francis Daniel Pastorius",voice:"male",role:"of Germantown, one of the four who signed",eq:personEq("pastorius",1688)}];
+function midPerson(id){return MID_PEOPLE.filter(function(p){return p.id===id;})[0];}
+/* the lines of those not asked: their own words. Penn: Myers PA pp. 233, 235. The protest (NPS
+   transcript) is the four signers' words; Pastorius speaks them as one of the four */
+const MID_SAYS={
+  "penn":[[],[],[],[],[],[],["“Some Kings have sold, others presented me with several parcels of Land.”","“How Powerful the Kings are, and yet how they move by the Breath of their People.”"],[]],
+  "pastorius":[[],[],[],[],[],[],[],["“Here is liberty of conscience wch. is right and reasonable; here ought to be likewise liberty of ye body, except of evildoers, wch is an other case.”",
+    "“In Europe there are many oppressed for Conscience sacke; and here there are those oppressed wch are of a Black Colour.”"]]};
+
+/* ---- THE THREE WHO ARE ASKED ---- */
+const MID_NPCS=[
+  {id:"devries",name:"David de Vries",voice:"male",role:"one of the Twelve Men",at:1,eq:personEq("devries",1643),
+   /* Jameson NN p. 227 */
+   done:"“Let this work alone.”",
+   beats:[
+    /* Jameson NN p. 226, his own first person */
+    {npc:"“I told the Director that such work could not be done without the approbation of the Twelve Men. I was one of them. Ask.”",
+     choices:[
+      {t:"Did the Director listen?",wise:true,ink:8,
+       reply:"No. In the hall De Vries said “Let this work alone”. The soldiers went that night. He wrote it himself, printed in 1655.",
+       insight:{g:"known",b:"Without the Twelve Men",s:"De Vries told Kieft war “could not be done without the approbation of the Twelve Men”. Kieft went ahead. De Vries was there, and was Kieft’s enemy."}},
+      {t:"Who are the Twelve Men?",fair:true,ink:3,
+       reply:"Settlers the Director called to advise him, and ignored when he chose. They could not overrule him."},
+      {t:"So the Twelve Men voted for war.",wise:false,
+       reply:"De Vries says the opposite: they were not asked, and he, one of them, refused his assent."}]}]},
+  {id:"hart",name:"Edward Hart",voice:"male",role:"town clerk of Flushing",at:3,eq:personEq("hart",1657),
+   /* ERNY i p. 413 */
+   done:"“By mee Edward Heart, Clericus.”",
+   beats:[
+    {npc:"“I wrote the town’s letter, as clerk: wee cannot in Conscience lay violent hands upon them. Ask.”",
+     choices:[
+      {t:"On what ground does the town stand?",wise:true,ink:8,
+       reply:"Holland’s own glory: “The law of loue, peace and libertie in the states extending to Jews, Turks and Egyptians”. English settlers, using a Dutch argument.",
+       insight:{g:"known",b:"The Law of Loue",s:"Flushing, 1657: English settlers under Dutch rule refused to punish Quakers. “wee cannot in Conscience lay violent hands upon them”. Written by the town clerk, Edward Hart."}},
+      /* ERNY i p. 415 */
+      {t:"What happened to the town’s officer?",fair:true,ink:3,
+       reply:"Tobias Feake, the schout, was banished or fined “two hundred florins”, for a “seditious, mutinous and detestable letter of defiance”."},
+      {t:"So Flushing spoke against slavery too.",wise:false,
+       reply:"No. Its “bondage” means forcing a man’s conscience. The letter says nothing of the Company’s slaves."}]}]},
+  {id:"penn",name:"William Penn",voice:"male",role:"proprietor of Pennsylvania",at:5,eq:personEq("penn",1682),
+   /* the Frame's preface (Avalon) */
+   done:"“Where the laws rule.”",
+   beats:[
+    {npc:"“Any government is free to the people under it (whatever be the frame) where the laws rule, and the people are a party to those laws. Ask.”",
+     choices:[
+      /* Laws Agreed upon in England, II, XXXIV, XXXV (Avalon) */
+      {t:"Who is a party to the laws?",wise:true,ink:8,
+       reply:"Freemen, by land: even a freed servant with fifty acres. But voters and officers must be “such as possess faith in Jesus Christ”.",
+       insight:{g:"known",b:"Where the Laws Rule",s:"Penn’s laws of 1682: freemen by land; voters and officers only “such as possess faith in Jesus Christ”; conscience protected for all who believe in “one Almighty and eternal God”."}},
+      /* the charter (Avalon) */
+      {t:"What rent does the King ask?",fair:true,ink:3,
+       reply:"“Two Beaver Skins”, every first of January, at Windsor Castle. The charter was granted with regard to “the Memorie and Meritts of his late Father”."},
+      {t:"So everyone in Pennsylvania could vote.",wise:false,
+       reply:"Only freemen with land, and only Christians could vote or hold office. A Jew could live and worship freely, but not vote."}]}]}];
+function midSpeaker(id){
+  const day=midW().day;
+  for(const n of MID_NPCS)if(n.id===id&&n.at===day)return n;
+  const set=MID_SAYS[id], lines=set&&set[day];
+  if(!lines||!lines.length)return null;
+  return Object.assign({},midPerson(id),{lines:lines});
+}
+
+/* ---- THE RECORD THAT OPENS EACH SCENE ----
+   play-test, 27 Nov: each card's date line was said again as its first sentence; said once now */
+const MID_OPEN=[
+  /* DRCNY i p. 37 */
+  {t:"Amsterdam",b:"<p class=\"note\">This chapter includes enslavement written into law, killings on every side, and period words. All are told in the sources’ words. None is shown.</p><p>A ship is in from New Netherland. You are a clerk of the West India Company.</p>"},
+  /* Jameson NN pp. 226-228 */
+  {t:"Fort Amsterdam",b:"<p class=\"note\">Killings are told here in documents. None is shown.</p><p>Director Willem Kieft is at war with the river peoples. David de Vries has come to the fort.</p>"},
+  /* O'Callaghan, Laws pp. 36-37 */
+  {t:"North of the Fort",b:"<p>Eleven men who have served the Company as slaves for eighteen or nineteen years have petitioned to be freed.</p>"},
+  /* Jameson NN p. 259; ERNY i p. 413 */
+  {t:"Flushing",b:"<p>New Amsterdam’s church is the Reformed church. Quakers have come to the English towns on Long Island.</p>"},
+  /* ERNY i pp. 555-558 */
+  {t:"The English Ships",b:"<p>English frigates lie in the bay. Director Stuyvesant must decide whether to fight.</p>"},
+  /* the charter (Avalon) */
+  {t:"Pennsylvania",b:"<p>King Charles II grants a province to William Penn, a Quaker. In 1682 Penn crosses to see it.</p>"},
+  /* Myers PA pp. 233-236 */
+  {t:"The Land Councils",b:"<p>Penn meets the Lenape kings and their councils to buy land, as he will write to his investors.</p>"},
+  /* NPS transcript */
+  {t:"Germantown",b:"<p>18 April 1688. Four Friends of Germantown, German-speaking Quakers, write a paper for their monthly meeting.</p>"}];
+
+/* ---- THINGS TO LOOK AT ---- [id, label, x, z, title, body] per scene */
+const MID_LOOKS=[
+  /* Jameson NN p. 84; Jameson NN p. 83 n.; the Gotham Center */
+  [["wassenaer","A Company Town",-34,24,"Men work there",leafCard("Nicolaes van Wassenaer","Amsterdam, 1626, tr.; he never crossed","“Men work there as in Holland; one trades, upwards, southwards and northwards; another builds houses, the third farms.”")+"<p>A newsletter, written from returning ships’ reports.</p>"],
+   ["dollars","Twenty-Four Dollars",44,24,"Where did $24 come from?",priceCard("Schaghen’s letter","1626","“for the value of 60 guilders”")+
+     priceCard("O’Callaghan","1844","“for the sum of sixty guilders, or twenty-four dollars!”")+
+     priceCard("Jameson’s footnote","1909","“for sixty guilders ($24)”")+"<p>A sum worked out in 1844, repeated as fact. The beads are later still.</p>"]],
+  /* Jameson NN p. 260 */
+  [["jogues","The War That Followed",-34,-6,"Two score Hollanders",leafCard("Isaac Jogues, a French Jesuit","1646, of 1643, tr.; he was there","The river peoples “actually killed some two score Hollanders, and burnt many houses and barns full of wheat.”")+"<p>Killings on both sides. No count of the war’s dead was read.</p>"]],
+  /* O'Callaghan, Laws p. 33; Jameson NN p. 129 and n.; the names */
+  [["chains","In Chains",-34,30,"A punishment",leafCard("An ordinance of the Director and Council","11 July 1642, tr.","Drawing a knife: fifty guilders, “or, in default, to work three months with the Negroes in chains”.")+"<p>Chains were the Company slaves’ condition, and a free man’s punishment.</p>"],
+   ["michaelius","The First Word",34,30,"A minister’s insult",leafCard("Jonas Michaëlius, the first minister","1628, tr.","The first sentence in the record about African women in the colony is a minister’s insult.",
+     "“the Angola slave women are thievish, lazy, and useless trash.” Jameson’s note (1909): slaves were “imported in 1625 or 1626.”")],
+   ["names","Their Names",-44,4,"Angola, Congo, Santomee",leafCard("The council’s grant","1644, tr.","Paulo Angola, Big Manuel, Little Manuel, Manuel de Gerrit de Reus, Simon Congo, Anthony Portugis, Gracia, Peter Santomee, Jan Francisco, Little Anthony, Jan Fort Orange.")+"<p>Our reading: their names point to Angola, Congo, São Tomé and the Portuguese Atlantic.</p>"]],
+  /* Jameson NN p. 392; Jameson NN pp. 400-401 */
+  [["jews","The Jews",-38,-12,"A minister’s request",leafCard("Johannes Megapolensis, a minister","18 March 1655, tr.","He asked that the Jews who had come from Brazil “may be sent away from here”.",
+     "“these godless rascals, who are of no benefit to the country, but look at everything for their own profit, may be sent away from here.”")+"<p>His words of contempt, quoted in full behind the link.</p>"],
+   ["hodgson","A Quaker",30,-12,"The wheelbarrow",leafCard("The ministers’ letter","the 1650s, tr.","A young Quaker was sentenced to “pay one hundred guilders or work at the wheelbarrow two years with the negroes.” He refused, and was whipped.")+"<p>The punishment was to work beside the Company’s slaves.</p>"]],
+  /* the Municipal Archives blog (2017) */
+  [["works","The City’s Works",-34,-6,"Twenty-five",leafCard("The burgomasters’ minutes, as the city archivist quotes them","23 August 1664, tr.","They asked Stuyvesant for “twenty five negroes… for the space of eight days to labor at the City’s works”.")+"<p>The city asked for enslaved men’s labour on its defences, two weeks before it surrendered.</p>"]],
+  [],
+  /* Newman; PHMC; the Delaware Tribe of Indians */
+  [["walk","The Walking Purchase",-34,30,"1737",leafCard("The Delaware Tribe of Indians","2026","In 1737 “the Penns acquired 1200 square miles of Lenape land in Pennsylvania”, the Tribe writes. And: “William Penn had always dealt fairly with the Lenape”.")+
+     leafCard("PHMC","Pennsylvania’s historical commission","“The Delaware walkers early had withdrawn in disgust, complaining bitterly that the white men did not ‘walk fair.’”")]],
+  /* Myers PA p. 395 n. */
+  [["bom","A Baker",-34,30,"One negro whom I bought",leafCard("Cornelis Bom, a Philadelphia baker","1684, in Myers’s translation","“I have no servants except one negro whom I bought”.")+"<p>Philadelphia, four years before the protest.</p>"]]];
+
+/* ---- THE BOARD'S CELLS AND SENTENCES FOR THIS CHAPTER ---- each cell: res, the fixed line for
+   the right choice; alt, two wrong lines with the one fixed line that explains each */
+Object.assign(COMPARE_CELLS,{
+  /* DRCNY i p. 37 */
+  "nn.why":{q:"7246 Beaver skins. 178½ Otter skins. 675 Otter skins.",who:"Pieter Schaghen, to the States General",when:"Amsterdam, 5 November 1626 (tr.)",there:"He reports what the ship’s people said",
+    res:"The cargo list is the letter’s longest part: furs by the hundred. A trading company’s post.",
+    alt:[["“for the value of 60 guilders” (the same letter)","That line answers whose land it was. The cargo shows what the Company came for."],
+         ["“The consciences of men ought to remain free” (the directors, 1663)","Written thirty-seven years later, about worship. It does not say why the post was founded."]]},
+  "nn.land":{q:"They have purchased the Island Manhattes from the Indians for the value of 60 guilders",who:"Pieter Schaghen",when:"Amsterdam, 1626 (tr.)",there:"He was not there",
+    res:"“Value”, not a sum: goods. Who sold, and what either side understood, is not in the letter.",
+    alt:[["“for sixty guilders ($24)” (Jameson’s footnote)","A note of 1909, repeating a sum worked out in 1844. Not a record of 1626."],
+         ["“Men work there as in Holland” (Wassenaer, 1626)","Wassenaer tells what the settlers did, not whose land it was."]]},
+  /* Jameson NN p. 226 */
+  "nn.gov":{q:"such work could not be done without the approbation of the Twelve Men",who:"David de Vries, one of them",when:"of 1643, printed 1655 (tr.)",there:"He was there",
+    res:"A council the Director called, and then ignored. Kieft went to war without it.",
+    alt:[["“The law of loue, peace and libertie in the states” (Flushing, 1657)","A town’s plea, fourteen years later. It decided nothing in 1643."],
+         ["“All people shall still continue free denizens” (1664)","The English terms of 1664, not who governed under Kieft."]]},
+  /* O'Callaghan, Laws pp. 36-37 */
+  "nn.worked":{q:"who have served the Company 18 a 19 years",who:"Director Kieft and his council, of the eleven",when:"25 February 1644 (tr.)",there:"The council was there",
+    res:"The Company’s own enslaved workers, eleven of them named, eighteen or nineteen years in its service.",
+    alt:[["“Men work there as in Holland” (Wassenaer, 1626)",/* review, 27 Nov: was "names who worked the Company’s land"; the grant says "served the Company" (O'Callaghan, Laws pp. 36-37) */
+           "Wassenaer never crossed. The grant names men who had served the Company eighteen or nineteen years."],
+         ["“one negro whom I bought” (Bom, 1684)","That is Philadelphia, forty years on."]]},
+  "nn.free":{q:"their children at present born, or yet to be born, shall be bound … as Slaves",who:"Director Kieft and his council",when:"25 February 1644 (tr.)",there:"The council was there",
+    res:"Freedom for the parents, for a yearly tribute; slavery for their children, born and unborn.",
+    alt:[["“The consciences of men ought to remain free” (the directors, 1663)",/* review, 27 Nov: was "The directors said nothing of the Company’s slaves"; the 1663 letter was read only in Jameson's footnote, not whole (CH13-RECORD) */
+           "The line is about conscience, not the body, in a letter of nineteen years later."],
+         ["“All people shall still continue free denizens” (1664)","The English articles. They name no enslaved person."]]},
+  /* Jameson NN p. 259 */
+  "nn.came":{q:"the Director General told me that there were men of eighteen different languages",who:"Isaac Jogues, a French Jesuit",when:"of 1643, written 1646 (tr.)",there:"He was there; the count is the Director’s",
+    res:"Many peoples, by the Director’s word to a visitor. No list survives.",
+    alt:[["“7246 Beaver skins” (Schaghen, 1626)","What the ship carried, not who came."],
+         ["“Edward Doty & Edward Litster, the servants of Mr. Hopkins”","Plymouth’s passenger list, not New Netherland’s."]]},
+  /* Laws Agreed upon in England, XXXV (Avalon) */
+  "pa.why":{q:"shall, in no ways, be molested or prejudiced for their religious persuasion",who:"Penn’s Laws Agreed upon in England",when:"1682",there:"Written in London",
+    /* review, 27 Nov: was "Liberty of conscience, for all who believe ...: the widest read in these records."; a law
+       written in London is the proprietor's offer, not a settler's own reason, so the line says whose it is (Avalon) */
+    res:"The proprietor’s offer, written in London: liberty of conscience for all who believe in “one Almighty and eternal God”, the widest in these records.",
+    alt:[["“Two Beaver Skins” (the charter, 1681)","The King’s rent, not why settlers came."],
+         ["“Tobacco onely was the buisines” (Butler, 1623)","Jamestown, sixty years before."]]},
+  /* Laws Agreed upon in England, XXXIV (Avalon) */
+  "pa.gov":{q:"such as possess faith in Jesus Christ",who:"Penn’s Laws Agreed upon in England, of voters and officers",when:"1682",there:"Written in London",
+    res:"Freemen by land, and only Christians to vote or hold office.",
+    alt:[["“haveing Regard to the Memorie and Meritts of his late Father” (the charter)","Why the King granted it, not who had a say."],
+         ["“noe man shalbe admitted to the freedome of this body polliticke” (Massachusetts, 1631)","Massachusetts Bay asked for church membership. Pennsylvania asked for Christian faith."]]},
+  /* Myers PA p. 233 */
+  "pa.land":{q:"Some Kings have sold, others presented me with several parcels of Land",who:"William Penn, to his investors",when:"Philadelphia, 1683",there:"He was there",
+    res:"The land was the Lenape kings’ to sell or give, by Penn’s own account. No Lenape account survives.",
+    alt:[["“Two Beaver Skins” (the charter, 1681)","The King’s rent for his grant. It says nothing of the Lenape."],
+         ["“That which is common to all is proper to none” (1629)","Massachusetts Bay’s argument, not Pennsylvania’s."]]},
+  /* Myers PA p. 260 */
+  "pa.came":{q:"The People are a Collection of divers Nations in Europe",who:"William Penn, recruiting",when:"London, 1685",there:"He had been there",
+    res:"A promoter’s list of nations. Germantown’s families had come from Krefeld.",
+    alt:[["“Here is liberty of conscience” (Germantown, 1688)","A reason, not a list of who came."],
+         ["“men of eighteen different languages” (Jogues)","New Netherland, 1643."]]},
+  /* Myers PA p. 395 n. */
+  "pa.worked":{q:"I have no servants except one negro whom I bought",who:"Cornelis Bom, a Philadelphia baker",when:"1684, in Myers’s translation",there:"He was there",
+    res:"Slavery in Philadelphia, said in passing, two years after the colony began.",
+    alt:[["“The People are a Collection of divers Nations” (Penn, 1685)","Who came, by a promoter’s count; not who did the work."],
+         ["“Some Kings have sold” (Penn, 1683)","Whose land, not who worked it."]]},
+  /* the NPS transcript */
+  "pa.free":{q:"In Europe there are many oppressed for Conscience sacke; and here there are those oppressed wch are of a Black Colour.",who:"Four Friends of Germantown",when:"18 April 1688",there:"They were there",
+    res:"Liberty of conscience was the law; liberty of the body was not. Quakers held slaves.",
+    alt:[["“who confess and acknowledge the one Almighty and eternal God” (1682)","Freedom of conscience. The Friends asked about the body."],
+         ["“live in Love, as long as the Sun gave light” (Penn, 1683)","A promise at the land councils, not who was free."]]}});
+Object.assign(COMPARE_SENT,{
+  /* review, 27 Nov: mid0 was "because its first letter lists furs ... no congregation came, because the Company sent
+     traders and farmers"; Schaghen's is not the colony's first letter, and Wassenaer (the board's evidence) describes a
+     company town, not who did not come (Jameson NN p. 84) */
+  mid0:{o:[["Like Jamestown, New Netherland began as a company’s venture, because Schaghen’s letter lists furs by the hundred; unlike Plymouth, no congregation planned it, because Wassenaer describes a company town.",
+            "Supported: Schaghen’s cargo list and Wassenaer’s company town. Both men wrote in Amsterdam, and never crossed."],
+           ["Like Massachusetts Bay, New Netherland bought its land fairly, because it paid $24; unlike Jamestown, it took nothing, because the Lenape sold the island.",
+            "The $24 was worked out in 1844. The letter says “value of 60 guilders”, and not what the Lenape understood."],
+           ["Like Plymouth, New Netherland was founded for religious freedom, because the Dutch were tolerant; unlike Jamestown, it had no slavery, because it was a Middle colony.",
+            "The letter is about furs, not religion. Enslaved Africans were brought to New Netherland in 1625 or 1626, Jameson notes."]]},
+  mid1:{o:[["Like Massachusetts Bay, New Netherland had settlers chosen to advise, because Kieft called the Twelve Men; unlike the Bay’s deputies, they decided nothing, because Kieft went to war without them.",
+            "Supported: De Vries, one of the Twelve, wrote that war “could not be done without the approbation of the Twelve Men”. Kieft went ahead."],
+           ["Like Jamestown’s Assembly, the Twelve Men made New Netherland’s laws, because the Director had to obey them; unlike Plymouth, settlers elected the Director.",
+            "Nothing read shows settlers electing a Director. He called the Twelve Men when he wanted consent, and ignored them when he did not."],
+           ["Like Plymouth, New Netherland went to war with everyone agreed; unlike the Pequot War, no Dutch were killed, because the river peoples did not fight back.",
+            "Jogues, there in 1643: the river peoples killed “some two score Hollanders”. And De Vries says the Twelve Men were not asked."]]},
+  mid2:{o:[["Like Massachusetts Bay, New Netherland wrote freedom with an exception, because the Bay allowed captives; unlike the Bay, it bound children not yet born, because the 1644 grant made them “Slaves”.",
+            "Supported, clause by clause: the eleven freed “on the same footing as other Free people”, a yearly tribute, and their children bound."],
+           ["Like Plymouth, New Netherland had no slavery, because it was a northern colony; unlike Jamestown, all Africans there were free, because the Dutch did not buy people.",
+            "The grant says the eleven had served the Company eighteen or nineteen years, and binds their children as slaves."],
+           ["Like Jamestown, New Netherland freed the eleven fully, because the grant says “Free people”; unlike Jamestown, it asked nothing in return, because they had served.",
+            "The same grant asks thirty skepels and a fat hog a year, on pain of returning to slavery, and binds their children."]]},
+  /* review, 27 Nov: mid3 was "Feake was banished"; the sentence was banishment or a fine of two hundred florins (ERNY i p. 415) */
+  mid3:{o:[["Like Massachusetts Bay, New Netherland punished dissent, because Feake was sentenced over Flushing’s letter; unlike the Bay, it held many peoples, because Jogues heard of eighteen languages.",
+            "Supported: the court’s sentence on Feake, and Jogues’s report. Toleration there was argued from trade as much as from conscience."],
+           ["Like Plymouth, New Netherland allowed one church, because the orders said so; unlike the Bay, it obeyed them, because no other faith was found there.",
+            "Jogues: the Calvinist-only order “is not observed”. He lists Catholics, Puritans, Lutherans and Mennonites."],
+           ["Like Flushing, the directors let the Jews stay out of conscience, because they believed in liberty; unlike Jamestown, money played no part.",
+            "The directors gave their reason: losses in Brazil, and “the large amount of capital, which they have invested in shares of this Company”."]]},
+  mid4:{o:[["Like the Dutch before them, the English kept the townspeople’s rights, because the articles promised “free denizens”; unlike them, the enslaved got nothing, because no article names them.",
+            "Supported: the articles promise lands, goods and conscience to the people and to “The Dutch”. No article names the enslaved, or the Lenape."],
+           ["Like Massachusetts Bay, the English freed every slave in New York, because English law had no slavery; unlike the Dutch, they brought no captives.",
+            /* review, 27 Nov: was "The Gideon brought 290 captives in August 1664. Nothing in the articles frees anyone."; the
+               Gideon was a Company (Dutch) ship, so it did not answer the claim about the English or the Bay (ERNY i
+               pp. 557-559; the Body of Liberties, CH12-RECORD) */
+            "No article frees anyone: “free denizens” did not include the Company’s slaves. And the Bay’s own law of 1641 allowed slavery for captives."],
+           ["Like Kieft in 1643, Stuyvesant decided alone, because no townsman spoke; unlike 1643, a battle decided it.",
+            "Ninety-three townsmen, his own son among them, signed for surrender. The city was given up by articles."]]},
+  mid5:{o:[["Like Massachusetts Bay, Pennsylvania tied the vote to religion, because voters needed “faith in Jesus Christ”; unlike the Bay, it asked no church membership, and protected every believer in God.",
+            "Supported: laws XXXIV and XXXV of 1682. A Jew could live and worship freely, but not vote or hold office."],
+           ["Like Plymouth, Pennsylvania gave everyone a vote, because Penn wrote that the people are “a party to those laws”; unlike Jamestown, it set no conditions.",
+            "The preface is Penn’s ideal. The laws give the vote to freemen with land, and only to Christians."],
+           ["Like New Netherland, Pennsylvania was founded only for trade, because the King asked beaver skins; unlike the Bay, religion played no part.",
+            "Two beaver skins were a token rent. Law XXXV protects anyone who believes in “one Almighty and eternal God”."]]},
+  /* review, 27 Nov: mid6 was "unlike Kieft, Penn met the councils himself"; Kieft made no purchase on the board. The
+     board's own tags carry the contrast: Schaghen "was not there", Penn "was there" (DRCNY i p. 37; Myers PA p. 233) */
+  mid6:{o:[["Like New Netherland, Pennsylvania got land from its owners for goods, because Penn wrote that kings “have sold”; unlike Schaghen, Penn saw it himself, because he was at the councils.",
+            "Supported: Penn’s own letter of 1683, written to investors. The Lenape speakers’ words come only through him, and through an interpreter."],
+           ["Unlike every other colony, Pennsylvania made one treaty that was never broken, because Penn signed it under an elm in 1682.",
+            "No treaty document survives: the event “is not recorded in original primary source documents”, Newman writes. Penn’s letter describes several councils."],
+           ["Like Penn himself, his heirs dealt fairly with the Lenape, because his laws protected them; unlike Massachusetts Bay, no Lenape land was taken by a trick.",
+            "In 1737 the Walking Purchase took “1200 square miles”, the Delaware Tribe writes. The Lenape walkers withdrew “in disgust”, PHMC says."]]},
+  /* review, 27 Nov: mid7 was "Like Massachusetts Bay, Pennsylvania wrote liberty of conscience and still held slaves";
+     the Bay wrote no liberty of conscience: freemen were church members only, dissenters banished (CH12-RECORD; MBR i
+     p. 87). What the two share is slavery beside written liberties (the Body of Liberties' "unles") */
+  mid7:{o:[["Like Massachusetts Bay, Pennsylvania held slaves beside its written liberties, because Bom bought a man; unlike the Bay’s court, the Quaker meetings would not decide, because “at present they forbear it”.",
+            "Supported: the Germantown protest and the meetings’ own answers. Liberty of conscience was law; liberty of the body was put off."],
+           ["Like Plymouth, Pennsylvania had no slavery, because it was a Middle colony; unlike the South, Quakers there kept no slaves.",
+            "Cornelis Bom, a Philadelphia baker, 1684: “one negro whom I bought”. The Friends protested because Quakers held slaves."],
+           ["Like New Netherland’s grant, the Germantown protest freed the enslaved, because the meetings agreed with it; unlike Jamestown, slavery ended in 1688.",
+            "Dublin would not “meddle with it”; the Quarterly Meeting found it “too great a weight”; the Yearly Meeting forbore. No one was freed."]]}});
+/* which cells each scene fills on its way out, and its sentence */
+const MID_BOARD=[{cells:["nn.why","nn.land"],sent:"mid0"},{cells:["nn.gov"],sent:"mid1"},{cells:["nn.worked","nn.free"],sent:"mid2"},
+  {cells:["nn.came"],sent:"mid3"},{cells:[],sent:"mid4"},{cells:["pa.why","pa.gov"],sent:"mid5"},{cells:["pa.land"],sent:"mid6"},
+  {cells:["pa.came","pa.worked","pa.free"],sent:"mid7"}];
+
+function midDone(id){
+  const w=midW();
+  if(!w.did[id]){w.did[id]=true;S.ink+=6;updateInk();checkpoint("ch13-"+id);}
+  for(let i=interactables.length-1;i>=0;i--){
+    const it=interactables[i];
+    if(it.action==="mid"&&it.data&&it.data.kind===id){if(it.el)it.el.style.display="none";interactables.splice(i,1);}
+  }
+  for(let i=MID.later.length-1;i>=0;i--)if(MID.later[i].data.after===id){
+    const it=MID.later[i], el=document.createElement("div");el.className="lbl";
+    el.innerHTML="<b>"+it.label+"</b><i></i>";$("labels").appendChild(el);it.el=el;
+    interactables.push(it);MID.later.splice(i,1);}
+  const nx=interactables.filter(function(it){return it.id==="next";})[0];
+  if(nx)nx.data.verb=midNeed()?"Not yet":"Go on";
+  updateGuide();
+}
+function midQuiz(kick,title,body,opts,id,after){
+  sickSheet(kick,title,body,shuffle(opts.map(function(o){return {t:o[0],fn:function(){
+    midDone(id);
+    if(o===opts[0])fortResult(o[1],o[2],["+6 Ink"],after||null);
+    else{result(false,o[1],"",["+6 Ink"],after||null);$("resBody").innerHTML=o[2];}}};})));
+}
+/* a duty that is work first: the player does it, then the page */
+function midWork(d,task,secs,narr,opt,then){
+  d.worked=true;priceFace(d,d.reach||2.6);
+  playerDoes(task,secs,narr,Object.assign({},opt||{},d.cam?{cam:d.cam}:{}),function(){if(then)then();midAct(d);});
+}
+
+function midAct(d){
+  const w=midW();
+  if(d.kind==="next"){midNext();return;}
+  if(d.kind==="record"){if(w.done)showEnding("ch13");else openReckoning();return;}
+  if(d.kind==="look"){
+    const L=(MID_LOOKS[w.day]||[]).filter(function(a){return a[0]===d.id;})[0];
+    if(L){w.did["look_"+L[0]]=true;saveGame();fortResult(L[4],L[5],[]);}
+    return;
+  }
+  /* 0 · amsterdam */
+  if(d.kind==="cargo"&&!d.worked){
+    midWork(d,"lift",3.5,"Bales of pelts from New Netherland, lifted off the ship and counted.",{load:"pelts"});
+    return;
+  }
+  if(d.kind==="cargo"){
+    midDone("cargo");
+    /* DRCNY i p. 37; 178½ from the editor's introduction (the OCR reads 1783) */
+    fortResult("The Cargo",leafCard("Pieter Schaghen, to the States General","5 November 1626, tr.","“7246 Beaver skins. 178½ Otter skins. 675 Otter skins. 48 Minck skins. 36 Wild cat skins. 33 Mincks. 34 Rat skins. Considerable Oak timber and Hickory.”"),["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="ledger"&&!d.worked){
+    midWork(d,"write",4,"Enter the skins in the Company’s ledger: beaver, otter, mink, wildcat.",{});
+    return;
+  }
+  if(d.kind==="ledger"){
+    midQuiz("Amsterdam · November 1626","By the hundred",
+      "<p>Schaghen’s letter gives one line to the island, and a list to the furs.</p>"+
+      "<p>What did the Company care about most, by the letter’s own space?</p>",
+      [["The furs, counted to the half skin","The furs","<p>Seven thousand beaver and more, every one counted. A trading company’s first concern.</p>"],
+       ["The settlers and their families","Not them","<p>The letter does not count the settlers. It counts the skins, to the half.</p>"],
+       ["The island’s people","Not them","<p>The letter does not name the people who sold the island, or say what they were given.</p>"]],"ledger");
+    return;
+  }
+  if(d.kind==="purchase"){
+    /* DRCNY i p. 37; Jameson NN p. 83 n. */
+    midQuiz("Amsterdam · 5 November 1626","For the value of 60 guilders",
+      leafCard("Pieter Schaghen","Amsterdam, 1626, tr.; he reports the ship’s news","“They have purchased the Island Manhattes from the Indians for the value of 60 guilders; ’tis 11,000 morgens in size.”")+
+      "<p>Which is the record of 1626?</p>",
+      [["Schaghen’s letter","The record","<p>Written the day after the ship came in. “Value”, not a sum: goods, not coin. Who sold, and what they understood, it does not say.</p>"],
+       ["“$24 in beads”","A retelling","<p>The $24 was worked out in 1844 and repeated in a 1909 footnote. The beads came later still.</p>"],
+       ["A Lenape account of the sale","None survives","<p>No Lenape account of 1626 survives in the record. Schaghen’s letter is all there is.</p>"]],"purchase");
+    return;
+  }
+  /* 1 · fort amsterdam, at night */
+  if(d.kind==="corn"&&!d.worked){
+    /* play-test, 27 Nov: the measure is now seen, set on the stack */
+    midWork(d,"lift",3.5,"The Company’s corn, levied from the river peoples, measured into the storehouse.",{load:"basket"},function(){
+      if(MID.basket)MID.basket.drop();});
+    return;
+  }
+  if(d.kind==="corn"){
+    /* Jameson NN p. 209 */
+    midQuiz("Tappan · 20 October 1640","Without being invited",
+      leafCard("David de Vries","1655, of 1640, in translation","Asked for corn, the Tappan people said the Director “must be a very mean fellow to come to live in this country without being invited by them”.")+
+      "<p>What were they claiming?</p>",
+      [["That the country was theirs","Their country","<p>A newcomer, uninvited, had no right to tax them. Their words come through De Vries, Kieft’s enemy, in translation.</p>"],
+       ["The Company owned their corn","Not that","<p>They said the opposite: the Director wanted their corn “for nothing”.</p>"],
+       ["They wished to pay a fair tax","Not that","<p>They refused the tax, and said why: he came “without being invited by them”.</p>"]],"corn");
+    return;
+  }
+  if(d.kind==="table"){
+    /* Jameson NN pp. 226-227 */
+    midQuiz("Fort Amsterdam · 24 February 1643","Let this work alone",
+      leafCard("David de Vries","printed 1655, tr.; he was there","He told Kieft war “could not be done without the approbation of the Twelve Men”. Then: “Let this work alone; you wish to break the mouths of the Indians”.")+
+      "<p>Who decided?</p>",
+      [["The Director, without his council","Kieft","<p>He had called the Twelve Men, and now ignored them. Settlers had petitioned him for it, De Vries says.</p>"],
+       ["The Twelve Men, by vote","Not them","<p>De Vries, one of them, refused his assent. They were not asked.</p>"],
+       ["The directors in Amsterdam","Not them","<p>Amsterdam was months away. The Director decided at the fort.</p>"]],"table");
+    return;
+  }
+  if(d.kind==="ramparts"){
+    playCutscene({skippable:true,steps:MID_NIGHT()},function(){midDone("ramparts");
+      /* Jameson NN pp. 227-228 and n. */
+      fortResult("Pavonia",leafCard("David de Vries","printed 1655, tr.","About midnight, at the ramparts: “Saw nothing but firing, and heard the shrieks”. An Indian couple he knew came to the fort: “not Indians, but the Swannekens, as they call the Dutch, had done it.”",
+          "From an anonymous pamphlet of 1649, the Breeden Raedt, copied into De Vries’s book (Jameson’s note): “where infants were torn from their mother’s breasts, and hacked to pieces in the presence of the parents”.")+
+        /* review, 27 Nov: was "eighty killed at Pavonia and forty at Corler’s Hook, in their sleep"; the book says the forty "were in the same manner attacked in their sleep" (Jameson NN p. 228, re-read) */
+        "<p>His book counts eighty killed at Pavonia, and forty “attacked in their sleep” at Corler’s Hook. Whether the counts are his or the pamphlet’s is unclear.</p>",["+6 Ink"]);});
+    return;
+  }
+  /* 2 · the farms */
+  if(d.kind==="tribute"&&!d.worked){
+    midWork(d,"lift",3.5,"Thirty skepels of maize, each man, each year. Measure one man’s share.",{load:"basket"},function(){
+      if(MID.heap)for(let i=0;i<4;i++)MID.heap.drop();});
+    return;
+  }
+  if(d.kind==="tribute"){
+    midDone("tribute");
+    /* O'Callaghan, Laws pp. 36-37 */
+    fortResult("Tribute",leafCard("The council’s grant","25 February 1644, tr.","Each man to pay yearly “thirty skepels of Maize … and one Fat hog, valued at twenty guilders”, or “he shall forfeit his freedom and return back into the said Company’s slavery.”"),["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="plots"&&!d.worked){
+    midWork(d,"hammer",4,"Stakes for the plots granted north of the fort.",{},function(){if(MID.stakes)MID.stakes.visible=true;});
+    return;
+  }
+  if(d.kind==="plots"){
+    midDone("plots");
+    fortResult("The Farms","<p>The freed men farmed land north of the fort. The grant was made in the middle of Kieft’s war.</p><p>Why the Company placed them there, the grant does not say.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="grant"){
+    /* O'Callaghan, Laws pp. 36-37 */
+    midQuiz("Fort Amsterdam · 25 February 1644","As Slaves",
+      leafCard("The council’s grant","1644, in O’Callaghan’s translation","Freed “on the same footing as other Free people here in New Netherland”. But “their children at present born, or yet to be born, shall be bound … as Slaves”.")+
+      "<p class=\"note\">“Half-freedom” is a historians’ label, not the grant’s word.</p><p>Who was free?</p>",
+      [["The fathers and their wives, for life","The parents","<p>For the parents’ lives, on a yearly tribute. Their children, born and unborn, stayed the Company’s.</p>"],
+       ["Every one of the families","Not the children","<p>The children, “at present born, or yet to be born”, were bound to the Company as slaves.</p>"],
+       ["No one; it changed nothing","Something","<p>The eleven and their wives were freed for life, on conditions. Their petition survives only in the council’s summary.</p>"]],"grant");
+    return;
+  }
+  /* 3 · flushing */
+  if(d.kind==="languages"){
+    /* Jameson NN pp. 259-260 */
+    midQuiz("Manhattan · 1643","Eighteen different languages",
+      leafCard("Isaac Jogues, a French Jesuit","1646, of 1643, tr.","“the Director General told me that there were men of eighteen different languages”. “No religion is publicly exercised but the Calvinist, and orders are to admit none but Calvinists, but this is not observed”.")+
+      "<p>What do the two lines show together?</p>",
+      [["A rule, and the practice beside it","Law and practice","<p>The orders admitted only Calvinists. Jogues lists Catholics, Puritans, Lutherans and Mennonites living there anyway.</p>"],
+       ["Full religious freedom by law","Not by law","<p>The law admitted Calvinists only. The practice was looser than the law.</p>"],
+       ["A colony of one people","Many peoples","<p>Eighteen languages, by the Director’s count, told to a visitor. No list survives.</p>"]],"languages");
+    return;
+  }
+  if(d.kind==="remonstrance"&&!d.worked){
+    midWork(d,"write",4.5,"Copy the town’s letter fair, as Edward Hart wrote it. The townsmen come to sign.",{});
+    return;
+  }
+  if(d.kind==="remonstrance"){
+    midDone("remonstrance");
+    /* ERNY i p. 413 */
+    fortResult("The Remonstrance",leafCard("The freeholders of Flushing","27 December 1657","“The law of loue, peace and libertie in the states extending to Jews, Turks and Egyptians”. For “Presbyterian, Independent, Baptist or Quaker”: “wee cannot in Conscience lay violent hands upon them”.")+
+      "<p>Thirty-one men signed it, or made their marks.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="letter"){
+    /* ERNY i p. 338; Jameson NN p. 400 n. */
+    midQuiz("Amsterdam · 1655 and 1663","Two letters",
+      priceCard("The Company’s directors, of the Jews","26 April 1655, tr.","they may stay, because of losses in Brazil and “the large amount of capital, which they have invested in shares of this Company”")+
+      priceCard("The directors, to Stuyvesant","16 April 1663, tr.","“The consciences of men ought to remain free and unshackled”")+
+      "<p>What changed between the two letters?</p>",
+      [["The reason given for tolerance","The reason","<p>In 1655, money invested; in 1663, conscience. Both letters came from men who never crossed.</p>"],
+       ["Nothing; both say the same","Not the same","<p>One argues from shares in the Company, the other from conscience.</p>"],
+       ["The Jews were expelled in 1663","Not so","<p>The 1655 letter let them “live and remain”. Neither letter expels anyone.</p>"]],"letter");
+    return;
+  }
+  /* 4 · the fort, 1664 */
+  if(d.kind==="count"&&!d.worked){
+    midWork(d,"write",4,"House by house, with the burgomasters’ list: the men who can bear arms.",{});
+    return;
+  }
+  if(d.kind==="count"){
+    midDone("count");
+    /* ERNY i pp. 555-556 */
+    fortResult("Fifteen Hundred Souls",leafCard("The burghers’ remonstrance","5 September 1664, tr.","The city held “about fifteen hundred innocent souls, only two hundred and fifty of whom are capable of bearing arms”.")+
+      "<p>Ninety-three townsmen signed for surrender. Among them was Balthazar Stuyvesant, the Director’s son.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="ship"){
+    /* the NNI; the Municipal Archives blog */
+    midQuiz("New Amsterdam · August 1664","The Gideon",
+      leafCard("The New Netherland Institute","today","“On August 15, 1664, the slave ship Gideon arrived in the New Amsterdam harbor with 290 slaves”: 153 men and 137 women.")+
+      "<p>Who is counted in this record, and how?</p>",
+      [["Captives, counted as cargo","As cargo","<p>Men and women counted, not named. Their fates under the English were not read for this chapter.</p>"],
+       ["Settlers, by their names","Not by name","<p>No name of any of the 290 is in the record read.</p>"],
+       ["Soldiers come to defend the city","Not soldiers","<p>They were captives brought to be sold. The city surrendered three weeks later.</p>"]],"ship");
+    return;
+  }
+  if(d.kind==="articles"){
+    /* ERNY i pp. 557-558 */
+    midQuiz("New Amsterdam · August 1664","The articles",
+      priceCard("Article 3","1664","“All people shall still continue free denizens and enjoy their lands, houses, goods”")+
+      priceCard("Article 8","1664","“The Dutch here shall enjoy the liberty of their consciences in Divine Worship and church discipline.”")+
+      "<p>Who is missing from the articles?</p>",
+      [["The enslaved, and the Lenape","Not named","<p>No article names either. “Free denizens” did not include the Company’s slaves.</p>"],
+       ["The Dutch settlers","They are there","<p>Article 8 names “The Dutch” by name, and keeps their church.</p>"],
+       ["The magistrates of the city","They are there","<p>The articles keep the city’s magistrates in office, under new masters.</p>"]],"articles");
+    return;
+  }
+  /* 5 · by the delaware */
+  if(d.kind==="charter"&&!d.worked){
+    midWork(d,"lift",3.5,"Two beaver skins, packed for Windsor Castle: the rent for a province.",{load:"pelts2"});
+    return;
+  }
+  if(d.kind==="charter"){
+    midDone("charter");
+    /* Avalon, the charter */
+    fortResult("Two Beaver Skins",leafCard("The charter","1681","Rent: “Two Beaver Skins, to bee delivered at Our said Castle of Windsor on the First Day of January in every Year”. Granted “haveing Regard to the Memorie and Meritts of his late Father”.")+
+      "<p>The charter names his father’s merits. A royal debt often named as the reason was not read for this chapter.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="frame"&&!d.worked){
+    midWork(d,"write",4,"Copy the Laws Agreed upon in England, fair, for the province.",{});
+    return;
+  }
+  if(d.kind==="frame"){
+    midDone("frame");
+    /* Avalon, Laws Agreed upon in England, II */
+    fortResult("Who Is a Freeman",leafCard("The Laws Agreed upon in England","1682","A purchaser or renter of land, or “every person, that hath been a servant, or bonds-man, and is free by his service, that shall have taken up his fifty acres of land”."),["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="freemen"){
+    /* Avalon, Laws XXXIV, XXXV */
+    midQuiz("The Laws · 1682","Who falls in the gap?",
+      priceCard("Law XXXIV","1682","voters and officers to be “such as possess faith in Jesus Christ”")+
+      priceCard("Law XXXV","1682","all “who confess and acknowledge the one Almighty and eternal God” protected in their faith")+
+      "<p>Who is protected, but cannot vote?</p>",
+      [["A Jew living in the province","In the gap","<p>Free to live and worship, by law XXXV; barred from voting and office, by law XXXIV.</p>"],
+       ["A Quaker freeman","Not him","<p>A Quaker freeman with land could vote. Penn himself was a Quaker.</p>"],
+       ["An Anglican freeman","Not him","<p>An Anglican is a Christian, so a freeman of that church could vote.</p>"]],"freemen");
+    return;
+  }
+  /* 6 · the land council */
+  if(d.kind==="goods"&&!d.worked){
+    midWork(d,"lift",3.5,"The goods for the land, carried out and set before the kings.",{load:"chest"},function(){
+      if(MID.gift){MID.gift.drop();MID.gift.drop();}});
+    return;
+  }
+  if(d.kind==="goods"){
+    midDone("goods");
+    /* Myers PA pp. 233, 235 */
+    fortResult("Sold and Presented",leafCard("William Penn, to the Free Society of Traders","16 August 1683; he was there","“Some Kings have sold, others presented me with several parcels of Land”. The goods were shared out among the neighbouring kings and their people, he writes.")+
+      "<p>No Lenape account of these councils survives.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="council"){
+    /* Myers PA p. 235 */
+    midQuiz("The Delaware · summer 1683","By the Breath of their People",
+      leafCard("William Penn","1683, to investors","“how Powerful the Kings are, and yet how they move by the Breath of their People”. A speaker feared “some fault in the Interpreter, being neither Indian nor English”.")+
+      "<p>By Penn’s account, who decided a sale?</p>",
+      [["A king, with his people in council","In council","<p>The king moved “by the Breath of their People”. The words reach us through Penn, and through an interpreter.</p>"],
+       ["The king alone","Not alone","<p>Penn says the opposite: the kings move “by the Breath of their People”.</p>"],
+       ["Penn, by his charter","Not Penn","<p>Penn bought or was given each parcel at a council. His charter came from the King.</p>"]],"council");
+    return;
+  }
+  if(d.kind==="elm"){
+    /* Newman, Encyclopedia of Greater Philadelphia */
+    midQuiz("Shackamaxon · the treaty under the elm","Record or retelling?",
+      leafCard("Andrew Newman, a historian","2013","A treaty under the elm “is not recorded in original primary source documents, and its details and very occurrence have been debated.”")+
+      "<p>Penn’s own letter of 1683 describes several councils. What is the elm treaty?</p>",
+      [["A later retelling","A retelling","<p>Penn’s 1683 letter describes several councils and purchases. A single treaty under an elm is not in it.</p>"],
+       ["A record of 1682","Not a record","<p>No treaty document survives, and Penn’s own letter does not describe one.</p>"],
+       ["A Lenape account","Not theirs","<p>No Lenape account of these councils survives.</p>"]],"elm");
+    return;
+  }
+  /* 7 · germantown */
+  if(d.kind==="copy"&&!d.worked){
+    midWork(d,"write",4.5,"Copy the four Friends’ paper for the monthly meeting.",{});
+    return;
+  }
+  if(d.kind==="copy"){
+    midDone("copy");
+    /* the NPS transcript */
+    fortResult("The Protest",leafCard("Four Friends of Germantown","18 April 1688","“Is there any that would be done or handled at this manner? viz., to be sold or made a slave for all the time of his life?”")+
+      "<p>Signed by Garret Hendericks, Derick and Abraham op den Graeff, and Francis Daniel Pastorius.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="meetings"){
+    /* the NPS transcript; Tri-College */
+    midQuiz("Dublin, Philadelphia, Burlington · 1688","Three meetings",
+      priceCard("Dublin Monthly Meeting","April 1688","“we find it so weighty that we think it not Expedient for us to meddle with it here”")+
+      priceCard("The Yearly Meeting","September 1688","“therefore at present they forbear it”")+
+      "<p>What did the meetings decide?</p>",
+      [["Not to decide","They deferred","<p>Each passed it on. The Quarterly Meeting called it “too great a weight for this meeting to determine”.</p>"],
+       ["To free every slave","Not so","<p>No meeting freed anyone. The Yearly Meeting “at present” forbore.</p>"],
+       ["To expel the four Friends","Not so","<p>No meeting punished them. The paper was passed on, and put off.</p>"]],"meetings");
+    return;
+  }
+  if(d.kind==="protest"){
+    /* the NPS transcript */
+    midQuiz("Germantown · 18 April 1688","Liberty of ye body",
+      leafCard("Four Friends of Germantown","1688","“Here is liberty of conscience … here ought to be likewise liberty of ye body”. And: “have these negers not as much right to fight for their freedom, as you have to keep them slaves?”")+
+      "<p class=\"note\">“negers” is their word.</p><p>What were they arguing?</p>",
+      [["Conscience was free; bodies should be","Both liberties","<p>Pennsylvania’s laws protected conscience. The four asked why the body was not free too.</p>"],
+       ["That Pennsylvania had no slaves","Not that","<p>They wrote because Friends held slaves. A Philadelphia baker had “one negro whom I bought” in 1684.</p>"],
+       ["That conscience should be limited","Not that","<p>They called liberty of conscience “right and reasonable”, and asked for more.</p>"]],"protest");
+    return;
+  }
+}
+
+/* the way out of a scene: its cells on the board, its sentence, the board itself */
+function midNext(){
+  const w=midW(), need=midNeed();
+  if(need){toast("Not yet: "+MID_DUTY[need].charAt(0).toLowerCase()+MID_DUTY[need].slice(1)+".");return;}
+  const plan=MID_BOARD[w.day];
+  if(plan&&!w.board[w.day]){
+    const cells=plan.cells.slice();
+    const step=function(){
+      const k=cells.shift();
+      if(k){compareFill(k,step);return;}
+      compareSay(plan.sent,function(){
+        w.board[w.day]=true;checkpoint("ch13-board"+w.day);
+        /* play-test, 27 Nov: the closing board had a title and no question; it now asks one, at its row */
+        const last=w.day===MID_DAYS.length-1;
+        openBoard(plan.cells,function(){midNext();},last?"Liberty for Whom?":null,
+          last?"Read the row “Who was free?” across, colony by colony. Whose liberty did each one write down?":null,last?"pa.free":null);});
+    };
+    step();
+    return;
+  }
+  if(w.day>=MID_DAYS.length-1){w.did.closed=true;checkpoint("ch13-closed");enterWorld("ch13");return;}
+  w.day++;
+  checkpoint("ch13-day"+w.day);
+  const o=MID_OPEN[w.day];
+  fortResult(o.t,"<p class=\"sickDate\">"+MID_DAYS[w.day].date+"</p>"+o.b,[],function(){enterWorld("ch13");});
+}
+
+/* ---- THE NIGHT AT THE RAMPARTS ---- 25-26 February 1643 (Jameson NN p. 227): the fort's wall, the
+   water, firing far off at Pavonia. Nobody is drawn there; nothing is shown but the flashes */
+function MID_NIGHT(){
+  const gy=G0w(18,24);
+  return [
+    /* play-test, 27 Nov: over the rampart's crest now, toward the houses where they stand */
+    {do:function(){MID.flashOn=1;},fade:"in",cam:{to:[14,gy+11,16],look:[-40,6,380],cut:true},t:5,
+     narrate:"About midnight De Vries ran to the ramparts, and looked over to Pavonia."},
+    {cam:{to:[6,gy+11.5,18],look:[-64,5,380]},t:5,
+     narrate:"He wrote: “Saw nothing but firing, and heard the shrieks.”"},
+    {do:function(){MID.flashOn=0;},fade:"out",t:1}];
+}
+
+/* ---- NEW THINGS IN THE WORLD ---- */
+/* a bale of pelts, carried against the chest: four skins laid flat and corded */
+WORK_LOAD.pelts=function(){const g=new Geo(), a=RGB(0x5e4430), b=RGB(0x7a5a3c), c=RGB(0x4a3424), cord=RGB(0xb8a47c);
+  [a,b,c,b].forEach(function(col,i){g.box((i%2)*0.04-0.02,-0.15+i*0.09,(i%3)*0.03-0.03,0.95-i*0.04,0.09,0.62-i*0.03,col);});
+  g.box(0,0.05,0,0.06,0.42,0.66,cord);return g.mesh(false,false);};
+/* play-test, 27 Nov: the charter's rent is "Two Beaver Skins"; the player carried a bale of four */
+WORK_LOAD.pelts2=function(){const g=new Geo(), a=RGB(0x5e4430), b=RGB(0x7a5a3c), cord=RGB(0xb8a47c);
+  g.box(0,-0.1,0,0.85,0.08,0.56,a);g.box(0.03,-0.02,0.02,0.8,0.08,0.52,b);
+  g.box(0,-0.04,0,0.06,0.2,0.6,cord);return g.mesh(false,false);};
+/* a seated man on a log: thighs level, shins down, hands on his knees. Posed, then baked */
+function midSit(f){
+  const q=f.userData.parts;if(!q||!q.hipL)return f;
+  figRest(q);
+  q.hipL.rotation.x=-1.5;q.hipR.rotation.x=-1.5;q.kneeL.rotation.x=1.5;q.kneeR.rotation.x=1.5;
+  if(q.spine)q.spine.rotation.x=(q.rest?q.rest.spine:0)+0.12;
+  if(q.shoulderL){q.shoulderL.rotation.x=-0.7;q.shoulderR.rotation.x=-0.7;}
+  if(q.elbowL){q.elbowL.rotation.x=-0.7;q.elbowR.rotation.x=-0.7;}
+  fmPlant(q,0,false);
+  return f;
+}
+/* boundary stakes for a farm plot, waist high, and the cord between them (returned, to show) */
+function midStakes(root,G,x0,z0,x1,z1,n){
+  const a=new Geo(), b=new Geo(), stake=RGB(0x6a543a), top=RGB(0x8a7050), cord=RGB(0xc8b88a);
+  let prev=null;
+  for(let i=0;i<n;i++){const u=i/(n-1), x=x0+(x1-x0)*u, z=z0+(z1-z0)*u, gy=G(x,z);
+    a.beam8([x,gy-0.3,z],[x,gy+3.4,z],0.4,0.32,stake,top);
+    if(prev)b.beam8(prev,[x,gy+2.6,z],0.08,0.08,cord,cord);
+    prev=[x,gy+2.6,z];}
+  root.add(a.mesh(false,false));const m=b.mesh(false,false);root.add(m);return m;
+}
+/* a log to sit on */
+function midLog(root,G,x,z,yaw,len){
+  const g=new Geo(), bark=RGB(0x5a4632), c=Math.cos(yaw), s=Math.sin(yaw), gy=G(x,z);
+  g.beam8([x-c*len/2,gy+0.7,z+s*len/2],[x+c*len/2,gy+0.7,z-s*len/2],1.4,1.3,bark,shadeRGB(bark,0.85));
+  root.add(g.mesh(false,false));
+}
+/* Fort Amsterdam: four earth ramparts round a square, a gate in the side toward the town, a
+   flagstaff. ceiling: banks, not bastions; the fort's plan was not read for this chapter */
+function midFort(root,G){
+  const g=new Geo(), earth=RGB(0x6a6040), grass=RGB(0x6e7448), X0=-44, X1=44, Z0=-46, Z1=30, H=7, gate=7;
+  const bank=function(cx,cz,w,d){const gy=G(cx,cz);g.oct(cx,cz,gy-0.5,gy+H,w,d,Math.max(1,w-8),Math.max(1,d-8),0.15,earth,grass);};
+  bank(0,Z0,X1-X0+10,10);bank(X0,(Z0+Z1)/2,10,Z1-Z0);bank(X1,(Z0+Z1)/2,10,Z1-Z0);
+  const half=(X1-X0)/2-gate/2;bank(X0+half/2,Z1,half,10);bank(X1-half/2,Z1,half,10);
+  {const gy=G(-30,-34);g.beam8([-30,gy,-34],[-30,gy+30,-34],0.5,0.35,RGB(0x6a5038),RGB(0x6a5038));
+   g.box(-28.2,gy+28,-34,3.4,2.2,0.12,RGB(0xb0692e));g.box(-28.2,gy+26.6,-34,3.4,0.6,0.13,RGB(0xe6e0cc));g.box(-28.2,gy+26,-34,3.4,0.6,0.14,RGB(0x3e5a7a));}
+  root.add(g.mesh(false,false));
+  solid(0,Z0,(X1-X0)/2+5,5,LVL.MAIN,0);solid(X0,(Z0+Z1)/2,5,(Z1-Z0)/2,LVL.MAIN,0);solid(X1,(Z0+Z1)/2,5,(Z1-Z0)/2,LVL.MAIN,0);
+  solid(X0+half/2,Z1,half/2,5,LVL.MAIN,0);solid(X1-half/2,Z1,half/2,5,LVL.MAIN,0);
+}
+/* a post mill: a tower, a cap and four sails.
+   play-test, 27 Nov: the sails were axis-aligned panels floating off diagonal arms. Each is now
+   a lattice frame turned with its arm, set to one side of it, with canvas on it */
+function midMill(root,G,x,z){
+  const g=new Geo(), wood=RGB(0x6e5a40), dark=RGB(0x4a3c2c), canvas=RGB(0xc8bc9c), gy=G(x,z), cy=gy+22, sz=z+4.6;
+  g.oct(x,z,gy-0.3,gy+20,9,9,6,6,0.3,dark,wood);g.oct(x,z,gy+20,gy+25,7,8,4,6,0.3,wood,dark);
+  g.box(x,cy,z+4,1.4,1.4,1.4,dark);
+  for(let i=0;i<4;i++){const a=i*Math.PI/2+0.4, c=Math.cos(a), s=Math.sin(a);
+    g.beam8([x,cy,z+4.4],[x+c*15,cy+s*15,z+4.4],0.5,0.35,wood,wood);
+    /* a point r along the arm and o across it */
+    const P=function(r,o){return [x+c*r-s*o, cy+s*r+c*o];};
+    let p=P(9.2,1.9);g.box(p[0],p[1],sz,10.6,3.4,0.1,canvas,a);
+    p=P(9.2,3.7);g.box(p[0],p[1],sz+0.12,10.8,0.3,0.25,wood,a);
+    for(let k=0;k<5;k++){p=P(4+k*2.6,1.9);g.box(p[0],p[1],sz+0.12,0.25,3.8,0.22,wood,a);}}
+  root.add(g.mesh(false,false));solid(x,z,4.5,4.5,LVL.MAIN,0);
+}
+/* Pavonia, across the water: a low shore with longhouses, far off and dark; and the flashes */
+function midFarShore(root,flashes){
+  const L=new Geo(), land=RGB(0x3c4630), landD=RGB(0x2c3424), tree=RGB(0x26301e);
+  for(let i=0;i<12;i++){const x=-560+i*100, z=360+srand(i*3.1)*40;
+    L.oct(x,z,-2,8,130,70,90,40,0.35,landD,land);
+    for(let k=0;k<4;k++){const tx=x-30+k*20, tz=z+20+srand(k*5+i)*20;L.oct(tx,tz,6,24+srand(i+k)*8,8,8,0.6,0.6,0.2,tree,tree);}}
+  root.add(L.mesh(false,false));
+  /* play-test, 27 Nov: two of the three longhouses hung off their land - one in the gap between two
+     blocks, one past a block's back edge. All three now on the top of the block at x -60 (its top
+     runs x -105 to -15, z 366 to 406) */
+  [[-82,386],[-56,392],[-30,384]].forEach(function(p,i){yehakin(root,p[0],8,p[1],24,12,10,i%2);});
+  if(!flashes)return null;
+  /* play-test, 27 Nov: the flashes were nine steady boxes at the water's edge, and read as lit
+     windows. Now each is a brief sideways spurt with a white-hot core, among the houses at a
+     musket's height, and few at once: distant firing, nothing more. Unlit and opaque */
+  const grp=new THREE.Group(), hot=new THREE.MeshBasicMaterial({color:0xfff0c0,fog:false}),
+        spurt=new THREE.MeshBasicMaterial({color:0xff5a10,fog:false});
+  for(let i=0;i<12;i++){const f=new THREE.Group(), s=new THREE.Mesh(new THREE.BoxGeometry(10,1.5,1.5),spurt),
+      c=new THREE.Mesh(new THREE.BoxGeometry(2.6,2.6,2.6),hot);
+    s.position.x=(srand(i*5.3)>0.5?1:-1)*4;s.rotation.z=(srand(i*3.7)-0.5)*0.5;f.add(s);f.add(c);
+    f.position.set(-100+srand(i*2.9)*85,10+srand(i*1.3)*2,368+srand(i*4.7)*8);f.visible=false;grp.add(f);}
+  root.add(grp);return grp;
+}
+/* a broad elm, its crown a cluster of rounded masses */
+function midElm(root,G,x,z){
+  const g=new Geo(), bark=RGB(0x4e4030), leaf=RGB(0x4c6a36), leafD=RGB(0x3a5428), gy=G(x,z);
+  g.oct(x,z,gy-0.5,gy+16,5,5,3,3,0.3,shadeRGB(bark,0.8),bark);
+  for(let i=0;i<7;i++){const a=i/7*Math.PI*2, r=i?11:0, cx=x+Math.cos(a)*r, cz=z+Math.sin(a)*r, cy=gy+(i?22:30);
+    g.oct(cx,cz,cy-6,cy+6,16,16,10,10,0.35,leafD,leaf);}
+  root.add(g.mesh(false,false));solid(x,z,2.5,2.5,LVL.MAIN,0);
+}
+/* benches before a table, for a council of settlers */
+function midBenches(root,G,x,z,rows){
+  const g=new Geo(), wood=RGB(0x6a5038), woodD=RGB(0x4e3a28);
+  for(let r=0;r<rows;r++)for(const sx of [-1,1]){const cx=x+sx*8, cz=z+r*5, gy=G(cx,cz);
+    g.box(cx,gy+1.5,cz,11,0.3,1.3,wood);for(const k of [-4.5,4.5])g.box(cx+k,gy+0.75,cz,0.4,1.5,1.1,woodD);
+    solid(cx,cz,5.8,1,LVL.MAIN,0);}
+  root.add(g.mesh(false,false));
+}
+
+/* ---- THE TERRAIN ---- */
+/* Manhattan's shore by the fort: the East River and the bay beyond, no hill */
+SITE_TERRAIN.manhattan={sea:64,shore:40,flat:-30,deep:-1.8,fall:0.02,rise:1.6,inland:1.4,roll:0.5,
+  sky:0x9eb4c4,fog:0xb4c4ce,water:0x3a5860,near:0x7a8452,far:0x667244,back:0x4e5836,wet:0x857e64,
+  trees:0,treeZ:-40,treeH:46,seed:301};
+/* Flushing: level ground on Long Island */
+SITE_TERRAIN.flushing={sea:120,shore:90,flat:-60,deep:-1.0,fall:0.01,rise:0.6,inland:0.5,roll:0.2,
+  sky:0xaec0cc,fog:0xc0ccd2,water:0x3e5e66,near:0x7e8854,far:0x6a7646,back:0x525c38,wet:0x7c7a56,
+  trees:0,treeZ:-60,treeH:46,seed:311};
+/* the Delaware: a broad river, a green bank */
+SITE_TERRAIN.delaware={sea:62,shore:40,flat:-30,deep:-2.0,fall:0.02,rise:1.6,inland:1.4,roll:0.6,
+  sky:0xa2bcd0,fog:0xbacbd6,water:0x3c5c5e,near:0x6e8048,far:0x5e7040,back:0x485432,wet:0x7a7656,
+  trees:0,treeZ:-40,treeH:50,seed:321};
+/* Germantown: inland, on a gentle rise */
+SITE_TERRAIN.germantown={sea:140,shore:100,flat:-60,deep:-1.0,fall:0.01,rise:0.8,inland:0.7,roll:0.4,
+  sky:0xa8bccc,fog:0xbecad2,water:0x3e5e66,near:0x7a8650,far:0x687444,back:0x505a36,wet:0x7c7a56,
+  trees:0,treeZ:-60,treeH:48,seed:331};
+
+registerWorld("ch13",function(root){
+  const w=midW(), sd=midDay(), where=sd.where, day=w.day;
+  MID.later=[];MID.flash=null;MID.flashOn=0;MID.stakes=null;MID.heap=null;MID.gift=null;MID.basket=null;
+  BLAZE.fires.length=0;
+  let G, spots={}, at=[0,42], face=Math.PI, nextAt=null, look0=0, pitch0=0.30;
+  const duty=function(id,label,x,z,data){
+    if(data.kind&&MID_DUTY[data.kind]&&w.did[data.kind])return;
+    const it={id:id,label:label,x:x,z:z,y:G(x,z),lvl:LVL.MAIN,r:8,action:"mid",data:data};
+    if(data.after&&!w.did[data.after]){MID.later.push(it);return;}
+    interactables.push(it);};
+  /* figures who are drawn and never voiced */
+  const stand=function(eq,x,z,yaw){
+    const f=buildFigure(eq);f.position.set(x,G(x,z),z);f.rotation.y=yaw;root.add(bakeFigure(f));solid(x,z,1,1,LVL.MAIN,0);return f;};
+  const lenape=function(x,z,yaw,over){
+    const f=tidewaterFigure(plyWampLook(over));f.position.set(x,G(x,z),z);f.rotation.y=yaw;root.add(bakeFigure(f));solid(x,z,1,1,LVL.MAIN,0);return f;};
+  const ELEVEN=["pauloangola","bigmanuel","littlemanuel","manueldereus","simoncongo","anthonyportugis","gracia","petersantomee","janfrancisco","littleanthony","janfortorange"];
+
+  if(where==="quay"){
+    /* Amsterdam: the Company's warehouses on the quay, a ship alongside, the pelts carried up */
+    G=captLand(root,"thames",{trees:20,winter:false,clear:function(x,z){return Math.hypot(x,z)<150;}});
+    for(let k=0;k<6;k++){leafHouse(root,G,-70+k*26,-24,0,"eng");leafHouse(root,G,-57+k*26,-54,0,"eng");}
+    leafChurch(root,G,-100,8,Math.PI/2,true);
+    placeShip(root,"godspeed",1,-10,112,Math.PI/2);
+    priceLanding(root,G,-4,56,98);
+    const pile=workStack(root,6,33,"pelts",9);for(let i=0;i<6;i++)pile.drop();
+    solid(6.9,33,3.4,1.3,LVL.MAIN,0);
+    const foot=workStack(root,-11,50,"pelts",9);
+    workMan(root,crowdEq("hand",700,1626),10,39,0,"carry",{from:[10,39],to:[-3,52],load:"pelts",speed:2.6,drop:foot.drop});
+    workMan(root,crowdEq("hand",701,1626),14,41,0,"carry",{from:[13,40.5],to:[0,53.5],load:"pelts",speed:2.9});
+    workMan(root,crowdEq("hand",702,1626),-30,-17.2,Math.PI,"hammer");
+    /* play-test, 27 Nov: the shot stood in the carriers' path and a man's back filled it; now
+       from beyond the pile, with the ship, the quay and the carriers behind */
+    duty("cargo","The Pelts",6,38,{kind:"cargo",verb:"Lift a bale",face:[6,33],stand:[6,37.6],cam:[[17,7,28],[6,2.2,37]]});
+    presTable(root,G,-18,20.5);duty("ledger","The Ledger",-18,24,{kind:"ledger",after:"cargo",verb:"Write",face:[-18,20.5],stand:[-18,23.6]});
+    presTable(root,G,24,8);duty("purchase","Schaghen’s Letter",24,12,{kind:"purchase",after:"ledger",verb:"Read it"});
+    [[18,2,0.4,710],[30,2,-0.4,711],[24,-3,0,712]].forEach(function(a){stand(crowdEq("gent",a[3],1626),a[0],a[1],a[2]);});
+    starveChest(root,G,-34,20.5);starveChest(root,G,44,20.5);
+    nextAt=[44,4];starveChest(root,G,44,0.5);
+    at=[-8,42];
+  }
+  if(where==="pavonia"||where==="fort"||where==="farms"){
+    G=captLand(root,"manhattan",{trees:where==="farms"?160:90,winter:where!=="fort",clear:function(x,z){return Math.hypot(x,z+6)<(where==="farms"?110:130);}});
+  }
+  if(where==="pavonia"){
+    /* Fort Amsterdam on the night of 25 February 1643: the ramparts, Kieft's table, the storehouse,
+       soldiers by the gate; across the water, Pavonia, dark (Jameson NN pp. 226-228) */
+    midFort(root,G);
+    MID.flash=midFarShore(root,true);
+    leafHouse(root,G,-20,-30,0,"eng");leafHouse(root,G,18,-30,0,"thatch");
+    plyShed(root,G,24,-6,0);skyBaskets(root,G,20,-2,4);
+    MID.basket=workStack(root,14,-2,"basket",6);for(let i=0;i<3;i++)MID.basket.drop();
+    {const gy=G(-6,-12);blazeAt(root,-6,gy+0.3,-12,2.2,2.0).smoke=false;solid(-6,-12,1.4,1.4,LVL.MAIN,0);}
+    stand(personEq("kieft",1643),-14,-14,plyFace(-14,-14,[0,20]));
+    [[-16,22,0.5],[-12,23,0.3],[12,23,-0.3],[16,22,-0.5]].forEach(function(a,i){stand(crowdEq("soldier",720+i,1643),a[0],a[1],a[2]+Math.PI);});
+    duty("corn","The Storehouse",18,2,{kind:"corn",verb:"Measure",face:[14,-2],stand:[16.5,1.2]});
+    presTable(root,G,-14,-6);duty("table","The Director’s Table",-14,-2,{kind:"table",after:"corn",verb:"Read it"});
+    duty("ramparts","The Ramparts",18,20,{kind:"ramparts",after:"table",verb:"Look out"});
+    spots={devries:[6,6]};
+    /* play-test, 27 Nov: two paper chests here had no label, and Jogues's label stood on bare
+       ground; his chest is under his label now, and the unlabelled ones are gone */
+    starveChest(root,G,-34,-9.5);
+    nextAt=[-24,16];starveChest(root,G,-24,12.5);
+    at=[0,16];look0=0;
+  }
+  if(where==="farms"){
+    /* the farms north of the fort, February 1644: plots, the freed men at work, a hog, the
+       maize measured out (O'Callaghan, Laws pp. 36-37). Drawn as free men, in plain clothes */
+    [[-44,-52],[2,-60],[44,-50]].forEach(function(h){plyHouse(root,G,h[0],h[1],0,"thatch");});
+    plyOldField(root,G,-36,-26,8,5);plyOldField(root,G,20,-28,8,5);
+    starveHog(root,G,-8,-8,0.6);
+    /* play-test, 27 Nov: these were Chapter XII's palisade, eight feet of close stakes, and the
+       player and a freed man hammered at the gap where the hidden ones would be. Now boundary
+       stakes, all standing, and the cord between them appears when the plots are staked */
+    MID.stakes=midStakes(root,G,-50,-4,-20,-4,7);MID.stakes.visible=!!w.did.plots;solid(-35,-4,15,0.8,LVL.MAIN,0);
+    MID.heap=workStack(root,-14,20,"basket",9);for(let i=0;i<2;i++)MID.heap.drop();
+    [["hoe",-30,-20,0.2],["hoe",26,-22,-0.3],["dig",-46,-30,0.5],["hammer",-25,-1.2,Math.PI]].forEach(function(a,i){
+      workMan(root,personEq(ELEVEN[i],1644),a[1],a[2],a[3],a[0]);});
+    workMan(root,personEq(ELEVEN[4],1644),36,-40,0,"carry",{from:[36,-40],to:[10,-44],load:"wood",speed:2.2});
+    stand(personEq(ELEVEN[5],1644),-26,22,plyFace(-26,22,[0,42]));
+    duty("tribute","The Maize",-14,26,{kind:"tribute",verb:"Measure",face:[-14,20],stand:[-14,23.5]});
+    duty("plots","The Plots",-18,0,{kind:"plots",after:"tribute",verb:"Drive a stake",face:[-20,-4],stand:[-20,-1.3],cam:[[-12.5,6,-10.5],[-21,3.2,-3]]});
+    presTable(root,G,24,8);duty("grant","The Grant",24,12,{kind:"grant",after:"plots",verb:"Read it"});
+    starveChest(root,G,-34,26.5);starveChest(root,G,34,26.5);starveChest(root,G,-44,0.5);
+    nextAt=[44,4];starveChest(root,G,44,0.5);
+    at=[0,42];
+  }
+  if(where==="flushing"){
+    /* Flushing's street, 1657: the clerk's table, townsmen come to sign (ERNY i p. 413) */
+    G=captLand(root,"flushing",{trees:120,winter:true,clear:function(x,z){return Math.hypot(x,z)<110;}});
+    plyStreet(root,G,60,-70);
+    [[-16,-14],[16,-18],[-16,-44],[16,-48],[-16,-74],[16,-76]].forEach(function(h){plyHouse(root,G,h[0],h[1],h[0]<0?Math.PI/2:-Math.PI/2,"thatch");});
+    presTable(root,G,12,14);
+    [[20,10,-1.2],[22,14,-1.4],[21,18,-1.7],[24,22,-2.0]].forEach(function(a,i){stand(crowdEq(i%2?"planter":"hand",730+i,1657),a[0],a[1],a[2]);});
+    stand(personEq("stuyvesant",1657),-40,-26,plyFace(-40,-26,[0,42]));
+    starveChest(root,G,-24,6.5);duty("languages","Jogues’s Letter",-24,10,{kind:"languages",verb:"Read it"});
+    duty("remonstrance","The Clerk’s Table",12,18,{kind:"remonstrance",after:"languages",verb:"Write",face:[12,14],stand:[12,17.1]});
+    starveChest(root,G,-24,-14.5);duty("letter","The Directors’ Letters",-24,-11,{kind:"letter",after:"remonstrance",verb:"Read them"});
+    starveChest(root,G,30,-14.5);
+    /* play-test, 27 Nov: "The Jews" stood on bare ground beside the directors' letters' chest */
+    starveChest(root,G,-38,-15.5);
+    spots={hart:[8,28]};
+    nextAt=[-8,30];starveChest(root,G,-12,30.5);
+    at=[0,42];
+  }
+  if(where==="fort"){
+    /* New Amsterdam, September 1664: the fort, the mill, the town, the Gideon at anchor (no one
+       drawn aboard), the English frigates far out (ERNY i pp. 555-558; NNI) */
+    midFort(root,G);midFarShore(root,false);
+    midMill(root,G,-80,-20);
+    [[64,-14],[64,14],[92,-14],[92,14],[-70,14]].forEach(function(h){leafHouse(root,G,h[0],h[1],Math.PI/2,"eng");});
+    placeShip(root,"godspeed",1,70,170,Math.PI/2);
+    placeShip(root,"discovery",1,-220,300,Math.PI/2);placeShip(root,"discovery",1,-150,320,Math.PI/2);
+    stand(personEq("stuyvesant",1664),-14,-14,plyFace(-14,-14,[0,20]));
+    [[-6,-18,0.2,740],[2,-18,-0.2,741],[-20,-8,1.0,742]].forEach(function(a){stand(crowdEq("gent",a[3],1664),a[0],a[1],a[2]);});
+    workMan(root,crowdEq("hand",745,1664),30,-30,0,"dig");
+    /* play-test, 27 Nov: the player wrote with a quill on a house's wall. The list on a table at
+       the house, and two of its men at the door to be counted */
+    presTable(root,G,53.5,12);
+    [[57,9.6,746],[57.2,13.4,747]].forEach(function(a){stand(crowdEq("hand",a[2],1664),a[0],a[1],plyFace(a[0],a[1],[53.5,15.1]));});
+    duty("count","The Burgomasters’ List",53.5,16,{kind:"count",verb:"Count",face:[53.5,12],stand:[53.5,15.1],cam:[[51,7.5,3.5],[54.5,2.6,13.5]]});
+    starveChest(root,G,24,46.5);duty("ship","The Ship at Anchor",24,50,{kind:"ship",after:"count",verb:"Read it"});
+    presTable(root,G,-14,-6);duty("articles","The Articles",-14,-2,{kind:"articles",after:"ship",verb:"Read them"});
+    /* play-test, 27 Nov: "The City's Works" stood on bare ground outside the fort, and this
+       chest had no label; the chest is under the label now */
+    starveChest(root,G,-34,-9.5);
+    nextAt=[-24,16];starveChest(root,G,-24,12.5);
+    at=[0,16];look0=0;
+  }
+  if(where==="river"||where==="council"){
+    G=captLand(root,"delaware",{trees:200,winter:false,clear:function(x,z){return Math.hypot(x,z+4)<96;}});
+  }
+  if(where==="river"){
+    /* by the Delaware, 1682: a ship at anchor, benches before a table, the charter's rent packed
+       (Avalon) */
+    placeShip(root,"godspeed",1,40,180,Math.PI/2);
+    midBenches(root,G,0,0,3);presTable(root,G,0,-8);
+    [[-8,0],[8,5],[-8,10]].forEach(function(a,i){const f=midSit(buildFigure(crowdEq(i%2?"planter":"gent",750+i,1682)));
+      f.position.set(a[0],G(a[0],a[1]),a[1]);f.rotation.y=Math.PI;root.add(bakeFigure(f));});
+    const pile=workStack(root,-22,18,"pelts",6);for(let i=0;i<3;i++)pile.drop();solid(-21,18,3,1.3,LVL.MAIN,0);
+    duty("charter","The Beaver Skins",-22,23,{kind:"charter",verb:"Pack them",face:[-22,18],stand:[-22,22.4]});
+    presTable(root,G,24,16);duty("frame","The Laws",24,20,{kind:"frame",after:"charter",verb:"Write",face:[24,16],stand:[24,19.1]});
+    starveChest(root,G,-34,-8.5);duty("freemen","Who May Vote",-34,-5,{kind:"freemen",after:"frame",verb:"Read it"});
+    spots={penn:[0,-13]};
+    nextAt=[40,8];starveChest(root,G,40,4.5);
+    at=[0,42];
+  }
+  if(where==="council"){
+    /* the land councils of 1683, as Penn described them (Myers PA pp. 233-236): a half-moon of
+       Lenape men seated on logs, the goods brought out, the elm at the clearing's edge */
+    for(let i=0;i<9;i++){const a=-1.15+i*(2.3/8), x=Math.sin(a)*18, z=-12-Math.cos(a)*10;
+      const fy=plyFace(x,z,[0,0]);midLog(root,G,x,z,fy,3.2);
+      const f=midSit(tidewaterFigure(plyWampLook({mantle:i%2===0})));f.position.set(x,G(x,z),z);f.rotation.y=fy;root.add(bakeFigure(f));solid(x,z,1,1,LVL.MAIN,0);}
+    lenape(-4,-2,0.1,{mantle:true});
+    const goods=workStack(root,-18,14,"chest",6);for(let i=0;i<4;i++)goods.drop();solid(-17,14,3,1.3,LVL.MAIN,0);
+    /* play-test, 27 Nov: "set before the kings" was said and not seen; the goods now arrive there */
+    MID.gift=workStack(root,-1,-8,"chest",3);if(w.did.goods){MID.gift.drop();MID.gift.drop();}solid(-0.5,-8,2.6,1.3,LVL.MAIN,0);
+    skyBaskets(root,G,-24,8,3);
+    workMan(root,crowdEq("hand",760,1683),-14,18,0,"carry",{from:[-14,18],to:[-4,4],load:"basket",speed:2.2});
+    midElm(root,G,40,-26);
+    [[16,6,-0.6,761],[22,10,-0.9,762]].forEach(function(a){stand(crowdEq("planter",a[3],1683),a[0],a[1],a[2]);});
+    duty("goods","The Goods",-18,19,{kind:"goods",verb:"Carry them",face:[-18,14],stand:[-18,18.4]});
+    starveChest(root,G,24,22.5);duty("council","The Council",24,26,{kind:"council",after:"goods",verb:"Read it"});
+    duty("elm","The Elm",34,-14,{kind:"elm",after:"council",verb:"Read it"});
+    spots={penn:[6,4]};
+    starveChest(root,G,-34,26.5);/* play-test, 27 Nov: the Walking Purchase's label had nothing under it */
+    nextAt=[40,10];starveChest(root,G,40,6.5);
+    at=[0,42];
+  }
+  if(where==="germantown"){
+    /* Germantown, 1688: houses along the street, the table where the paper is copied; when the
+       chapter closes, the clerk of the Yearly Meeting (NPS transcript; Myers PA p. 402 n.) */
+    G=captLand(root,"germantown",{trees:150,winter:false,clear:function(x,z){return Math.hypot(x,z)<110;}});
+    plyStreet(root,G,60,-80);
+    [[-16,-10],[16,-14],[-16,-40],[16,-44],[-16,-70],[16,-72]].forEach(function(h){leafHouse(root,G,h[0],h[1],h[0]<0?Math.PI/2:-Math.PI/2,"eng");});
+    presTable(root,G,12,12);
+    [[18,6,-1.0,770],[19,12,-1.5,771],[18,18,-2.0,772]].forEach(function(a){stand(crowdEq("planter",a[3],1688),a[0],a[1],a[2]);});
+    /* play-test, 27 Nov: he hoed against the clerk's table once the chapter closed; moved off */
+    workMan(root,crowdEq("hand",775,1688),-46,10,0.5,"hoe");
+    duty("copy","The Paper",12,16,{kind:"copy",verb:"Copy it",face:[12,12],stand:[12,15.1]});
+    starveChest(root,G,-24,6.5);duty("meetings","The Meetings’ Answers",-24,10,{kind:"meetings",after:"copy",verb:"Read them"});
+    starveChest(root,G,30,26.5);duty("protest","The Protest",30,30,{kind:"protest",after:"meetings",verb:"Read it"});
+    spots={pastorius:[8,4]};
+    starveChest(root,G,-34,26.5);/* play-test, 27 Nov: the baker's label had nothing under it */
+    nextAt=[-8,32];
+    if(w.did.closed){nextAt=null;
+      duty("record","The Clerk of the Yearly Meeting",-24,22,{kind:"record",verb:"Close the chapter’s record"});
+      presTable(root,G,-24,26);
+      const cl=buildFigure(personEq("meetingclerk",1688));cl.position.set(-24,G(-24,28.6),28.6);cl.rotation.y=Math.PI;root.add(cl);solid(-24,28.6,1,1,LVL.MAIN,0);}
+    else starveChest(root,G,-12,32.5);
+    at=[0,42];
+  }
+
+  const LOOK_AFTER={dollars:"purchase",jogues:"table",chains:"tribute",michaelius:"plots",names:"tribute",jews:"languages",hodgson:"remonstrance",
+    works:"count",walk:"elm",bom:"copy"};
+  (MID_LOOKS[day]||[]).forEach(function(L){duty("look_"+L[0],L[1],L[2],L[3],{kind:"look",id:L[0],verb:"Look",after:LOOK_AFTER[L[0]]||null});});
+  for(const id in spots){
+    const d=midSpeaker(id);
+    if(!d)continue;
+    const a=spots[id], x=a[0], z=a[1], gy=G(x,z);
+    const f=buildFigure(d.eq);
+    f.position.set(x,gy,z);f.rotation.y=plyFace(x,z,at);root.add(f);
+    npcMeshes.push({npc:d,mesh:f});solid(x,z,1,1,LVL.MAIN,0);
+    interactables.push({id:id,label:d.name,x:x,z:z+3,y:G(x,z),lvl:LVL.MAIN,r:7,action:"talk",data:d});
+  }
+  if(nextAt&&sd.next)duty("next",sd.next,nextAt[0],nextAt[1],{kind:"next",verb:midNeed()?"Not yet":"Go on"});
+
+  if(day===0&&!w.did.open0){
+    w.did.open0=true;
+    setTimeout(function(){if(CURRENT_WORLD==="ch13")
+      fortResult(MID_OPEN[0].t,"<p class=\"sickDate\">"+MID_DAYS[0].date+"</p>"+MID_OPEN[0].b,[]);},500);
+  }
+  player=buildFigure(S.equip);root.add(player);playerParts=player.userData.parts;dressCarried(player);
+  player.position.set(at[0],G(at[0],at[1]),at[1]);player.rotation.y=face;
+  camYaw=look0;camPitch=pitch0;
+});
+
+function updateMid(dt){
+  if(CURRENT_WORLD!=="ch13")return;
+  MID.t+=dt;
+  updateBlaze(dt);
+  /* the firing across the water, during the ramparts shot only: a flash here and there */
+  if(MID.flash){const on=MID.flashOn;
+    MID.flash.children.forEach(function(b,i){b.visible=!!on&&srand(i*7.3+Math.floor(MID.t*9+i*1.7))>0.86;});}
+}
+
+/* ---- CHAPTER XIII'S CONTENT, AND ITS MUSTER ----
+   Sat with the clerk of the Philadelphia Yearly Meeting, September 1688, who must decide what to
+   write back to Germantown; he is not named, because the record does not name him. Written off
+   CH13-RECORD.md §Teaching hooks and §Disputes; keyed a:0, shuffled at runtime; option lengths
+   balanced, so the key is not the longest most of the time. */
+CONTENT.ch13={
+  people:MID_PEOPLE,
+  npcs:MID_NPCS,
+  charter:{insight:{b:"Liberty of ye Body"}},
+  reck:{seal:"meeting",kick:"The Clerk of the Yearly Meeting",title:"Liberty for Whom?",
+    frame:"Burlington, September 1688. The clerk of the Yearly Meeting must answer Germantown. “Thou hast seen the papers of two colonies. Tell me what each said about who was free.”",
+    lockLine:"Not yet. The clerk will sit with you when the meetings have answered Germantown.",
+    pass:{title:"Entered in the Minutes",body:"The clerk writes slowly. “Liberty of conscience we have. The other, we have put off.”"},
+    fail:{title:"Not Yet Entered",body:"“Thou hast taken the law for the practice,” says the clerk. “Ask who wrote it, and who it left out.”"},
+    onPass:function(){midW().done=true;},
+    q:[
+      {stim:"Schaghen, 1626: the island bought “for the value of 60 guilders”. Jameson’s footnote, 1909: “for sixty guilders ($24)”.",
+       q:"What is the $24?",
+       o:["A later conversion","The sum paid in 1626","A Lenape price","A Dutch coin of 1626"],a:0},
+      {stim:"Schaghen’s letter of 1626 gives the island one line, and lists the beaver, otter, mink and wildcat skins to the half.",
+       q:"What was the Company’s first concern?",
+       o:["The fur trade","Religious freedom","Farming families","Converting the Lenape"],a:0},
+      {stim:"The Tappan people, 1640, as De Vries wrote it: the Director came “without being invited by them”, and wanted their corn “for nothing”.",
+       q:"What were they claiming?",
+       o:["The right to refuse a tax","A share of the Company","Dutch citizenship","Payment for furs"],a:0},
+      {stim:"De Vries: war “could not be done without the approbation of the Twelve Men”. Kieft sent the soldiers that night.",
+       q:"What say did the Twelve Men have?",
+       o:["Advice he could ignore","A vote he had to obey","None; they never met","The final word on war and peace"],a:0},
+      {stim:"De Vries’s book of 1655 has what he saw from the ramparts, what a couple told him, and a passage copied from a pamphlet of 1649.",
+       q:"Which part is weakest as evidence?",
+       o:["The copied passage","What he saw","What he was told","None; all three are equally strong"],a:0},
+      {stim:"Jogues, there in 1643: the river peoples “killed some two score Hollanders, and burnt many houses and barns”.",
+       q:"How should a historian tell Kieft’s war?",
+       o:["Killings on both sides","Dutch losses only","Native losses only","As a war without dead"],a:0},
+      {stim:"The grant of 1644 frees the eleven “on the same footing as other Free people”, on a yearly payment of maize and a hog.",
+       q:"What did the same grant say of their children?",
+       o:["They stayed enslaved","They were free","They went to Holland","They could vote in the council"],a:0},
+      {stim:"“long since promised their Freedom”; “burthened with many children”: the eleven’s reasons for asking, as given in the grant of 1644.",
+       q:"Whose words are these?",
+       o:["The council’s summary","The eleven’s own petition","A minister’s letter","A later historian’s"],a:0},
+      {stim:"A 1642 ordinance: a man who drew a knife and could not pay would “work three months with the Negroes in chains”.",
+       q:"What does the punishment show?",
+       /* review, 27 Nov: key was "Chains were slaves’ daily lot", more than the ordinance shows; the stimulus below
+          quoted "but this is not observed", which states its own key */
+       o:["Enslaved men worked in chains","Slavery was rare","Africans made the law","No one in the colony was ever chained"],a:0},
+      {stim:"Jogues, 1643: orders are “to admit none but Calvinists”. He lists Catholics, Puritans, Lutherans and Mennonites on the island.",
+       q:"What does he describe?",
+       o:["A law not kept in practice","Full freedom by law","One church for everyone","A colony of a single people and faith"],a:0},
+      /* play-test, 27 Nov: was "On what ground?", which the stimulus answered word for word */
+      {stim:"The directors, 1655, let the Jews stay because of “the large amount of capital, which they have invested in shares of this Company”.",
+       /* review, 27 Nov: was q "On what ground?", key "Their investment", the stimulus's own word;
+          the play-test then asked what the reason suggests, which keeps the stimulus from answering */
+       q:"What does their reason suggest about toleration?",
+       o:["Trade helped decide it","Law alone decided it","The minister asked for it","Conscience alone decided it"],a:0},
+      {stim:"Flushing, 1657, of the Quakers: “wee cannot in Conscience lay violent hands upon them”. Its schout, Tobias Feake, was among its leaders.",
+       q:"What did the Director’s council do to Feake?",
+       o:["Banished or fined him","Made his plea the law","Sent him to the King","Gave him a seat on the council"],a:0},
+      /* review, 27 Nov: the stimulus said "The signers do not mention the Company’s slaves", which answers the item */
+      {stim:"Flushing, 1657, pleading for the Quakers: “loue, peace and libertie extending to all in Christ Jesus, Condems hatred, warre and bondage”.",
+       q:"What does its “bondage” mean?",
+       o:["Forcing a conscience","Slavery in the colony","Service at sea","A debt to the Company"],a:0},
+      {stim:"September 1664: ninety-three townsmen, Balthazar Stuyvesant among them, urge the Director to give up the city.",
+       q:"Why does his son’s name matter?",
+       o:["Even his family urged surrender","He commanded the fort","He led the English","He wrote the articles"],a:0},
+      {stim:"The articles of 1664 promise “free denizens” their lands and goods, and “The Dutch” the liberty of their consciences.",
+       q:"Who does no article name?",
+       o:["The enslaved and the Lenape","The Dutch settlers","The city’s magistrates","The ministers of the Reformed church"],a:0},
+      {stim:"August 1664: the Gideon landed 290 captives, 153 men and 137 women, three weeks before the surrender.",
+       q:"What do the numbers tell us?",
+       o:["How many, not who","Their names and homes","That they were freed","That they were soldiers"],a:0},
+      {stim:"Penn’s laws, 1682: anyone who believes in “one Almighty and eternal God” is protected; voters must have “faith in Jesus Christ”.",
+       q:"Who is protected but cannot vote?",
+       o:["A Jew","A Quaker","An Anglican","A Baptist"],a:0},
+      /* review, 27 Nov: was q "What made a man a freeman?", key "Land", stated by the stimulus (and "scot and lot"
+         payers were freemen too, Laws II); now the board's comparison with the Bay (MBR i p. 87) */
+      {stim:"Massachusetts Bay, 1631: freemen only “such as are members of some of the churches”. Penn’s laws, 1682: a freed servant with fifty acres, twenty cultivated, could be a freeman.",
+       q:"What did Pennsylvania ask that the Bay did not?",
+       o:["Land, not church membership","Church membership, not land","Birth in England","A master’s leave"],a:0},
+      /* review, 27 Nov: the stimulus named the interpreter, the item's own key */
+      {stim:"Penn, 1683, to his investors: a Lenape speaker excused his people’s delay, and the kings “move by the Breath of their People”.",
+       q:"How do these Lenape words reach us?",
+       o:["Through Penn and an interpreter","In a Lenape letter","In a treaty they wrote","Not at all; none were written down"],a:0},
+      /* review, 27 Nov: the stimulus quoted Newman's "is not recorded in original primary source documents", which
+         rules out every option but the key; West's painting (1771-72) is in the record via Newman and Haverford */
+      {stim:"Penn’s letter of 1683 describes several land councils, and no elm. Benjamin West painted the treaty under the elm in 1771–72.",
+       q:"What is the elm treaty?",
+       o:["A later retelling","A signed record","Penn’s own account","A Lenape history"],a:0},
+      {stim:"Cornelis Bom, a Philadelphia baker, 1684: “I have no servants except one negro whom I bought”.",
+       q:"What does his letter show?",
+       o:["Slavery in Pennsylvania","Slavery only in the South","A free servant","An African merchant"],a:0},
+      {stim:"Germantown, 1688: “Here is liberty of conscience … here ought to be likewise liberty of ye body”. The meetings answered “at present they forbear it”.",
+       q:"What did the meetings do?",
+       o:["Put off deciding","Freed every slave","Banned slave sales","Punished the four"],a:0}]},
+  ready:function(){
+    const w=midW();
+    return (w.day>=MID_DAYS.length-1&&w.did.closed)?{ok:true,missing:[]}:{ok:false,missing:["the meetings at Germantown"]};
+  },
+  targets:collectInsights(MID_NPCS), unlocks:[]
+};
+
 const CHAPTERS=[
   /* Percy: "The six and twentieth day of Aprill, about foure a clocke in the
      morning, wee descried the Land of Virginia." The ships stand into the bay at
@@ -38198,12 +39582,44 @@ const CHAPTERS=[
      return null; },
    /* the Treaty of Hartford (CT lesson's modern-spelling text); the Pequot Museum booklet (2023);
       the Body of Liberties (Whitmore 1889); MBR i p. 253; WJ ii p. 138 (modern spelling) */
-   end:{head:"As a Citty upon a Hill — Complete",yr:"Chapter XII · November 1637",nextWorld:null,
+   end:{head:"As a Citty upon a Hill — Complete",yr:"Chapter XII · November 1637",nextWorld:"ch13",nextLabel:"Liberty of ye Body — Chapter XIII",
      /* review, 27 Nov: the design's closing card wants the Pequot's return in the nation's words;
         the museum booklet (2023), re-read, says Cassasinnamon "helped the Pequots return to their land" */
      body:"<p>Hartford, 1638: the Pequot “shall no more be called Pequots”. The Pequot Museum: Robin Cassasinnamon, the first leader after 1637, “helped the Pequots return to their land”.</p>"+
        "<p>The Body of Liberties, 1641: “There shall never be any bond slaverie … unles it be lawfull Captives taken in just warres”.</p>"+
        "<p>Harvard College was named in 1639. In 1643 Anne Hutchinson was killed.</p>"}},
+  {n:"XIII",yr:"1626–88",t:"Liberty of ye Body",d:"Amsterdam, New Amsterdam, Flushing, the Delaware and Germantown — November 1626 to September 1688",
+   ready:true,world:"ch13",pace:2.5,near:9,
+   /* the content note and "what students bring" (record, "Content and framing"): the opening card
+      says once what the record supports; the board does the rest. 59 words */
+   /* review, 27 Nov: was "...“friendship with the Indians”, “slavery only in the South”: the record says
+      otherwise"; the record supports the friendship in Penn's own words and the councils' promise, broken
+      by his heirs (CH13-RECORD, "What students bring"). 60 words */
+   intro:function(){ return "From 1626 a Dutch company traded furs at Manhattan; in 1681 a Quaker was granted Pennsylvania. You may know “$24 in beads” and “slavery only in the South”: the record says otherwise. “Friendship with the Indians”: in Penn’s words, yes; his heirs broke it. Enslavement in law, killings on every side, period words: told in the sources’ words, none shown."; },
+   obj:function(){ return "Live eight scenes, 1626 to 1688. After each, fill the comparison board: same question, different colony. Then sit with the clerk of the Yearly Meeting."; },
+   goals:function(){
+     const w=midW(), need=midNeed();
+     return [
+       {t:"Live the eight scenes ("+(w.day+1)+" of "+MID_DAYS.length+")",done:w.day>=MID_DAYS.length-1&&!!w.did.closed},
+       {t:need?MID_DUTY[need]:"Go on",done:!need},
+       {t:"Ask David de Vries, Edward Hart and William Penn what they know",done:MID_NPCS.every(function(n){return npcDone(n.id);}),opt:true},
+       {t:"Sit with the clerk of the Yearly Meeting",done:!!w.done,goal:true,locked:!(w.day>=MID_DAYS.length-1&&w.did.closed)}
+     ]; },
+   status:function(){ const w=midW(), sd=midDay(), need=midNeed();
+     if(w.done)return "Chapter complete";
+     if(w.did.closed)return "1688 · the clerk of the Yearly Meeting is waiting";
+     return sd.date.split(" — ")[0]+" · "+(need?MID_DUTY[need].charAt(0).toLowerCase()+MID_DUTY[need].slice(1):"go on when you are ready"); },
+   next:function(){ const w=midW(), need=midNeed();
+     if(need){const c=findSpot(function(it){return it.action==="mid"&&it.data&&it.data.kind===need;});if(c)return {it:c,why:"what the day asks"};}
+     const o=findSpot(function(it){return it.id==="next"||it.id==="record";});
+     if(o)return {it:o,why:w.did.closed?"the chapter ends here":"the next date"};
+     return null; },
+   /* Tri-College (the 1696 advice, from the Yearly Meeting's minutes); the Delaware Tribe of
+      Indians and PHMC on the Walking Purchase. Penn's will (1701) and the 1780 act are left out:
+      not re-read (the will only in Turner's 1911 paraphrase; the act not read at all) */
+   end:{head:"Liberty of ye Body — Complete",yr:"Chapter XIII · September 1688",nextWorld:null,
+     body:"<p>1696: the Yearly Meeting advised “that Friends be careful not to encourage the bringing in of any more Negroes”.</p>"+
+       "<p>1737: the Walking Purchase. “The Penns acquired 1200 square miles of Lenape land in Pennsylvania”, the Delaware Tribe of Indians writes. The Tribe and PHMC both say William Penn himself had dealt fairly.</p>"}},
 ];
 /* The title screen is shown before any world begins, so it needs painting once here.
    Safe at this point and not one line earlier: CHAPTERS is closed above. */
@@ -38295,6 +39711,17 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
   {when:"27 November 2026 · latest",
+   head:"Chapter XIII: Liberty of ye Body",
+   lines:[
+     "<b>A new chapter: New Netherland and Pennsylvania, 1626 to 1688</b>",
+     "The Dutch West India Company’s furs and Manhattan, Kieft’s war, eleven enslaved men freed while their children were not, Flushing’s plea for the Quakers, the English takeover, Penn’s laws and land councils, and the Germantown protest against slavery.",
+     "<b>A note for teachers</b>",
+     "This chapter includes enslavement written into law, a night killing of sleeping families, killings on every side, and period words for Africans, Native people, Jews and Quakers. All of it is told in words, with the writer named. None of it is drawn.",
+     "<b>The comparison board</b>",
+     "Same question, different colony: six questions, one quoted line a cell, with who wrote it. Jamestown, Plymouth and Massachusetts Bay are filled in already. Open it any time from the pause menu.",
+     "<b>Where to find it</b>",
+     "Pass Chapter XII’s muster and its ending leads on to Chapter XIII. If you passed it before today, Chapter XIII is already open in the chapter list."]},
+  {when:"27 November 2026",
    head:"Chapter XII: As a Citty upon a Hill",
    lines:[
      "<b>A new chapter: Massachusetts Bay, 1629 to 1637</b>",
@@ -39755,7 +41182,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261127-2245";
+const BUILD="20261128-0413";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;

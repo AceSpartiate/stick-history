@@ -152,6 +152,15 @@ CAST = {
                  f"a little showy, a bright carrying voice, {ENG}.",
     'hutchinson': f"An English woman in her mid forties, with a teacher's calm confidence, questioned by "
                   f"a court of men: composed, sharp and unafraid, a clear mature female voice, {ENG}.",
+    # Chapter XIII: the Dutch speaker gets a Dutch accent, Pastorius a German one, not {ENG}
+    'devries': "A Dutch sea captain and landowner in his fifties, warning a governor who will not listen: blunt, "
+               "weathered and indignant, a strong low voice, a Dutch accent of the 1600s.",
+    'hart': f"An English town clerk in his thirties on Long Island, reading out his town's letter: plain, steady and "
+            f"quietly firm, a clear medium voice, {ENG}.",
+    'penn': f"An English Quaker gentleman of about forty, proprietor of a colony: earnest, warm and persuasive, a "
+            f"cultured medium voice, {ENG}.",
+    'pastorius': "A German scholar and Quaker in his late thirties, a village clerk and schoolmaster: careful, grave "
+                 "and gentle, a thoughtful medium voice, a German accent of the 1600s.",
 }
 REEL_GAP = 0.6
 

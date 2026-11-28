@@ -79,6 +79,16 @@
     try{const fn=window[m[1]];if(typeof fn!=="function"||fn.length<3)continue;
       const h=fn(lit(m[2]),lit(m[3]),"x");if(typeof h!=="string")continue;
       off.innerHTML=h;const r=readableText(off);if(r)add(r,'narrator');}catch(e){}}
+  /* the comparison board (Chapter XIII on): each cell's readout "On the board: “quote” writer, date.
+     there." and its button "“quote” (writer, year)" are joined at run time from COMPARE_CELLS; built
+     here through the game's own compareTag, for every cell any chapter defines (27 Nov) */
+  try{if(typeof COMPARE_CELLS==="object"&&typeof compareTag==="function")for(const k of Object.keys(COMPARE_CELLS)){
+    const c=COMPARE_CELLS[k];
+    off.innerHTML="<p>On the board: “"+c.q+"” "+compareTag(c)+"</p>";add(readableText(off),'narrator');
+    const yr=(String(c.when).match(/1[0-9]{3}/)||[""])[0];
+    add(clean("“"+c.q+"” ("+String(c.who).split(",")[0]+(yr?", "+yr:"")+")"),'narrator');
+    for(const o of (c.alt||[])){if(o&&o[0])add(clean(o[0]),'narrator');if(o&&o[1])add(clean(o[1]),'narrator');}
+    if(c.res)add(clean(c.res),'narrator');}}catch(e){}
   off.remove();
   /* counts said aloud: "You answered "+right+" of "+n+"..." for every count a paper can give */
   const TPL=/("(?:[^"\\\n]|\\.)*")\s*\+\s*([\w.$()\[\]]+)\s*\+\s*("(?:[^"\\\n]|\\.)*")(?:\s*\+\s*([\w.$()\[\]]+)\s*\+\s*("(?:[^"\\\n]|\\.)*"))?/g;
