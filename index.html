@@ -825,8 +825,9 @@
     </div>
   </div>
   <!-- the comparison board (Chapters XIII-XIV): openable from the pause menu at any time -->
+  <!-- 1100px, 28 Nov: with all eight colonies the table is about 1000px wide; at 980 one column hid behind the sticky questions on a 1366x768 Chromebook -->
   <div class="modal mid" id="mBoard">
-    <div class="parchment deckle sheet" style="max-width:980px" data-read>
+    <div class="parchment deckle sheet" style="max-width:1100px" data-read>
       <div class="kick">Same question, different colony</div>
       <h3 id="boardTitle">The Comparison Board</h3>
       <div id="boardBody"></div>
@@ -1414,6 +1415,7 @@ function applyBlob(d){
     if(S.works.ch10&&S.works.ch10.done)S.reached["ch11"]=true;
     if(S.works.ch11&&S.works.ch11.done)S.reached["ch12"]=true;
     if(S.works.ch12&&S.works.ch12.done)S.reached["ch13"]=true;
+    if(S.works.ch13&&S.works.ch13.done)S.reached["ch14"]=true;
     if(typeof AMBUSH!=="undefined")AMBUSH.done=!!d.ambushDone;
     SAVED_WORLD=d.world||"ch1";
     return true;
@@ -3350,6 +3352,63 @@ const PEOPLE_LOOK={
      Quaker cloth. Imagined */
   meetingclerk:{face:"round",hair:"receding",hairColor:HAIR.grey,beard:"none",
     hat:"broad",dress:"doublet",mood:"mild",eqx:{accessory:"acc_satchel"},
+    colors:{torso:WOOL.grey,breech:WOOL.frieze,stock:WOOL.grey,hat:0x2a2622}},
+
+  /* ---- Maryland, Carolina and Georgia, 1634-1741 (Chapter XIV). The same rule: working and
+     middling dress in sadd colours, black only for office or the pulpit; Native people of the
+     Chesapeake keep the tidewater cut White describes, those of the Southeast loose hair, no
+     marks; no African dress, chains or marks (look book 1.12, Part 3) ---- */
+  /* PORTRAIT?: a State House portrait "thought to be" Leonard Calvert, attributed to Jacob van
+     Oost, c. 1640 (MSA SC 1545-3363); no catalogue read describes the dress. A governor of 1634
+     in good plain cloth, a falling band, a capotain; colours imagined. Drawn, never voiced */
+  lcalvert:{face:"long",hair:"long",hairColor:HAIR.brown,beard:"pointed",hat:"capotain",dress:"doublet",cloak:true,mood:"stern",
+    colors:{torso:WOOL.woad,breech:WOOL.grey,stock:WOOL.grey,cloak:0x3a3236,hat:0x2a2622}},
+  /* CLASS: no contemporary likeness was found (the Archives list only modern pictures). The
+     gentlewoman of 1.7: a coif under a hat, a gown in green. Imagined. Drawn, never voiced: her
+     words survive only in the clerk's third person (AM i p. 215) */
+  brent:{sex:"f",face:"oval",hair:"bun",hairColor:0x4a3424,hat:"capotain",dress:"gown",mood:"keen",colors:{gown:WOOL.green,hat:0x2a2622}},
+  /* CLASS: "Mathias Sousa, a Molato" in a Jesuit land record; Andrew White's indentured servant,
+     then a freeman (MSA, 2003). Nothing describes him (look book 1.12): a freeman's plain cloth,
+     a skin tone from the shared range. Imagined. Drawn, never voiced */
+  desousa:{face:"oval",hair:"short",hairColor:HAIR.black,beard:"short",skin:0x7a5236,hat:"none",dress:"doublet",mood:"plain",
+    colors:{torso:WOOL.russet,breech:WOOL.grey,stock:WOOL.grey}},
+  /* CLASS: the clerk of Maryland's assembly, 1647/8, not named in the record read. A clerk's
+     plain cloth and a writing case. Imagined */
+  mdclerk:{face:"narrow",hair:"short",hairColor:HAIR.sandy,beard:"short",hat:"capotain",dress:"doublet",mood:"mild",eqx:{accessory:"acc_satchel"},
+    colors:{torso:WOOL.tawny,breech:WOOL.russet,stock:WOOL.grey,hat:0x2e2a24}},
+  /* DESCRIBED (class): the Yaocomaco werowance and wisoes, 1634, not named. White: "painting
+     themselves with colours in oile a darke read, especially about the head"; hair cut short on
+     one half and long on the other, "a locke at the left eare" (Hall MD pp. 42-43), so the
+     tidewater cut. A deerskin mantle. Never voiced */
+  yaocomaco:{face:"long",hairColor:HAIR.black,dress:"bare",feet:"moccasin",mantle:true,paint:true,beads:true,mood:"plain"},
+  /* CLASS: a commissioner of the Indian trade (JCIT, present 1710-1715). No likeness was
+     checked. A Charles Town gentleman's good cloth. Imagined */
+  izard:{face:"square",hair:"long",hairColor:HAIR.dark,beard:"none",hat:"broad",dress:"merchant",lace:true,mood:"stern",
+    colors:{torso:WOOL.murrey,breech:WOOL.grey,stock:WOOL.grey,hat:0x221f1e}},
+  /* PORTRAIT?: a mezzotint of 1754 (British Museum) is said to show him in a wig; its catalogue
+     page could not be read (28 Nov). A Lutheran pastor (1.5): dark cloth, a broad hat. Imagined */
+  boltzius:{face:"oval",hair:"short",hairColor:HAIR.brown,beard:"none",hat:"broad",dress:"doublet",cloak:true,mood:"mild",
+    colors:{torso:0x2a2628,breech:0x2a2628,stock:0x4a4038,cloak:0x262428,hat:0x1a1818}},
+  /* PORTRAIT: the oval portrait of 1744 (Oglethorpe University) shows him "wearing a suit of
+     armor"; another catalogued likeness, "a dark jacket and tall white collar" (Georgia Digital
+     Library records, read 28 Nov). At his desk in 1739, aged 43: cloth, not armour (look book
+     3.8). A dark blue coat, the colour imagined */
+  oglethorpe:{born:1696,face:"long",hair:"long",hairColor:HAIR.brown,beard:"none",hat:"broad",dress:"merchant",cloak:true,mood:"keen",
+    colors:{torso:0x2e3a5c,breech:WOOL.grey,stock:WOOL.grey,cloak:0x3a3236,hat:0x1e1c1c}},
+  /* PORTRAIT: William Verelst's portrait of 1734, known through Faber's engraving; a catalogue of
+     a 1741 copy: "depicted wearing bearskins" (Christie's, read 28 Nov). So a dark fur mantle. No
+     catalogue read describes his hair, age or marks: loose hair, no paint, no marks. Never
+     voiced: his words come through interpreters */
+  tomochichi:{face:"long",hair:"loose",hairColor:HAIR.black,height:1.02,dress:"bare",feet:"moccasin",mantle:true,paint:false,beads:false,mood:"plain",
+    colors:{mantle:0x3a2e26}},
+  /* CLASS: "Known as Coosaponakeesa among the Muscogee (Creek) Indians", Oglethorpe's interpreter
+     (NGE, Frank). No description was read: a gown of trade cloth, hair in a plait. Imagined.
+     Never voiced: her own words were not read */
+  marymusgrove:{sex:"f",face:"oval",hair:"plait",hairColor:HAIR.black,skin:0x8a5c3c,hat:"none",dress:"gown",mood:"keen",
+    colors:{gown:WOOL.woad}},
+  /* CLASS: the Georgia trustees' secretary, London, 1741, not named in the record. A clerk's
+     good cloth and a writing case. Imagined */
+  trusteesec:{face:"round",hair:"long",hairColor:HAIR.grey,beard:"none",hat:"broad",dress:"merchant",mood:"mild",eqx:{accessory:"acc_satchel"},
     colors:{torso:WOOL.grey,breech:WOOL.frieze,stock:WOOL.grey,hat:0x2a2622}}
 };
 /* THE ELEVEN of 1644 (O'Callaghan, Laws pp. 36-37), each by the name the grant gives him. No record
@@ -10072,7 +10131,7 @@ function animate(){
   /* play-test, 27 Nov: Chapter VI's ships, the boat from the falls, the rats and its night sky
      are driven by updatePres, which this branch never called - so "Captain Newport set sail"
      played over a ship riding at anchor, and the boat from the falls never came in */
-  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateBay(dt);updateMid(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);updateCsTalk(dt);updateReacts(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
+  if(CS.active){updateFx(dt);updateFalling(dt);updateDrill(dt);updateHang(dt);updateSounding(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateBay(dt);updateMid(dt);updateSou(dt);updateWork(dt);updateAnimals(dt);updateShadows();updateCutscene(dt);updateCsTalk(dt);updateReacts(dt);renderer.render(scene,cam);return;}   /* animals, 27 Nov: they go on moving under a cutscene */
   if(CAMLOCK.on){
     updateFx(dt);updateFlog(dt);updateShadows();updateReacts(dt);
     cam.position.lerp(CAMLOCK.pos,Math.min(1,dt*3.5));
@@ -10091,7 +10150,7 @@ function animate(){
     player.position.y=WORLD.ground(player.position.x,player.position.z)+JUMP.y;
   if(AMBUSH.on||DUSK.on){updateAmbush(dt);updateArrows(dt);}
   else if(FORT.on){updateFort(dt);updateArrows(dt);}
-  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateBay(dt);updateMid(dt);updateWork(dt);
+  updateSick(dt);updateCapt(dt);updatePres(dt);updateStarve(dt);updateLeaf(dt);updatePrice(dt);updateSky(dt);updatePly(dt);updateBay(dt);updateMid(dt);updateSou(dt);updateWork(dt);
   if(LESSON.on){
     updateFx(dt);updateLesson(dt);updateShadows();updateReacts(dt);
     renderer.render(scene,cam);return;
@@ -10277,6 +10336,7 @@ function animate(){
         :best.action==="ply"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="bay"?((best.data&&best.data.verb)||"Go to it")
         :best.action==="mid"?((best.data&&best.data.verb)||"Go to it")
+        :best.action==="sou"?((best.data&&best.data.verb)||"Go to it")
         /* Named explicitly rather than inherited. A new action with no verb used
            to fall through to "Read the papers", which hid the mistake; now it
            reads "Use" and is obviously unfinished. */
@@ -10872,6 +10932,7 @@ function doInteract(){
   else if(a==="ply"){plyAct(activeSpot.data);}
   else if(a==="bay"){bayAct(activeSpot.data);}
   else if(a==="mid"){midAct(activeSpot.data);}
+  else if(a==="sou"){souAct(activeSpot.data);}
   else if(a==="reck"){
     if(chapterReady())openReckoning();
     else toast("The scrivener will not sit with you yet. Still to ask: "+reckMissing().join("; ")+".");}
@@ -12394,9 +12455,9 @@ const MUSIC_FILES={
   sickness:"assets/music/sickness.ogg", president:"assets/music/president.ogg",
   starving:"assets/music/starving.ogg", tobacco:"assets/music/tobacco.ogg"};
 const MUSIC_BY_WORLD={ch1:"voyage", ch2:"fort", comfort:"fort", archers:"fort", james:"fort", ch3:"fort",
-  ch4:"sickness", ch5:"sickness", ch6:"president", ch7:"starving", ch8:"tobacco", ch9:"tobacco", ch10:"sickness", ch11:"voyage", ch12:"president", ch13:"fort"};
+  ch4:"sickness", ch5:"sickness", ch6:"president", ch7:"starving", ch8:"tobacco", ch9:"tobacco", ch10:"sickness", ch11:"voyage", ch12:"president", ch13:"fort", ch14:"tobacco"};
 /* places with no music (see above) - the `where` of a chapter's day */
-const MUSIC_SILENT={kecoughtan:true, york:true, orapakes:true, dig:true, pointcomfort:true, pace:true, patuxet:true, march:true, pavonia:true};   /* pointcomfort: Chapter IX, the Africans' arrival - documents only, quiet; pace: Chapter X, the night before 22 March 1622 */
+const MUSIC_SILENT={kecoughtan:true, york:true, orapakes:true, dig:true, pointcomfort:true, pace:true, patuxet:true, march:true, pavonia:true, desk:true};   /* pointcomfort: Chapter IX, the Africans' arrival - documents only, quiet; pace: Chapter X, the night before 22 March 1622 */
 const MUSIC_VOL=0.32, MUSIC_DUCK=0.2, MUSIC_FADE=2.4;
 const MUSIC_CAN=VO_CAN;
 const MUSIC={live:false, decks:[], i:0, cur:null, duck:-1, master:null};
@@ -12412,6 +12473,7 @@ function musicWhere(w){
     if(w==="ch11")return plyDay().where;
     if(w==="ch12")return bayDay().where;
     if(w==="ch13")return midDay().where;
+    if(w==="ch14")return souDay().where;
   }catch(e){}
   return null;
 }
@@ -15348,7 +15410,7 @@ function openPause(){$("mPause").classList.add("on");setPaused(true);renderObjec
   /* play-test, 27 Nov: the comparison board is Chapter XIII's; before it, the button opened a
      board of later chapters' quotations in Chapter I */
   const cs=S.compare&&S.compare.cells;
-  $("pauseBoard").style.display=(CURRENT_WORLD==="ch13"||(S.reached&&S.reached.ch13)||(cs&&Object.keys(cs).length))?"":"none";
+  $("pauseBoard").style.display=(CURRENT_WORLD==="ch13"||CURRENT_WORLD==="ch14"||(S.reached&&(S.reached.ch13||S.reached.ch14))||(cs&&Object.keys(cs).length))?"":"none";
 }
 $("pauseResume").onclick=function(){$("mPause").classList.remove("on");setPaused(false);};
 $("pauseVoices").onclick=function(){
@@ -15515,7 +15577,7 @@ function openIntro(worldId){
   $("introDate").textContent=c.d;
   $("introBody").textContent=c.intro?c.intro():"";
   $("introObj").textContent=c.obj?c.obj():"";
-  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":(worldId==="ch8")?"To the Fort":(worldId==="ch9")?"To Jamestown":(worldId==="ch10")?"To James City":(worldId==="ch11")?"To Southampton":(worldId==="ch12")?"To England":(worldId==="ch13")?"To Amsterdam":"Into the Boats";
+  $("btnEnter").textContent=(worldId==="ch1")?"Step Aboard":(worldId==="ch3")?"Step Ashore":(worldId==="ch4")?"Into the Fort":(worldId==="ch5")?"To the Barge":(worldId==="ch6")?"Back to the Fort":(worldId==="ch7")?"Into the Winter":(worldId==="ch8")?"To the Fort":(worldId==="ch9")?"To Jamestown":(worldId==="ch10")?"To James City":(worldId==="ch11")?"To Southampton":(worldId==="ch12")?"To England":(worldId==="ch13")?"To Amsterdam":(worldId==="ch14")?"To Maryland":"Into the Boats";
   show("intro");
 }
 function beginWorld(worldId){
@@ -15696,7 +15758,7 @@ const CONDITIONS={weather:0,fouling:0,supply:0};
    not evidenced: the ship's hold is still air, and every outdoor scene here is an
    open shore in April with wind coming off the water. */
 /* ch4: the summer of 1607 was a drought (Stahle et al. 1998) - the driest air the game has */
-const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22, ch8:0.10, ch9:0.10, ch10:0.10, ch11:0.10, ch12:0.10, ch13:0.10};   /* ch5: a wet winter on the rivers */
+const WEATHER={ch1:0, ch2:0.12, comfort:0.12, archers:0.10, james:0.10, ch3:0.10, ch4:0.04, ch5:0.30, ch6:0.10, ch7:0.22, ch8:0.10, ch9:0.10, ch10:0.10, ch11:0.10, ch12:0.10, ch13:0.10, ch14:0.10};   /* ch5: a wet winter on the rivers */
 function armState(arm){
   return {
     /* a match above 0.7 takes no penalty at all - good play is rewarded in
@@ -20567,7 +20629,7 @@ function crowdLook(kind,i,yr){
                 back in jacks and morions, half of them in buff coats (a plausible guess: the
                 look book finds no buff coat in the record before the 1620s).
    Nobody all in black: black is money, office or the pulpit. */
-const FIG_YEAR={ch1:1607,ch2:1607,ch3:1607,ch4:1607,ch5:1608,ch6:1608,ch7:1609,ch8:1613,ch9:1619,ch10:1622,ch11:1621,ch12:1634,ch13:1660};
+const FIG_YEAR={ch1:1607,ch2:1607,ch3:1607,ch4:1607,ch5:1608,ch6:1608,ch7:1609,ch8:1613,ch9:1619,ch10:1622,ch11:1621,ch12:1634,ch13:1660,ch14:1700};
 function figYear(){
   try{const c=CURRENT_WORLD?chapterOf(CURRENT_WORLD):null;return (c&&FIG_YEAR[c.world])||1607;}
   catch(e){return 1607;}
@@ -25178,13 +25240,24 @@ const SCENE_LOOK={
     lk("autumn",{top:0x4f7898,hor:0xcec6b0,sunC:0xf6e0c0,sun:0.80,elev:36,clouds:3}),                /* the Delaware, autumn 1682 */
     lk("summer",{top:0x3d74a6,hor:0xc8d2c8,elev:60,clouds:4}),                                      /* a land council in summer: bright, green */
     lk("spring",{top:0x4a7aa4,hor:0xcad2ce,sunC:0xf8f0e0,sun:0.84,elev:48,wood:0x34402a})           /* Germantown in April */
+  ],
+  /* XIV. Durante Vita, November 1633 to October 1739 (SOU_DAYS) */
+  ch14:[
+    lk("spring",{top:0x5a84a8,hor:0xd0d4c8,sunC:0xf8eedc,sun:0.80,elev:40,clouds:4}),               /* the Potomac in March */
+    lk("winter",{top:0x8894a0,hor:0xccd0d0,sun:0.66,sunC:0xf0eee6,elev:28,hemi:0.64,clouds:2}),     /* St. Mary's in January */
+    lk("grey",{top:0x8a949a,hor:0xc0c4c0,sun:0.66,elev:34}),                                        /* the land office */
+    lk("spring",{top:0x4c7ca6,hor:0xd2d4c4,sunC:0xfff0d4,sun:0.86,elev:52,clouds:3}),               /* Charles Town in April */
+    lk("summer",{top:0x4a78a0,hor:0xd8d2b8,near:170,far:760,sunC:0xfff0c8,elev:60,clouds:3}),       /* Ebenezer: low and hot */
+    lk("spring",{top:0x3d74a6,hor:0xccd4c8,sunC:0xfff2d8,sun:0.90,elev:58,clouds:4}),               /* Yamacraw Bluff in May */
+    lk("winter",{top:0x7e90a0,hor:0xc8ccc8,sun:0.72,sunC:0xf0eee6,elev:30,clouds:2}),               /* Savannah in December */
+    lk("autumn",{top:0x4f7898,hor:0xcec6b0,sunC:0xf6e0c0,sun:0.80,elev:34,clouds:3})                /* Savannah, October 1739 */
   ]
 };
 /* which day of its chapter a world is showing - the same index each *_DAYS table uses */
 const LOOK_DAY={ch4:function(){return sickW().day;},ch5:function(){return captW().day;},
   ch6:function(){return presW().day;},ch7:function(){return starveW().day;},
   ch8:function(){return leafW().day;},ch9:function(){return priceW().day;},
-  ch10:function(){return skyW().day;},ch11:function(){return plyW().day;},ch12:function(){return bayW().day;},ch13:function(){return midW().day;}};
+  ch10:function(){return skyW().day;},ch11:function(){return plyW().day;},ch12:function(){return bayW().day;},ch13:function(){return midW().day;},ch14:function(){return souW().day;}};
 function lookDay(w){const f=LOOK_DAY[w];try{return f?(f()|0):0;}catch(e){return 0;}}
 function sceneLook(){
   const w=CURRENT_WORLD;
@@ -37807,7 +37880,7 @@ CONTENT.ch12={
 
    THE PARTS, so Chapter XIV can extend it without touching this code:
      COMPARE_ROWS   the six fixed questions; never added to
-     COMPARE_COLS   one column a colony; XIV's three are already here, empty until it fills them
+     COMPARE_COLS   one column a colony; XIV's three (Maryland, Carolina, Georgia) filled by Chapter XIV
      COMPARE_CELLS  "col.row" -> {q, who, when, there, fixed?, res?, alt?}. A fixed cell arrives
                     filled (Jamestown, Plymouth, the Bay: one quoted line each from CH9-CH12's
                     records, exactly as those records give them). A cell to be filled carries
@@ -38207,65 +38280,67 @@ Object.assign(COMPARE_CELLS,{
     alt:[["“who confess and acknowledge the one Almighty and eternal God” (1682)","Freedom of conscience. The Friends asked about the body."],
          ["“live in Love, as long as the Sun gave light” (Penn, 1683)","A promise at the land councils, not who was free."]]}});
 Object.assign(COMPARE_SENT,{
+  /* owner, 27 Nov (CH14-DESIGN): every comparison sentence 22 words or fewer, each keeping its claim
+     and its trap; they measured about thirty-three, three to read per choice */
   /* review, 27 Nov: mid0 was "because its first letter lists furs ... no congregation came, because the Company sent
      traders and farmers"; Schaghen's is not the colony's first letter, and Wassenaer (the board's evidence) describes a
      company town, not who did not come (Jameson NN p. 84) */
-  mid0:{o:[["Like Jamestown, New Netherland began as a company’s venture, because Schaghen’s letter lists furs by the hundred; unlike Plymouth, no congregation planned it, because Wassenaer describes a company town.",
+  mid0:{o:[["Like Jamestown, New Netherland began as a company’s venture: Schaghen lists furs by the hundred; unlike Plymouth, no congregation planned it.",
             "Supported: Schaghen’s cargo list and Wassenaer’s company town. Both men wrote in Amsterdam, and never crossed."],
-           ["Like Massachusetts Bay, New Netherland bought its land fairly, because it paid $24; unlike Jamestown, it took nothing, because the Lenape sold the island.",
+           ["Like Massachusetts Bay, New Netherland bought its land fairly, for $24; unlike Jamestown, it took nothing, because the Lenape sold.",
             "The $24 was worked out in 1844. The letter says “value of 60 guilders”, and not what the Lenape understood."],
-           ["Like Plymouth, New Netherland was founded for religious freedom, because the Dutch were tolerant; unlike Jamestown, it had no slavery, because it was a Middle colony.",
+           ["Like Plymouth, New Netherland was founded for religious freedom; unlike Jamestown, it had no slavery, because it was a Middle colony.",
             "The letter is about furs, not religion. Enslaved Africans were brought to New Netherland in 1625 or 1626, Jameson notes."]]},
-  mid1:{o:[["Like Massachusetts Bay, New Netherland had settlers chosen to advise, because Kieft called the Twelve Men; unlike the Bay’s deputies, they decided nothing, because Kieft went to war without them.",
+  mid1:{o:[["Like the Bay, New Netherland had settlers chosen to advise; unlike the Bay’s deputies, the Twelve Men decided nothing: Kieft ignored them.",
             "Supported: De Vries, one of the Twelve, wrote that war “could not be done without the approbation of the Twelve Men”. Kieft went ahead."],
-           ["Like Jamestown’s Assembly, the Twelve Men made New Netherland’s laws, because the Director had to obey them; unlike Plymouth, settlers elected the Director.",
+           ["Like Jamestown’s Assembly, the Twelve Men made New Netherland’s laws; unlike Plymouth, settlers elected the Director.",
             "Nothing read shows settlers electing a Director. He called the Twelve Men when he wanted consent, and ignored them when he did not."],
-           ["Like Plymouth, New Netherland went to war with everyone agreed; unlike the Pequot War, no Dutch were killed, because the river peoples did not fight back.",
+           ["Like Plymouth, New Netherland went to war with everyone agreed; unlike the Pequot War, no Dutch were killed.",
             "Jogues, there in 1643: the river peoples killed “some two score Hollanders”. And De Vries says the Twelve Men were not asked."]]},
-  mid2:{o:[["Like Massachusetts Bay, New Netherland wrote freedom with an exception, because the Bay allowed captives; unlike the Bay, it bound children not yet born, because the 1644 grant made them “Slaves”.",
+  mid2:{o:[["Like the Bay, New Netherland wrote freedom with an exception; unlike the Bay, its 1644 grant bound children not yet born.",
             "Supported, clause by clause: the eleven freed “on the same footing as other Free people”, a yearly tribute, and their children bound."],
-           ["Like Plymouth, New Netherland had no slavery, because it was a northern colony; unlike Jamestown, all Africans there were free, because the Dutch did not buy people.",
+           ["Like Plymouth, New Netherland had no slavery, being northern; unlike Jamestown, all Africans there were free.",
             "The grant says the eleven had served the Company eighteen or nineteen years, and binds their children as slaves."],
-           ["Like Jamestown, New Netherland freed the eleven fully, because the grant says “Free people”; unlike Jamestown, it asked nothing in return, because they had served.",
+           ["Like Jamestown, New Netherland freed the eleven fully, asking nothing in return, because the grant says “Free people”.",
             "The same grant asks thirty skepels and a fat hog a year, on pain of returning to slavery, and binds their children."]]},
   /* review, 27 Nov: mid3 was "Feake was banished"; the sentence was banishment or a fine of two hundred florins (ERNY i p. 415) */
-  mid3:{o:[["Like Massachusetts Bay, New Netherland punished dissent, because Feake was sentenced over Flushing’s letter; unlike the Bay, it held many peoples, because Jogues heard of eighteen languages.",
+  mid3:{o:[["Like the Bay, New Netherland punished dissent: Feake was sentenced; unlike the Bay, it held many peoples, eighteen languages, Jogues heard.",
             "Supported: the court’s sentence on Feake, and Jogues’s report. Toleration there was argued from trade as much as from conscience."],
-           ["Like Plymouth, New Netherland allowed one church, because the orders said so; unlike the Bay, it obeyed them, because no other faith was found there.",
+           ["Like Plymouth, New Netherland allowed one church, and obeyed the order, because no other faith was found there.",
             "Jogues: the Calvinist-only order “is not observed”. He lists Catholics, Puritans, Lutherans and Mennonites."],
-           ["Like Flushing, the directors let the Jews stay out of conscience, because they believed in liberty; unlike Jamestown, money played no part.",
+           ["Like Flushing, the directors let the Jews stay out of conscience; unlike Jamestown, money played no part.",
             "The directors gave their reason: losses in Brazil, and “the large amount of capital, which they have invested in shares of this Company”."]]},
-  mid4:{o:[["Like the Dutch before them, the English kept the townspeople’s rights, because the articles promised “free denizens”; unlike them, the enslaved got nothing, because no article names them.",
+  mid4:{o:[["Like the Dutch, the English kept the townspeople’s rights as “free denizens”; unlike them, the enslaved got nothing: no article names them.",
             "Supported: the articles promise lands, goods and conscience to the people and to “The Dutch”. No article names the enslaved, or the Lenape."],
-           ["Like Massachusetts Bay, the English freed every slave in New York, because English law had no slavery; unlike the Dutch, they brought no captives.",
+           ["Like Massachusetts Bay, the English freed every slave in New York, because English law had no slavery.",
             /* review, 27 Nov: was "The Gideon brought 290 captives in August 1664. Nothing in the articles frees anyone."; the
                Gideon was a Company (Dutch) ship, so it did not answer the claim about the English or the Bay (ERNY i
                pp. 557-559; the Body of Liberties, CH12-RECORD) */
             "No article frees anyone: “free denizens” did not include the Company’s slaves. And the Bay’s own law of 1641 allowed slavery for captives."],
            ["Like Kieft in 1643, Stuyvesant decided alone, because no townsman spoke; unlike 1643, a battle decided it.",
             "Ninety-three townsmen, his own son among them, signed for surrender. The city was given up by articles."]]},
-  mid5:{o:[["Like Massachusetts Bay, Pennsylvania tied the vote to religion, because voters needed “faith in Jesus Christ”; unlike the Bay, it asked no church membership, and protected every believer in God.",
+  mid5:{o:[["Like the Bay, Pennsylvania tied the vote to religion, “faith in Jesus Christ”; unlike the Bay, it asked no church membership.",
             "Supported: laws XXXIV and XXXV of 1682. A Jew could live and worship freely, but not vote or hold office."],
-           ["Like Plymouth, Pennsylvania gave everyone a vote, because Penn wrote that the people are “a party to those laws”; unlike Jamestown, it set no conditions.",
+           ["Like Plymouth, Pennsylvania gave everyone a vote, because Penn wrote the people are “a party to those laws”.",
             "The preface is Penn’s ideal. The laws give the vote to freemen with land, and only to Christians."],
-           ["Like New Netherland, Pennsylvania was founded only for trade, because the King asked beaver skins; unlike the Bay, religion played no part.",
+           ["Like New Netherland, Pennsylvania was founded only for trade, because the King asked beaver skins; religion played no part.",
             "Two beaver skins were a token rent. Law XXXV protects anyone who believes in “one Almighty and eternal God”."]]},
   /* review, 27 Nov: mid6 was "unlike Kieft, Penn met the councils himself"; Kieft made no purchase on the board. The
      board's own tags carry the contrast: Schaghen "was not there", Penn "was there" (DRCNY i p. 37; Myers PA p. 233) */
-  mid6:{o:[["Like New Netherland, Pennsylvania got land from its owners for goods, because Penn wrote that kings “have sold”; unlike Schaghen, Penn saw it himself, because he was at the councils.",
+  mid6:{o:[["Like New Netherland, Pennsylvania got land for goods: kings “have sold”, Penn wrote; unlike Schaghen, Penn was at the councils himself.",
             "Supported: Penn’s own letter of 1683, written to investors. The Lenape speakers’ words come only through him, and through an interpreter."],
-           ["Unlike every other colony, Pennsylvania made one treaty that was never broken, because Penn signed it under an elm in 1682.",
+           ["Unlike every other colony, Pennsylvania made one treaty never broken, signed by Penn under an elm in 1682.",
             "No treaty document survives: the event “is not recorded in original primary source documents”, Newman writes. Penn’s letter describes several councils."],
-           ["Like Penn himself, his heirs dealt fairly with the Lenape, because his laws protected them; unlike Massachusetts Bay, no Lenape land was taken by a trick.",
+           ["Like Penn himself, his heirs dealt fairly with the Lenape; no Lenape land was ever taken by a trick.",
             "In 1737 the Walking Purchase took “1200 square miles”, the Delaware Tribe writes. The Lenape walkers withdrew “in disgust”, PHMC says."]]},
   /* review, 27 Nov: mid7 was "Like Massachusetts Bay, Pennsylvania wrote liberty of conscience and still held slaves";
      the Bay wrote no liberty of conscience: freemen were church members only, dissenters banished (CH12-RECORD; MBR i
      p. 87). What the two share is slavery beside written liberties (the Body of Liberties' "unles") */
-  mid7:{o:[["Like Massachusetts Bay, Pennsylvania held slaves beside its written liberties, because Bom bought a man; unlike the Bay’s court, the Quaker meetings would not decide, because “at present they forbear it”.",
+  mid7:{o:[["Like the Bay, Pennsylvania held slaves beside written liberties: Bom bought a man; unlike the Bay’s court, the meetings would not decide.",
             "Supported: the Germantown protest and the meetings’ own answers. Liberty of conscience was law; liberty of the body was put off."],
-           ["Like Plymouth, Pennsylvania had no slavery, because it was a Middle colony; unlike the South, Quakers there kept no slaves.",
+           ["Like Plymouth, Pennsylvania had no slavery, being a Middle colony; unlike the South, its Quakers kept no slaves.",
             "Cornelis Bom, a Philadelphia baker, 1684: “one negro whom I bought”. The Friends protested because Quakers held slaves."],
-           ["Like New Netherland’s grant, the Germantown protest freed the enslaved, because the meetings agreed with it; unlike Jamestown, slavery ended in 1688.",
+           ["Like New Netherland’s grant, the Germantown protest freed the enslaved, because the meetings agreed; slavery there ended in 1688.",
             "Dublin would not “meddle with it”; the Quarterly Meeting found it “too great a weight”; the Yearly Meeting forbore. No one was freed."]]}});
 /* which cells each scene fills on its way out, and its sentence */
 const MID_BOARD=[{cells:["nn.why","nn.land"],sent:"mid0"},{cells:["nn.gov"],sent:"mid1"},{cells:["nn.worked","nn.free"],sent:"mid2"},
@@ -39064,6 +39139,1206 @@ CONTENT.ch13={
   targets:collectInsights(MID_NPCS), unlocks:[]
 };
 
+
+/* ==================== CHAPTER XIV: DURANTE VITA ====================
+   1633 to 1739 (closing card 1751): Maryland from Baltimore's instructions and the landing at
+   Yaocomaco, the St. Mary's assembly, Margaret Brent, the Act concerning Religion and the act
+   of 1664 that made bondage "Durante Vita"; Carolina from the Proposals and the Fundamental
+   Constitutions to the board of the Indian trade, 1712-1715; rice at Ebenezer; Georgia's
+   charter, the Creek towns at Yamacraw Bluff, the ban of 1735, the petitions of 1738-39; and
+   the Stono account copied at Oglethorpe's desk. Design: notes docs/CH14-DESIGN.md. Every fact
+   is in docs/CH13-RECORD.md, its XIV sections and its "Addendum for Chapter XIV". RE-READ 28
+   November, before anything went on screen (scan text layers, archive.org unless named):
+   - Hall, Narratives of Early Maryland (narrativesearly00hallgoog) pp. 5-6, 14, 16, 41-43,
+     72-74, 131: the Account, the instructions, White, A Relation, the Jesuits' letter of 1640.
+   - Archives of Maryland i pp. 215, 244-246, 533-534: page-checked in the addendum ("uote" is
+     the printed spelling).
+   - Salley, Narratives of Early Carolina (narrativesofearl00sall_0) pp. 60, 69, 71 (the
+     Proposals XII-XIII; Horne 1666); pp. 133-134 (Woodward) page-checked in the addendum.
+   - Avalon: the Fundamental Constitutions (nc05), preamble and arts. 22-23, 107, 110.
+   - Journals of the Commissioners of the Indian Trade, 1710-1715 (SCDAH's PDF of McDowell 1955,
+     text layer) pp. 26-28, 42, 47, 53-55, 58, 65, and the members PRESENT at each sitting: Ralph
+     Izard sat on 12 June 1712 (Toolodeha), 13 Sept. 1711, 9 June 1714 (the Pocotaligo King) and
+     12 April 1715.
+   - CRNC ii pp. 177-178, 185-186 (Craven; Urmston), page-checked in the addendum; Rivers p. 232
+     (the 1708 census), page-checked there.
+   - Colonial Records of Georgia i pp. 50, 56-57 (the act of 1735; the repeal of 1750); iii pp.
+     376-377 (the trustees' reasons), 427-431 (Darien; Ebenezer, 13 March 1739, which Boltzius
+     and Gronau joined: "We Ministers of the Congregation at Ebenezer join with the Saltzburgers
+     in this Petition"). Darien is quoted from the 1741 print, as the addendum read it.
+   - Tailfer, A True and Historical Narrative (Force's reprint) pp. 40-41 (Savannah), 44
+     (Dunbar and the cattle), 60 (the trustees' letter of 25 March 1740).
+   - Jones, Historical Sketch of Tomo-chi-chi (historicalsketch00joneiala) pp. 28-31 and the
+     note on p. 30 (Oglethorpe's buffalo skin).
+   - CRG xxii.2 pp. 231-235 (the Stono account) and SC Stat. vii pp. 397, 399 (the act of
+     1740): page-checked in the addendum.
+   - Web pages re-read 28 Nov: the Maryland State Archives on de Sousa; Historic St. Mary's
+     City's student guide; New Georgia Encyclopedia (Jackson, Frank, Wood); SC Encyclopedia
+     (Smith on Stono; Coclanis on rice); Eltis, Morgan and Richardson (AHR 2007); Harvard UP's
+     page for Carney's Black Rice.
+   LEFT OUT, because not re-read on the page: Le Jau, Rodd and Crawley (the design's closing
+   card for scene 3 has Craven and Urmston only); the drums and writing clauses of the 1740 act
+   (the addendum did not re-read them, so the drums-to-drums hook is not used); Gallay's
+   estimate; Morris's counts for Port Royal; the ICL report on the tayac; the 1691 husking
+   engine (Salley's note); the 1681 repeal of the 1664 act; Carney's own wording (her
+   "knowledge system" is a reviewer's phrase, so the publisher's sentence stands for the book).
+
+   WHAT THE CHAPTER IS ABOUT. "Same question, different colony", finished: Maryland, Carolina
+   and Georgia fill the board's last three columns, and it closes on "Who was free?" across all
+   eight. The regional trap is built in: Georgia, in the South, banned slavery; Maryland's first
+   assembly refused a Catholic woman a vote while its 1649 act protected Christians.
+
+   CONTENT. No killing is drawn, on any side; "killed" for everyone. No coffles, chains or
+   overseers. The trade board is a room and its journal; Stono is a desk in Savannah, a month
+   later. Native and African people, and every enslaved person, speak only words a writer or a
+   clerk carried, and the card says who carried them.
+
+   DEPARTURES FROM THE DESIGN, and why:
+   - Scene 1's asked person is the clerk of the house (unnamed in the record), not Brent: her
+     words survive only in his third person. Brent is drawn and never voiced.
+   - Scene 3's closing card has Craven and Urmston, not Le Jau (not re-read).
+   - The board's cells are each filled once; Carolina's "who came" waits for the Stono account
+     ("a people brought from the Kingdom of Angola"), and Georgia's "who governed" for the
+     trustees' letter of 1740, which cites the rising. */
+
+/* ---- THE SCENES ---- */
+const SOU_DAYS=[
+  {where:"maryland",date:"November 1633 to March 1634 — St. Clement’s and Yaocomaco",need:["silent","goods","landing"],next:"The Comparison Board"},
+  {where:"stmarys",date:"July 1640 to April 1649 — St. Mary’s",need:["roll","brent","act"],next:"The Comparison Board"},
+  {where:"landoffice",date:"1663 to 1669 — Maryland and Carolina",need:["warrants","durante","constitutions"],next:"The Comparison Board"},
+  {where:"tradeboard",date:"June 1712 to 12 April 1715 — Charles Town",need:["complaints","skins","adjourn"],next:"The Comparison Board"},
+  {where:"ebenezer",date:"1666 to 1739 — Ebenezer, Georgia",need:["husk","sieves","claims"],next:"The Comparison Board"},
+  {where:"savannah",date:"June 1732 to June 1735 — Yamacraw Bluff",need:["presents","treaty","ban"],next:"The Comparison Board"},
+  {where:"letters",date:"December 1738 to March 1739 — Savannah",need:["copy","letters","reasons"],next:"The Comparison Board"},
+  {where:"desk",date:"9 October 1739 — Savannah, Oglethorpe’s desk",need:["fair","counts","law"],next:"Who Was Free?"}];
+const SOU_DUTY={
+  silent:"Read Lord Baltimore’s instructions",goods:"Lay out the goods",landing:"Read the two accounts",
+  roll:"Call the roll",brent:"Enter Mistress Brent’s request",act:"Read the Act concerning Religion",
+  warrants:"Enter the land warrants",durante:"Read the act of 1664",constitutions:"Read the Constitutions",
+  complaints:"Enter the complaint",skins:"Count the debt in skins",adjourn:"Enter the last day’s business",
+  husk:"Husk the rice",sieves:"Fill the sieves",claims:"Weigh the claims about rice",
+  presents:"Set out the presents",treaty:"Read the speeches",ban:"Read the act of 1735",
+  copy:"Copy the petitions",letters:"Read two accounts of Darien",reasons:"Sort the reasons",
+  fair:"Make the fair copy",counts:"Read the counts",law:"Read the law that followed"};
+function souW(){
+  S.works=S.works||{};
+  if(!S.works.ch14)S.works.ch14={day:0,did:{},board:{},marks:{},done:false};
+  if(!S.works.ch14.marks)S.works.ch14.marks={};
+  return S.works.ch14;
+}
+function souDay(){return SOU_DAYS[Math.min(souW().day,SOU_DAYS.length-1)];}
+function souNeed(){const w=souW(), sd=souDay();for(const k of sd.need)if(!w.did[k])return k;return null;}
+const SOU={later:[],t:0,gift:null,kegs:null,skins:null,sieves:null};
+
+/* ---- THE PEOPLE ---- (only those whose own words survive in the record read) */
+const SOU_PEOPLE=[
+  {id:"mdclerk",name:"The Clerk of the House",voice:"male",role:"clerk of Maryland’s assembly",eq:personEq("mdclerk",1648)},
+  {id:"izard",name:"Ralph Izard",voice:"male",role:"a commissioner of the Indian trade",eq:personEq("izard",1714)},
+  {id:"boltzius",name:"Johann Martin Boltzius",voice:"male",role:"pastor at Ebenezer",eq:personEq("boltzius",1739)},
+  {id:"oglethorpe",name:"James Oglethorpe",voice:"male",role:"a trustee of Georgia",eq:personEq("oglethorpe",1739)}];
+function souPerson(id){return SOU_PEOPLE.filter(function(p){return p.id===id;})[0];}
+/* the lines of those not asked: their own words. Oglethorpe's report of the buffalo skin, in
+   Jones p. 30 n. ("a curious account of the Indians, by an honorable person") */
+const SOU_SAYS={
+  "oglethorpe":[[],[],[],[],[],["“Tomo-chi-chi, in his first set speech to me, among other things, said: ‘Here is a little present.’”",
+    "“The feathers of the eagle were soft, and signified love; the buffalo skin was warm, and signified protection.”"],[],[]]};
+
+/* ---- THE FOUR WHO ARE ASKED ---- */
+const SOU_NPCS=[
+  {id:"mdclerk",name:"The Clerk of the House",voice:"male",role:"clerk of Maryland’s assembly",at:1,eq:personEq("mdclerk",1648),
+   /* AM i p. 215 */
+   done:"“The ffreemen assented unto it.”",
+   beats:[
+    {npc:"“Came Mrs Margarett Brent and requested to have vote in the howse for her selfe and voyce allso.” I wrote it so. Ask.",
+     choices:[
+      {t:"What did the governor answer?",wise:true,ink:8,
+       reply:"“The Gour denyed that the sd Mrs Brent should have any uote in the howse.” She protested every act of the session.",
+       insight:{g:"known",b:"Vote and Voyce",s:"St. Mary’s, January 1647/8: Margaret Brent asked a vote for herself, and one as Lord Baltimore’s attorney. The governor refused. Her words come only through the clerk."}},
+      {t:"Who sits in this house?",fair:true,ink:3,
+       reply:"Freemen, in person or by proxy. Walter Pakes came with twenty-nine proxies."},
+      {t:"So the house gave her a vote.",wise:false,
+       reply:"No. The governor denied it, and she protested all the proceedings of the session."}]}]},
+  {id:"izard",name:"Ralph Izard",voice:"male",role:"a commissioner of the Indian trade",at:3,eq:personEq("izard",1714),
+   /* JCIT p. 65 */
+   done:"“Adjurned till further Summons.”",
+   beats:[
+    /* JCIT p. 58: the board's letter to Samuel Hilden, 9 June 1714, Izard present */
+    {npc:"“We doe hereby order that you doe desist from any such violent Proceading.” Our letter to a trader, on the Pocotalligo King’s complaint. Ask.",
+     choices:[
+      {t:"Could the board make him stop?",wise:true,ink:8,
+       reply:"It could order, and sue a trader’s bond. Ten months later the war began at Pocotaligo, that king’s own town.",
+       insight:{g:"known",b:"Adjurned till Further Summons",s:"Charles Town, 1712 to 1715: the board of the Indian trade heard Native complaints through sworn interpreters and ordered traders to stop. Its last entry before the war: “Adjurned till further Summons.”"}},
+      {t:"How do the complaints reach you?",fair:true,ink:3,
+       reply:"Through interpreters sworn to the board, like Captain John Musgrove. The complainants’ own words are not written down."},
+      {t:"So the Yamasee had a seat on this board.",wise:false,
+       reply:"No. The board answered to the Commons House. Native people complained before it; none sat on it."}]}]},
+  {id:"boltzius",name:"Johann Martin Boltzius",voice:"male",role:"pastor at Ebenezer",at:4,eq:personEq("boltzius",1739),
+   /* CRG iii p. 431 */
+   done:"“We laugh at such a Talking.”",
+   beats:[
+    {npc:"“We Ministers of the Congregation at Ebenezer join with the Saltzburgers in this Petition.” Gronau and I signed below their names. Ask.",
+     choices:[
+      /* CRG iii p. 429 */
+      {t:"What did they write of rice?",wise:true,ink:8,
+       reply:"That they were told rice was “a Work only for Negroes, not for European People”. And: “we laugh at such a Talking”.",
+       insight:{g:"known",b:"We Laugh at Such a Talking",s:"Ebenezer, 1739: Salzburgers who grew rice themselves answered the claim that rice was work only for enslaved Africans. Their pastors, Boltzius and Gronau, joined the letter."}},
+      /* CRG iii p. 430 */
+      {t:"Did they want slaves brought in?",fair:true,ink:3,
+       reply:"No. They asked that none be brought near, saying “Houses and Gardens will be robbed always by them”. Their words, and their prejudice."},
+      {t:"So they asked for slaves to grow rice.",wise:false,
+       reply:"The opposite. They asked for more Salzburgers, for mills, and for rice sieves from Charles Town."}]}]},
+  {id:"oglethorpe",name:"James Oglethorpe",voice:"male",role:"a trustee of Georgia",at:7,eq:personEq("oglethorpe",1739),
+   /* CRG xxii.2 p. 231 */
+   done:"“Inserted in some News papers.”",
+   beats:[
+    {npc:"“I desire you would have ye Inclosed account of the Insurrection of the Carolina Negroes inserted in some News papers.” Copy it fair. Ask.",
+     choices:[
+      {t:"Who wrote the account?",wise:true,ink:8,
+       reply:"It names no writer and no eyewitness. It goes from Georgia, where slavery is banned, to London’s newspapers.",
+       insight:{g:"known",b:"Calling Out Liberty",s:"Stono, 9 September 1739: an account by an unnamed writer, sent by Oglethorpe for London’s newspapers. The only word it gives the rebels: “Liberty”."}},
+      {t:"What did the rebels call out?",fair:true,ink:3,
+       reply:"“Liberty”. They “marched on with Colours displayed, and two Drums beating”. No other word of theirs is written down."},
+      {t:"So this is the rebels’ own account.",wise:false,
+       reply:"No. No enslaved person’s account of Stono survives. This one was written from the planters’ side, for the press."}]}]}];
+function souSpeaker(id){
+  const day=souW().day;
+  for(const n of SOU_NPCS)if(n.id===id&&n.at===day)return n;
+  const set=SOU_SAYS[id], lines=set&&set[day];
+  if(!lines||!lines.length)return null;
+  return Object.assign({},souPerson(id),{lines:lines});
+}
+
+/* ---- THE RECORD THAT OPENS EACH SCENE ---- */
+const SOU_OPEN=[
+  /* HSMC student guide; Hall MD pp. 40-42 */
+  {t:"St. Clement’s Island",b:"<p class=\"note\">Slavery in law, a war, a slave rising, killings on every side, period words: told in the sources’ words, none shown.</p><p>Lord Baltimore’s Ark and Dove lie in the Potomac, with Governor Leonard Calvert.</p>"},
+  /* AM i p. 215 */
+  {t:"St. Mary’s",b:"<p>The freemen of Maryland meet in assembly with the governor. You write at the clerk’s table.</p>"},
+  /* Salley Car. p. 60; AM i p. 533 */
+  {t:"The Land Office",b:"<p>Carolina’s proprietors offer land for every person a settler brings. Maryland’s assembly passes an act on slaves. You keep the warrant book.</p>"},
+  /* Salley Car. p. 133; Rivers p. 232 */
+  {t:"Charles Town",b:"<p class=\"note\">Captives, a war and killings: in documents, none shown.</p><p>In 1674 the Westo traded “drest deare skins furrs and young Indian Slaves”, Henry Woodward wrote. In 1708 the governor counted 1,400 Native people held as slaves.</p>"},
+  /* CRG iii pp. 376, 428; Rivers p. 232 */
+  {t:"Ebenezer",b:"<p>Protestants from Salzburg farm here, by the Savannah River. Next door, Carolina “produces chiefly Rice”, the trustees write; in 1708 most of its people were enslaved.</p>"},
+  /* Avalon (the charter); Jones pp. 27-28 */
+  {t:"Yamacraw Bluff",b:"<p>In 1732 the King grants Georgia to trustees. In 1733 James Oglethorpe’s settlers come to Yamacraw Bluff, above the Savannah, where Tomochichi’s people live.</p>"},
+  /* Tailfer pp. 40-41 */
+  {t:"Savannah",b:"<p>December 1738. Savannah’s freeholders petition the trustees for land titles and for slaves. Other towns answer. You copy each letter into the book.</p>"},
+  /* CRG xxii.2 p. 231 */
+  {t:"Oglethorpe’s Desk",b:"<p class=\"note\">A slave rising and killings: in a document, none shown.</p><p>Savannah, October 1739. Oglethorpe has an account of the Stono rising, a month ago, to send to London.</p>"}];
+
+/* ---- THINGS TO LOOK AT ---- [id, label, x, z, title, body] per scene */
+const SOU_LOOKS=[
+  /* Hall MD pp. 41, 72; Hall MD p. 14 (the editor) */
+  [["tayac","The Tayac’s Answer",-34,24,"Two answers",priceCard("Andrew White, who was there","1634","the Piscataway ruler “gave leave to us to sett downe where we pleased”")+
+     priceCard("A Relation of Maryland","London, 1635","“he would not bid him goe, neither would hee bid him stay, but that he might use his owne discretion”")+"<p>One answer, in two English versions, a year apart.</p>"],
+   ["sailed","Who Sailed",34,24,"Catholic and Protestant",leafCard("Clayton Hall, an editor","1910; he was not there","Most gentlemen were Catholic, most servants Protestant, “and these being the more numerous, the larger number of the whole ship's company was of the latter faith.”")+"<p>An editor’s summary, not a passenger list.</p>"]],
+  /* the MSA biography of de Sousa (2003); Hall MD p. 131 */
+  [["desousa","Mathias de Sousa",-20,14,"A servant, then a freeman",leafCard("The Maryland State Archives","2003","A Jesuit record calls him “Mathias Sousa, a Molato”. “Mathius was an indentured servant who worked for Father Andrew White.” “In March 1641, Mathius was elected as a representative”.")+"<p>The page’s own title says 1642. What “Molato” meant is open.</p>"],
+   ["baptism","The Tayac’s Baptism",20,14,"Charles and Mary",leafCard("The Jesuits’ annual letter","1640, tr.","“To the Emperor, who was called Chitomachon before, was given the name of Charles; to his wife that of Mary.” The governor was present.")+"<p>A conversion, in the Jesuits’ telling. No Piscataway account of it survives.</p>"]],
+  /* AM i p. 534; Avalon, arts. 22-23 and its note */
+  [["marriage","The Marriage Clause",-12,-11,"The lawmakers’ words",leafCard("Maryland’s act of 1664","1664","A freeborn woman who married an enslaved man would serve his master for her husband’s life, and their children would be slaves.",
+     "The lawmakers wrote of English women who, “forgettfull of their free Condicon and to the disgrace of our Nation doe intermarry with Negro Slaues”, and of “shamefull Matches”.")+"<p>Their words. Such marriages happened often enough for a law.</p>"],
+   ["leet","Leet-men",12,-11,"White tenants, bound",leafCard("The Fundamental Constitutions","1669","“All the children of leet-men shall be leet-men, and so to all generations.”")+"<p>Bound tenants, on paper. The scheme “was only partially put into operation”, an editor notes.</p>"]],
+  /* JCIT pp. 53, 55; p. 47 */
+  [["chestowee","Chestowee",-20,12,"A brave Parcel of Slaves",leafCard("Benjamin Clea, sworn before the board","May 1714","Mr. Long, and he thinks Mr. Wiggen, “told him there would be a brave Parcel of Slaves if Chestowe were cut off.”")+"<p>The board found Long guilty, took both men’s licences, and ordered the captive Yuchi returned to their people.</p>"],
+   ["free","Free or Slave",22,2,"Case by case",leafCard("The board’s journal","July 1713","Captain Musgrove reported that the trader John Wright “had declared Ahele, a Creek Indian, free and after sold her”.")+"<p>An accusation, summoned for a hearing. Who was free was argued case by case.</p>"]],
+  /* Salley Car. p. 69; Harvard UP's page for Black Rice */
+  [["horne","Proper for Rice",-34,24,"A promoter, 1666",leafCard("Horne’s Brief Description of Carolina","1666","“The Meadows are very proper for Rice … and may many of them be made to overflow at pleasure with a small charge.”")+"<p>Written to bring settlers.</p>"],
+   ["carney","Black Rice",34,24,"A book’s argument",leafCard("The publisher of Judith Carney’s Black Rice","2001","“The standard belief that Europeans introduced rice to West Africa and then brought the knowledge of its cultivation to the Americas is a fundamental fallacy”.")+"<p>Other historians answer her. The dispute is open.</p>"]],
+  /* NGE (Jackson; Frank); Jones pp. 28, 31 */
+  [["debtors","A Debtors’ Colony?",34,26,"Poor, not debtors",leafCard("Edwin Jackson, New Georgia Encyclopedia","today","“not one formerly jailed debtor was among the first colonists selected.”")+"<p>The charter says “poor subjects”. “Debtor” is not among its reasons.</p>"],
+   ["musgrove","Mary Musgrove",-40,22,"The interpreter",leafCard("Andrew Frank, New Georgia Encyclopedia","today","“Known as Coosaponakeesa among the Muscogee (Creek) Indians”, “She served as Oglethorpe’s principal interpreter from 1733 until 1743”.")+"<p>The 1733 report names her husband, John Musgrove, and Mr. Wiggan as interpreters. Her own words were not read.</p>"],
+   ["yamasees","Recall the Yamasees",30,-14,"A Creek request",leafCard("Yahou-Lakee of Coweta, in the English report","May 1733","“We pray you to recall the Yamasees that they may be buried in peace amongst their ancestors”.")+"<p>Eighteen years after the war, through interpreters.</p>"]],
+  [],
+  /* CRG xxii.2 pp. 233-234; SC Encyclopedia (Smith) */
+  [["also","What Else It Says",-30,24,"Three things to notice",leafCard("The account Oglethorpe sent","1739","Wallace was spared, “a good Man and kind to his Slaves”. Mr. Rose “was saved by a Negroe, who having hid him went out and pacified the others”.")+
+     "<p>And it was Sunday, “the day the Planters allow them to work for themselves”.</p>"],
+   ["kongo","Angola or Kongo",30,24,"Two names",priceCard("The account","1739","“Some Angola Negroes assembled”")+priceCard("Mark M. Smith, a historian","today","“several of the insurgents originated from the heavily Catholic Kongo”")+"<p>The account’s word, and a historian’s reading.</p>"]]];
+
+/* ---- THE BOARD'S LAST THREE COLUMNS ---- each cell: res, the fixed line for the right
+   choice; alt, two wrong lines with the one fixed line that explains each */
+Object.assign(COMPARE_CELLS,{
+  /* Hall MD p. 5 */
+  "md.why":{q:"first and especially, in order that he may carry thither … the light of the Gospel",who:"The Account of the Colony, for Lord Baltimore",when:"1633 (tr.)",there:"Written before sailing",
+    res:"The gospel first, then “gain and honor”, then the King’s empire: three reasons in one sentence.",
+    alt:[["“to be silent upon all occasions of discourse concerning matters of Religion” (Baltimore, 1633)","An order for the voyage, not a reason for it."],
+         ["“Tobacco onely was the buisines” (Butler, 1623)","Jamestown, ten years before."]]},
+  /* Hall MD p. 42 */
+  "md.land":{q:"we bought the space of thirtie miles of ground of them, for axes, hoes, cloth and hatchets",who:"Andrew White, a Jesuit",when:"1634",there:"He was there",
+    res:"White says bought; A Relation (1635) says the Yaocomaco shared their town. No Yaocomaco account survives.",
+    alt:[["“the light of the Gospel” (the Account, 1633)","A reason for coming, not whose land it was."],
+         ["“That which is common to all is proper to none” (1629)","Massachusetts Bay’s argument, not Maryland’s."]]},
+  /* AM i p. 215 */
+  "md.gov":{q:"The Gour denyed that the sd Mrs Brent should have any uote in the howse",who:"The assembly’s clerk",when:"21 January 1647/8",there:"The clerk was there",
+    res:"Freemen voted, in person or by proxy. A woman who asked for a vote, twice over, was refused.",
+    alt:[["“to be silent upon all occasions of discourse” (Baltimore, 1633)","An order about religion on the voyage, not who voted."],
+         ["“his sumons all over the Country … for the election of Burgesses” (Pory, 1619)","Jamestown’s assembly, not Maryland’s."]]},
+  /* the MSA biography (2003) */
+  "md.came":{q:"brought along with him nine servants, including Mathius",who:"The Maryland State Archives, of Andrew White",when:"2003",there:"A modern archive’s account",
+    res:"Gentlemen brought servants. One of White’s, Mathias de Sousa, “a Molato”, later sat in the assembly.",
+    alt:[["“the light of the Gospel” (the Account, 1633)","Why they came, not who."],
+         ["“men of eighteen different languages” (Jogues)","New Netherland, 1643."]]},
+  /* AM i p. 533 */
+  "md.worked":{q:"all Negroes or other slaues already within the Prouince",who:"Maryland’s act of 1664",when:"1664",there:"The colony’s own law",
+    res:"By 1664 enslaved Africans worked in Maryland, in numbers its assembly made laws for.",
+    alt:[["“we bought the space of thirtie miles” (White, 1634)","Whose land, not who worked it."],
+         ["“Our principall wealth … consisteth in servants” (Pory, 1619)","Jamestown, not Maryland."]]},
+  "md.free":{q:"shall serue Durante Vita",who:"Maryland’s act of 1664",when:"1664",there:"The colony’s own law",
+    res:"For life, and passed on to children “as their ffathers were”.",
+    alt:[["“their children … shall be bound … as Slaves” (New Netherland, 1644)","New Netherland’s grant, twenty years earlier."],
+         ["“The Gour denyed … any uote” (St. Mary’s, 1648)","Who voted, not who was free."]]},
+  /* Avalon, art. 110 */
+  "car.free":{q:"Every freeman of Carolina shall have absolute power and authority over his negro slaves",who:"The Fundamental Constitutions, for the Proprietors",when:"1669",there:"Written in London",
+    res:"“Absolute power”, whatever the slave’s religion. Drafted for the Proprietors; John Locke, Shaftesbury’s secretary, had a hand in it.",
+    alt:[["“All the children of leet-men shall be leet-men” (1669)","White tenants bound on paper; the scheme was only partly used."],
+         ["“There shall never be any bond slaverie” (Massachusetts, 1641)","Massachusetts Bay’s law, with its own exception."]]},
+  /* Salley Car. p. 133 */
+  "car.why":{q:"they truck drest deare skins furrs and young Indian Slaves",who:"Henry Woodward, Shaftesbury’s agent",when:"1674",there:"He was there",
+    res:"Trade: skins and captives, in one list, by the proprietors’ own agent.",
+    alt:[["“absolute power and authority over his negro slaves” (1669)","A law about slaves, not what drew the traders."],
+         ["“the light of the Gospel” (Maryland, 1633)","Maryland’s Account, not Carolina’s."]]},
+  /* JCIT p. 42 */
+  "car.land":{q:"they told him they could doe Nothing in itt without the Consent of their Townes",who:"The board’s journal, by a sworn interpreter",when:"March 1713",there:"The board was there",
+    res:"The Yamasee towns decided their land together, by the only record of it: an interpreter, under oath.",
+    alt:[["“some of those vast & unpeopled countries of America” (Bradford)","Plymouth’s view, not the Yamasee towns’."],
+         ["“we bought the space of thirtie miles” (White, 1634)","Maryland’s landing."]]},
+  /* JCIT p. 58 */
+  "car.gov":{q:"Complaint being made before us by the Pocotalligo King",who:"The board of the Indian trade",when:"9 June 1714",there:"The board was there",
+    res:"A board of the Commons House ruled on Native complaints. It could order more than enforce. No Native person sat on it.",
+    alt:[["“that we may avoid erecting a numerous democracy” (1669)","The Proprietors’ plan on paper, not who ruled on the trade."],
+         ["“unto which we promise all due submission and obedience” (Plymouth)","Plymouth’s compact, not Carolina’s board."]]},
+  /* Rivers p. 232 */
+  "car.worked":{q:"1800 negro men slaves, 1,100 women negro slaves, 500 Indian men slaves, 600 Indian women slaves",who:"Governor Johnson and his council, as Rivers printed it",when:"1708",there:"The colony’s own count",
+    res:"With their children, 5,500 of the 9,580 people counted were enslaved: Africans, and Native people taken in war.",
+    alt:[["“Work of Hardship proper for Negroes” (the trustees, 1741)","A claim made in London, not a count."],
+         ["“The women now wente willingly into ye feild” (Bradford)","Plymouth, not Carolina."]]},
+  /* CRG iii p. 429 */
+  "ga.worked":{q:"several People of us have had, in the last Harvest, a greater Crop of Rice than they wanted for their own Consumption",who:"The Salzburgers of Ebenezer",when:"13 March 1739",there:"They grew it",
+    res:"Settlers worked their own fields, rice among them, where slavery was banned.",
+    alt:[["“Work of Hardship proper for Negroes” (the trustees, 1741)","The trustees’ claim, about Carolina. The Salzburgers answered it."],
+         ["“Our principall wealth … consisteth in servants” (Pory, 1619)","Jamestown, not Georgia."]]},
+  /* Avalon, the charter of Georgia */
+  "ga.why":{q:"many of our poor subjects are, through misfortunes and want of employment, reduced to great necessity",who:"The charter of Georgia",when:"9 June 1732",there:"The Crown’s grant",
+    res:"The charter says “poor subjects”, not debtors; and a frontier for South Carolina.",
+    alt:[["“near the tombs of my ancestors” (Tomochichi, 1733)","Why Tomochichi came, in the English report; not why the colony began."],
+         ["“Tobacco onely was the buisines” (Butler, 1623)","Jamestown."]]},
+  /* Jones p. 28 */
+  "ga.land":{q:"He first claimed all the land to the southward of the river Savannah, as belonging to the Creek Indians",who:"An English report of Oueekachumpa’s speech",when:"May 1733",there:"Through interpreters",
+    res:"Creek land, the speaker said, given up where “they did not use themselves”. Interpreted, then printed in London.",
+    alt:[["“many of our poor subjects” (the charter, 1732)","Why Georgia was granted, not whose land it was."],
+         ["“Some Kings have sold” (Penn, 1683)","Pennsylvania."]]},
+  /* CRG iii p. 376 */
+  "ga.came":{q:"the Poor, who should be sent from hence, and the Foreign persecuted Protestants",who:"The trustees’ Account",when:"London, 1741",there:"Written in London",
+    res:"England’s poor, and Protestants driven from Europe, the Salzburgers among them.",
+    alt:[["“so many to each white Man” (Savannah, 1738)","What Savannah asked for, not who came."],
+         ["“The People are a Collection of divers Nations in Europe” (Penn, 1685)","Pennsylvania."]]},
+  /* CRG i p. 50 (the act's title) */
+  "ga.free":{q:"Prohibiting the Importation and use of Black Slaves or Negroes",who:"Georgia’s act, from the trustees",when:"1735",there:"Made in London",
+    res:"Slavery banned from 24 June 1735, for defence. The ban held until 1 January 1750 (Old Style; 1751 in our calendar).",
+    alt:[["“shocking to human Nature” (Darien, 1739)","A petition’s plea, not the law."],
+         ["“shall serue Durante Vita” (Maryland, 1664)","Maryland."]]},
+  /* CRG xxii.2 p. 233 */
+  "car.came":{q:"Amongst the Negroe Slaves there are a people brought from the Kingdom of Angola in Africa",who:"An account sent by Oglethorpe, its writer unknown",when:"1739",there:"No eyewitness named",
+    res:"Brought, not come: enslaved Africans, some from Angola, the account says. Historians read Kongo.",
+    alt:[["“so many to each white Man” (Savannah, 1738)","Georgia’s petition."],
+         ["“Edward Doty & Edward Litster, the servants of Mr. Hopkins”","Plymouth’s list."]]},
+  /* Tailfer p. 60 */
+  "ga.gov":{q:"they cannot and will not break into the Constitution of the Province by such an Introduction of Slavery in Blacks",who:"The trustees, to settlers at Savannah, as Tailfer printed it",when:"London, 25 March 1740",there:"Written in London",
+    res:"The trustees in London decided; settlers could petition. The rising in Carolina, they wrote, confirmed them.",
+    alt:[["“The Want of the Use of Negroes, with proper Limitations” (Savannah, 1738)","Settlers asking, not deciding."],
+         ["“his sumons … for the election of Burgesses” (Pory, 1619)","Jamestown’s assembly, not Georgia’s."]]}});
+/* the sentences: 22 words or fewer (owner, 27 Nov), the first supported by the board */
+Object.assign(COMPARE_SENT,{
+  sou0:{o:[["Like Plymouth, Maryland named the gospel as a reason; unlike Plymouth, its first writer says the land was bought.",
+            "Supported: the Account puts the gospel first, beside gain and empire. White, who was there, says “bought”; A Relation says shared."],
+           ["Like Massachusetts Bay, Maryland was a refuge where Catholics worshipped openly, because Baltimore said so.",
+            "Baltimore told Catholics “to be silent upon all occasions of discourse concerning matters of Religion”. No text read calls Maryland a refuge."],
+           ["Unlike every other colony, Maryland took its land by force, because the Yaocomaco fought the landing.",
+            "Both English accounts describe goods given and a town shared. Neither describes a fight. No Yaocomaco account survives."]]},
+  sou1:{o:[["Like Massachusetts Bay, Maryland limited who voted; unlike the Bay, it asked no church membership, but refused Margaret Brent.",
+            "Supported: the Bay’s freemen were church members; Maryland’s voted in person or by proxy, and the governor denied Brent a vote."],
+           ["Like Jamestown, Maryland let every settler vote, servants and women too, because freemen voted by proxy.",
+            "The governor denied Margaret Brent “any uote in the howse”. A proxy carried an absent freeman’s vote, not a servant’s."],
+           ["Unlike Plymouth, Maryland protected every faith in 1649, because it was a Catholic colony.",
+            "The act protected those “professing to beleive in Jesus Christ”, and punished denying the Trinity with death."]]},
+  sou2:{o:[["Like New Netherland’s grant, Maryland’s 1664 act bound children; unlike the grant, it freed no parent and made slavery lifelong.",
+            "Supported: in 1644 eleven parents were freed and their children bound; in 1664 slavery was “Durante Vita”, children slaves “as their ffathers were”."],
+           ["Like Massachusetts Bay, Carolina allowed slavery only for captives of just wars, because its Constitutions said so.",
+            "Article 110 gives every freeman “absolute power and authority over his negro slaves”. It names no exception."],
+           ["Unlike Maryland, Carolina freed any slave who became a Christian, because slaves could join a church.",
+            "Article 107 let slaves join a church, but “no slave shall hereby be exempted from that civil dominion his master hath over him”."]]},
+  sou3:{o:[["Like the Twelve Men, Native complainants in Carolina could speak but not decide; unlike Kieft, the board answered with orders.",
+            "Supported: the Twelve Men advised and were ignored; the board heard complaints through sworn interpreters and gave orders. No Native person sat on it."],
+           ["Like Penn, Carolina’s traders took no captives, because the board protected its Native allies.",
+            "Woodward listed “young Indian Slaves” beside skins; the journal records people taken for traders’ debts."],
+           ["Unlike Maryland, Carolina gave its Native allies a vote, because their kings sat at the board’s table.",
+            "The board answered to the Commons House. Native complainants spoke through sworn interpreters; none sat or voted."]]},
+  sou4:{o:[["Like Jamestown, Carolina was worked by bound labour; unlike Carolina’s planters, Georgia’s Salzburgers grew their rice themselves.",
+            "Supported: Pory’s servants; the 1708 count of enslaved Africans and Native people; the Salzburgers’ own harvest."],
+           ["As the trustees said, rice was work only Africans could do, because white settlers could not grow it.",
+            "The Salzburgers grew more rice than they needed, and wrote “we laugh at such a Talking”."],
+           ["Unlike Carolina, Georgia proved that Africans brought rice growing, because the historians agree.",
+            "The historians do not agree: Africans as “prime movers”, or a “hybrid, synthetic” regime. The dispute is open."]]},
+  sou5:{o:[["Like Maryland, Georgia began on land its people agreed to part with; unlike Maryland, its charter named poverty, not the gospel.",
+            "Supported: White’s “bought” and Oueekachumpa’s “gave them up freely”, both in English words; the Account’s gospel, the charter’s “poor subjects”."],
+           ["Like Massachusetts Bay, Georgia was a debtors’ colony, because its charter sent debtors from prison.",
+            "The charter says “poor subjects”. “Not one formerly jailed debtor was among the first colonists selected”, the New Georgia Encyclopedia says."],
+           ["Unlike Carolina, Georgia let every faith worship, Catholics included, because its charter gave liberty of conscience.",
+            "The charter gave a free exercise of religion to all “except papists”."]]},
+  sou6:{o:[["Like Maryland, Georgia settled slavery by law; unlike Maryland, Georgia’s law banned it, for defence more than conscience.",
+            "Supported: Maryland’s “Durante Vita”, and Georgia’s ban for defence. Of the reasons copied, only Darien’s fifth calls slavery itself wrong."],
+           ["Like Pennsylvania’s Quakers, Georgia’s trustees banned slavery because they believed it was a sin.",
+            "Every reason the trustees printed is military, economic or social. None says slavery is wrong."],
+           ["Unlike Carolina, every Georgia town wanted slaves, because rice needed them.",
+            "Savannah asked for slaves; Darien and Ebenezer asked the opposite. Ebenezer grew its own rice."]]},
+  sou7:{o:[["Like Carolina’s planters, Georgia’s trustees feared a rising; unlike Carolina, the trustees answered it by keeping slavery out.",
+            "Supported: the trustees’ letter of 1740, “confirm’d” by “the Insurrection of the Negroes”; Carolina’s new law of the same year."],
+           ["Like Jamestown’s servants, Carolina’s enslaved people never resisted, because the law kept them obedient.",
+            "The account: they marched “calling out Liberty”, with drums and colours. The 1740 law was written after it."],
+           ["Unlike Maryland, Carolina pardoned every Stono rebel, because the account says they were forced.",
+            "Only those “forced” and “not concerned in the Murders & Burnings were pardoned”. Others were shot, the account says."]]}});
+/* which cells each scene fills on its way out, and its sentence */
+const SOU_BOARD=[{cells:["md.why","md.land"],sent:"sou0"},{cells:["md.gov","md.came"],sent:"sou1"},
+  {cells:["md.worked","md.free","car.free"],sent:"sou2"},{cells:["car.why","car.land","car.gov"],sent:"sou3"},
+  {cells:["car.worked","ga.worked"],sent:"sou4"},{cells:["ga.why","ga.land"],sent:"sou5"},
+  {cells:["ga.came","ga.free"],sent:"sou6"},{cells:["car.came","ga.gov"],sent:"sou7"}];
+
+/* ---- THE REASONS, SORTED (scene 6) ---- each row's line is fixed, so each can be recorded */
+const SOU_REASON_KEYS=["Military","Economic","Social","Moral"];
+const SOU_REASONS=[
+  /* CRG iii p. 377 */
+  {t:"“a white Man, who would be of Security to the Province” (the trustees)",k:0,why:"Military: a settler who could fight, in place of a slave to be guarded."},
+  {t:"“the white Man, by having a Negro Slave, would be less disposed to labour himself” (the trustees)",k:2,why:"Social: the trustees feared slavery would change how white settlers lived and worked."},
+  /* CRG iii p. 378 */
+  {t:"“all the small Properties would be swallowed up” (the trustees)",k:1,why:"Economic: debts to slave merchants would hand small farms to rich planters."},
+  /* CRG iii p. 427, the 1741 print */
+  {t:"“The Nearness of the Spaniard, who have proclaimed Freedom to all Slaves who run away” (Darien)",k:0,why:"Military: Spanish Florida, close by, promised freedom to runaways."},
+  {t:"“becoming Debtors for Slaves … would inevitably ruin the poor Master” (Darien)",k:1,why:"Economic: a poor man in debt for a slave who ran away or died was ruined."},
+  {t:"“It’s shocking to human Nature, that any Race of Mankind, and their Posterity, should be sentenced to perpetual Slavery” (Darien)",k:3,why:"Moral: the only reason here that calls slavery itself wrong. Whether the Highlanders meant it, or were persuaded, was argued at the time."},
+  /* CRG iii p. 430 */
+  {t:"“Houses and Gardens will be robbed always by them” (Ebenezer)",k:2,why:"Social: a prejudice against Africans, given as a reason to keep slavery out."},
+  /* Tailfer pp. 40-41 */
+  {t:"“The Want of the Use of Negroes, with proper Limitations” (Savannah, for slavery)",k:1,why:"Economic, and for slavery: Savannah wanted enslaved workers, “so many to each white Man”."}];
+
+function souDone(id){
+  const w=souW();
+  if(!w.did[id]){w.did[id]=true;S.ink+=6;updateInk();checkpoint("ch14-"+id);}
+  for(let i=interactables.length-1;i>=0;i--){
+    const it=interactables[i];
+    if(it.action==="sou"&&it.data&&it.data.kind===id){if(it.el)it.el.style.display="none";interactables.splice(i,1);}
+  }
+  for(let i=SOU.later.length-1;i>=0;i--)if(SOU.later[i].data.after===id){
+    const it=SOU.later[i], el=document.createElement("div");el.className="lbl";
+    el.innerHTML="<b>"+it.label+"</b><i></i>";$("labels").appendChild(el);it.el=el;
+    interactables.push(it);SOU.later.splice(i,1);}
+  const nx=interactables.filter(function(it){return it.id==="next";})[0];
+  if(nx)nx.data.verb=souNeed()?"Not yet":"Go on";
+  updateGuide();
+}
+function souQuiz(kick,title,body,opts,id,after){
+  sickSheet(kick,title,body,shuffle(opts.map(function(o){return {t:o[0],fn:function(){
+    souDone(id);
+    if(o===opts[0])fortResult(o[1],o[2],["+6 Ink"],after||null);
+    else{result(false,o[1],"",["+6 Ink"],after||null);$("resBody").innerHTML=o[2];}}};})));
+}
+/* a sheet of rows, each marked with one of `keys`; marks kept in w.marks[id] */
+function souRows(kick,title,intro,rows,keys,id,done){
+  const w=souW();
+  w.marks[id]=(w.marks[id]&&w.marks[id].length===rows.length)?w.marks[id]:rows.map(function(){return null;});
+  let h=intro;
+  rows.forEach(function(r,i){
+    h+="<div class=\"captRow\"><span>"+r.t+"</span> <div class=\"captBtns\">"+keys.map(function(v,k){
+      return "<button class=\"btn small\" data-sr=\""+i+"\" data-v=\""+k+"\">"+v+"</button>";}).join(" ")+" <b class=\"captMark\" id=\"sr"+i+"\"></b></div></div>";});
+  sickSheet(kick,title,h,[{t:"Done",fn:function(){
+    const m=w.marks[id];
+    if(m.some(function(x){return x==null;})){toast("Mark every row first.");setTimeout(function(){souRows(kick,title,intro,rows,keys,id,done);},50);return;}
+    done(m.filter(function(x,i){return x===rows[i].k;}).length);}}]);
+  rows.forEach(function(r,i){if(w.marks[id][i]!=null)$("sr"+i).textContent=keys[w.marks[id][i]];});
+  document.querySelectorAll("#sickBody [data-sr]").forEach(function(b){
+    b.onclick=function(){const i=+b.dataset.sr;w.marks[id][i]=+b.dataset.v;$("sr"+i).textContent=keys[w.marks[id][i]];saveGame();};});
+}
+/* a duty that is work first: the player does it, then the page */
+function souWork(d,task,secs,narr,opt,then){
+  d.worked=true;priceFace(d,d.reach||2.6);
+  playerDoes(task,secs,narr,Object.assign({},opt||{},d.cam?{cam:d.cam}:{}),function(){if(then)then();souAct(d);});
+}
+
+function souAct(d){
+  const w=souW();
+  if(d.kind==="next"){souNext();return;}
+  if(d.kind==="record"){if(w.done)showEnding("ch14");else openReckoning();return;}
+  if(d.kind==="look"){
+    const L=(SOU_LOOKS[w.day]||[]).filter(function(a){return a[0]===d.id;})[0];
+    if(L){w.did["look_"+L[0]]=true;saveGame();fortResult(L[4],L[5],[]);}
+    return;
+  }
+  /* 0 · the landing */
+  if(d.kind==="silent"){
+    /* Hall MD p. 16, Baltimore's instructions, 13 November 1633 */
+    souQuiz("Cowes · 13 November 1633","To be silent",
+      leafCard("Lord Baltimore, to the governor and commissioners","London, 1633; he stayed in England","No “offence to be given to any of the Protestants”; Catholics “to be silent upon all occasions of discourse concerning matters of Religion”.")+
+      "<p>Why would a Catholic lord order this?</p>",
+      [["To give the Protestants no offence","No offence","<p>Most servants aboard were Protestant, and complaints could reach Virginia or England. Catholic worship was to be “as privately as may be”.</p>"],
+       ["Because Catholics were the majority","Not the majority","<p>Most gentlemen were Catholic; the servants, “the more numerous”, were mostly Protestant, an editor sums up.</p>"],
+       ["To keep the voyage secret from Spain","Not Spain","<p>The order names the Protestants, and complaints “in Virginea or in England”. It says nothing of Spain.</p>"]],"silent");
+    return;
+  }
+  if(d.kind==="goods"&&!d.worked){
+    souWork(d,"lift",3.5,"English cloth, axes, hoes and knives, carried up and laid before the werowance.",{load:"chest"},function(){
+      if(SOU.gift){SOU.gift.drop();SOU.gift.drop();SOU.gift.drop();}});
+    return;
+  }
+  if(d.kind==="goods"){
+    souDone("goods");
+    /* Hall MD p. 73 */
+    fortResult("The Presents",leafCard("A Relation of Maryland","London, 1635, for the proprietor","“To make his entry peaceable and safe”, the governor gave “some English Cloth … Axes, Howes, and Knives”. They “freely gave consent” that the English dwell “in one part of their Towne”.")+
+      "<p>They would leave the whole town after harvest, A Relation says.</p>",["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="landing"){
+    /* Hall MD pp. 42, 73; the HSMC student guide */
+    souQuiz("St. Mary’s · March 1634","Three verbs",
+      priceCard("Andrew White, a Jesuit, who was there","1634, to investors and superiors","“we bought the space of thirtie miles of ground of them, for axes, hoes, cloth and hatchets”")+
+      priceCard("A Relation of Maryland","London, 1635, for the proprietor","the Yaocomaco “freely gave consent” that the English dwell “in one part of their Towne”")+
+      priceCard("Historic St. Mary’s City","today","“The Yacocomico Indians allowed the English to use their land and houses”")+
+      "<p>Bought, shared, allowed. Why might the accounts differ?</p>",
+      [["Each was written for its own readers","Their readers","<p>White wrote to investors; A Relation was printed to draw settlers. The Yaocomaco left no account of what they agreed to.</p>"],
+       ["They describe two different landings","One landing","<p>All three describe the English settling at the Yaocomaco town, which became St. Mary’s, in March 1634.</p>"],
+       ["A Yaocomaco wrote one of them","None of them","<p>No Yaocomaco account survives. All three are English, two of 1634–35 and one of today.</p>"]],"landing");
+    return;
+  }
+  /* 1 · st. mary's */
+  if(d.kind==="roll"&&!d.worked){
+    souWork(d,"write",4,"The roll: sixteen freemen named, “or any Ten of them”, and the proxies.",{});
+    return;
+  }
+  if(d.kind==="roll"){
+    /* AM i p. 215 */
+    souQuiz("St. Mary’s · January 1647/8","The roll",
+      leafCard("The assembly’s clerk","21 January 1647/8","Sixteen freemen named, “or any Ten of them”. And: “Walter Pakes appeared wth 29 proxies”.")+
+      "<p>Who had a say in this house?</p>",
+      [["Freemen, in person or by proxy","Freemen","<p>A proxy carried an absent freeman’s vote. Pakes carried twenty-nine. Servants had none.</p>"],
+       ["Every settler, servant or free","Not servants","<p>The house was the freemen, “or any Ten of them”, with the governor. Servants did not sit.</p>"],
+       ["The governor alone","Not alone","<p>The freemen sat and assented to acts. The governor could still refuse a request, as he did that day.</p>"]],"roll");
+    return;
+  }
+  if(d.kind==="brent"&&!d.worked){
+    souWork(d,"write",4,"Enter Mistress Brent’s request, and the governor’s answer.",{});
+    return;
+  }
+  if(d.kind==="brent"){
+    /* AM i p. 215 */
+    souQuiz("St. Mary’s · 21 January 1647/8","Vote and voyce",
+      leafCard("The assembly’s clerk","1647/8; spelling as printed","Mrs Margarett Brent “requested to have vote in the howse for her selfe and voyce allso”. “The Gour denyed that the sd Mrs Brent should have any uote in the howse.”")+
+      "<p>On what grounds did she ask for two votes?</p>",
+      [["Her own, and as Baltimore’s attorney","Two grounds","<p>One vote for herself, one as the proprietor’s attorney. Refused, she protested every act of the session.</p>"],
+       ["As the widow of a councillor","Not that","<p>The clerk gives two grounds: herself, and the court’s order making her Lord Baltimore’s attorney.</p>"],
+       ["As the colony’s only Catholic woman","Not that","<p>The clerk names no religion. She asked as herself, and as Lord Baltimore’s attorney.</p>"]],"brent");
+    return;
+  }
+  if(d.kind==="act"){
+    /* AM i pp. 244-246 */
+    souQuiz("St. Mary’s · 21 April 1649","An Act concerning Religion",
+      leafCard("The assembly’s act","1649; spelling as printed, abbreviations expanded","No one “professing to beleive in Jesus Christ” to be “any waies troubled” for religion. Denying the Trinity: “punished with death”. Calling a man “puritan” in reproach: ten shillings.")+
+      "<p class=\"note\">“Toleration Act” is a later name.</p><p>Who did the act protect?</p>",
+      [["Christians","Christians","<p>Catholic and Protestant alike, by the list of forbidden insults. Anyone who denied the Trinity could be put to death.</p>"],
+       ["People of every faith","Not every faith","<p>Only those “professing to beleive in Jesus Christ”. Denying the Trinity was punished with death.</p>"],
+       ["Catholics only","Not only Catholics","<p>The act forbids calling anyone “popish prest” or “puritan” in reproach: it protects Protestants too.</p>"]],"act");
+    return;
+  }
+  /* 2 · the land office */
+  if(d.kind==="warrants"&&!d.worked){
+    souWork(d,"write",4.5,"Acres for each servant, each wife, each child, and each “Negro-Man or Slave”.",{});
+    return;
+  }
+  if(d.kind==="warrants"){
+    /* Salley Car. p. 60 (the Proposals, XII and XIII); p. 71 (Horne) */
+    souQuiz("Carolina · 1663","The warrant book",
+      priceCard("The Proposals, XII","1663","a woman-servant’s ten acres “to become due at the Expiration of the first Term of their servitude”")+
+      priceCard("The Proposals, XIII","1663","“To the Owner of every Negro-Man or Slave, brought thither to settle within the first year, twenty acres”")+
+      "<p>Whom does the land for an enslaved man reward?</p>",
+      [["His owner, on arrival","The owner","<p>A servant earned land when her service ended; an owner earned land the day a slave was brought.</p>"],
+       ["The man himself, when freed","Not him","<p>Article XIII gives the acres “To the Owner”. Nothing in it frees him.</p>"],
+       ["The Lords Proprietors","Not them","<p>The Proprietors granted the land. The acres went “To the Owner”.</p>"]],"warrants");
+    return;
+  }
+  if(d.kind==="durante"){
+    /* AM i p. 533 */
+    souQuiz("St. Mary’s · September 1664","Durante Vita",
+      leafCard("An Act Concerning Negroes & other Slaues","Maryland, 1664; spelling as printed","All slaves, now and to come, “shall serue Durante Vita And all Children born of any Negro or other slaue shall be Slaues as their ffathers were”.")+
+      "<p>“Durante Vita”: for the length of life. What did the act make slavery?</p>",
+      [["Lifelong, and passed to children","For life","<p>For life, and inherited through the father. The title of this chapter is its two words.</p>"],
+       ["Service for seven years","Not seven years","<p>A servant served a term. The act says “Durante Vita”, for life.</p>"],
+       ["A punishment for crime","Not for crime","<p>It names no crime. It binds “all Negroes or other slaues”, and their children.</p>"]],"durante");
+    return;
+  }
+  if(d.kind==="constitutions"){
+    /* Avalon, the Fundamental Constitutions, arts. 107, 110 */
+    souQuiz("London · 1669","Absolute power",
+      leafCard("The Fundamental Constitutions of Carolina","1669, for the Proprietors","Article 110: “Every freeman of Carolina shall have absolute power and authority over his negro slaves, of what opinion or religion soever.”",
+        "Article 107: slaves may join any church, “But yet no slave shall hereby be exempted from that civil dominion his master hath over him”.")+
+      "<p class=\"note\">Drafted for the Proprietors; John Locke, Shaftesbury’s secretary, had a hand in it.</p><p>Why add “of what opinion or religion soever”?</p>",
+      [["Baptism would not free a slave","Not by baptism","<p>Article 107 let slaves join a church, and kept them under their master’s “civil dominion”.</p>"],
+       ["Slaves had to join the Church of England","Not that","<p>Article 107 lets slaves join “what church or profession any of them shall think best”.</p>"],
+       ["Only Christian freemen could hold slaves","Not that","<p>The article is about the slave’s religion, not the owner’s. Any freeman held “absolute power”.</p>"]],"constitutions");
+    return;
+  }
+  /* 3 · the board of the indian trade */
+  if(d.kind==="complaints"&&!d.worked){
+    souWork(d,"write",4.5,"The complaint: who made it, his town, and the interpreter who swore to it.",{});
+    return;
+  }
+  if(d.kind==="complaints"){
+    /* JCIT pp. 26-27 */
+    souQuiz("Charles Town · 12 June 1712","Toolodeha",
+      leafCard("The board’s journal","June 1712","Two of Tuskenehau’s slaves complained for him: a Creek town had taken “Toolodeha, a free Woman, and her Mother, a Slave”, to pay its debts to a trader.")+
+      "<p>What did the board order?</p>",
+      [["The wife returned, her mother not","The wife","<p>Toolodeha went home by the board’s messenger. The town was to pay Tuskenehau for her enslaved mother. The trader was paid what he gave, “and no more”.</p>"],
+       ["Both women returned to him","One woman","<p>Only Toolodeha, “a free Woman”, was ordered back. For her mother, the town was to pay Tuskenehau.</p>"],
+       ["Both sold to pay the debt","Not sold","<p>The board ordered the free wife returned. The trader was paid by the town, “and no more”.</p>"]],"complaints");
+    return;
+  }
+  if(d.kind==="skins"&&!d.worked){
+    souWork(d,"lift",3.5,"Thirty-nine deerskins: the debt, counted out.",{load:"pelts"},function(){
+      if(SOU.skins){SOU.skins.drop();SOU.skins.drop();}});
+    return;
+  }
+  if(d.kind==="skins"){
+    /* JCIT p. 28 */
+    souQuiz("Charles Town · 27 June 1712","Thirty-nine skins",
+      leafCard("The board’s journal","June 1712","William Ford “said that the Indian owed him 39 Skins and that he toock the said Slave for Security of his Debt”. Ordered: the slave returned to Enaclega, and Enaclega to pay “thirty-nine Skins”.")+
+      "<p>What does the entry show?</p>",
+      [["Debts in skins were secured with people","People as security","<p>A captive held against 39 deerskins. The board ruled on the debt and the owner; the captive’s own freedom was not the question.</p>"],
+       ["Traders paid hunters in coin","Not coin","<p>The debt was counted in deerskins, and secured with a person.</p>"],
+       ["The board banned the trade in captives","Not banned","<p>It ordered the slave returned to his owner, Enaclega. The trade in captives went on.</p>"]],"skins");
+    return;
+  }
+  if(d.kind==="adjourn"){
+    /* JCIT p. 65 */
+    souQuiz("Charles Town · 12 April 1715","The last entry",
+      leafCard("The board’s journal","12 April 1715","A Yamasee man “came to his Wife and told her … that the Creek Indians had a Design to cut of the Traders first”, William Bray said. “Adjurned till further Summons.”")+
+      "<p>How did the warning reach the board?</p>",
+      [["Third-hand, through Bray’s wife","Third-hand","<p>A Yamasee man told Bray’s wife, she told Bray, Bray told the board. Her name is not recorded, and must not be guessed.</p>"],
+       ["In a letter from the Creek towns","No letter","<p>No letter came. The warning passed from a Yamasee man, to Bray’s wife, to Bray.</p>"],
+       ["From Spanish officers","Not Spanish","<p>The journal names a Yamasee man, Bray’s wife and Bray. Spain is not in this entry.</p>"]],"adjourn",
+      function(){
+        /* CRNC ii pp. 177-178 (Craven, page-checked), pp. 185-186 (Urmston) */
+        fortResult("Good Friday, 1715",
+          "<p>Three days later the Yamasee killed the traders and the agent in their towns. In the war that followed, colonists and Yamasee were killed.</p>"+
+          leafCard("Governor Charles Craven","23 May 1715, asking the Crown for help","Of the board’s messengers: “they were knock’d on the head by the Indians”. Of one fight: “with the loss of Eleven men killed outright and twenty wounded on our side”.")+
+          leafCard("John Urmston, in North Carolina","12 June 1715; not there","The Indians fell on the traders, “who they pretend had wrong’d ’em”."),[]);});
+    return;
+  }
+  /* 4 · ebenezer */
+  if(d.kind==="husk"&&!d.worked){
+    souWork(d,"pound",4.5,"Rice husked by hand, in a mortar. The Salzburgers asked for mills “as we use in Germany”.",{});
+    return;
+  }
+  if(d.kind==="husk"){
+    souDone("husk");
+    /* CRG iii p. 429 */
+    fortResult("Mills and Sieves",leafCard("The Salzburgers of Ebenezer, to Oglethorpe","13 March 1739","For “such Mills, convenient for cleaning the Rice, as we use in Germany”, they needed money. For now they asked “some Rice Sieves, of several Sorts, from Charles-Town”."),["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="sieves"&&!d.worked){
+    souWork(d,"sift",4,"The husked rice, shaken through the sieves from Charles Town.",{prop:"sieve"},function(){
+      if(SOU.sieves){SOU.sieves.drop();SOU.sieves.drop();}});
+    return;
+  }
+  if(d.kind==="sieves"){
+    /* CRG iii pp. 376, 429 */
+    souQuiz("Ebenezer · 1739","Proper for Negroes?",
+      priceCard("The trustees, in London","1741","Carolina “produces chiefly Rice, which is Work of Hardship proper for Negroes”")+
+      priceCard("The Salzburgers, at Ebenezer","1739","told rice was “a Work only for Negroes”, they wrote, “having Experience of the contrary, we laugh at such a Talking”")+
+      "<p>What does the Salzburgers’ harvest do to the trustees’ claim?</p>",
+      [["Shows white settlers grew rice","Answers it","<p>Several of them grew more rice than they needed. The claim was a belief about race, answered by a harvest.</p>"],
+       ["Proves rice needed enslaved labour","The opposite","<p>They grew rice themselves, and laughed at the claim that only Africans could.</p>"],
+       ["Shows rice failed in Georgia","Not failed","<p>They had “a greater Crop of Rice than they wanted for their own Consumption”.</p>"]],"sieves");
+    return;
+  }
+  if(d.kind==="claims"){
+    /* SC Encyclopedia (Coclanis, "Rice"); Eltis, Morgan and Richardson, AHR 112 (2007) */
+    souQuiz("Carolina’s rice","Whose knowledge?",
+      priceCard("Peter Coclanis, a historian","today","“some scholars have amassed evidence suggesting instead that Africans were the prime movers in the earliest days of rice cultivation”")+
+      priceCard("Eltis, Morgan and Richardson, historians","2007","“it was a hybrid, synthetic rather than European or African in character”")+
+      priceCard("Coclanis","today","“there is a big difference between rice production and a rice industry”")+
+      "<p>Whose knowledge built Carolina’s rice?</p>",
+      [["Historians still argue it","Still argued","<p>A live dispute, weighed by evidence. Coclanis dates a rice industry to the 1710s or 1720s. Whose knowledge began it is not settled here.</p>"],
+       ["Africans’, as every historian agrees","Not agreed","<p>Eltis, Morgan and Richardson call the link to African rice regions “actually tenuous”. The dispute is open.</p>"],
+       ["Europeans’, as every historian agrees","Not agreed","<p>Some scholars find Africans “the prime movers”. The dispute is open.</p>"]],"claims");
+    return;
+  }
+  /* 5 · yamacraw bluff */
+  if(d.kind==="presents"&&!d.worked){
+    souWork(d,"lift",3.5,"Eight kegs of rum, “to be carried home to their towns”, set out with the presents.",{load:"cask"},function(){
+      if(SOU.kegs)for(let i=0;i<3;i++)SOU.kegs.drop();});
+    return;
+  }
+  if(d.kind==="presents"){
+    souDone("presents");
+    /* Jones p. 31 */
+    fortResult("The Presents",leafCard("The report of the treaty","21 May 1733, printed in London","Each chief “A laced coat, a laced hat and a shirt”; each warrior “a gun, and a mantle of Duffils”; “and eight cags of rum, to be carried home to their towns”."),["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="treaty"){
+    /* Jones pp. 28-29 */
+    souQuiz("Yamacraw Bluff · May 1733","Near the tombs of my ancestors",
+      leafCard("The report, through interpreters","1733, printed in London","Tomochichi: “I came here poor and helpless to look for good land near the tombs of my ancestors”. And: “good words may be spoke by the deceitful, as well as by the upright heart”.")+
+      "<p>How do these words reach us?</p>",
+      [["Interpreted, then printed in London","Interpreted","<p>Through Mr. Wiggan and John Musgrove, then a London report, modernised in 1868. His warning about “the deceitful” survives even so.</p>"],
+       ["In a letter Tomochichi wrote","No letter","<p>No Creek letter of 1733 survives. His words were spoken, interpreted and printed by the English.</p>"],
+       ["In a Creek record of the treaty","No Creek record","<p>The only record is English: interpreters, a reporter, a London printer.</p>"]],"treaty");
+    return;
+  }
+  if(d.kind==="ban"){
+    /* CRG i p. 50 */
+    souQuiz("Westminster · 1735","The ban",
+      leafCard("An Act for rendering the Colony of Georgia more Defencible","1735, from the trustees","Slaves had “Obstructed the Increase of English and Christain Inhabitants therein who alone can in case of a War be relyed on for the Defence”, and exposed colonies to “Insurrections Tumults and Rebellions”.")+
+      "<p>What reason does the act give?</p>",
+      [["Defence of the colony","Defence","<p>Settlers who could fight, and fear of risings. The act calls slavery dangerous, not wrong. The trustees “humbly beseech Your Majesty”: it was made in London.</p>"],
+       ["That slavery is a sin","Not a sin","<p>No line of the act calls slavery wrong. Its reasons are war and “Insurrections”.</p>"],
+       ["That settlers had voted for it","No vote","<p>Georgia’s settlers had no assembly that voted it. The trustees asked the King.</p>"]],"ban");
+    return;
+  }
+  /* 6 · the letter book */
+  if(d.kind==="copy"&&!d.worked){
+    souWork(d,"write",4.5,"Each petition, copied into the trustees’ letter book in its own words.",{});
+    return;
+  }
+  if(d.kind==="copy"){
+    souDone("copy");
+    /* Tailfer pp. 40-41; CRG iii p. 427 and the 1741 print */
+    fortResult("Two Petitions",priceCard("Savannah’s freeholders","9 December 1738","“The Want of the Use of Negroes, with proper Limitations”, “such as so many to each white Man”")+
+      priceCard("Darien’s Highlanders","3 January 1739, printed 1741","“It’s shocking to human Nature, that any Race of Mankind, and their Posterity, should be sentenced to perpetual Slavery”"),["+6 Ink"]);
+    return;
+  }
+  if(d.kind==="letters"){
+    /* Tailfer p. 44; CRG iii (the trustees' printing) */
+    souQuiz("Darien · 1739","Who prompted it?",
+      leafCard("Tailfer and others, against the trustees","Charles Town, 1741","Oglethorpe sent an officer with “a very fluent and artful Way of Talking”, who, with “Promises to the poor People of Cattle”, “soon persuaded them to sign a Paper”.")+
+      "<p>The trustees printed Darien’s petition in their own defence. How should a historian use the two?</p>",
+      [["Read both; each side was a party","Both parties","<p>Tailfer’s party wanted slaves; the trustees wanted the ban kept. Whether the Highlanders meant their fifth reason is not decided here.</p>"],
+       ["Trust Tailfer, who had no stake","He had one","<p>Tailfer’s party had petitioned for slaves, and wrote against the trustees.</p>"],
+       ["Trust the trustees, who were neutral","Not neutral","<p>The trustees printed Darien’s letter to defend their own ban.</p>"]],"letters");
+    return;
+  }
+  if(d.kind==="reasons"){
+    souRows("Savannah · 1739","Sort every reason",
+      "<p>Mark each reason, for or against slavery, by its kind.</p>",SOU_REASONS,SOU_REASON_KEYS,"reasons",function(right){
+        souDone("reasons");
+        const body="<p>"+(right===SOU_REASONS.length?"Every reason in its place.":"Here is each reason, by its kind.")+"</p>"+
+          SOU_REASONS.map(function(r){return "<p>"+r.why+"</p>";}).join("");
+        fortResult("How Many Are Moral?",body,["+6 Ink"]);});
+    return;
+  }
+  /* 7 · oglethorpe's desk */
+  if(d.kind==="fair"&&!d.worked){
+    souWork(d,"write",4.5,"A fair copy of the account, for London’s newspapers.",{});
+    return;
+  }
+  if(d.kind==="fair"){
+    /* CRG xxii.2 pp. 231, 233-235 */
+    souQuiz("Savannah · 9 October 1739","Calling out Liberty",
+      leafCard("An Account of the Negroe Insurrection in South Carolina","1739; its writer unknown","“Some Angola Negroes assembled, to the number of Twenty; and one who was called Jemmy was their Captain”. They marched “calling out Liberty”, “with Colours displayed, and two Drums beating”.",
+        "“pursuing all the white people they met with, and killing Man Woman and Child when they could come up to them”. Of the militia: those taken “were after being examined, shot on the Spot”, and the writer praises the planters for putting them “to an easy death”.")+
+      "<p>Oglethorpe wanted it “inserted in some News papers”. How does that change how you read it?</p>",
+      [["It was written to persuade readers","For readers","<p>“Easy death” and “the honour of the Carolina Planters” are the writer’s words for shootings without trial, written for the press.</p>"],
+       ["It is a court’s record of a trial","No trial","<p>The account says those taken were shot “on the Spot”. No trial is described.</p>"],
+       ["It is the rebels’ own story","Not theirs","<p>No enslaved person’s account survives. The only word it gives them is “Liberty”.</p>"]],"fair");
+    return;
+  }
+  if(d.kind==="counts"){
+    /* CRG xxii.2 p. 235; SC Encyclopedia (Smith) */
+    souQuiz("Stono · the counts","Two counts",
+      priceCard("The account","1739","“In the whole action about 40 Negroes and 20 whites were killed.”")+
+      priceCard("Mark M. Smith, a historian","today","“About forty whites and probably as many blacks were killed during the Stono insurrection.”")+
+      "<p>What should a historian do with the counts?</p>",
+      [["Give both, with who wrote each","Both, attributed","<p>The two counts of white people killed differ by half. Neither is a single true number.</p>"],
+       ["Keep the older one only","Not only one","<p>The older count was written for the newspapers. The newer is a historian’s reading. Give both.</p>"],
+       ["Add the two together","Not added","<p>They count the same people differently. Adding them counts the dead twice.</p>"]],"counts");
+    return;
+  }
+  if(d.kind==="law"){
+    /* SC Stat. vii p. 397 */
+    souQuiz("Charles Town · May 1740","Absolute slaves",
+      leafCard("South Carolina’s act of 1740","the lawmakers’ words","All “negroes and Indians, (free Indians in amity with this government, and negroes, mulattoes and mustizoes, who are now free, excepted,)” to be “absolute slaves”, following “the condition of the mother”, and “chattels personal”.")+
+      "<p>Who could be enslaved under the act?</p>",
+      [["Africans and Native people, with exceptions","With exceptions","<p>Free people and “free Indians in amity” excepted. Who could be enslaved followed the colony’s alliances.</p>"],
+       ["Anyone who could not pay a debt","Not debtors","<p>The act names peoples, not debts: “negroes and Indians”, with exceptions.</p>"],
+       ["Africans only","Not only","<p>The act names “negroes and Indians” alike, excepting “free Indians in amity”.</p>"]],"law");
+    return;
+  }
+}
+
+/* the way out of a scene: its cells on the board, its sentence, the board itself */
+function souNext(){
+  const w=souW(), need=souNeed();
+  if(need){toast("Not yet: "+SOU_DUTY[need].charAt(0).toLowerCase()+SOU_DUTY[need].slice(1)+".");return;}
+  const plan=SOU_BOARD[w.day];
+  if(plan&&!w.board[w.day]){
+    const cells=plan.cells.slice();
+    const step=function(){
+      const k=cells.shift();
+      if(k){compareFill(k,step);return;}
+      compareSay(plan.sent,function(){
+        w.board[w.day]=true;checkpoint("ch14-board"+w.day);
+        const last=w.day===SOU_DAYS.length-1;
+        openBoard(plan.cells,function(){souNext();},last?"Who Was Free?":null,
+          last?"Read the row “Who was free?” across all eight colonies. Who wrote each line, and whom did it leave out?":null,last?"james.free":null);});   /* the row from its first column: all eight in view at 1366x768 */
+    };
+    step();
+    return;
+  }
+  if(w.day>=SOU_DAYS.length-1){w.did.closed=true;checkpoint("ch14-closed");enterWorld("ch14");return;}
+  w.day++;
+  checkpoint("ch14-day"+w.day);
+  const o=SOU_OPEN[w.day];
+  fortResult(o.t,"<p class=\"sickDate\">"+SOU_DAYS[w.day].date+"</p>"+o.b,[],function(){enterWorld("ch14");});
+}
+
+/* ---- NEW THINGS IN THE WORLD ---- */
+/* a bolt of trade cloth, folded, as laid out before the werowance */
+WORK_LOAD.cloth=function(){const g=new Geo(), a=RGB(0x8a3b2f), b=RGB(0x4e6076), c=RGB(0xd9cdae);
+  g.box(0,-0.12,0,0.9,0.12,0.5,a);g.box(0.05,0.0,0,0.8,0.12,0.46,b);g.box(-0.04,0.12,0.02,0.84,0.1,0.44,c);return g.mesh(false,false);};
+/* a round rice sieve, for a pile */
+WORK_LOAD.sieve=function(){const g=new Geo(), rim=RGB(0x9a7a4c), mesh=RGB(0xc2a670);
+  g.oct(0,0,-0.05,0.05,0.9,0.9,0.9,0.9,0.6,rim,rim);g.oct(0,0,-0.04,0.03,0.82,0.82,0.82,0.82,0.6,mesh,mesh);return g.mesh(false,false);};
+/* the pestle, for husking rice in a mortar: a long wooden pole, thicker at both ends */
+WORK_PROP.pestle=function(){const g=new Geo(), wood=RGB(0x8a6a44), woodD=RGB(0x6a4c30);
+  g.beam8([0,0.55,0],[0,-0.1,0],0.09,0.06,woodD,wood);g.beam8([0,-0.1,0],[0,-1.25,0.02],0.06,0.1,wood,woodD);return g.mesh(false,false);};
+/* a sieve held in both hands */
+WORK_PROP.sieve=function(){const g=new Geo(), rim=RGB(0x9a7a4c), mesh=RGB(0xc2a670);
+  g.oct(-0.3,0.05,-0.06,0.04,0.62,0.62,0.62,0.62,0.6,rim,rim);g.oct(-0.3,0.05,-0.05,0.02,0.56,0.56,0.56,0.56,0.6,mesh,mesh);return g.mesh(false,false);};
+WORK_TILT.pestle=0;WORK_TILT.sieve=1.5;
+WORK_TOOL.pound="pestle";
+WORK_GRIP.pestle=[0,-0.34,0.01];
+/* husking: the pestle lifted high in both hands and driven down into the mortar, the knees
+   giving under it; up again */
+TASK_ANIM.pound={T:1.2,
+  pel:[0,0.04, 0.45,-0.02, 0.62,0.14, 0.80,0.10],
+  sp: [0,0.06, 0.45,-0.06, 0.62,0.18, 0.80,0.12],
+  nk: [0,0.12, 0.45,0.02, 0.62,0.20],
+  sR: [0,-1.10, 0.45,-2.30, 0.62,-0.95, 0.80,-1.05],
+  eR: [0,-1.30, 0.45,-0.80, 0.62,-1.35, 0.80,-1.30],
+  ta: [0,0.05, 0.45,0.10, 0.62,0.0],
+  h:  [0,-0.10, 0.45,0.0, 0.62,-0.30, 0.80,-0.22],
+  k:  [0,0.14, 0.45,0.04, 0.62,0.40, 0.80,0.30],
+  grip:1};
+/* a wooden rice mortar: a hollowed log, waist low, with the hollow shown dark */
+function souMortar(root,G,x,z){
+  const g=new Geo(), wood=RGB(0x7a5a3a), woodD=RGB(0x5a4128), hole=RGB(0x2e241a), gy=G(x,z);
+  g.oct(x,z,gy-0.2,gy+1.6,2.0,2.0,1.5,1.5,0.4,woodD,wood);g.oct(x,z,gy+1.6,gy+2.2,1.5,1.5,1.7,1.7,0.4,wood,wood);
+  g.oct(x,z,gy+2.15,gy+2.22,1.1,1.1,1.1,1.1,0.4,hole,hole);
+  root.add(g.mesh(false,false));solid(x,z,0.4,0.4,LVL.MAIN,0);
+}
+/* rice paddies: square fields of standing water, opaque, between low earth dikes, with the
+   green rice in rows. One mesh (no transparency) */
+function souRice(root,G,x0,z0,cols,rows,cw,cd){
+  const g=new Geo(), water=RGB(0x546a64), waterD=RGB(0x445a56), dike=RGB(0x6a5a3c), dikeT=RGB(0x7c6a46),
+    rice=RGB(0x6e8c3e), riceD=RGB(0x4e6c2c);
+  for(let i=0;i<cols;i++)for(let j=0;j<rows;j++){
+    const ax=x0+i*cw, az=z0+j*cd, wy=Math.max(G(ax,az),G(ax+cw,az),G(ax,az+cd),G(ax+cw,az+cd))+0.15;
+    g.quad([ax+0.8,wy,az+0.8],[ax+0.8,wy,az+cd-0.8],[ax+cw-0.8,wy,az+cd-0.8],[ax+cw-0.8,wy,az+0.8],(i+j)%2?water:waterD);
+    for(let r=0;r<4;r++)for(let c=0;c<5;c++){const px=ax+2+c*(cw-4)/4, pz=az+2+r*(cd-4)/3;
+      g.oct(px,pz,wy-0.05,wy+1.1+srand(px*1.3+pz)*0.4,0.5,0.5,0.15,0.15,0.3,riceD,rice);}}
+  /* the dikes, on every line between fields */
+  for(let i=0;i<=cols;i++){const x=x0+i*cw, a=z0, b=z0+rows*cd;
+    g.oct(x,(a+b)/2,G(x,(a+b)/2)-0.3,G(x,(a+b)/2)+0.9,1.6,b-a,0.8,b-a,0.3,dike,dikeT);}
+  for(let j=0;j<=rows;j++){const z=z0+j*cd, a=x0, b=x0+cols*cw;
+    g.oct((a+b)/2,z,G((a+b)/2,z)-0.3,G((a+b)/2,z)+0.9,b-a,1.6,b-a,0.8,0.3,dike,dikeT);}
+  root.add(g.mesh(false,false));
+}
+/* a canvas tent, its ridge along z, open at the front (+z); opaque. Built of thin boxes so it
+   reads from inside as well as out. ceiling: the back is a stepped triangle; no guy ropes */
+function souTent(root,G,x,z,w,d,h){
+  const g=new Geo(), can=RGB(0xd2c6a6), canD=RGB(0xa89a7a), pole=RGB(0x6a5038), gy=G(x,z);
+  const L=Math.hypot(w/2,h), a=Math.atan2(h,w/2);
+  g.box(x-w/4,gy+h/2,z,L,0.15,d,canD,a);g.box(x+w/4,gy+h/2,z,L,0.15,d,can,-a);
+  for(let k=0;k<4;k++){const yc=(k+0.5)*h/4;g.box(x,gy+yc,z-d/2+0.1,w*(1-yc/h),h/4,0.12,canD);}
+  g.beam8([x,gy,z+d/2],[x,gy+h,z+d/2],0.3,0.25,pole,pole);g.beam8([x,gy,z-d/2+0.3],[x,gy+h,z-d/2+0.3],0.3,0.25,pole,pole);
+  root.add(g.mesh(false,false));
+  solid(x-w/2+0.6,z,0.6,d/2,LVL.MAIN,0);solid(x+w/2-0.6,z,0.6,d/2,LVL.MAIN,0);solid(x,z-d/2,w/2,0.6,LVL.MAIN,0);
+}
+/* a room: floor, four walls darker low down, windows, a beamed ceiling; for the assembly
+   house, the land office and the board's room. The camera is kept inside by WORLD.camBox */
+function souRoom(root,G,X,Z0,Z1,H,wallHex){
+  const g=new Geo(), wall=RGB(wallHex||0x8a7050), wallD=RGB(0x5e4a34), floor=RGB(0x7a6448), beam=RGB(0x4e3c2a), win=RGB(0xe8e4d4), gy=G(0,0);
+  for(let z=Z0;z<Z1;z+=2)g.box(0,gy+0.05,z+1,2*X,0.1,1.9,shadeRGB(floor,0.92+srand(z)*0.12));
+  const wallBox=function(cx,cz,w,d){const B=new Geo();B.box(cx,gy+H/2,cz,w,H,d,wall);
+    B.shade(function(px,py){return 0.62+0.38*smooth01(gy,gy+H,py);});g.p.push.apply(g.p,B.p);g.c.push.apply(g.c,B.c);};
+  wallBox(-X,(Z0+Z1)/2,0.8,Z1-Z0);wallBox(X,(Z0+Z1)/2,0.8,Z1-Z0);wallBox(0,Z0,2*X,0.8);wallBox(0,Z1,2*X,0.8);
+  const n=Math.max(1,Math.floor((Z1-Z0)/16));
+  for(let k=0;k<n;k++){const z=Z0+(k+0.5)*(Z1-Z0)/n;for(const sx of [-1,1])g.box(sx*(X-0.45),gy+H*0.55,z,0.2,H*0.28,3.2,win);}
+  g.box(0,gy+H+0.2,(Z0+Z1)/2,2*X,0.4,Z1-Z0,wallD);
+  for(let z=Z0+4;z<Z1;z+=7)g.box(0,gy+H-0.4,z,2*X,0.8,0.8,beam);
+  root.add(g.mesh(false,false));
+  solid(-X,(Z0+Z1)/2,1,(Z1-Z0)/2,LVL.MAIN,0);solid(X,(Z0+Z1)/2,1,(Z1-Z0)/2,LVL.MAIN,0);
+  solid(0,Z0,X,1,LVL.MAIN,0);solid(0,Z1,X,1,LVL.MAIN,0);
+}
+/* a flat floor inside a room on a site: the highest ground under the room, held level */
+function souFloor(root,key,X,Z0,Z1){
+  const G0=captLand(root,key,{trees:60,winter:false,clear:function(x,z){return Math.hypot(x,z)<90;}});
+  let top=-1e9;for(const x of [-X-1,0,X+1])for(const z of [Z0-1,0,Z1+1])top=Math.max(top,G0(x,z));
+  const fy=top+0.3, G=function(){return fy;};WORLD.ground=G;WORLD.hull=false;
+  return {G:G,fy:fy};
+}
+/* a long table on trestles, for the board; seated men behind it are added by the scene */
+function souLongTable(root,G,x,z,len){
+  const g=new Geo(), wood=RGB(0x6a4c30), woodD=RGB(0x4e3824), paper=RGB(0xe9e0c8), gy=G(x,z);
+  g.box(x,gy+2.7,z,len,0.25,3.2,wood);
+  for(const k of [-0.42,0,0.42])g.box(x+k*len,gy+1.3,z,0.3,2.6,2.6,woodD);
+  for(let i=0;i<5;i++)g.box(x-len*0.4+i*len*0.2,gy+2.86,z+0.4,1.0,0.05,1.4,paper);
+  root.add(g.mesh(false,false));solid(x,z,len/2,1.8,LVL.MAIN,0);
+}
+/* shelves of bound books against a wall */
+function souShelves(root,G,x,z,w){
+  const g=new Geo(), wood=RGB(0x5e4430), gy=G(x,z), cols=[0x6a3a2e,0x4e4030,0x7a5a3a,0x3e4a3a,0x5a4a2e];
+  g.box(x,gy+4,z,w,8,1.4,wood);
+  for(let s=0;s<3;s++)for(let i=0;i<Math.floor(w/0.7);i++){const bx=x-w/2+0.5+i*0.7;
+    g.box(bx,gy+1.6+s*2.4,z+0.4,0.55,1.6+srand(i+s*7)*0.4,1.0,RGB(cols[(i+s)%5]));}
+  root.add(g.mesh(false,false));solid(x,z,w/2,0.8,LVL.MAIN,0);
+}
+/* the treaty presents laid on a mat: folded coats, hats, guns, a powder barrel */
+function souPresents(root,G,x,z){
+  const g=new Geo(), mat=RGB(0x8a7a52), red=RGB(0x9c1f1c), lace=RGB(0xc8a24a), blue=RGB(0x3e4a6a), hat=RGB(0x2a2622),
+    wood=RGB(0x5a4128), iron=RGB(0x3c3e40), gy=G(x,z);
+  g.box(x,gy+0.05,z,10,0.1,6,mat);
+  for(let i=0;i<3;i++){g.box(x-3.6+i*1.8,gy+0.3,z-1.6,1.5,0.4,1.1,red);g.box(x-3.6+i*1.8,gy+0.52,z-1.6,1.5,0.05,0.12,lace);}
+  for(let i=0;i<3;i++){const hx=x+2+i*1.3, hz=z-1.8;g.oct(hx,hz,gy+0.1,gy+0.2,1.1,1.1,1.1,1.1,0.3,hat,hat);g.oct(hx,hz,gy+0.2,gy+0.75,0.6,0.6,0.5,0.5,0.3,hat,hat);}
+  for(let i=0;i<4;i++){const gz=z+0.6+i*0.55;g.beam8([x-4.2,gy+0.25,gz],[x+0.4,gy+0.25,gz],0.12,0.1,iron,iron);g.box(x-4.6,gy+0.25,gz,1.2,0.22,0.28,wood);}
+  for(let i=0;i<3;i++)g.box(x+2.6,gy+0.25+i*0.36,z+1.2,1.8,0.34,1.3,i%2?blue:shadeRGB(blue,0.85));
+  root.add(g.mesh(false,false));solid(x,z,5,3,LVL.MAIN,0);
+}
+
+/* ---- THE TERRAIN ---- */
+/* St. Clement's and the St. Mary's river: a broad tidal river, a low wooded shore */
+SITE_TERRAIN.stmaries={sea:62,shore:40,flat:-30,deep:-2.0,fall:0.02,rise:1.4,inland:1.2,roll:0.6,
+  sky:0xa4bed0,fog:0xbacad4,water:0x3c5a5c,near:0x76824a,far:0x627040,back:0x4a5634,wet:0x7c7652,
+  trees:0,treeZ:-40,treeH:52,seed:341};
+/* level ground for the rooms (St. Mary's, the land office, Charles Town) */
+SITE_TERRAIN.souflat={sea:140,shore:100,flat:-60,deep:-1.0,fall:0.01,rise:0.6,inland:0.5,roll:0.1,
+  sky:0xb0c4d0,fog:0xc4d0d6,water:0x3e5e66,near:0x7c8650,far:0x6a7444,back:0x525c38,wet:0x7c7a56,
+  trees:0,treeZ:-60,treeH:48,seed:351};
+/* Ebenezer: low, wet ground by the river, summer green */
+SITE_TERRAIN.ebenezer={sea:120,shore:90,flat:-60,deep:-1.2,fall:0.01,rise:0.5,inland:0.4,roll:0.15,
+  sky:0x9cb8cc,fog:0xb4c6d0,water:0x3e5a58,near:0x76884a,far:0x627442,back:0x4a5834,wet:0x7a7654,
+  trees:0,treeZ:-60,treeH:54,seed:361};
+/* Yamacraw Bluff: the town on a bluff some twenty-four feet over the Savannah (the bank from
+   z 54 to 72), the river below. ceiling: the bluff's height is a drawn one, not a survey */
+SITE_TERRAIN.yamacraw={sea:72,shore:54,flat:-40,deep:-2.2,fall:0.02,rise:24.5,inland:24,roll:0.4,
+  sky:0xa0bcd0,fog:0xb8cad6,water:0x3e5a58,near:0x7c8650,far:0x687444,back:0x505a36,wet:0x7a6e50,
+  trees:0,treeZ:-40,treeH:56,seed:371};
+
+/* a Native figure of the Southeast, drawn and never voiced. CLASS: no description of the
+   Yamasee or Creek men of 1712-1733 was read; hair loose, a mantle (the treaty's presents list
+   "a mantle of Duffils"), no paint, no marks. Imagined */
+function souNativeLook(i,over){
+  const L=twCrowdLook();
+  return Object.assign(L,{hair:"loose",hairColor:HAIR.black,paint:false,ear:null,beads:i%3===1,mantle:i%2===0,
+    colors:Object.assign({},L.colors||{},{mantle:[0x3e4a6a,0x6a3a2e,0x5a4a3a][i%3]})},over||{});
+}
+
+registerWorld("ch14",function(root){
+  const w=souW(), sd=souDay(), where=sd.where, day=w.day;
+  SOU.later=[];SOU.gift=null;SOU.kegs=null;SOU.skins=null;SOU.sieves=null;
+  BLAZE.fires.length=0;
+  let G, spots={}, at=[0,42], face=Math.PI, nextAt=null, look0=0, pitch0=0.30;
+  const duty=function(id,label,x,z,data){
+    if(data.kind&&SOU_DUTY[data.kind]&&w.did[data.kind])return;
+    const it={id:id,label:label,x:x,z:z,y:G(x,z),lvl:LVL.MAIN,r:8,action:"sou",data:data};
+    if(data.after&&!w.did[data.after]){SOU.later.push(it);return;}
+    interactables.push(it);};
+  /* figures who are drawn and never voiced */
+  const stand=function(eq,x,z,yaw){
+    const f=buildFigure(eq);f.position.set(x,G(x,z),z);f.rotation.y=yaw;root.add(bakeFigure(f));solid(x,z,1,1,LVL.MAIN,0);return f;};
+  const native=function(look,x,z,yaw){
+    const f=tidewaterFigure(look);f.position.set(x,G(x,z),z);f.rotation.y=yaw;root.add(bakeFigure(f));solid(x,z,1,1,LVL.MAIN,0);return f;};
+  const seated=function(f,x,z,yaw){midSit(f);f.position.set(x,G(x,z),z);f.rotation.y=yaw;root.add(bakeFigure(f));solid(x,z,1,1,LVL.MAIN,0);};
+  const woman=function(look,x,z,yaw){const f=englishWoman(false,look);f.position.set(x,G(x,z),z);f.rotation.y=yaw;root.add(bakeFigure(f));solid(x,z,1,1,LVL.MAIN,0);return f;};
+
+  if(where==="maryland"){
+    /* the Yaocomaco town, March 1634: the Ark and the Dove at anchor, the barge "brought in
+       pieces out of England", men felling trees "for a Palizado" (Hall MD p. 72); the
+       werowance and the wisoes, the goods laid out (p. 73); the town's houses beyond */
+    G=captLand(root,"stmaries",{trees:230,winter:false,clear:function(x,z){return Math.hypot(x,z)<100||(x<-40&&x>-130&&z<-30&&z>-110);}});
+    placeShip(root,"godspeed",1,40,170,Math.PI/2);placeShip(root,"discovery",1,-70,190,Math.PI/2.3);
+    captBarge(root,G,14,66,0.3);
+    [[-70,-52],[-96,-60],[-82,-84],[-110,-80],[-60,-80]].forEach(function(p,i){yehakin(root,p[0],G(p[0],p[1]),p[1],24,12,10,i%2);});
+    /* the werowance and the wisoes, painted "a darke read, especially about the head" (Hall MD p. 42) */
+    native(personLook("yaocomaco",1634),-12,-8,0);
+    [[-18,-7,0.3],[-6,-7,-0.3],[-22,-4,0.6]].forEach(function(a,i){native(Object.assign(personLook("yaocomaco",1634),{mantle:i!==1}),a[0],a[1],a[2]);});
+    stand(personEq("lcalvert",1634),-12,6,Math.PI);
+    [[-4,8,2.8,780],[-20,9,-2.8,781]].forEach(function(a){stand(crowdEq("gent",a[3],1634),a[0],a[1],a[2]);});
+    SOU.gift=workStack(root,-12,-1,"cloth",6);if(w.did.goods){SOU.gift.drop();SOU.gift.drop();SOU.gift.drop();}solid(-11,-1,3,1.3,LVL.MAIN,0);
+    const pile=workStack(root,8,16,"chest",6);for(let i=0;i<4;i++)pile.drop();solid(9,16,3,1.3,LVL.MAIN,0);
+    midLog(root,G,36,-14,0.2,10);midLog(root,G,44,-8,-0.5,9);
+    workMan(root,crowdEq("hand",782,1634),36,-17,0,"chop");workMan(root,crowdEq("hand",783,1634),45,-11.2,0,"chop");
+    workMan(root,crowdEq("hand",784,1634),28,-6,0,"carry",{from:[30,-8],to:[20,8],load:"wood",speed:2.3});
+    starveChest(root,G,24,8.5);duty("silent","Baltimore’s Instructions",24,12,{kind:"silent",verb:"Read them"});
+    duty("goods","The Trade Goods",8,21,{kind:"goods",after:"silent",verb:"Carry them",face:[8,16],stand:[8,20.4]});
+    starveChest(root,G,-24,18.5);duty("landing","The Two Accounts",-24,22,{kind:"landing",after:"goods",verb:"Read them"});
+    starveChest(root,G,-34,20.5);starveChest(root,G,34,20.5);
+    nextAt=[44,4];starveChest(root,G,44,0.5);
+    at=[0,42];
+  }
+  if(where==="stmarys"){
+    /* the assembly at St. Mary's, January 1647/8: the governor at the far end, freemen on the
+       benches, the clerk's table, Margaret Brent standing to ask (AM i p. 215). Drawn: Brent and
+       de Sousa (who sat in an earlier session, 1641 or 1642), never voiced */
+    const F=souFloor(root,"souflat",24,-22,22);G=F.G;
+    souRoom(root,G,24,-22,22,13);WORLD.camBox={x0:-22,x1:22,z0:-20,z1:20.4,y1:F.fy+11.6};
+    const g=new Geo();g.box(0,F.fy+0.6,-18,20,1.2,6,RGB(0x5e4a34));root.add(g.mesh(false,false));solid(0,-18,10,3,LVL.MAIN,0);
+    {const f=buildFigure(crowdEq("gent",790,1648));f.position.set(0,F.fy+1.2,-18.5);f.rotation.y=0;root.add(bakeFigure(f));}
+    midBenches(root,G,0,-4,3);
+    [[-12,-4],[-4,-4],[4,1],[12,1],[-12,6],[4,6]].forEach(function(a,i){
+      const eq=i===2?personEq("desousa",1648):crowdEq(i%2?"planter":"gent",791+i,1648);
+      const f=midSit(buildFigure(eq));f.position.set(a[0],G(a[0],a[1]),a[1]-0.4);f.rotation.y=Math.PI;root.add(bakeFigure(f));});
+    woman("brent@1648",9,-12,-2.6);
+    presTable(root,G,-14,-12);duty("roll","The Clerk’s Table",-14,-8,{kind:"roll",verb:"Write",face:[-14,-12],stand:[-14,-8.9]});
+    presTable(root,G,14,-12);duty("brent","The Journal",14,-8,{kind:"brent",after:"roll",verb:"Write",face:[14,-12],stand:[14,-8.9]});
+    starveChest(root,G,8,14.5);duty("act","The Act concerning Religion",8,18,{kind:"act",after:"brent",verb:"Read it"});
+    starveChest(root,G,-20,10.5);starveChest(root,G,20,10.5);
+    spots={mdclerk:[-19,-14]};
+    nextAt=[-9,18];starveChest(root,G,-9,14.5);
+    at=[0,10];
+  }
+  if(where==="landoffice"){
+    /* the land office: the warrant book on its table, shelves of books, the clerk at work */
+    const F=souFloor(root,"souflat",18,-16,16);G=F.G;
+    souRoom(root,G,18,-16,16,12,0x947a58);WORLD.camBox={x0:-16,x1:16,z0:-14,z1:14.4,y1:F.fy+10.6};
+    souShelves(root,G,0,-15,20);
+    presTable(root,G,0,-6);duty("warrants","The Warrant Book",0,-2,{kind:"warrants",verb:"Write",face:[0,-6],stand:[0,-2.9]});
+    workMan(root,crowdEq("gent",800,1664),-9,-8.4,0,"write");presTable(root,G,-9,-6);
+    starveChest(root,G,-12,4.5);duty("durante","The Act of 1664",-12,8,{kind:"durante",after:"warrants",verb:"Read it"});
+    starveChest(root,G,12,4.5);duty("constitutions","The Constitutions",12,8,{kind:"constitutions",after:"durante",verb:"Read them"});
+    starveChest(root,G,-12,-11.5);starveChest(root,G,12,-11.5);
+    nextAt=[7,14];starveChest(root,G,7,11.5);
+    at=[0,5];
+  }
+  if(where==="tradeboard"){
+    /* the board of the Indian trade, Charles Town, 1712-1715: the commissioners at their
+       table, the secretary's table, interpreters standing, two complainants standing before
+       the board (JCIT pp. 26-27); a pile of deerskins */
+    const F=souFloor(root,"souflat",26,-22,22);G=F.G;
+    souRoom(root,G,26,-22,22,14,0x8a7454);WORLD.camBox={x0:-24,x1:24,z0:-20,z1:20.4,y1:F.fy+12.6};
+    souLongTable(root,G,0,-12,22);
+    {const b=new Geo();b.box(0,F.fy+1.5,-15.5,24,0.3,1.6,RGB(0x5e4430));for(const k of [-11,0,11])b.box(k,F.fy+0.75,-15.5,0.4,1.5,1.4,RGB(0x4e3824));root.add(b.mesh(false,false));}
+    [-8,-4,0,4,8].forEach(function(x,i){const f=midSit(buildFigure(crowdEq("gent",810+i,1712)));f.position.set(x,G(x,-15),-15);f.rotation.y=0;root.add(bakeFigure(f));});
+    /* the interpreters, sworn to the board, and the complainants */
+    [[7,-4,-2.6,815],[11,-3,-2.4,816]].forEach(function(a){stand(crowdEq("planter",a[3],1712),a[0],a[1],a[2]);});
+    native(souNativeLook(0),1,-4,Math.PI);native(souNativeLook(1),-3,-3.6,Math.PI);
+    presTable(root,G,-16,-4);duty("complaints","The Secretary’s Table",-16,0,{kind:"complaints",verb:"Write",face:[-16,-4],stand:[-16,-0.9]});
+    const hide=workStack(root,16,8,"pelts",9);for(let i=0;i<6;i++)hide.drop();solid(17,8,3,1.3,LVL.MAIN,0);
+    SOU.skins=workStack(root,16,-4,"pelts",6);if(w.did.skins){SOU.skins.drop();SOU.skins.drop();}solid(17,-4,3,1.3,LVL.MAIN,0);
+    duty("skins","The Deerskins",16,13,{kind:"skins",after:"complaints",verb:"Count them",face:[16,8],stand:[16,12.4]});
+    starveChest(root,G,8,13.5);duty("adjourn","The Last Entry",8,17,{kind:"adjourn",after:"skins",verb:"Write"});
+    starveChest(root,G,-20,8.5);starveChest(root,G,22,-1.5);
+    spots={izard:[14,-15]};
+    nextAt=[-16,17];starveChest(root,G,-16,13.5);
+    at=[0,10];
+  }
+  if(where==="ebenezer"){
+    /* Ebenezer, 1739: the houses, the rice fields with water and dikes, mortars and sieves; the
+       Salzburgers at work, men and women. No overseer: they worked their own fields (CRG iii
+       pp. 428-430) */
+    G=captLand(root,"ebenezer",{trees:200,winter:false,clear:function(x,z){return Math.hypot(x,z)<110||(x>10&&x<120&&z<10&&z>-80);}});
+    plyStreet(root,G,60,-70);
+    [[-16,-14],[16,-18],[-16,-44],[-16,-74]].forEach(function(h){plyHouse(root,G,h[0],h[1],h[0]<0?Math.PI/2:-Math.PI/2,"thatch");});
+    souRice(root,G,30,-70,4,4,14,14);
+    souMortar(root,G,-12,10);souMortar(root,G,-24,-2);
+    SOU.sieves=workStack(root,-22,14,"sieve",6);for(let i=0;i<2;i++)SOU.sieves.drop();if(w.did.sieves){SOU.sieves.drop();SOU.sieves.drop();}solid(-21,14,2.4,1.3,LVL.MAIN,0);
+    workMan(root,crowdEq("hand",820,1739),-24,-3.5,0,"pound");
+    {const f=englishWoman(false);f.position.set(-30,G(-30,6),6);f.rotation.y=1.2;root.add(f);workAdd(f,"sift",{prop:"sieve"});}
+    [[44,-50,0.3],[58,-36,-0.4],[72,-56,0.6]].forEach(function(a,i){workMan(root,crowdEq(i%2?"planter":"hand",821+i,1739),a[0],a[1],a[2],"hoe");});
+    {const f=englishWoman(false);f.position.set(64,G(64,-22),-22);f.rotation.y=-0.5;root.add(f);workAdd(f,"hoe",{});}
+    duty("husk","The Mortar",-12,15,{kind:"husk",verb:"Husk it",face:[-12,10],stand:[-12,11.5]});
+    duty("sieves","The Sieves",-22,19,{kind:"sieves",after:"husk",verb:"Sift it",face:[-22,14],stand:[-22,17.4]});
+    starveChest(root,G,24,10.5);duty("claims","Whose Knowledge?",24,14,{kind:"claims",after:"sieves",verb:"Read it"});
+    starveChest(root,G,-34,20.5);starveChest(root,G,34,20.5);
+    spots={boltzius:[6,4]};
+    nextAt=[44,4];starveChest(root,G,44,0.5);
+    at=[0,42];
+  }
+  if(where==="savannah"||where==="letters"||where==="desk"){
+    /* Yamacraw Bluff: the town laid out in plots on the bluff, the river below */
+    G=captLand(root,"yamacraw",{trees:170,winter:false,clear:function(x,z){return Math.hypot(x,z+4)<110;}});
+    /* the plots: stake lines across the bluff (a reconstruction; the plan was not read) */
+    midStakes(root,G,-80,-36,80,-36,9).visible=true;midStakes(root,G,-80,-70,80,-70,9).visible=true;
+    midStakes(root,G,-40,-30,-40,-76,4).visible=true;midStakes(root,G,40,-30,40,-76,4).visible=true;
+    placeShip(root,"godspeed",1,30,160,Math.PI/2);
+    [[-60,-50],[60,-50],[-60,-86],[60,-86]].forEach(function(h){plyHouse(root,G,h[0],h[1],0,"thatch");});
+    souTent(root,G,-64,-14,8,8,7);souTent(root,G,64,-14,8,8,7);
+  }
+  if(where==="savannah"){
+    /* the treaty, May 1733: the Creek towns' men seated in a half-moon, Tomochichi and Mary
+       Musgrove standing, the presents laid out, the kegs set by them (Jones pp. 28-31) */
+    souTent(root,G,0,-22,16,10,10);
+    for(let i=0;i<7;i++){const a=-1.0+i*(2.0/6), x=Math.sin(a)*16, z=-8-Math.cos(a)*8;
+      const fy=plyFace(x,z,[0,4]);midLog(root,G,x,z,fy,3.2);
+      const f=midSit(tidewaterFigure(souNativeLook(i)));f.position.set(x,G(x,z),z);f.rotation.y=fy;root.add(bakeFigure(f));solid(x,z,1,1,LVL.MAIN,0);}
+    native(personLook("tomochichi",1733),-4,-2,0.3);
+    woman("marymusgrove@1733",-8,0,0.5);
+    souPresents(root,G,12,6);
+    SOU.kegs=workStack(root,4,10,"cask",8);for(let i=0;i<2;i++)SOU.kegs.drop();if(w.did.presents)for(let i=0;i<3;i++)SOU.kegs.drop();solid(5,10,3,1.3,LVL.MAIN,0);
+    const casks=workStack(root,-20,20,"cask",9);for(let i=0;i<6;i++)casks.drop();solid(-19,20,3,1.3,LVL.MAIN,0);
+    duty("presents","The Kegs",-20,25,{kind:"presents",verb:"Carry one",face:[-20,20],stand:[-20,24.4]});
+    starveChest(root,G,24,16.5);duty("treaty","The Speeches",24,20,{kind:"treaty",after:"presents",verb:"Read them"});
+    starveChest(root,G,-34,-4.5);duty("ban","The Act of 1735",-34,-1,{kind:"ban",after:"treaty",verb:"Read it"});
+    starveChest(root,G,34,22.5);starveChest(root,G,-40,18.5);starveChest(root,G,30,-17.5);
+    spots={oglethorpe:[10,-2]};
+    nextAt=[44,4];starveChest(root,G,44,0.5);
+    at=[0,40];
+  }
+  if(where==="letters"){
+    /* Savannah, 1738-39: the trustees' store, the letter book on its table, townsmen waiting */
+    plyHouse(root,G,12,-6,0,"thatch");
+    presTable(root,G,12,10);duty("copy","The Letter Book",12,14,{kind:"copy",verb:"Write",face:[12,10],stand:[12,13.1]});
+    [[20,8,-1.3,830],[22,13,-1.6,831],[21,18,-2.0,832]].forEach(function(a){stand(crowdEq("planter",a[3],1738),a[0],a[1],a[2]);});
+    workMan(root,crowdEq("hand",833,1738),-30,-24,0.4,"dig");workMan(root,crowdEq("hand",834,1738),-22,-30,-0.3,"hoe");
+    starveChest(root,G,-24,6.5);duty("letters","Two Accounts of Darien",-24,10,{kind:"letters",after:"copy",verb:"Read them"});
+    starveChest(root,G,24,-14.5);duty("reasons","The Reasons",24,-11,{kind:"reasons",after:"letters",verb:"Sort them"});
+    nextAt=[-8,30];starveChest(root,G,-12,30.5);
+    at=[0,40];
+  }
+  if(where==="desk"){
+    /* Savannah, 9 October 1739: Oglethorpe's tent, his desk; the account copied fair. Nothing of
+       the day itself is drawn */
+    souTent(root,G,0,-8,14,10,9);
+    presTable(root,G,0,-8);duty("fair","The Desk",0,-4,{kind:"fair",verb:"Write",face:[0,-8],stand:[0,-4.9]});
+    starveChest(root,G,-20,6.5);duty("counts","The Counts",-20,10,{kind:"counts",after:"fair",verb:"Read them"});
+    starveChest(root,G,20,6.5);duty("law","The Act of 1740",20,10,{kind:"law",after:"counts",verb:"Read it"});
+    starveChest(root,G,-30,20.5);starveChest(root,G,30,20.5);
+    spots={oglethorpe:[4.5,-10]};
+    nextAt=[-8,30];
+    if(w.did.closed){nextAt=null;
+      duty("record","The Trustees’ Secretary",-24,22,{kind:"record",verb:"Close the chapter’s record"});
+      presTable(root,G,-24,26);
+      const sc=buildFigure(personEq("trusteesec",1741));sc.position.set(-24,G(-24,28.6),28.6);sc.rotation.y=Math.PI;root.add(sc);solid(-24,28.6,1,1,LVL.MAIN,0);}
+    else starveChest(root,G,-12,30.5);
+    at=[0,40];
+  }
+
+  const LOOK_AFTER={tayac:"goods",sailed:"silent",desousa:"roll",baptism:"brent",marriage:"durante",leet:"constitutions",
+    chestowee:"complaints",free:"skins",horne:"husk",carney:"sieves",debtors:"presents",musgrove:"treaty",yamasees:"treaty",
+    also:"fair",kongo:"counts"};
+  (SOU_LOOKS[day]||[]).forEach(function(L){duty("look_"+L[0],L[1],L[2],L[3],{kind:"look",id:L[0],verb:"Look",after:LOOK_AFTER[L[0]]||null});});
+  for(const id in spots){
+    const d=souSpeaker(id);
+    if(!d)continue;
+    const a=spots[id], x=a[0], z=a[1], gy=G(x,z);
+    const f=buildFigure(d.eq);
+    f.position.set(x,gy,z);f.rotation.y=plyFace(x,z,at);root.add(f);
+    npcMeshes.push({npc:d,mesh:f});solid(x,z,1,1,LVL.MAIN,0);
+    interactables.push({id:id,label:d.name,x:x,z:z+3,y:G(x,z),lvl:LVL.MAIN,r:7,action:"talk",data:d});
+  }
+  if(nextAt&&sd.next)duty("next",sd.next,nextAt[0],nextAt[1],{kind:"next",verb:souNeed()?"Not yet":"Go on"});
+
+  if(day===0&&!w.did.open0){
+    w.did.open0=true;
+    setTimeout(function(){if(CURRENT_WORLD==="ch14")
+      fortResult(SOU_OPEN[0].t,"<p class=\"sickDate\">"+SOU_DAYS[0].date+"</p>"+SOU_OPEN[0].b,[]);},500);
+  }
+  player=buildFigure(S.equip);root.add(player);playerParts=player.userData.parts;dressCarried(player);
+  player.position.set(at[0],G(at[0],at[1]),at[1]);player.rotation.y=face;
+  camYaw=look0;camPitch=pitch0;
+});
+
+function updateSou(dt){
+  if(CURRENT_WORLD!=="ch14")return;
+  SOU.t+=dt;
+  updateBlaze(dt);
+}
+
+/* ---- CHAPTER XIV'S CONTENT, AND ITS MUSTER ----
+   Sat with the Georgia trustees' secretary in London, 1741, who must answer the petitions; he
+   is not named, because the record does not name him. Written off CH13-RECORD.md §Teaching
+   hooks (XIV) and the addendum; keyed a:0, shuffled at runtime; option lengths balanced, so the
+   key is not the longest most of the time. */
+CONTENT.ch14={
+  people:SOU_PEOPLE,
+  npcs:SOU_NPCS,
+  charter:{insight:{b:"Durante Vita"}},
+  reck:{seal:"trustees",kick:"The Trustees’ Secretary",title:"Who Was Free?",
+    frame:"London, 1741. The trustees’ secretary must answer the petitions. “You have seen the papers of three colonies. Tell me what each said about who worked, and who was free.”",
+    lockLine:"Not yet. The secretary will sit with you when the account is copied for London.",
+    pass:{title:"Entered for the Trustees",body:"The secretary blots the page. “Three colonies, three answers. And not one of these papers asked the enslaved.”"},
+    fail:{title:"Not Yet Entered",body:"“You have taken a promoter’s word for the record,” says the secretary. “Ask who wrote it, and for whom.”"},
+    onPass:function(){souW().done=true;},
+    q:[
+      {stim:"Lord Baltimore, 1633: the Catholics aboard are “to be silent upon all occasions of discourse concerning matters of Religion”.",
+       q:"Why would a Catholic proprietor order this?",
+       o:["Protestants were the larger number","Catholics were the larger number","The King had ordered silence","The Jesuits forbade all talk"],a:0},
+      {stim:"Andrew White, 1634, who was there: the English “bought the space of thirtie miles”. A Relation, London 1635: the Yaocomaco shared their town.",
+       q:"Why might the two accounts differ?",
+       o:["Different readers","Different rivers","One is a forgery","A Yaocomaco wrote one"],a:0},
+      {stim:"St. Mary’s, 1648: Margaret Brent asked for a vote “for her selfe” and a second as Lord Baltimore’s attorney.",
+       q:"What did the governor do?",
+       o:["Refused her any vote","Granted both votes","Granted her one vote","Sent the question to England"],a:0},
+      {stim:"Maryland, 1649: no one “professing to beleive in Jesus Christ” to be troubled for religion; to deny the Trinity, death.",
+       q:"Who did the act protect?",
+       o:["Christians","Every faith","Catholics only","Protestants only"],a:0},
+      {stim:"Carolina, 1663: a servant’s land due “at the Expiration of the first Term of their servitude”; twenty acres “To the Owner of every Negro-Man or Slave”.",
+       q:"Whom did the land for an enslaved man reward?",
+       o:["His owner","The man himself","The ship’s master","The Proprietors"],a:0},
+      {stim:"New Netherland, 1644: eleven freed, their children bound. Maryland, 1664: slaves “shall serue Durante Vita”, children slaves “as their ffathers were”.",
+       q:"What did Maryland’s act do that the grant did not?",
+       o:["Freed no parent","Bound the children","Named slaves in law","Freed all after seven years"],a:0},
+      {stim:"Carolina, 1669: slaves may join any church; every freeman has “absolute power and authority over his negro slaves, of what opinion or religion soever”.",
+       q:"What did joining a church change for a slave?",
+       o:["Nothing in his bondage","It made him free","It gave him a vote","It freed his children"],a:0},
+      {stim:"Henry Woodward, 1674: the Westo trade “drest deare skins furrs and young Indian Slaves”.",
+       q:"What does his list show about the trade?",
+       o:["People were traded like goods","Only furs were traded","The Westo refused trade","Traders paid in coin"],a:0},
+      {stim:"The board of the Indian trade, 1712: a trader held a captive “for Security of his Debt” of 39 deerskins.",
+       q:"What does the entry show?",
+       o:["Debts were secured with people","Debts were paid only in coin","The board ended the trade","The captive was set free"],a:0},
+      {stim:"The board’s journal, 1713: Yamasee kings said they could do nothing about a sale “without the Consent of their Townes”.",
+       q:"How did their words reach the journal?",
+       o:["Through a sworn interpreter","In a letter from the kings","In a treaty they wrote","From the governor’s memory"],a:0},
+      {stim:"12 April 1715: a Yamasee man told Bray’s wife of a design on the traders; Bray told the board. It ended “Adjurned till further Summons.”",
+       q:"What kind of evidence is the warning?",
+       o:["A third-hand report","An eyewitness letter","A Yamasee record","A signed confession"],a:0},
+      {stim:"Governor Craven, 1715: “I have caused about two hundred stout negro men to be enlisted”, marching against the Yamasee.",
+       q:"What does this show?",
+       o:["Enslaved men were armed when needed","Enslaved men could never be armed","Carolina had freed its slaves","The Yamasee armed the enslaved"],a:0},
+      {stim:"The trustees, 1741: rice is “Work of Hardship proper for Negroes”. Ebenezer, 1739: “we laugh at such a Talking”.",
+       q:"Which claim rests on the writers’ own harvest?",
+       o:["Ebenezer’s","The trustees’","Both of them","Neither of them"],a:0},
+      {stim:"Historians on Carolina’s rice: Africans as “the prime movers”, or a regime “hybrid, synthetic rather than European or African”.",
+       q:"What should a historian say of whose knowledge it was?",
+       o:["That it is still argued","That it was African, settled","That it was European, settled","That no rice was grown"],a:0},
+      {stim:"Georgia’s charter, 1732: “many of our poor subjects are, through misfortunes and want of employment, reduced to great necessity”.",
+       q:"Was Georgia founded as a debtors’ colony?",
+       o:["No; it names the poor","Yes; it names debtors","Yes; it emptied prisons","No; it was for soldiers"],a:0},
+      {stim:"Oueekachumpa, at Savannah, 1733: the Creek gave up their right to the land “which they did not use themselves”.",
+       q:"How do we have these words?",
+       o:["An interpreted English report","Oueekachumpa’s own letter","A Creek town’s written record","Oglethorpe’s private diary"],a:0},
+      {stim:"Georgia’s act of 1735: slaves had “Obstructed the Increase of English and Christain Inhabitants … who alone can in case of a War be relyed on”.",
+       q:"What kind of reason is this?",
+       o:["Military","Moral","Religious","Legal"],a:0},
+      {stim:"Savannah, 1738: “The Want of the Use of Negroes, with proper Limitations”. Darien, 1739: “shocking to human Nature”.",
+       q:"What do the two petitions show?",
+       o:["Georgians disagreed","Georgians all wanted slaves","Georgians all opposed slavery","Only the trustees had a view"],a:0},
+      {stim:"Tailfer’s party, 1741: Darien was “persuaded” to sign by an officer’s “Promises … of Cattle”. The trustees printed Darien’s petition to defend their ban.",
+       q:"How should a historian use the two?",
+       o:["Read both; each was a party","Trust Tailfer; he had no stake","Trust the trustees; they were neutral","Ignore both; neither is evidence"],a:0},
+      {stim:"Oglethorpe, 9 October 1739: he wanted the account of the rising “inserted in some News papers”.",
+       q:"How should that change how we read the account?",
+       o:["It was written to persuade","It is a court’s record","It is the rebels’ own story","It was kept from London"],a:0},
+      {stim:"The account, 1739: “about 40 Negroes and 20 whites were killed”. A historian today: “About forty whites and probably as many blacks”.",
+       q:"What should a historian do with the counts?",
+       o:["Give both, attributed","Add them together","Keep the older only","Keep the newer only"],a:0},
+      {stim:"Savannah, 1738: slaves “so many to each white Man”. Georgia, 1750: “four Male Negroes” for each armed white man servant.",
+       q:"Whose idea did the repeal adopt?",
+       o:["Savannah’s ratio","Darien’s fifth reason","Ebenezer’s request","The trustees’ ban"],a:0}]},
+  ready:function(){
+    const w=souW();
+    return (w.day>=SOU_DAYS.length-1&&w.did.closed)?{ok:true,missing:[]}:{ok:false,missing:["the account copied for London"]};
+  },
+  targets:collectInsights(SOU_NPCS), unlocks:[]
+};
+
 const CHAPTERS=[
   /* Percy: "The six and twentieth day of Aprill, about foure a clocke in the
      morning, wee descried the Land of Virginia." The ships stand into the bay at
@@ -39617,9 +40892,37 @@ const CHAPTERS=[
    /* Tri-College (the 1696 advice, from the Yearly Meeting's minutes); the Delaware Tribe of
       Indians and PHMC on the Walking Purchase. Penn's will (1701) and the 1780 act are left out:
       not re-read (the will only in Turner's 1911 paraphrase; the act not read at all) */
-   end:{head:"Liberty of ye Body — Complete",yr:"Chapter XIII · September 1688",nextWorld:null,
+   end:{head:"Liberty of ye Body — Complete",yr:"Chapter XIII · September 1688",nextWorld:"ch14",nextLabel:"Durante Vita — Chapter XIV",
      body:"<p>1696: the Yearly Meeting advised “that Friends be careful not to encourage the bringing in of any more Negroes”.</p>"+
        "<p>1737: the Walking Purchase. “The Penns acquired 1200 square miles of Lenape land in Pennsylvania”, the Delaware Tribe of Indians writes. The Tribe and PHMC both say William Penn himself had dealt fairly.</p>"}},
+  {n:"XIV",yr:"1633–1740",t:"Durante Vita",d:"Maryland, Charles Town, Ebenezer and Savannah — November 1633 to October 1739",
+   ready:true,world:"ch14",pace:2.5,near:9,
+   /* the content note and "what students bring" (record, "Content and framing"; CH14-DESIGN):
+      the opening card says once what the record supports; the board does the rest */
+   intro:function(){ return "From 1634 a Catholic lord’s colony on the Chesapeake; then Carolina; in 1733 Georgia. You may know “founded for religious freedom”, “the South always had slavery”, “a debtors’ colony”: the record says otherwise, colony by colony. Slavery in law, a war, a rising, killings on every side, period words: told in the sources’ words, none shown."; },
+   obj:function(){ return "Live eight scenes, 1633 to 1739. After each, fill the comparison board’s last three columns. Then sit with the Georgia trustees’ secretary."; },
+   goals:function(){
+     const w=souW(), need=souNeed();
+     return [
+       {t:"Live the eight scenes ("+(w.day+1)+" of "+SOU_DAYS.length+")",done:w.day>=SOU_DAYS.length-1&&!!w.did.closed},
+       {t:need?SOU_DUTY[need]:"Go on",done:!need},
+       {t:"Ask the clerk, Ralph Izard, Johann Martin Boltzius and James Oglethorpe what they know",done:SOU_NPCS.every(function(n){return npcDone(n.id);}),opt:true},
+       {t:"Sit with the trustees’ secretary",done:!!w.done,goal:true,locked:!(w.day>=SOU_DAYS.length-1&&w.did.closed)}
+     ]; },
+   status:function(){ const w=souW(), sd=souDay(), need=souNeed();
+     if(w.done)return "Chapter complete";
+     if(w.did.closed)return "1741 · the trustees’ secretary is waiting";
+     return sd.date.split(" — ")[0]+" · "+(need?SOU_DUTY[need].charAt(0).toLowerCase()+SOU_DUTY[need].slice(1):"go on when you are ready"); },
+   next:function(){ const w=souW(), need=souNeed();
+     if(need){const c=findSpot(function(it){return it.action==="sou"&&it.data&&it.data.kind===need;});if(c)return {it:c,why:"what the day asks"};}
+     const o=findSpot(function(it){return it.id==="next"||it.id==="record";});
+     if(o)return {it:o,why:w.did.closed?"the chapter ends here":"the next date"};
+     return null; },
+   /* SC Stat. vii pp. 397, 399 (the act of 1740, page-checked); CRNC ii p. 178 (Craven, 1715);
+      CRG i p. 57 (the repeal; the calendar, addendum dispute 36) */
+   end:{head:"Durante Vita — Complete",yr:"Chapter XIV · 1741",nextWorld:null,
+     body:"<p>South Carolina, 1740: “negroes and Indians”, “free Indians in amity” excepted, are “absolute slaves” and “chattels personal”; a slave who struck a white person “may be lawfully killed”, lawmakers wrote. In 1715 Craven had armed “two hundred stout negro men”.</p>"+
+       "<p>Georgia gave way: from 1 January 1750 (Old Style; 1751 in our calendar), “four Male Negroes” per armed white servant.</p>"}},
 ];
 /* The title screen is shown before any world begins, so it needs painting once here.
    Safe at this point and not one line earlier: CHAPTERS is closed above. */
@@ -39710,7 +41013,18 @@ function toastMenu(m){$("adminMsg").textContent=m;}
    list nobody finishes is a list nobody reads.
    Add to the TOP of this array. The build stamp below it is generated. */
 const PATCH_NOTES=[
-  {when:"27 November 2026 · latest",
+  {when:"28 November 2026 · latest",
+   head:"Chapter XIV: Durante Vita",
+   lines:[
+     "<b>A new chapter: Maryland, Carolina and Georgia, 1633 to 1739</b>",
+     "Baltimore’s colony and Margaret Brent’s two votes, the act that made slavery “Durante Vita”, Carolina’s board of the Indian trade, rice at Ebenezer, the Creek towns at Savannah, Georgia’s ban on slavery and the petitions over it.",
+     "<b>A note for teachers</b>",
+     "This chapter includes slavery and captivity written into law, the Yamasee War, the Stono rising and its suppression, killings on every side, and period words. All of it is told in documents, with the writer named. None of it is drawn.",
+     "<b>The comparison board is complete</b>",
+     "All eight colonies, ending on “Who was free?”. Chapter XIII’s comparison sentences are shorter now: 22 words or fewer.",
+     "<b>Where to find it</b>",
+     "Pass Chapter XIII’s muster and its ending leads on to Chapter XIV. If you passed it before today, Chapter XIV is already open in the chapter list."]},
+  {when:"27 November 2026",
    head:"Chapter XIII: Liberty of ye Body",
    lines:[
      "<b>A new chapter: New Netherland and Pennsylvania, 1626 to 1688</b>",
@@ -41182,7 +42496,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261128-0413";
+const BUILD="20261128-0519";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
