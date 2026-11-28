@@ -161,6 +161,15 @@ CAST = {
             f"cultured medium voice, {ENG}.",
     'pastorius': "A German scholar and Quaker in his late thirties, a village clerk and schoolmaster: careful, grave "
                  "and gentle, a thoughtful medium voice, a German accent of the 1600s.",
+    # Chapter XIV: Boltzius, the German pastor at Ebenezer, gets a German accent, not {ENG}
+    'mdclerk': f"An English clerk of a small colonial assembly in his thirties, reading out his own entry: precise, dry "
+               f"and matter-of-fact, a clear medium voice, {ENG}.",
+    'izard': f"An English planter and colonial commissioner in his forties, reading the board's orders: formal, firm and "
+             f"a little weary, a measured low voice, {ENG}.",
+    'boltzius': "A German Lutheran pastor in his late thirties, speaking for his congregation of farmers: earnest, warm "
+                "and plain, a steady medium voice, a German accent of the 1700s.",
+    'oglethorpe': f"An English gentleman soldier of about forty-three, governing a young colony: brisk, confident and "
+                  f"commanding, a strong clear voice, {ENG}.",
 }
 REEL_GAP = 0.6
 

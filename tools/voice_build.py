@@ -54,6 +54,8 @@ VOICES = {
     "gardener": (27, 0.99), "mason": (26, 0.96), "underhill": (25, 1.04), "hutchinson": (21, 1.0),
     # Chapter XIII
     "devries": (27, 0.95), "hart": (24, 1.02), "penn": (26, 1.00), "pastorius": (25, 0.97),
+    # Chapter XIV
+    "mdclerk": (24, 1.03), "izard": (27, 0.97), "boltzius": (25, 0.96), "oglethorpe": (26, 1.04),
 }
 FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 
