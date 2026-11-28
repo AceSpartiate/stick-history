@@ -40338,9 +40338,9 @@ CONTENT.ch14={
   charter:{insight:{b:"Durante Vita"}},
   reck:{seal:"trustees",kick:"The Trustees’ Letter",title:"Who Was Free?",
     frame:"A letter from London, 1741: the trustees’ secretary must answer the petitions, and asks what the papers of three colonies said about who worked, and who was free.",
-    lockLine:"Not yet. The secretary will sit with you when the account is copied for London.",
-    pass:{title:"Entered for the Trustees",body:"The secretary blots the page. “Three colonies, three answers. And not one of these papers asked the enslaved.”"},
-    fail:{title:"Not Yet Entered",body:"“You have taken a promoter’s word for the record,” says the secretary. “Ask who wrote it, and for whom.”"},
+    lockLine:"Not yet. Answer the trustees’ letter once the account is copied for London.",
+    pass:{title:"Sent to the Trustees",body:"Your answer goes to London. Three colonies, three answers, and not one of these papers asked the enslaved."},   /* lead, 28 Nov: a letter now, so no secretary in the room and no words put in his mouth */
+    fail:{title:"Not Yet Sent",body:"Not yet. That answer takes a promoter’s word for the record. Ask who wrote each paper, and for whom."},
     onPass:function(){souW().done=true;},
     q:[
       {stim:"Lord Baltimore, 1633: the Catholics aboard are “to be silent upon all occasions of discourse concerning matters of Religion”.",
@@ -42581,7 +42581,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261128-0540";
+const BUILD="20261128-0712";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
