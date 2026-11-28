@@ -63,7 +63,11 @@ FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 # has never heard; each is how the place is said locally today.
 SAY = [(r"\bKecoughtan\b", "Kick-oh-tan"), (r"\bPaspahegh\b", "Pass-pa-hay"),
        (r"\bweroance(s?)\b", r"wero-ance\1"), (r"\bPowhatan\b", "Pow-a-tan"),
-       (r"\b([Cc])orne\b", r"\1orn")]   # "theire Corne" was read "Kornay" (Whisper, 27 Nov)
+       (r"\b([Cc])orne\b", r"\1orn"),   # "theire Corne" was read "Kornay" (Whisper, 27 Nov)
+       # 28 Nov: abbreviations now stay inside their sentence, so say them as words
+       (r"\bSt\. (?=[A-Z])", "Saint "), (r"\bCapt\. ", "Captain "), (r"\bGov\. ", "Governor "),
+       (r"\bSr\. (?=[A-Z])", "Sir "), (r"\bpp\. ", "pages "), (r"\bp\. (?=\d)", "page "),
+       (r"\bMessrs\. ", "Messieurs "), (r"\bCol\. ", "Colonel ")]
 
 
 def fnv1a(s):

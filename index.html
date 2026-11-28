@@ -12021,6 +12021,7 @@ function speechText(t){
   x=x.replace(/\u2026|\.\.\./g,", ");
   return x.replace(/\s+/g," ").replace(/\s+([.,;:!?])/g,"$1").trim();
 }
+const ABBREV_STOP=/(?:^|[\s(\u201c"])(?:St|Mr|Mrs|Messrs|Dr|Capt|Gov|Rev|Col|Gen|Lt|Sgt|Sr|Jr|pp?|vol)\.$/;
 function chunkForSpeech(t){
   const out=[];
   /* "1. This shows that..." splits after the item number, so the number is spoken as its
@@ -12028,7 +12029,9 @@ function chunkForSpeech(t){
      stop is not a sentence; glue it to the one it belongs to. */
   const sentences=speechText(t).split(/(?<=[.!?\u201d\u2019])\s+/)
     .reduce(function(a,p){
-      if(a.length&&/^\s*\d+\.\s*$/.test(a[a.length-1]))a[a.length-1]+=" "+p;
+      /* lead, 28 Nov (the drill heard a lone "St."): a title or page abbreviation is not the end
+         of a sentence; "the contrivers of Mr." / "Oldham's death" was spoken as two lines (29 of them) */
+      if(a.length&&(/^\s*\d+\.\s*$/.test(a[a.length-1])||ABBREV_STOP.test(a[a.length-1])))a[a.length-1]+=" "+p;
       else a.push(p);
       return a;},[]);
   for(let i=0;i<sentences.length;i++){
@@ -42581,7 +42584,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261128-0712";
+const BUILD="20261128-1024";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
