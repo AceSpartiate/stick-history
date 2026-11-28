@@ -727,7 +727,11 @@
   /* its own block, so the read-aloud gives "Her own account" a stop instead of running it into the line (27 Nov) */
   .leafBlank>b{display:block}
   /* the comparison board (Chapters XIII-XIV): eight colonies by six questions, scrolled sideways on a small screen */
-  .cmpWrap{overflow:auto;max-height:60vh;margin:.4em 0}
+  /* play-test, 27 Nov: taller on a short screen, the colonies' row held at the top while scrolling */
+  .cmpWrap{overflow:auto;max-height:calc(100vh - 20em);min-height:9em;margin:.4em 0}
+  .cmpHint{margin:.1em 0 .3em;font-size:.9em;color:#5a4a3a}
+  .cmp tr:first-child>th{position:sticky;top:0;background:#ece0c2;z-index:2}
+  .cmp tr:first-child>th:first-child{z-index:3}
   .cmp{border-collapse:collapse;font-size:.74em;line-height:1.25}
   .cmp th,.cmp td{border:1px solid rgba(90,58,26,.35);padding:.35em .45em;vertical-align:top;text-align:left;min-width:9.5em}
   .cmp th{background:rgba(120,90,40,.10)}
@@ -15333,6 +15337,10 @@ function objectivesInto(host){
 }
 function renderObjectives(){objectivesInto($("pauseObj"));}
 function openPause(){$("mPause").classList.add("on");setPaused(true);renderObjectives();
+  /* play-test, 27 Nov: the comparison board is Chapter XIII's; before it, the button opened a
+     board of later chapters' quotations in Chapter I */
+  const cs=S.compare&&S.compare.cells;
+  $("pauseBoard").style.display=(CURRENT_WORLD==="ch13"||(S.reached&&S.reached.ch13)||(cs&&Object.keys(cs).length))?"":"none";
 }
 $("pauseResume").onclick=function(){$("mPause").classList.remove("on");setPaused(false);};
 $("pauseVoices").onclick=function(){
@@ -32401,7 +32409,8 @@ function leafQuiz(kick,title,body,opts,id,after){
 /* lead, 27 Nov: the play-test found "(teachers: graphic)" on every fold, even a court order; it is
    now shown only when the full text holds violence, read by the period words for it - erring toward
    the label, since a plain text that carries it costs less than a graphic one that does not */
-const GRAPHIC_RE=/kill|slay|slew|slain|murther|murder|burn|fire[ds]?\b|blood|head|scalp|skin|wound|dead|dying|death|sword|knife|shot|hang|tortur|body|bodies|bones|flesh|fry|massacre|execut|poison|poysen|smite|smote|stab/i;
+const GRAPHIC_RE=/kill|slay|slew|slain|murther|murder|burn|fire[ds]?\b|blood|head|scalp|skin|wound|dead|dying|death|sword|knife|shot|hang|tortur|body|bodies|bones|flesh|fry|massacre|execut|poison|poysen|smite|smote|stab|hack|torn/i;
+/* play-test, 27 Nov: "hack|torn" added - the Breeden Raedt passage (Chapter XIII) went unlabelled */
 function graphicTag(full){return GRAPHIC_RE.test(String(full||"").replace(/<[^>]*>/g," "))?" <small>(teachers: graphic)</small>":"";}
 function leafCard(who,when,plain,full){
   return "<div class=\"starveCard\"><b>"+who+"</b> <i>— "+when+"</i><p>"+plain+"</p>"+
@@ -37865,23 +37874,35 @@ function compareHas(key){const c=COMPARE_CELLS[key];return !!(c&&(c.fixed||compa
 function compareRow(id){return COMPARE_ROWS.filter(function(r){return r.id===id;})[0];}
 function compareCol(id){return COMPARE_COLS.filter(function(c){return c.id===id;})[0];}
 function compareTag(c){return c.who+", "+c.when+". "+c.there+".";}
+/* play-test, 27 Nov: on a Chromebook (1366x768) the board showed two and a half rows of eight
+   columns, three of them Chapter XIV's and empty, and the cell just entered was often off the
+   bottom. Now: a column shows only once a chapter has defined cells for it (XIV's appear when
+   XIV adds them); one line says how to read it; the first new cell is scrolled into view; and
+   Read aloud, after a scene, reads the new cells only, not thirty cells in the browser voice */
 function compareTable(hi){
   const H=[].concat(hi||[]);
-  let h="<div class=\"cmpWrap\"><table class=\"cmp\"><tr><th></th>"+COMPARE_COLS.map(function(c){return "<th>"+c.t+"<small>Chapter "+c.ch+"</small></th>";}).join("")+"</tr>";
+  const cols=COMPARE_COLS.filter(function(c){return COMPARE_ROWS.some(function(r){return !!COMPARE_CELLS[c.id+"."+r.id];});});
+  let h="<div class=\"cmpWrap\"><table class=\"cmp\"><tr><th class=\"noRead\"></th>"+cols.map(function(c){return "<th"+(H.length?" class=\"noRead\"":"")+">"+c.t+"<small>Chapter "+c.ch+"</small></th>";}).join("")+"</tr>";
   COMPARE_ROWS.forEach(function(r){
-    h+="<tr><th>"+r.t+"</th>"+COMPARE_COLS.map(function(c){
+    h+="<tr data-row=\""+r.id+"\"><th"+(H.length?" class=\"noRead\"":"")+">"+r.t+"</th>"+cols.map(function(c){
       const k=c.id+"."+r.id, cell=COMPARE_CELLS[k];
-      if(cell&&compareHas(k))return "<td"+(H.indexOf(k)>=0?" class=\"hi\"":"")+">“"+cell.q+"”<small>"+compareTag(cell)+"</small></td>";
+      if(cell&&compareHas(k))return "<td data-k=\""+k+"\""+(H.indexOf(k)>=0?" class=\"hi\"":(H.length?" class=\"noRead\"":""))+">“"+cell.q+"”<small>"+compareTag(cell)+"</small></td>";
       return "<td class=\"blank noRead\">"+(cell?"…":"")+"</td>";}).join("")+"</tr>";});
-  h+="<tr><th>"+COMPARE_NOT.t+"</th><td class=\"not\" colspan=\""+COMPARE_COLS.length+"\">"+COMPARE_NOT.b+"</td></tr></table></div>";
+  h+="<tr><th"+(H.length?" class=\"noRead\"":"")+">"+COMPARE_NOT.t+"</th><td class=\"not"+(H.length?" noRead":"")+"\" colspan=\""+cols.length+"\">"+COMPARE_NOT.b+"</td></tr></table></div>";
   return h;
 }
 const BOARD={after:null};
-function openBoard(hi,after,title){
+function openBoard(hi,after,title,hint,focus){
   BOARD.after=after||null;
+  const H=[].concat(hi||[]);
   $("boardTitle").textContent=title||"The Comparison Board";
-  $("boardBody").innerHTML=compareTable(hi);
+  $("boardBody").innerHTML="<p class=\"cmpHint\">"+(hint||(H.length?"Read across a row: one question, colony by colony. The gold cells are new.":"Read across a row: one question, colony by colony."))+"</p>"+compareTable(H);
   openModal("mBoard");setPaused(true);
+  /* the new cell into view, below the sticky row of colonies and right of the questions */
+  const wrap=$("boardBody").querySelector(".cmpWrap"), td=wrap&&wrap.querySelector(focus?"[data-k=\""+focus+"\"]":"td.hi");
+  if(wrap&&td){const w=wrap.getBoundingClientRect(), t=td.getBoundingClientRect(), th=wrap.querySelector("tr>th:first-child");
+    wrap.scrollTop=Math.max(0,t.top-w.top-(th?th.offsetHeight:0)-4);
+    wrap.scrollLeft=Math.max(0,t.left-w.left-(th?th.offsetWidth:0)-4);}
 }
 function closeBoard(){
   $("mBoard").classList.remove("on");setPaused(false);
@@ -37891,24 +37912,34 @@ function closeBoard(){
 function compareFill(key,after){
   if(compareHas(key)){if(after)after();return;}
   const c=COMPARE_CELLS[key], parts=key.split("."), col=compareCol(parts[0]), row=compareRow(parts[1]);
-  const opts=[["“"+c.q+"” ("+c.who+")",null]].concat(c.alt||[]);
+  /* play-test, 27 Nov: the right line carried its writer's full title ("Pieter Schaghen, to the
+     States General") and the wrong ones a short "(Wassenaer, 1626)": the longest button was the
+     answer. Now all three read (name, year); and a wrong pick says so, not just the row's name */
+  const yr=(String(c.when).match(/1[0-9]{3}/)||[""])[0];
+  const opts=[["“"+c.q+"” ("+String(c.who).split(",")[0]+(yr?", "+yr:"")+")",null]].concat(c.alt||[]);
   sickSheet(col.t+" · the comparison board",row.t,
-    "<p>Which line belongs on the board, under "+col.t+"?</p>",
+    "<p>Which line answers this for "+col.t+"?</p>",
     shuffle(opts.map(function(o,i){return {t:o[0],fn:function(){
       compareState().cells[key]=i===0?1:2;S.ink+=4;updateInk();saveGame();
-      fortResult(row.t,(i===0?"<p>"+c.res+"</p>":"<p>"+o[1]+"</p>")+
-        "<p>Entered: “"+c.q+"” "+compareTag(c)+"</p>",["+4 Ink"],after||null);}};})));
+      const body=(i===0?"<p>"+c.res+"</p>":"<p>"+o[1]+"</p>")+"<p>On the board: “"+c.q+"” "+compareTag(c)+"</p>";
+      if(i===0)fortResult(row.t,body,["+4 Ink"],after||null);
+      else{result(false,"Not that line","",["+4 Ink"],after||null);$("resBody").innerHTML=body;}}};})));
 }
 /* one comparison sentence: one supported by the board, two that fall into the record's traps */
 function compareSay(id,after){
   const s=COMPARE_SENT[id];
   if(!s||compareState().sent[id]!=null){if(after)after();return;}
+  /* play-test, 27 Nov: the prompt was the bare frame "Like ___, ___ because ___", and the board
+     itself could not be seen while choosing. Plain words now, and a way to look at the board */
   sickSheet("Same question, different colony","Compare",
-    "<p>Like ___, ___ because ___; unlike ___, ___ because ___. Which sentence does the board support?</p>",
+    "<p>Which comparison do the lines on the board support?</p>"+
+    "<button class=\"btn ghost small noRead\" id=\"cmpPeek\">Look at the board</button>",
     shuffle(s.o.map(function(o,i){return {t:o[0],fn:function(){
       compareState().sent[id]=i;S.ink+=4;updateInk();saveGame();
       if(i===0)fortResult("Supported","<p>"+o[1]+"</p>",["+4 Ink"],after||null);
       else{result(false,"Not supported","",["+4 Ink"],after||null);$("resBody").innerHTML="<p>"+o[1]+"</p>";}}};})));
+  const pk=$("cmpPeek");
+  if(pk)pk.onclick=function(){$("mSick").classList.remove("on");openBoard(null,function(){compareSay(id,after);},null,"Read across a row. Close the board to choose your sentence.");};
 }
 
 /* ==================== CHAPTER XIII: LIBERTY OF YE BODY ====================
@@ -38055,22 +38086,23 @@ function midSpeaker(id){
   return Object.assign({},midPerson(id),{lines:lines});
 }
 
-/* ---- THE RECORD THAT OPENS EACH SCENE ---- */
+/* ---- THE RECORD THAT OPENS EACH SCENE ----
+   play-test, 27 Nov: each card's date line was said again as its first sentence; said once now */
 const MID_OPEN=[
   /* DRCNY i p. 37 */
-  {t:"Amsterdam",b:"<p class=\"note\">This chapter includes enslavement written into law, killings on every side, and period words. All are told in the sources’ words. None is shown.</p><p>November 1626. A ship is in from New Netherland. You are a clerk of the West India Company.</p>"},
+  {t:"Amsterdam",b:"<p class=\"note\">This chapter includes enslavement written into law, killings on every side, and period words. All are told in the sources’ words. None is shown.</p><p>A ship is in from New Netherland. You are a clerk of the West India Company.</p>"},
   /* Jameson NN pp. 226-228 */
-  {t:"Fort Amsterdam",b:"<p class=\"note\">Killings are told here in documents. None is shown.</p><p>February 1643. Director Willem Kieft is at war with the river peoples. David de Vries has come to the fort.</p>"},
+  {t:"Fort Amsterdam",b:"<p class=\"note\">Killings are told here in documents. None is shown.</p><p>Director Willem Kieft is at war with the river peoples. David de Vries has come to the fort.</p>"},
   /* O'Callaghan, Laws pp. 36-37 */
-  {t:"North of the Fort",b:"<p>25 February 1644. Eleven men who have served the Company as slaves for eighteen or nineteen years have petitioned to be freed.</p>"},
+  {t:"North of the Fort",b:"<p>Eleven men who have served the Company as slaves for eighteen or nineteen years have petitioned to be freed.</p>"},
   /* Jameson NN p. 259; ERNY i p. 413 */
-  {t:"Flushing",b:"<p>1654 to 1663. New Amsterdam’s church is the Reformed church. Quakers have come to the English towns on Long Island.</p>"},
+  {t:"Flushing",b:"<p>New Amsterdam’s church is the Reformed church. Quakers have come to the English towns on Long Island.</p>"},
   /* ERNY i pp. 555-558 */
-  {t:"The English Ships",b:"<p>August 1664. English frigates lie in the bay. Director Stuyvesant must decide whether to fight.</p>"},
+  {t:"The English Ships",b:"<p>English frigates lie in the bay. Director Stuyvesant must decide whether to fight.</p>"},
   /* the charter (Avalon) */
-  {t:"Pennsylvania",b:"<p>1681. King Charles II grants a province to William Penn, a Quaker. In 1682 Penn crosses to see it.</p>"},
+  {t:"Pennsylvania",b:"<p>King Charles II grants a province to William Penn, a Quaker. In 1682 Penn crosses to see it.</p>"},
   /* Myers PA pp. 233-236 */
-  {t:"The Land Councils",b:"<p>Summer 1683. Penn meets the Lenape kings and their councils to buy land, as he will write to his investors.</p>"},
+  {t:"The Land Councils",b:"<p>Penn meets the Lenape kings and their councils to buy land, as he will write to his investors.</p>"},
   /* NPS transcript */
   {t:"Germantown",b:"<p>18 April 1688. Four Friends of Germantown, German-speaking Quakers, write a paper for their monthly meeting.</p>"}];
 
@@ -38089,11 +38121,11 @@ const MID_LOOKS=[
      "“the Angola slave women are thievish, lazy, and useless trash.” Jameson’s note (1909): slaves were “imported in 1625 or 1626.”")],
    ["names","Their Names",-44,4,"Angola, Congo, Santomee",leafCard("The council’s grant","1644","Paulo Angola, Big Manuel, Little Manuel, Manuel de Gerrit de Reus, Simon Congo, Anthony Portugis, Gracia, Peter Santomee, Jan Francisco, Little Anthony, Jan Fort Orange.")+"<p>Our reading: their names point to Angola, Congo, São Tomé and the Portuguese Atlantic.</p>"]],
   /* Jameson NN p. 392; Jameson NN pp. 400-401 */
-  [["jews","The Jews",-30,-12,"A minister’s request",leafCard("Johannes Megapolensis, a minister","18 March 1655","He asked that the Jews who had come from Brazil “may be sent away from here”.",
+  [["jews","The Jews",-38,-12,"A minister’s request",leafCard("Johannes Megapolensis, a minister","18 March 1655","He asked that the Jews who had come from Brazil “may be sent away from here”.",
      "“these godless rascals, who are of no benefit to the country, but look at everything for their own profit, may be sent away from here.”")+"<p>His words of contempt, quoted in full behind the link.</p>"],
    ["hodgson","A Quaker",30,-12,"The wheelbarrow",leafCard("The ministers’ letter","the 1650s","A young Quaker was sentenced to “pay one hundred guilders or work at the wheelbarrow two years with the negroes.” He refused, and was whipped.")+"<p>The punishment was to work beside the Company’s slaves.</p>"]],
   /* the Municipal Archives blog (2017) */
-  [["works","The City’s Works",-30,52,"Twenty-five",leafCard("The burgomasters’ minutes, as the city archivist quotes them","23 August 1664","They asked Stuyvesant for “twenty five negroes… for the space of eight days to labor at the City’s works”.")+"<p>The city asked for enslaved men’s labour on its defences, two weeks before it surrendered.</p>"]],
+  [["works","The City’s Works",-34,-6,"Twenty-five",leafCard("The burgomasters’ minutes, as the city archivist quotes them","23 August 1664","They asked Stuyvesant for “twenty five negroes… for the space of eight days to labor at the City’s works”.")+"<p>The city asked for enslaved men’s labour on its defences, two weeks before it surrendered.</p>"]],
   [],
   /* Newman; PHMC; the Delaware Tribe of Indians */
   [["walk","The Walking Purchase",-34,30,"1737",leafCard("The Delaware Tribe of Indians","2026","In 1737 “the Penns acquired 1200 square miles of Lenape land in Pennsylvania”, the Tribe writes. And: “William Penn had always dealt fairly with the Lenape”.")+
@@ -38288,7 +38320,9 @@ function midAct(d){
   }
   /* 1 · fort amsterdam, at night */
   if(d.kind==="corn"&&!d.worked){
-    midWork(d,"lift",3.5,"The Company’s corn, levied from the river peoples, measured into the storehouse.",{load:"basket"});
+    /* play-test, 27 Nov: the measure is now seen, set on the stack */
+    midWork(d,"lift",3.5,"The Company’s corn, levied from the river peoples, measured into the storehouse.",{load:"basket"},function(){
+      if(MID.basket)MID.basket.drop();});
     return;
   }
   if(d.kind==="corn"){
@@ -38418,7 +38452,7 @@ function midAct(d){
   }
   /* 5 · by the delaware */
   if(d.kind==="charter"&&!d.worked){
-    midWork(d,"lift",3.5,"Two beaver skins, packed for Windsor Castle: the rent for a province.",{load:"pelts"});
+    midWork(d,"lift",3.5,"Two beaver skins, packed for Windsor Castle: the rent for a province.",{load:"pelts2"});
     return;
   }
   if(d.kind==="charter"){
@@ -38451,7 +38485,8 @@ function midAct(d){
   }
   /* 6 · the land council */
   if(d.kind==="goods"&&!d.worked){
-    midWork(d,"lift",3.5,"The goods for the land, carried out and set before the kings.",{load:"chest"});
+    midWork(d,"lift",3.5,"The goods for the land, carried out and set before the kings.",{load:"chest"},function(){
+      if(MID.gift){MID.gift.drop();MID.gift.drop();}});
     return;
   }
   if(d.kind==="goods"){
@@ -38528,7 +38563,10 @@ function midNext(){
       if(k){compareFill(k,step);return;}
       compareSay(plan.sent,function(){
         w.board[w.day]=true;checkpoint("ch13-board"+w.day);
-        openBoard(plan.cells,function(){midNext();},w.day===MID_DAYS.length-1?"Liberty for Whom?":null);});
+        /* play-test, 27 Nov: the closing board had a title and no question; it now asks one, at its row */
+        const last=w.day===MID_DAYS.length-1;
+        openBoard(plan.cells,function(){midNext();},last?"Liberty for Whom?":null,
+          last?"Read the row “Who was free?” across, colony by colony. Whose liberty did each one write down?":null,last?"pa.free":null);});
     };
     step();
     return;
@@ -38545,9 +38583,10 @@ function midNext(){
 function MID_NIGHT(){
   const gy=G0w(18,24);
   return [
-    {do:function(){MID.flashOn=1;},fade:"in",cam:{to:[18,gy+12,26],look:[40,4,330],cut:true},t:5,
+    /* play-test, 27 Nov: over the rampart's crest now, toward the houses where they stand */
+    {do:function(){MID.flashOn=1;},fade:"in",cam:{to:[14,gy+11,16],look:[-40,6,380],cut:true},t:5,
      narrate:"About midnight De Vries ran to the ramparts, and looked over to Pavonia."},
-    {cam:{to:[12,gy+12.5,27],look:[0,3,340]},t:5,
+    {cam:{to:[6,gy+11.5,18],look:[-64,5,380]},t:5,
      narrate:"He wrote: “Saw nothing but firing, and heard the shrieks.”"},
     {do:function(){MID.flashOn=0;},fade:"out",t:1}];
 }
@@ -38557,6 +38596,10 @@ function MID_NIGHT(){
 WORK_LOAD.pelts=function(){const g=new Geo(), a=RGB(0x5e4430), b=RGB(0x7a5a3c), c=RGB(0x4a3424), cord=RGB(0xb8a47c);
   [a,b,c,b].forEach(function(col,i){g.box((i%2)*0.04-0.02,-0.15+i*0.09,(i%3)*0.03-0.03,0.95-i*0.04,0.09,0.62-i*0.03,col);});
   g.box(0,0.05,0,0.06,0.42,0.66,cord);return g.mesh(false,false);};
+/* play-test, 27 Nov: the charter's rent is "Two Beaver Skins"; the player carried a bale of four */
+WORK_LOAD.pelts2=function(){const g=new Geo(), a=RGB(0x5e4430), b=RGB(0x7a5a3c), cord=RGB(0xb8a47c);
+  g.box(0,-0.1,0,0.85,0.08,0.56,a);g.box(0.03,-0.02,0.02,0.8,0.08,0.52,b);
+  g.box(0,-0.04,0,0.06,0.2,0.6,cord);return g.mesh(false,false);};
 /* a seated man on a log: thighs level, shins down, hands on his knees. Posed, then baked */
 function midSit(f){
   const q=f.userData.parts;if(!q||!q.hipL)return f;
@@ -38567,6 +38610,16 @@ function midSit(f){
   if(q.elbowL){q.elbowL.rotation.x=-0.7;q.elbowR.rotation.x=-0.7;}
   fmPlant(q,0,false);
   return f;
+}
+/* boundary stakes for a farm plot, waist high, and the cord between them (returned, to show) */
+function midStakes(root,G,x0,z0,x1,z1,n){
+  const a=new Geo(), b=new Geo(), stake=RGB(0x6a543a), top=RGB(0x8a7050), cord=RGB(0xc8b88a);
+  let prev=null;
+  for(let i=0;i<n;i++){const u=i/(n-1), x=x0+(x1-x0)*u, z=z0+(z1-z0)*u, gy=G(x,z);
+    a.beam8([x,gy-0.3,z],[x,gy+3.4,z],0.4,0.32,stake,top);
+    if(prev)b.beam8(prev,[x,gy+2.6,z],0.08,0.08,cord,cord);
+    prev=[x,gy+2.6,z];}
+  root.add(a.mesh(false,false));const m=b.mesh(false,false);root.add(m);return m;
 }
 /* a log to sit on */
 function midLog(root,G,x,z,yaw,len){
@@ -38587,13 +38640,20 @@ function midFort(root,G){
   solid(0,Z0,(X1-X0)/2+5,5,LVL.MAIN,0);solid(X0,(Z0+Z1)/2,5,(Z1-Z0)/2,LVL.MAIN,0);solid(X1,(Z0+Z1)/2,5,(Z1-Z0)/2,LVL.MAIN,0);
   solid(X0+half/2,Z1,half/2,5,LVL.MAIN,0);solid(X1-half/2,Z1,half/2,5,LVL.MAIN,0);
 }
-/* a post mill: a tower, a cap and four sails (ceiling: no sail cloth, lattice only) */
+/* a post mill: a tower, a cap and four sails.
+   play-test, 27 Nov: the sails were axis-aligned panels floating off diagonal arms. Each is now
+   a lattice frame turned with its arm, set to one side of it, with canvas on it */
 function midMill(root,G,x,z){
-  const g=new Geo(), wood=RGB(0x6e5a40), dark=RGB(0x4a3c2c), gy=G(x,z);
+  const g=new Geo(), wood=RGB(0x6e5a40), dark=RGB(0x4a3c2c), canvas=RGB(0xc8bc9c), gy=G(x,z), cy=gy+22, sz=z+4.6;
   g.oct(x,z,gy-0.3,gy+20,9,9,6,6,0.3,dark,wood);g.oct(x,z,gy+20,gy+25,7,8,4,6,0.3,wood,dark);
-  for(let i=0;i<4;i++){const a=i*Math.PI/2+0.4, ex=Math.cos(a)*15, ey=Math.sin(a)*15;
-    g.beam8([x,gy+22,z+4.4],[x+ex,gy+22+ey,z+4.4],0.5,0.35,wood,wood);
-    g.box(x+ex*0.6,gy+22+ey*0.6,z+4.6,Math.abs(Math.cos(a))*12+1.2,Math.abs(Math.sin(a))*12+1.2,0.15,RGB(0xb8ab88));}
+  g.box(x,cy,z+4,1.4,1.4,1.4,dark);
+  for(let i=0;i<4;i++){const a=i*Math.PI/2+0.4, c=Math.cos(a), s=Math.sin(a);
+    g.beam8([x,cy,z+4.4],[x+c*15,cy+s*15,z+4.4],0.5,0.35,wood,wood);
+    /* a point r along the arm and o across it */
+    const P=function(r,o){return [x+c*r-s*o, cy+s*r+c*o];};
+    let p=P(9.2,1.9);g.box(p[0],p[1],sz,10.6,3.4,0.1,canvas,a);
+    p=P(9.2,3.7);g.box(p[0],p[1],sz+0.12,10.8,0.3,0.25,wood,a);
+    for(let k=0;k<5;k++){p=P(4+k*2.6,1.9);g.box(p[0],p[1],sz+0.12,0.25,3.8,0.22,wood,a);}}
   root.add(g.mesh(false,false));solid(x,z,4.5,4.5,LVL.MAIN,0);
 }
 /* Pavonia, across the water: a low shore with longhouses, far off and dark; and the flashes */
@@ -38603,13 +38663,20 @@ function midFarShore(root,flashes){
     L.oct(x,z,-2,8,130,70,90,40,0.35,landD,land);
     for(let k=0;k<4;k++){const tx=x-30+k*20, tz=z+20+srand(k*5+i)*20;L.oct(tx,tz,6,24+srand(i+k)*8,8,8,0.6,0.6,0.2,tree,tree);}}
   root.add(L.mesh(false,false));
-  /* the land's top is level at 8, from z 360+20 at the front of every block to 380 at the back */
-  [[-40,380],[-10,384],[20,378]].forEach(function(p,i){yehakin(root,p[0],8,p[1],24,12,10,i%2);});
+  /* play-test, 27 Nov: two of the three longhouses hung off their land - one in the gap between two
+     blocks, one past a block's back edge. All three now on the top of the block at x -60 (its top
+     runs x -105 to -15, z 366 to 406) */
+  [[-82,386],[-56,392],[-30,384]].forEach(function(p,i){yehakin(root,p[0],8,p[1],24,12,10,i%2);});
   if(!flashes)return null;
-  /* unlit, opaque: a muzzle flash is a light, not a lit thing; no blending */
-  const grp=new THREE.Group(), m=new THREE.MeshBasicMaterial({color:0xff8a2a,fog:false});
-  for(let i=0;i<9;i++){const b=new THREE.Mesh(new THREE.BoxGeometry(5,3.5,5),m);
-    b.position.set(-60+srand(i*2.9)*110,2.5+srand(i*1.3)*3,314+srand(i*4.7)*6);b.visible=false;grp.add(b);}
+  /* play-test, 27 Nov: the flashes were nine steady boxes at the water's edge, and read as lit
+     windows. Now each is a brief sideways spurt with a white-hot core, among the houses at a
+     musket's height, and few at once: distant firing, nothing more. Unlit and opaque */
+  const grp=new THREE.Group(), hot=new THREE.MeshBasicMaterial({color:0xfff0c0,fog:false}),
+        spurt=new THREE.MeshBasicMaterial({color:0xff5a10,fog:false});
+  for(let i=0;i<12;i++){const f=new THREE.Group(), s=new THREE.Mesh(new THREE.BoxGeometry(10,1.5,1.5),spurt),
+      c=new THREE.Mesh(new THREE.BoxGeometry(2.6,2.6,2.6),hot);
+    s.position.x=(srand(i*5.3)>0.5?1:-1)*4;s.rotation.z=(srand(i*3.7)-0.5)*0.5;f.add(s);f.add(c);
+    f.position.set(-100+srand(i*2.9)*85,10+srand(i*1.3)*2,368+srand(i*4.7)*8);f.visible=false;grp.add(f);}
   root.add(grp);return grp;
 }
 /* a broad elm, its crown a cluster of rounded masses */
@@ -38649,7 +38716,7 @@ SITE_TERRAIN.germantown={sea:140,shore:100,flat:-60,deep:-1.0,fall:0.01,rise:0.8
 
 registerWorld("ch13",function(root){
   const w=midW(), sd=midDay(), where=sd.where, day=w.day;
-  MID.later=[];MID.flash=null;MID.flashOn=0;MID.stakes=null;MID.heap=null;
+  MID.later=[];MID.flash=null;MID.flashOn=0;MID.stakes=null;MID.heap=null;MID.gift=null;MID.basket=null;
   BLAZE.fires.length=0;
   let G, spots={}, at=[0,42], face=Math.PI, nextAt=null, look0=0, pitch0=0.30;
   const duty=function(id,label,x,z,data){
@@ -38677,7 +38744,9 @@ registerWorld("ch13",function(root){
     workMan(root,crowdEq("hand",700,1626),10,39,0,"carry",{from:[10,39],to:[-3,52],load:"pelts",speed:2.6,drop:foot.drop});
     workMan(root,crowdEq("hand",701,1626),14,41,0,"carry",{from:[13,40.5],to:[0,53.5],load:"pelts",speed:2.9});
     workMan(root,crowdEq("hand",702,1626),-30,-17.2,Math.PI,"hammer");
-    duty("cargo","The Pelts",6,38,{kind:"cargo",verb:"Lift a bale",face:[6,33],stand:[6,37.6],cam:[[13,6.5,43],[5.5,2.4,35]]});
+    /* play-test, 27 Nov: the shot stood in the carriers' path and a man's back filled it; now
+       from beyond the pile, with the ship, the quay and the carriers behind */
+    duty("cargo","The Pelts",6,38,{kind:"cargo",verb:"Lift a bale",face:[6,33],stand:[6,37.6],cam:[[17,7,28],[6,2.2,37]]});
     presTable(root,G,-18,20.5);duty("ledger","The Ledger",-18,24,{kind:"ledger",after:"cargo",verb:"Write",face:[-18,20.5],stand:[-18,23.6]});
     presTable(root,G,24,8);duty("purchase","Schaghen’s Letter",24,12,{kind:"purchase",after:"ledger",verb:"Read it"});
     [[18,2,0.4,710],[30,2,-0.4,711],[24,-3,0,712]].forEach(function(a){stand(crowdEq("gent",a[3],1626),a[0],a[1],a[2]);});
@@ -38703,7 +38772,9 @@ registerWorld("ch13",function(root){
     presTable(root,G,-14,-6);duty("table","The Director’s Table",-14,-2,{kind:"table",after:"corn",verb:"Read it"});
     duty("ramparts","The Ramparts",18,20,{kind:"ramparts",after:"table",verb:"Look out"});
     spots={devries:[6,6]};
-    starveChest(root,G,-30,10.5);starveChest(root,G,30,14.5);
+    /* play-test, 27 Nov: two paper chests here had no label, and Jogues's label stood on bare
+       ground; his chest is under his label now, and the unlabelled ones are gone */
+    starveChest(root,G,-34,-9.5);
     nextAt=[-24,16];starveChest(root,G,-24,12.5);
     at=[0,16];look0=0;
   }
@@ -38713,14 +38784,17 @@ registerWorld("ch13",function(root){
     [[-44,-52],[2,-60],[44,-50]].forEach(function(h){plyHouse(root,G,h[0],h[1],0,"thatch");});
     plyOldField(root,G,-36,-26,8,5);plyOldField(root,G,20,-28,8,5);
     starveHog(root,G,-8,-8,0.6);
-    MID.stakes=bayStakes(root,G,-50,-4,-20,-4,18,10);MID.stakes.visible=!!w.did.plots;solid(-35,-4,15,0.8,LVL.MAIN,0);
+    /* play-test, 27 Nov: these were Chapter XII's palisade, eight feet of close stakes, and the
+       player and a freed man hammered at the gap where the hidden ones would be. Now boundary
+       stakes, all standing, and the cord between them appears when the plots are staked */
+    MID.stakes=midStakes(root,G,-50,-4,-20,-4,7);MID.stakes.visible=!!w.did.plots;solid(-35,-4,15,0.8,LVL.MAIN,0);
     MID.heap=workStack(root,-14,20,"basket",9);for(let i=0;i<2;i++)MID.heap.drop();
-    [["hoe",-30,-20,0.2],["hoe",26,-22,-0.3],["dig",-46,-30,0.5],["hammer",-24,-1.2,Math.PI]].forEach(function(a,i){
+    [["hoe",-30,-20,0.2],["hoe",26,-22,-0.3],["dig",-46,-30,0.5],["hammer",-25,-1.2,Math.PI]].forEach(function(a,i){
       workMan(root,personEq(ELEVEN[i],1644),a[1],a[2],a[3],a[0]);});
     workMan(root,personEq(ELEVEN[4],1644),36,-40,0,"carry",{from:[36,-40],to:[10,-44],load:"wood",speed:2.2});
     stand(personEq(ELEVEN[5],1644),-26,22,plyFace(-26,22,[0,42]));
     duty("tribute","The Maize",-14,26,{kind:"tribute",verb:"Measure",face:[-14,20],stand:[-14,23.5]});
-    duty("plots","The Plots",-18,0,{kind:"plots",after:"tribute",verb:"Drive a stake",face:[-18.6,-4],stand:[-18.6,-1.4]});
+    duty("plots","The Plots",-18,0,{kind:"plots",after:"tribute",verb:"Drive a stake",face:[-20,-4],stand:[-20,-1.3],cam:[[-12.5,6,-10.5],[-21,3.2,-3]]});
     presTable(root,G,24,8);duty("grant","The Grant",24,12,{kind:"grant",after:"plots",verb:"Read it"});
     starveChest(root,G,-34,26.5);starveChest(root,G,34,26.5);starveChest(root,G,-44,0.5);
     nextAt=[44,4];starveChest(root,G,44,0.5);
@@ -38738,6 +38812,8 @@ registerWorld("ch13",function(root){
     duty("remonstrance","The Clerk’s Table",12,18,{kind:"remonstrance",after:"languages",verb:"Write",face:[12,14],stand:[12,17.1]});
     starveChest(root,G,-24,-14.5);duty("letter","The Directors’ Letters",-24,-11,{kind:"letter",after:"remonstrance",verb:"Read them"});
     starveChest(root,G,30,-14.5);
+    /* play-test, 27 Nov: "The Jews" stood on bare ground beside the directors' letters' chest */
+    starveChest(root,G,-38,-15.5);
     spots={hart:[8,28]};
     nextAt=[-8,30];starveChest(root,G,-12,30.5);
     at=[0,42];
@@ -38753,10 +38829,16 @@ registerWorld("ch13",function(root){
     stand(personEq("stuyvesant",1664),-14,-14,plyFace(-14,-14,[0,20]));
     [[-6,-18,0.2,740],[2,-18,-0.2,741],[-20,-8,1.0,742]].forEach(function(a){stand(crowdEq("gent",a[3],1664),a[0],a[1],a[2]);});
     workMan(root,crowdEq("hand",745,1664),30,-30,0,"dig");
-    duty("count","The Burgomasters’ List",57,14,{kind:"count",verb:"Count",face:[57.5,14],stand:[55,14]});
+    /* play-test, 27 Nov: the player wrote with a quill on a house's wall. The list on a table at
+       the house, and two of its men at the door to be counted */
+    presTable(root,G,53.5,12);
+    [[57,9.6,746],[57.2,13.4,747]].forEach(function(a){stand(crowdEq("hand",a[2],1664),a[0],a[1],plyFace(a[0],a[1],[53.5,15.1]));});
+    duty("count","The Burgomasters’ List",53.5,16,{kind:"count",verb:"Count",face:[53.5,12],stand:[53.5,15.1],cam:[[51,7.5,3.5],[54.5,2.6,13.5]]});
     starveChest(root,G,24,46.5);duty("ship","The Ship at Anchor",24,50,{kind:"ship",after:"count",verb:"Read it"});
     presTable(root,G,-14,-6);duty("articles","The Articles",-14,-2,{kind:"articles",after:"ship",verb:"Read them"});
-    starveChest(root,G,-30,10.5);
+    /* play-test, 27 Nov: "The City's Works" stood on bare ground outside the fort, and this
+       chest had no label; the chest is under the label now */
+    starveChest(root,G,-34,-9.5);
     nextAt=[-24,16];starveChest(root,G,-24,12.5);
     at=[0,16];look0=0;
   }
@@ -38786,6 +38868,8 @@ registerWorld("ch13",function(root){
       const f=midSit(tidewaterFigure(plyWampLook({mantle:i%2===0})));f.position.set(x,G(x,z),z);f.rotation.y=fy;root.add(bakeFigure(f));solid(x,z,1,1,LVL.MAIN,0);}
     lenape(-4,-2,0.1,{mantle:true});
     const goods=workStack(root,-18,14,"chest",6);for(let i=0;i<4;i++)goods.drop();solid(-17,14,3,1.3,LVL.MAIN,0);
+    /* play-test, 27 Nov: "set before the kings" was said and not seen; the goods now arrive there */
+    MID.gift=workStack(root,-1,-8,"chest",3);if(w.did.goods){MID.gift.drop();MID.gift.drop();}solid(-0.5,-8,2.6,1.3,LVL.MAIN,0);
     skyBaskets(root,G,-24,8,3);
     workMan(root,crowdEq("hand",760,1683),-14,18,0,"carry",{from:[-14,18],to:[-4,4],load:"basket",speed:2.2});
     midElm(root,G,40,-26);
@@ -38794,6 +38878,7 @@ registerWorld("ch13",function(root){
     starveChest(root,G,24,22.5);duty("council","The Council",24,26,{kind:"council",after:"goods",verb:"Read it"});
     duty("elm","The Elm",34,-14,{kind:"elm",after:"council",verb:"Read it"});
     spots={penn:[6,4]};
+    starveChest(root,G,-34,26.5);/* play-test, 27 Nov: the Walking Purchase's label had nothing under it */
     nextAt=[40,10];starveChest(root,G,40,6.5);
     at=[0,42];
   }
@@ -38805,11 +38890,13 @@ registerWorld("ch13",function(root){
     [[-16,-10],[16,-14],[-16,-40],[16,-44],[-16,-70],[16,-72]].forEach(function(h){leafHouse(root,G,h[0],h[1],h[0]<0?Math.PI/2:-Math.PI/2,"eng");});
     presTable(root,G,12,12);
     [[18,6,-1.0,770],[19,12,-1.5,771],[18,18,-2.0,772]].forEach(function(a){stand(crowdEq("planter",a[3],1688),a[0],a[1],a[2]);});
-    workMan(root,crowdEq("hand",775,1688),-30,20,0.5,"hoe");
+    /* play-test, 27 Nov: he hoed against the clerk's table once the chapter closed; moved off */
+    workMan(root,crowdEq("hand",775,1688),-46,10,0.5,"hoe");
     duty("copy","The Paper",12,16,{kind:"copy",verb:"Copy it",face:[12,12],stand:[12,15.1]});
     starveChest(root,G,-24,6.5);duty("meetings","The Meetings’ Answers",-24,10,{kind:"meetings",after:"copy",verb:"Read them"});
     starveChest(root,G,30,26.5);duty("protest","The Protest",30,30,{kind:"protest",after:"meetings",verb:"Read it"});
     spots={pastorius:[8,4]};
+    starveChest(root,G,-34,26.5);/* play-test, 27 Nov: the baker's label had nothing under it */
     nextAt=[-8,32];
     if(w.did.closed){nextAt=null;
       duty("record","The Clerk of the Yearly Meeting",-24,22,{kind:"record",verb:"Close the chapter’s record"});
@@ -38849,7 +38936,7 @@ function updateMid(dt){
   updateBlaze(dt);
   /* the firing across the water, during the ramparts shot only: a flash here and there */
   if(MID.flash){const on=MID.flashOn;
-    MID.flash.children.forEach(function(b,i){b.visible=!!on&&srand(i*7.3+Math.floor(MID.t*6+i*1.7))>0.55;});}
+    MID.flash.children.forEach(function(b,i){b.visible=!!on&&srand(i*7.3+Math.floor(MID.t*9+i*1.7))>0.86;});}
 }
 
 /* ---- CHAPTER XIII'S CONTENT, AND ITS MUSTER ----
@@ -38898,9 +38985,10 @@ CONTENT.ch13={
       {stim:"Jogues: orders “admit none but Calvinists, but this is not observed”; he lists Catholics, Puritans, Lutherans and Mennonites.",
        q:"What does he describe?",
        o:["A law not kept in practice","Full freedom by law","One church for everyone","A colony of a single people and faith"],a:0},
+      /* play-test, 27 Nov: was "On what ground?", which the stimulus answered word for word */
       {stim:"The directors, 1655, let the Jews stay because of “the large amount of capital, which they have invested in shares of this Company”.",
-       q:"On what ground?",
-       o:["Their investment","Their conscience","Their numbers","A request from the Quakers of Flushing"],a:0},
+       q:"What does their reason suggest about toleration?",
+       o:["Trade helped decide it","Law alone decided it","The minister asked for it","Conscience alone decided it"],a:0},
       {stim:"Flushing, 1657, of the Quakers: “wee cannot in Conscience lay violent hands upon them”. Its schout, Tobias Feake, was among its leaders.",
        q:"What did the Director’s council do to Feake?",
        o:["Banished or fined him","Made his plea the law","Sent him to the King","Gave him a seat on the council"],a:0},
@@ -41056,7 +41144,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261128-0151";
+const BUILD="20261128-0215";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
