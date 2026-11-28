@@ -13,6 +13,18 @@
    A miss list that is not empty: lines the harvest cannot see go in tools/voice_extra.json;
    then run tools/voice_harvest.js, voice_build.py / voice_cast.py clone. 27 Nov 2026. */
 (function(){
+  /* SILENT. The drill only checks that each line HAS a recording; it never needs to hear one.
+     Played aloud, it sounded through the owner's speakers for an hour (27 Nov). Every media
+     element, the speech engine and every audio context are muted before anything plays. */
+  try{const P=HTMLMediaElement.prototype;if(!P.__drillMute){P.__drillMute=P.play;
+    P.play=function(){this.muted=true;this.volume=0;return P.__drillMute.apply(this,arguments);};}
+    document.querySelectorAll('audio,video').forEach(function(a){a.muted=true;a.volume=0;});}catch(e){}
+  try{window.speechSynthesis.cancel();window.speechSynthesis.speak=function(){};}catch(e){}
+  try{const AC=window.AudioContext||window.webkitAudioContext;
+    if(AC&&!AC.prototype.__drillMute){AC.prototype.__drillMute=1;AC.prototype.resume=function(){return this.suspend();};}}catch(e){}
+  /* the game's own context (index.html: AC=AC||new AudioContext) may already be running */
+  try{if(typeof AC!=="undefined"&&AC&&AC.suspend)AC.suspend();}catch(e){}
+  try{if(typeof S!=="undefined"&&S)S.musicOn=false;}catch(e){}
   const bak=localStorage.getItem("stickhistory.save.v1");
   try{saveGame=function(){};checkpoint=function(){};}catch(e){}
   const D=window.DRILL={log:[],spoke:0,read:0,miss:[],errs:[]};
