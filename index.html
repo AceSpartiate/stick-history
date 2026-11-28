@@ -8293,7 +8293,7 @@ function setGunCarried(on){
     if(gunFlask)gunFlask.visible=false;
     if(gunRammer)gunRammer.visible=false;
     if(gunStream)gunStream.visible=false;
-    if(cam&&Math.abs(cam.fov-G_FOV.normal)>0.05){cam.fov=G_FOV.normal;cam.updateProjectionMatrix();}
+    if(cam&&Math.abs(cam.fov-(WORLD.fov||G_FOV.normal))>0.05){cam.fov=WORLD.fov||G_FOV.normal;cam.updateProjectionMatrix();}
   }
   refreshPlayer();refreshGunUI();
   toast(on?"In your hands.":"Slung across your back.");
@@ -9519,8 +9519,12 @@ function enterWorld(id){
   WORLD.sea=-9999;                        /* no open water inside a hull */
   WORLD.blocked=function(x,z){return blocked(x,z);};
   WORLD.camBox=null;                      /* play-test, 27 Nov: a room the camera stays inside */
+  WORLD.fov=null;                         /* play-test, 28 Nov: a room may narrow the view (see below) */
   liveReset();LIVE.root=worldRoot;        /* the ground paint is per world */
   WORLDS[id](worldRoot);
+  /* play-test, 28 Nov: in a room the camera is drawn in close, and at the usual 56 degrees the
+     figures at the screen's edges leaned out. A room sets WORLD.fov a little narrower */
+  if(cam){const f=WORLD.fov||G_FOV.normal;if(Math.abs(cam.fov-f)>0.05){cam.fov=f;cam.updateProjectionMatrix();}}
   liveSoon(30);                           /* after the builder's own microtasks: cached models land first */
   labelHost=$("labels");
   for(let i=0;i<interactables.length;i++){
@@ -16724,7 +16728,7 @@ function closeDrill(){
   if(gunRammer)gunRammer.visible=false;
   if(gunStream)gunStream.visible=false;
   /* the narrowed sighting view must not follow you out of the drill */
-  if(cam&&Math.abs(cam.fov-G_FOV.normal)>0.05){cam.fov=G_FOV.normal;cam.updateProjectionMatrix();}
+  if(cam&&Math.abs(cam.fov-(WORLD.fov||G_FOV.normal))>0.05){cam.fov=WORLD.fov||G_FOV.normal;cam.updateProjectionMatrix();}
   refreshGunHud();
   /* back out to wherever the player had the camera before the lesson */
   if(GUN.savedZoom!==undefined){setZoom(GUN.savedZoom);GUN.savedZoom=undefined;}
@@ -29919,7 +29923,13 @@ function workStack(root,x,z,kind,max){
     /* play-test, 27 Nov: a cask is carried across the body (its axis along x), but a pile lies
        side by side, so it is turned: 1.7 apart and 0.85/1.45 per tier is a cask's own nesting */
     if((kind||"cask")==="cask")m.rotation.y=Math.PI/2;
-    m.position.set(x+(row-1)*1.7+tier*0.85,G(x,z)+0.8+tier*1.45,z);root.add(m);pile.items.push(m);
+    /* play-test, 28 Nov: 0.8 and 1.45 are a cask's; every other load floated 0.2 to 0.7 above
+       the ground (a sieve most) and a second tier hung in the air. Others now sit on the
+       ground, each tier on the one below */
+    let y=G(x,z)+0.8+tier*1.45;
+    if((kind||"cask")!=="cask"&&m.geometry){m.geometry.computeBoundingBox();const bb=m.geometry.boundingBox;
+      y=G(x,z)-bb.min.y*FIG_SCALE+tier*(bb.max.y-bb.min.y)*FIG_SCALE;}
+    m.position.set(x+(row-1)*1.7+tier*0.85,y,z);root.add(m);pile.items.push(m);
   };
   return pile;
 }
@@ -37971,7 +37981,14 @@ function compareTag(c){return c.who+", "+c.when+". "+c.there+".";}
    Read aloud, after a scene, reads the new cells only, not thirty cells in the browser voice */
 function compareTable(hi){
   const H=[].concat(hi||[]);
-  const cols=COMPARE_COLS.filter(function(c){return COMPARE_ROWS.some(function(r){return !!COMPARE_CELLS[c.id+"."+r.id];});});
+  /* play-test, 28 Nov: with Chapter XIV in the file its cells are always defined, so Chapter
+     XIII's board grew three empty columns again. A column shows once its chapter is reached,
+     or once any of its cells is filled */
+  const cols=COMPARE_COLS.filter(function(c){
+    if(!COMPARE_ROWS.some(function(r){return !!COMPARE_CELLS[c.id+"."+r.id];}))return false;
+    if(COMPARE_ROWS.some(function(r){return compareHas(c.id+"."+r.id);}))return true;
+    const ch=CHAPTERS.filter(function(x){return x.n===c.ch;})[0];
+    return !!(ch&&ch.world&&(S.reached&&S.reached[ch.world]||CURRENT_WORLD===ch.world));});
   let h="<div class=\"cmpWrap\"><table class=\"cmp\"><tr><th class=\"noRead\"></th>"+cols.map(function(c){return "<th"+(H.length?" class=\"noRead\"":"")+">"+c.t+"<small>Chapter "+c.ch+"</small></th>";}).join("")+"</tr>";
   COMPARE_ROWS.forEach(function(r){
     h+="<tr data-row=\""+r.id+"\"><th"+(H.length?" class=\"noRead\"":"")+">"+r.t+"</th>"+cols.map(function(c){
@@ -39319,8 +39336,9 @@ function souSpeaker(id){
 
 /* ---- THE RECORD THAT OPENS EACH SCENE ---- */
 const SOU_OPEN=[
-  /* HSMC student guide; Hall MD pp. 40-42 */
-  {t:"St. Clement’s Island",b:"<p class=\"note\">Slavery in law, a war, a slave rising, killings on every side, period words: told in the sources’ words, none shown.</p><p>Lord Baltimore’s Ark and Dove lie in the Potomac, with Governor Leonard Calvert.</p>"},
+  /* HSMC student guide; Hall MD pp. 40-42. play-test, 28 Nov: the content note stood here word
+     for word as on the chapter's intro card, read twice in a minute; the intro's stands */
+  {t:"St. Clement’s Island",b:"<p>Lord Baltimore’s Ark and Dove lie in the Potomac, with Governor Leonard Calvert.</p>"},
   /* AM i p. 215 */
   {t:"St. Mary’s",b:"<p>The freemen of Maryland meet in assembly with the governor. You write at the clerk’s table.</p>"},
   /* Salley Car. p. 60; AM i p. 533 */
@@ -39405,10 +39423,11 @@ Object.assign(COMPARE_CELLS,{
     alt:[["“All the children of leet-men shall be leet-men” (1669)","White tenants bound on paper; the scheme was only partly used."],
          ["“There shall never be any bond slaverie” (Massachusetts, 1641)","Massachusetts Bay’s law, with its own exception."]]},
   /* Salley Car. p. 133 */
-  "car.why":{q:"they truck drest deare skins furrs and young Indian Slaves",who:"Henry Woodward, Shaftesbury’s agent",when:"1674",there:"He was there",
-    /* review, 28 Nov: was "by the proprietors' own agent"; Woodward was Shaftesbury's agent, as the tag says (record, writers' table) */
-    res:"Trade: skins and captives, in one list, by Shaftesbury’s own agent.",
-    alt:[["“absolute power and authority over his negro slaves” (1669)","A law about slaves, not what drew the traders."],
+  /* lead, 28 Nov (the review's point): Woodward's 1674 trade list answered "what was traded", not "why did they
+     come"; the 1663 Proposals, the offer that drew Barbados planters, answer it (record, "1663-1670", Salley p. 60) */
+  "car.why":{q:"To the Owner of every Negro-Man or Slave, brought thither to settle within the first year, twenty acres",who:"The Proposals, for the Lords Proprietors, to Barbados settlers",when:"1663",there:"Written for the Proprietors",
+    res:"Land: acres for every servant, and for every slave a planter brought.",
+    alt:[["“they truck drest deare skins furrs and young Indian Slaves” (1674)","Woodward’s trade report, written eleven years after the offer that drew settlers."],
          ["“the light of the Gospel” (Maryland, 1633)","Maryland’s Account, not Carolina’s."]]},
   /* JCIT p. 42 */
   "car.land":{q:"they told him they could doe Nothing in itt without the Consent of their Townes",who:"The board’s journal, by a sworn interpreter",when:"March 1713",there:"The board was there",
@@ -39513,7 +39532,7 @@ Object.assign(COMPARE_SENT,{
             "Only those “forced” and “not concerned in the Murders & Burnings were pardoned”. Others were killed, the account says."]]}});   /* review, 28 Nov: was "Others were shot"; "killed" for every side (CH14-DESIGN, Content) */
 /* which cells each scene fills on its way out, and its sentence */
 const SOU_BOARD=[{cells:["md.why","md.land"],sent:"sou0"},{cells:["md.gov","md.came"],sent:"sou1"},
-  {cells:["md.worked","md.free","car.free"],sent:"sou2"},{cells:["car.why","car.land","car.gov"],sent:"sou3"},
+  {cells:["md.worked","md.free","car.why","car.free"],sent:"sou2"},{cells:["car.land","car.gov"],sent:"sou3"},
   {cells:["car.worked","ga.worked"],sent:"sou4"},{cells:["ga.why","ga.land"],sent:"sou5"},
   {cells:["ga.came","ga.free"],sent:"sou6"},{cells:["car.came","ga.gov"],sent:"sou7"}];
 
@@ -39572,9 +39591,14 @@ function souRows(kick,title,intro,rows,keys,id,done){
     b.onclick=function(){const i=+b.dataset.sr;w.marks[id][i]=+b.dataset.v;$("sr"+i).textContent=keys[w.marks[id][i]];saveGame();};});
 }
 /* a duty that is work first: the player does it, then the page */
+/* play-test, 28 Nov: `then` (the cloth, skins, sieves or kegs appearing on their pile) ran
+   after the shot had cut away, so the work's result was never seen. It runs mid-shot now, and
+   at the end if the shot was skipped first */
 function souWork(d,task,secs,narr,opt,then){
   d.worked=true;priceFace(d,d.reach||2.6);
-  playerDoes(task,secs,narr,Object.assign({},opt||{},d.cam?{cam:d.cam}:{}),function(){if(then)then();souAct(d);});
+  let ran=!then;const run=function(){if(!ran){ran=true;then();}};
+  if(then)setTimeout(run,secs*620);
+  playerDoes(task,secs,narr,Object.assign({},opt||{},d.cam?{cam:d.cam}:{}),function(){run();souAct(d);});
 }
 
 function souAct(d){
@@ -39844,8 +39868,11 @@ function souAct(d){
     souRows("Savannah · 1739","Sort every reason",
       "<p>Mark each reason, for or against slavery, by its kind.</p>",SOU_REASONS,SOU_REASON_KEYS,"reasons",function(right){
         souDone("reasons");
-        const body="<p>"+(right===SOU_REASONS.length?"Every reason in its place.":"Here is each reason, by its kind.")+"</p>"+
-          SOU_REASONS.map(function(r){return "<p>"+r.why+"</p>";}).join("");
+        /* play-test, 28 Nov: all eight explanations, about 120 words, after the player had just
+           sorted them. Now only the rows marked wrong, and always the one moral reason */
+        const m=souW().marks.reasons||[];
+        const body="<p>"+(right===SOU_REASONS.length?"Every reason in its place.":"Here are the ones to look at again.")+"</p>"+
+          SOU_REASONS.filter(function(r,i){return r.k===3||m[i]!==r.k;}).map(function(r){return "<p>"+r.why+"</p>";}).join("");
         fortResult("How Many Are Moral?",body,["+6 Ink"]);});
     return;
   }
@@ -39918,17 +39945,31 @@ function souNext(){
 
 /* ---- NEW THINGS IN THE WORLD ---- */
 /* a bolt of trade cloth, folded, as laid out before the werowance */
-WORK_LOAD.cloth=function(){const g=new Geo(), a=RGB(0x8a3b2f), b=RGB(0x4e6076), c=RGB(0xd9cdae);
-  g.box(0,-0.12,0,0.9,0.12,0.5,a);g.box(0.05,0.0,0,0.8,0.12,0.46,b);g.box(-0.04,0.12,0.02,0.84,0.1,0.44,c);return g.mesh(false,false);};
-/* a round rice sieve, for a pile */
-WORK_LOAD.sieve=function(){const g=new Geo(), rim=RGB(0x9a7a4c), mesh=RGB(0xc2a670);
-  g.oct(0,0,-0.05,0.05,0.9,0.9,0.9,0.9,0.6,rim,rim);g.oct(0,0,-0.04,0.03,0.82,0.82,0.82,0.82,0.6,mesh,mesh);return g.mesh(false,false);};
+/* play-test, 28 Nov: three flat boxes, three bolts side by side, read as one slab. Now each
+   bolt is one dye, its folds stacked and rounded at alternate edges, tied twice with cord,
+   and narrower than the pile's spacing so the bolts stand apart */
+let SOU_BOLT=0;
+WORK_LOAD.cloth=function(){const g=new Geo(), dye=RGB([0x8a3b2f,0x4e6076,0xb9a77e,0x5c6b3a][(SOU_BOLT++)%4]), cord=RGB(0xcfc29c), t=0.07, w=0.62;
+  for(let i=0;i<5;i++){const y=-0.15+i*t, col=shadeRGB(dye,i%2?0.84:1), s=i%2?-1:1;
+    g.box(0,y,0,w,t*0.9,0.4,col);g.beam8([-w/2,y,s*0.2],[w/2,y,s*0.2],t,t,col,col);}
+  for(const k of [-0.18,0.18])g.box(k,-0.15+2*t,0,0.04,5*t+0.02,0.47,cord);
+  return g.mesh(false,false);};
+/* a round rice sieve, for a pile: a wooden hoop, the woven bottom showing inside it */
+WORK_LOAD.sieve=function(){const g=new Geo(), rim=RGB(0x8a6a3c), mesh=RGB(0xc8ae78), R=0.27, n=10;
+  g.oct(0,0,-0.03,-0.01,2*R,2*R,2*R,2*R,0.6,mesh,mesh);
+  for(let i=0;i<n;i++){const a=i/n*Math.PI*2, b=(i+1)/n*Math.PI*2;
+    g.beam8([Math.sin(a)*R,0,Math.cos(a)*R],[Math.sin(b)*R,0,Math.cos(b)*R],0.06,0.06,rim,rim);}
+  return g.mesh(false,false);};
 /* the pestle, for husking rice in a mortar: a long wooden pole, thicker at both ends */
 WORK_PROP.pestle=function(){const g=new Geo(), wood=RGB(0x8a6a44), woodD=RGB(0x6a4c30);
   g.beam8([0,0.55,0],[0,-0.1,0],0.09,0.06,woodD,wood);g.beam8([0,-0.1,0],[0,-1.25,0.02],0.06,0.1,wood,woodD);return g.mesh(false,false);};
 /* a sieve held in both hands */
-WORK_PROP.sieve=function(){const g=new Geo(), rim=RGB(0x9a7a4c), mesh=RGB(0xc2a670);
-  g.oct(-0.3,0.05,-0.06,0.04,0.62,0.62,0.62,0.62,0.6,rim,rim);g.oct(-0.3,0.05,-0.05,0.02,0.56,0.56,0.56,0.56,0.6,mesh,mesh);return g.mesh(false,false);};
+/* play-test, 28 Nov: the hoop drawn round the woven bottom, as on the pile, not a solid disc */
+WORK_PROP.sieve=function(){const g=new Geo(), rim=RGB(0x8a6a3c), mesh=RGB(0xc8ae78), R=0.29, n=10, cx=-0.3, cz=0.05;
+  g.oct(cx,cz,-0.04,-0.02,2*R,2*R,2*R,2*R,0.6,mesh,mesh);
+  for(let i=0;i<n;i++){const a=i/n*Math.PI*2, b=(i+1)/n*Math.PI*2;
+    g.beam8([cx+Math.sin(a)*R,0,cz+Math.cos(a)*R],[cx+Math.sin(b)*R,0,cz+Math.cos(b)*R],0.06,0.06,rim,rim);}
+  return g.mesh(false,false);};
 WORK_TILT.pestle=0;WORK_TILT.sieve=1.5;
 WORK_TOOL.pound="pestle";
 WORK_GRIP.pestle=[0,-0.34,0.01];
@@ -39969,13 +40010,23 @@ function souRice(root,G,x0,z0,cols,rows,cw,cd){
   root.add(g.mesh(false,false));
 }
 /* a canvas tent, its ridge along z, open at the front (+z); opaque. Built of thin boxes so it
-   reads from inside as well as out. ceiling: the back is a stepped triangle; no guy ropes */
+   reads from inside as well as out.
+   play-test, 28 Nov ("tents are simple"): a ridge pole, the door's canvas rolled back at both
+   edges, pegs along the hem, and four guy ropes: the front pair straight out to the sides, high
+   over the doorway, so no one standing before a tent is crossed by a rope */
 function souTent(root,G,x,z,w,d,h){
-  const g=new Geo(), can=RGB(0xd2c6a6), canD=RGB(0xa89a7a), pole=RGB(0x6a5038), gy=G(x,z);
+  const g=new Geo(), can=RGB(0xd2c6a6), canD=RGB(0xa89a7a), canL=RGB(0xe2d8bc), pole=RGB(0x6a5038), rope=RGB(0x8a7a5a), gy=G(x,z);
   const L=Math.hypot(w/2,h), a=Math.atan2(h,w/2);
   g.box(x-w/4,gy+h/2,z,L,0.15,d,canD,a);g.box(x+w/4,gy+h/2,z,L,0.15,d,can,-a);
-  for(let k=0;k<4;k++){const yc=(k+0.5)*h/4;g.box(x,gy+yc,z-d/2+0.1,w*(1-yc/h),h/4,0.12,canD);}
+  /* the back: a stepped triangle let the field show through its corners; a true one, both faces */
+  {const bz=z-d/2+0.1, A=[x-w/2,gy,bz], B=[x+w/2,gy,bz], C=[x,gy+h,bz];g.tri(A,B,C,canD);g.tri(A,C,B,canD);}
   g.beam8([x,gy,z+d/2],[x,gy+h,z+d/2],0.3,0.25,pole,pole);g.beam8([x,gy,z-d/2+0.3],[x,gy+h,z-d/2+0.3],0.3,0.25,pole,pole);
+  g.beam8([x,gy+h+0.1,z-d/2],[x,gy+h+0.1,z+d/2+0.3],0.28,0.28,pole,pole);
+  for(const s of [-1,1]){
+    g.beam8([x+s*0.5,gy+h-0.6,z+d/2+0.12],[x+s*w/2,gy+0.15,z+d/2+0.12],0.42,0.42,canL,canL);
+    for(const e of [-1,1]){const ez=z+e*d/2, px=x+s*(w/2+2), pz=e>0?ez:ez-2.2;
+      g.beam8([x+s*0.4,gy+h-0.2,ez],[px,gy+0.25,pz],0.07,0.07,rope,rope);g.box(px,gy+0.25,pz,0.2,0.5,0.2,pole);}
+    for(let k=1;k<Math.floor(d/2.5);k++)g.box(x+s*(w/2+0.25),gy+0.2,z-d/2+k*d/Math.floor(d/2.5),0.18,0.4,0.18,pole);}
   root.add(g.mesh(false,false));
   solid(x-w/2+0.6,z,0.6,d/2,LVL.MAIN,0);solid(x+w/2-0.6,z,0.6,d/2,LVL.MAIN,0);solid(x,z-d/2,w/2,0.6,LVL.MAIN,0);
 }
@@ -40090,12 +40141,14 @@ registerWorld("ch14",function(root){
     stand(personEq("lcalvert",1634),-12,6,Math.PI);
     [[-4,8,2.8,780],[-20,9,-2.8,781]].forEach(function(a){stand(crowdEq("gent",a[3],1634),a[0],a[1],a[2]);});
     SOU.gift=workStack(root,-12,-1,"cloth",6);if(w.did.goods){SOU.gift.drop();SOU.gift.drop();SOU.gift.drop();}solid(-11,-1,3,1.3,LVL.MAIN,0);
-    const pile=workStack(root,8,16,"chest",6);for(let i=0;i<4;i++)pile.drop();solid(9,16,3,1.3,LVL.MAIN,0);
+    /* play-test, 28 Nov: the chests stood twenty paces off, and the cloth appeared out of shot.
+       Now beside the governor, and the shot takes in the chests, the cloth and the werowance */
+    const pile=workStack(root,2,1,"chest",6);for(let i=0;i<4;i++)pile.drop();solid(3,1,3,1.3,LVL.MAIN,0);
     midLog(root,G,36,-14,0.2,10);midLog(root,G,44,-8,-0.5,9);
     workMan(root,crowdEq("hand",782,1634),36,-17,0,"chop");workMan(root,crowdEq("hand",783,1634),45,-11.2,0,"chop");
     workMan(root,crowdEq("hand",784,1634),28,-6,0,"carry",{from:[30,-8],to:[20,8],load:"wood",speed:2.3});
     starveChest(root,G,24,8.5);duty("silent","Baltimore’s Instructions",24,12,{kind:"silent",verb:"Read them"});
-    duty("goods","The Trade Goods",8,21,{kind:"goods",after:"silent",verb:"Carry them",face:[8,16],stand:[8,20.4]});
+    duty("goods","The Trade Goods",2,6,{kind:"goods",after:"silent",verb:"Carry them",face:[2,1],stand:[2,4.8],cam:[[13,7,11],[-7,2,-2]]});
     starveChest(root,G,-24,18.5);duty("landing","The Two Accounts",-24,22,{kind:"landing",after:"goods",verb:"Read them"});
     starveChest(root,G,-34,20.5);starveChest(root,G,34,20.5);
     nextAt=[44,4];starveChest(root,G,44,0.5);
@@ -40106,7 +40159,7 @@ registerWorld("ch14",function(root){
        benches, the clerk's table, Margaret Brent standing to ask (AM i p. 215). Drawn: Brent and
        de Sousa (who sat in an earlier session, 1641 or 1642), never voiced */
     const F=souFloor(root,"souflat",24,-22,22);G=F.G;
-    souRoom(root,G,24,-22,22,13);WORLD.camBox={x0:-22,x1:22,z0:-20,z1:20.4,y1:F.fy+11.6};
+    souRoom(root,G,24,-22,22,13);WORLD.camBox={x0:-22,x1:22,z0:-20,z1:20.4,y1:F.fy+11.6};WORLD.fov=48;
     const g=new Geo();g.box(0,F.fy+0.6,-18,20,1.2,6,RGB(0x5e4a34));root.add(g.mesh(false,false));solid(0,-18,10,3,LVL.MAIN,0);
     {const f=buildFigure(crowdEq("gent",790,1648));f.position.set(0,F.fy+1.2,-18.5);f.rotation.y=0;root.add(bakeFigure(f));}
     midBenches(root,G,0,-4,3);
@@ -40125,7 +40178,7 @@ registerWorld("ch14",function(root){
   if(where==="landoffice"){
     /* the land office: the warrant book on its table, shelves of books, the clerk at work */
     const F=souFloor(root,"souflat",18,-16,16);G=F.G;
-    souRoom(root,G,18,-16,16,12,0x947a58);WORLD.camBox={x0:-16,x1:16,z0:-14,z1:14.4,y1:F.fy+10.6};
+    souRoom(root,G,18,-16,16,12,0x947a58);WORLD.camBox={x0:-16,x1:16,z0:-14,z1:14.4,y1:F.fy+10.6};WORLD.fov=48;
     souShelves(root,G,0,-15,20);
     presTable(root,G,0,-6);duty("warrants","The Warrant Book",0,-2,{kind:"warrants",verb:"Write",face:[0,-6],stand:[0,-2.9]});
     workMan(root,crowdEq("gent",800,1664),-9,-8.4,0,"write");presTable(root,G,-9,-6);
@@ -40140,7 +40193,7 @@ registerWorld("ch14",function(root){
        table, the secretary's table, interpreters standing, two complainants standing before
        the board (JCIT pp. 26-27); a pile of deerskins */
     const F=souFloor(root,"souflat",26,-22,22);G=F.G;
-    souRoom(root,G,26,-22,22,14,0x8a7454);WORLD.camBox={x0:-24,x1:24,z0:-20,z1:20.4,y1:F.fy+12.6};
+    souRoom(root,G,26,-22,22,14,0x8a7454);WORLD.camBox={x0:-24,x1:24,z0:-20,z1:20.4,y1:F.fy+12.6};WORLD.fov=48;
     souLongTable(root,G,0,-12,22);
     {const b=new Geo();b.box(0,F.fy+1.5,-15.5,24,0.3,1.6,RGB(0x5e4430));for(const k of [-11,0,11])b.box(k,F.fy+0.75,-15.5,0.4,1.5,1.4,RGB(0x4e3824));root.add(b.mesh(false,false));}
     [-8,-4,0,4,8].forEach(function(x,i){const f=midSit(buildFigure(crowdEq("gent",810+i,1712)));f.position.set(x,G(x,-15),-15);f.rotation.y=0;root.add(bakeFigure(f));});
@@ -40150,7 +40203,8 @@ registerWorld("ch14",function(root){
     presTable(root,G,-16,-4);duty("complaints","The Secretary’s Table",-16,0,{kind:"complaints",verb:"Write",face:[-16,-4],stand:[-16,-0.9]});
     const hide=workStack(root,16,8,"pelts",9);for(let i=0;i<6;i++)hide.drop();solid(17,8,3,1.3,LVL.MAIN,0);
     SOU.skins=workStack(root,16,-4,"pelts",6);if(w.did.skins){SOU.skins.drop();SOU.skins.drop();}solid(17,-4,3,1.3,LVL.MAIN,0);
-    duty("skins","The Deerskins",16,13,{kind:"skins",after:"complaints",verb:"Count them",face:[16,8],stand:[16,12.4]});
+    /* play-test, 28 Nov: the shot shows the counted pile as it grows, not only the lifting */
+    duty("skins","The Deerskins",16,13,{kind:"skins",after:"complaints",verb:"Count them",face:[16,8],stand:[16,12.4],cam:[[4,7,17],[15,2,4]]});
     starveChest(root,G,8,13.5);duty("adjourn","The Last Entry",8,17,{kind:"adjourn",after:"skins",verb:"Write"});
     starveChest(root,G,-20,8.5);starveChest(root,G,22,-1.5);
     spots={izard:[14,-15]};
@@ -40200,8 +40254,9 @@ registerWorld("ch14",function(root){
     woman("marymusgrove@1733",-8,0,0.5);
     souPresents(root,G,12,6);
     SOU.kegs=workStack(root,4,10,"cask",8);for(let i=0;i<2;i++)SOU.kegs.drop();if(w.did.presents)for(let i=0;i<3;i++)SOU.kegs.drop();solid(5,10,3,1.3,LVL.MAIN,0);
-    const casks=workStack(root,-20,20,"cask",9);for(let i=0;i<6;i++)casks.drop();solid(-19,20,3,1.3,LVL.MAIN,0);
-    duty("presents","The Kegs",-20,25,{kind:"presents",verb:"Carry one",face:[-20,20],stand:[-20,24.4]});
+    /* play-test, 28 Nov: the store of kegs stood 26 paces from the presents; closer, and in one shot */
+    const casks=workStack(root,-8,18,"cask",9);for(let i=0;i<6;i++)casks.drop();solid(-7,18,3,1.3,LVL.MAIN,0);
+    duty("presents","The Kegs",-8,23,{kind:"presents",verb:"Carry one",face:[-8,18],stand:[-8,22.4],cam:[[2,9,38],[-3,2,14]]});
     starveChest(root,G,24,16.5);duty("treaty","The Speeches",24,20,{kind:"treaty",after:"presents",verb:"Read them"});
     starveChest(root,G,-34,-4.5);duty("ban","The Act of 1735",-34,-1,{kind:"ban",after:"treaty",verb:"Read it"});
     starveChest(root,G,34,22.5);starveChest(root,G,-40,18.5);starveChest(root,G,30,-17.5);
@@ -40217,24 +40272,27 @@ registerWorld("ch14",function(root){
     workMan(root,crowdEq("hand",833,1738),-30,-24,0.4,"dig");workMan(root,crowdEq("hand",834,1738),-22,-30,-0.3,"hoe");
     starveChest(root,G,-24,6.5);duty("letters","Two Accounts of Darien",-24,10,{kind:"letters",after:"copy",verb:"Read them"});
     starveChest(root,G,24,-14.5);duty("reasons","The Reasons",24,-11,{kind:"reasons",after:"letters",verb:"Sort them"});
-    nextAt=[-8,30];starveChest(root,G,-12,30.5);
+    nextAt=[-8,30];starveChest(root,G,-8,26.5);   /* play-test, 28 Nov: the chest under its label, as in every other scene */
     at=[0,40];
   }
   if(where==="desk"){
     /* Savannah, 9 October 1739: Oglethorpe's tent, his desk; the account copied fair. Nothing of
        the day itself is drawn */
     souTent(root,G,0,-8,14,10,9);
-    presTable(root,G,0,-8);duty("fair","The Desk",0,-4,{kind:"fair",verb:"Write",face:[0,-8],stand:[0,-4.9]});
+    /* play-test, 28 Nov: the shot over the shoulder looked at the tent's canvas; it looks in at
+       the open front now. Oglethorpe stood where the roof is three feet high, his head through
+       it: he waits at the door */
+    presTable(root,G,0,-8);duty("fair","The Desk",0,-4,{kind:"fair",verb:"Write",face:[0,-8],stand:[0,-4.9],cam:[[3.5,6,7],[0,3,-7]]});
     starveChest(root,G,-20,6.5);duty("counts","The Counts",-20,10,{kind:"counts",after:"fair",verb:"Read them"});
     starveChest(root,G,20,6.5);duty("law","The Act of 1740",20,10,{kind:"law",after:"counts",verb:"Read it"});
     starveChest(root,G,-30,20.5);starveChest(root,G,30,20.5);
-    spots={oglethorpe:[4.5,-10]};
+    spots={oglethorpe:[-5,2]};
     nextAt=[-8,30];
     if(w.did.closed){nextAt=null;
-      duty("record","The Trustees’ Secretary",-24,22,{kind:"record",verb:"Close the chapter’s record"});
+      duty("record","The Trustees’ Letter",-24,22,{kind:"record",verb:"Answer the letter"});   /* lead, 28 Nov: the secretary was in London in 1741, not at this desk in 1739; his questions come by letter */
       presTable(root,G,-24,26);
-      const sc=buildFigure(personEq("trusteesec",1741));sc.position.set(-24,G(-24,28.6),28.6);sc.rotation.y=Math.PI;root.add(sc);solid(-24,28.6,1,1,LVL.MAIN,0);}
-    else starveChest(root,G,-12,30.5);
+      /* no figure: the letter is on the desk */}
+    else starveChest(root,G,-8,26.5);
     at=[0,40];
   }
 
@@ -40278,8 +40336,8 @@ CONTENT.ch14={
   people:SOU_PEOPLE,
   npcs:SOU_NPCS,
   charter:{insight:{b:"Durante Vita"}},
-  reck:{seal:"trustees",kick:"The Trustees’ Secretary",title:"Who Was Free?",
-    frame:"London, 1741. The trustees’ secretary must answer the petitions. “You have seen the papers of three colonies. Tell me what each said about who worked, and who was free.”",
+  reck:{seal:"trustees",kick:"The Trustees’ Letter",title:"Who Was Free?",
+    frame:"A letter from London, 1741: the trustees’ secretary must answer the petitions, and asks what the papers of three colonies said about who worked, and who was free.",
     lockLine:"Not yet. The secretary will sit with you when the account is copied for London.",
     pass:{title:"Entered for the Trustees",body:"The secretary blots the page. “Three colonies, three answers. And not one of these papers asked the enslaved.”"},
     fail:{title:"Not Yet Entered",body:"“You have taken a promoter’s word for the record,” says the secretary. “Ask who wrote it, and for whom.”"},
@@ -40927,18 +40985,18 @@ const CHAPTERS=[
    /* review, 28 Nov: was "the record says otherwise, colony by colony"; the design asks the card to say once what the record
       supports (Maryland 1649; Georgia 1735; the charter's "poor subjects") */
    intro:function(){ return "From 1634 a Catholic lord’s colony on the Chesapeake; then Carolina; in 1733 Georgia. You may know “founded for religious freedom”, “the South always had slavery”, “a debtors’ colony”. The papers show freedom for some faiths, Georgia banning slavery, and “poor subjects”. Slavery in law, a war, a rising, killings on every side: in the sources’ words, none shown."; },
-   obj:function(){ return "Live eight scenes, 1633 to 1739. After each, fill the comparison board’s last three columns. Then sit with the Georgia trustees’ secretary."; },
+   obj:function(){ return "Live eight scenes, 1633 to 1739. After each, fill the comparison board’s last three columns. Then answer the Georgia trustees’ letter."; },
    goals:function(){
      const w=souW(), need=souNeed();
      return [
        {t:"Live the eight scenes ("+(w.day+1)+" of "+SOU_DAYS.length+")",done:w.day>=SOU_DAYS.length-1&&!!w.did.closed},
        {t:need?SOU_DUTY[need]:"Go on",done:!need},
        {t:"Ask the clerk, Ralph Izard, Johann Martin Boltzius and James Oglethorpe what they know",done:SOU_NPCS.every(function(n){return npcDone(n.id);}),opt:true},
-       {t:"Sit with the trustees’ secretary",done:!!w.done,goal:true,locked:!(w.day>=SOU_DAYS.length-1&&w.did.closed)}
+       {t:"Answer the trustees’ letter",done:!!w.done,goal:true,locked:!(w.day>=SOU_DAYS.length-1&&w.did.closed)}
      ]; },
    status:function(){ const w=souW(), sd=souDay(), need=souNeed();
      if(w.done)return "Chapter complete";
-     if(w.did.closed)return "1741 · the trustees’ secretary is waiting";
+     if(w.did.closed)return "1741 · the trustees’ letter is waiting";
      return sd.date.split(" — ")[0]+" · "+(need?SOU_DUTY[need].charAt(0).toLowerCase()+SOU_DUTY[need].slice(1):"go on when you are ready"); },
    next:function(){ const w=souW(), need=souNeed();
      if(need){const c=findSpot(function(it){return it.action==="sou"&&it.data&&it.data.kind===need;});if(c)return {it:c,why:"what the day asks"};}
@@ -42523,7 +42581,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261128-0531";
+const BUILD="20261128-0540";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
