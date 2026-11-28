@@ -3367,7 +3367,8 @@ const PEOPLE_LOOK={
      gentlewoman of 1.7: a coif under a hat, a gown in green. Imagined. Drawn, never voiced: her
      words survive only in the clerk's third person (AM i p. 215) */
   brent:{sex:"f",face:"oval",hair:"bun",hairColor:0x4a3424,hat:"capotain",dress:"gown",mood:"keen",colors:{gown:WOOL.green,hat:0x2a2622}},
-  /* CLASS: "Mathias Sousa, a Molato" in a Jesuit land record; Andrew White's indentured servant,
+  /* CLASS: "Mathias Sousa, a Molato", as a Jesuit priest named him in a land record (MSA: a Land
+     Office patent record, 1646-1657; review 28 Nov, was "a Jesuit land record"); Andrew White's indentured servant,
      then a freeman (MSA, 2003). Nothing describes him (look book 1.12): a freeman's plain cloth,
      a skin tone from the shared range. Imagined. Drawn, never voiced */
   desousa:{face:"oval",hair:"short",hairColor:HAIR.black,beard:"short",skin:0x7a5236,hat:"none",dress:"doublet",mood:"plain",
@@ -3392,13 +3393,21 @@ const PEOPLE_LOOK={
   /* PORTRAIT: the oval portrait of 1744 (Oglethorpe University) shows him "wearing a suit of
      armor"; another catalogued likeness, "a dark jacket and tall white collar" (Georgia Digital
      Library records, read 28 Nov). At his desk in 1739, aged 43: cloth, not armour (look book
-     3.8). A dark blue coat, the colour imagined */
+     3.8). A dark blue coat, the colour imagined. review, 28 Nov: the 1744 armoured oval is
+     confirmed by the Digital Library of Georgia record (a copy of Oglethorpe University's
+     original). Verelst's group of 1734-35, the trustees receiving the Yamacraw (Winterthur),
+     also shows him; its catalogue was not read, so nothing here is taken from it: UNVERIFIED */
   oglethorpe:{born:1696,face:"long",hair:"long",hairColor:HAIR.brown,beard:"none",hat:"broad",dress:"merchant",cloak:true,mood:"keen",
     colors:{torso:0x2e3a5c,breech:WOOL.grey,stock:WOOL.grey,cloak:0x3a3236,hat:0x1e1c1c}},
-  /* PORTRAIT: William Verelst's portrait of 1734, known through Faber's engraving; a catalogue of
-     a 1741 copy: "depicted wearing bearskins" (Christie's, read 28 Nov). So a dark fur mantle. No
-     catalogue read describes his hair, age or marks: loose hair, no paint, no marks. Never
-     voiced: his words come through interpreters */
+  /* PORTRAIT: William Verelst's double portrait of 1734 (with Tooanahowi, who holds the eagle),
+     the painting unlocated, known through John Faber the younger's mezzotint (Chipstone: "After a
+     painting by William Verelst", 1734). review, 28 Nov: the "1741 copy" is not a painting but
+     Kleinschmidt's copper engraving after Verelst (Halle, 1741), whose Christie's entry says the
+     pair are "depicted wearing bearskins" (christies.com.cn lot 6368264, read); another Christie's
+     note is reported, in a search summary only, to say "clad in deerskin": WHICH SKIN IS
+     UNVERIFIED. So a dark skin mantle, the animal not claimed. No catalogue read describes his
+     hair, age or marks: loose hair, no paint, no marks. Never voiced: his words come through
+     interpreters */
   tomochichi:{face:"long",hair:"loose",hairColor:HAIR.black,height:1.02,dress:"bare",feet:"moccasin",mantle:true,paint:false,beads:false,mood:"plain",
     colors:{mantle:0x3a2e26}},
   /* CLASS: "Known as Coosaponakeesa among the Muscogee (Creek) Indians", Oglethorpe's interpreter
@@ -39317,7 +39326,7 @@ const SOU_OPEN=[
   /* Salley Car. p. 60; AM i p. 533 */
   {t:"The Land Office",b:"<p>Carolina’s proprietors offer land for every person a settler brings. Maryland’s assembly passes an act on slaves. You keep the warrant book.</p>"},
   /* Salley Car. p. 133; Rivers p. 232 */
-  {t:"Charles Town",b:"<p class=\"note\">Captives, a war and killings: in documents, none shown.</p><p>In 1674 the Westo traded “drest deare skins furrs and young Indian Slaves”, Henry Woodward wrote. In 1708 the governor counted 1,400 Native people held as slaves.</p>"},
+  {t:"Charles Town",b:"<p class=\"note\">Captives, war, killings: in documents, none shown.</p><p>In 1674 the Westo traded “drest deare skins furrs and young Indian Slaves”, Henry Woodward wrote. In 1708 the governor counted 1,400 Native people held as slaves.</p>"},
   /* CRG iii pp. 376, 428; Rivers p. 232 */
   {t:"Ebenezer",b:"<p>Protestants from Salzburg farm here, by the Savannah River. Next door, Carolina “produces chiefly Rice”, the trustees write; in 1708 most of its people were enslaved.</p>"},
   /* Avalon (the charter); Jones pp. 27-28 */
@@ -39334,7 +39343,8 @@ const SOU_LOOKS=[
      priceCard("A Relation of Maryland","London, 1635","“he would not bid him goe, neither would hee bid him stay, but that he might use his owne discretion”")+"<p>One answer, in two English versions, a year apart.</p>"],
    ["sailed","Who Sailed",34,24,"Catholic and Protestant",leafCard("Clayton Hall, an editor","1910; he was not there","Most gentlemen were Catholic, most servants Protestant, “and these being the more numerous, the larger number of the whole ship's company was of the latter faith.”")+"<p>An editor’s summary, not a passenger list.</p>"]],
   /* the MSA biography of de Sousa (2003); Hall MD p. 131 */
-  [["desousa","Mathias de Sousa",-20,14,"A servant, then a freeman",leafCard("The Maryland State Archives","2003","A Jesuit record calls him “Mathias Sousa, a Molato”. “Mathius was an indentured servant who worked for Father Andrew White.” “In March 1641, Mathius was elected as a representative”.")+"<p>The page’s own title says 1642. What “Molato” meant is open.</p>"],
+  [["desousa","Mathias de Sousa",-20,14,"A servant, then a freeman",/* review, 28 Nov: was "A Jesuit record calls him"; the MSA page: "one of the Jesuit priests identified Mathius as ... in an important land record" (a Land Office patent record, 1646-1657) */
+     leafCard("The Maryland State Archives","2003","A Jesuit priest, in a land record, calls him “Mathias Sousa, a Molato”. “Mathius was an indentured servant who worked for Father Andrew White.” “In March 1641, Mathius was elected as a representative”.")+"<p>The page’s own title says 1642. What “Molato” meant is open.</p>"],
    ["baptism","The Tayac’s Baptism",20,14,"Charles and Mary",leafCard("The Jesuits’ annual letter","1640, tr.","“To the Emperor, who was called Chitomachon before, was given the name of Charles; to his wife that of Mary.” The governor was present.")+"<p>A conversion, in the Jesuits’ telling. No Piscataway account of it survives.</p>"]],
   /* AM i p. 534; Avalon, arts. 22-23 and its note */
   [["marriage","The Marriage Clause",-12,-11,"The lawmakers’ words",leafCard("Maryland’s act of 1664","1664","A freeborn woman who married an enslaved man would serve his master for her husband’s life, and their children would be slaves.",
@@ -39349,7 +39359,7 @@ const SOU_LOOKS=[
   /* NGE (Jackson; Frank); Jones pp. 28, 31 */
   [["debtors","A Debtors’ Colony?",34,26,"Poor, not debtors",leafCard("Edwin Jackson, New Georgia Encyclopedia","today","“not one formerly jailed debtor was among the first colonists selected.”")+"<p>The charter says “poor subjects”. “Debtor” is not among its reasons.</p>"],
    ["musgrove","Mary Musgrove",-40,22,"The interpreter",leafCard("Andrew Frank, New Georgia Encyclopedia","today","“Known as Coosaponakeesa among the Muscogee (Creek) Indians”, “She served as Oglethorpe’s principal interpreter from 1733 until 1743”.")+"<p>The 1733 report names her husband, John Musgrove, and Mr. Wiggan as interpreters. Her own words were not read.</p>"],
-   ["yamasees","Recall the Yamasees",30,-14,"A Creek request",leafCard("Yahou-Lakee of Coweta, in the English report","May 1733","“We pray you to recall the Yamasees that they may be buried in peace amongst their ancestors”.")+"<p>Eighteen years after the war, through interpreters.</p>"]],
+   ["yamasees","Recall the Yamasees",30,-14,"A Creek request",leafCard("Yahou-Lakee of Coweta, in the English report","May 1733",/* review, 28 Nov: was "We pray you"; Jones pp. 30-31 reads "We must pray you" */"“We must pray you to recall the Yamasees that they may be buried in peace amongst their ancestors”.")+"<p>Eighteen years after the war, through interpreters.</p>"]],
   [],
   /* CRG xxii.2 pp. 233-234; SC Encyclopedia (Smith) */
   [["also","What Else It Says",-30,24,"Three things to notice",leafCard("The account Oglethorpe sent","1739","Wallace was spared, “a good Man and kind to his Slaves”. Mr. Rose “was saved by a Negroe, who having hid him went out and pacified the others”.")+
@@ -39376,7 +39386,8 @@ Object.assign(COMPARE_CELLS,{
          ["“his sumons all over the Country … for the election of Burgesses” (Pory, 1619)","Jamestown’s assembly, not Maryland’s."]]},
   /* the MSA biography (2003) */
   "md.came":{q:"brought along with him nine servants, including Mathius",who:"The Maryland State Archives, of Andrew White",when:"2003",there:"A modern archive’s account",
-    res:"Gentlemen brought servants. One of White’s, Mathias de Sousa, “a Molato”, later sat in the assembly.",
+    /* review, 28 Nov: "a Molato" stood unattributed in our voice; it is a Jesuit priest's word in a land record (MSA page) */
+    res:"Gentlemen brought servants. One of White’s, Mathias de Sousa, called “a Molato” in a Jesuit’s land record, later sat in the assembly.",
     alt:[["“the light of the Gospel” (the Account, 1633)","Why they came, not who."],
          ["“men of eighteen different languages” (Jogues)","New Netherland, 1643."]]},
   /* AM i p. 533 */
@@ -39395,7 +39406,8 @@ Object.assign(COMPARE_CELLS,{
          ["“There shall never be any bond slaverie” (Massachusetts, 1641)","Massachusetts Bay’s law, with its own exception."]]},
   /* Salley Car. p. 133 */
   "car.why":{q:"they truck drest deare skins furrs and young Indian Slaves",who:"Henry Woodward, Shaftesbury’s agent",when:"1674",there:"He was there",
-    res:"Trade: skins and captives, in one list, by the proprietors’ own agent.",
+    /* review, 28 Nov: was "by the proprietors' own agent"; Woodward was Shaftesbury's agent, as the tag says (record, writers' table) */
+    res:"Trade: skins and captives, in one list, by Shaftesbury’s own agent.",
     alt:[["“absolute power and authority over his negro slaves” (1669)","A law about slaves, not what drew the traders."],
          ["“the light of the Gospel” (Maryland, 1633)","Maryland’s Account, not Carolina’s."]]},
   /* JCIT p. 42 */
@@ -39479,7 +39491,8 @@ Object.assign(COMPARE_SENT,{
            ["As the trustees said, rice was work only Africans could do, because white settlers could not grow it.",
             "The Salzburgers grew more rice than they needed, and wrote “we laugh at such a Talking”."],
            ["Unlike Carolina, Georgia proved that Africans brought rice growing, because the historians agree.",
-            "The historians do not agree: Africans as “prime movers”, or a “hybrid, synthetic” regime. The dispute is open."]]},
+            /* review, 28 Nov: "prime movers" was unattributed; it is Coclanis's summary of "some scholars" (SC Encyclopedia, "Rice") */
+            "The historians do not agree: Africans “the prime movers”, some find, Coclanis writes; a “hybrid, synthetic” regime, say Eltis and others. The dispute is open."]]},
   sou5:{o:[["Like Maryland, Georgia began on land its people agreed to part with; unlike Maryland, its charter named poverty, not the gospel.",
             "Supported: White’s “bought” and Oueekachumpa’s “gave them up freely”, both in English words; the Account’s gospel, the charter’s “poor subjects”."],
            ["Like Massachusetts Bay, Georgia was a debtors’ colony, because its charter sent debtors from prison.",
@@ -39497,7 +39510,7 @@ Object.assign(COMPARE_SENT,{
            ["Like Jamestown’s servants, Carolina’s enslaved people never resisted, because the law kept them obedient.",
             "The account: they marched “calling out Liberty”, with drums and colours. The 1740 law was written after it."],
            ["Unlike Maryland, Carolina pardoned every Stono rebel, because the account says they were forced.",
-            "Only those “forced” and “not concerned in the Murders & Burnings were pardoned”. Others were shot, the account says."]]}});
+            "Only those “forced” and “not concerned in the Murders & Burnings were pardoned”. Others were killed, the account says."]]}});   /* review, 28 Nov: was "Others were shot"; "killed" for every side (CH14-DESIGN, Content) */
 /* which cells each scene fills on its way out, and its sentence */
 const SOU_BOARD=[{cells:["md.why","md.land"],sent:"sou0"},{cells:["md.gov","md.came"],sent:"sou1"},
   {cells:["md.worked","md.free","car.free"],sent:"sou2"},{cells:["car.why","car.land","car.gov"],sent:"sou3"},
@@ -39576,7 +39589,7 @@ function souAct(d){
   /* 0 · the landing */
   if(d.kind==="silent"){
     /* Hall MD p. 16, Baltimore's instructions, 13 November 1633 */
-    souQuiz("Cowes · 13 November 1633","To be silent",
+    souQuiz("Before sailing · 13 November 1633","To be silent",   /* review, 28 Nov: was "Cowes"; the card dates the instructions London (Hall MD p. 16) */
       leafCard("Lord Baltimore, to the governor and commissioners","London, 1633; he stayed in England","No “offence to be given to any of the Protestants”; Catholics “to be silent upon all occasions of discourse concerning matters of Religion”.")+
       "<p>Why would a Catholic lord order this?</p>",
       [["To give the Protestants no offence","No offence","<p>Most servants aboard were Protestant, and complaints could reach Virginia or England. Catholic worship was to be “as privately as may be”.</p>"],
@@ -39692,9 +39705,11 @@ function souAct(d){
   if(d.kind==="complaints"){
     /* JCIT pp. 26-27 */
     souQuiz("Charles Town · 12 June 1712","Toolodeha",
-      leafCard("The board’s journal","June 1712","Two of Tuskenehau’s slaves complained for him: a Creek town had taken “Toolodeha, a free Woman, and her Mother, a Slave”, to pay its debts to a trader.")+
+      /* review, 28 Nov: was "to pay its debts to a trader" and "Toolodeha went home": the complainants said "upon Pretence of
+         paying some Town Debts", and the journal records the order, not her return (JCIT pp. 26-27) */
+      leafCard("The board’s journal","June 1712","Two of Tuskenehau’s slaves complained for him: a Creek town had taken “Toolodeha, a free Woman, and her Mother, a Slave”, “upon Pretence of paying some Town Debts” to a trader.")+
       "<p>What did the board order?</p>",
-      [["The wife returned, her mother not","The wife","<p>Toolodeha went home by the board’s messenger. The town was to pay Tuskenehau for her enslaved mother. The trader was paid what he gave, “and no more”.</p>"],
+      [["The wife returned, her mother not","The wife","<p>Toolodeha was to be carried back to her husband by the board’s messenger. The town was to pay Tuskenehau for her enslaved mother. The trader got what he gave, “and no more”.</p>"],
        ["Both women returned to him","One woman","<p>Only Toolodeha, “a free Woman”, was ordered back. For her mother, the town was to pay Tuskenehau.</p>"],
        ["Both sold to pay the debt","Not sold","<p>The board ordered the free wife returned. The trader was paid by the town, “and no more”.</p>"]],"complaints");
     return;
@@ -39711,7 +39726,7 @@ function souAct(d){
       "<p>What does the entry show?</p>",
       [["Debts in skins were secured with people","People as security","<p>A captive held against 39 deerskins. The board ruled on the debt and the owner; the captive’s own freedom was not the question.</p>"],
        ["Traders paid hunters in coin","Not coin","<p>The debt was counted in deerskins, and secured with a person.</p>"],
-       ["The board banned the trade in captives","Not banned","<p>It ordered the slave returned to his owner, Enaclega. The trade in captives went on.</p>"]],"skins");
+       ["The board banned the trade in captives","Not banned","<p>It ordered the slave returned to Enaclega. The trade in captives went on.</p>"]],"skins");   /* review, 28 Nov: was "to his owner"; the journal does not give the captive's sex (JCIT p. 28) */
     return;
   }
   if(d.kind==="adjourn"){
@@ -39719,15 +39734,17 @@ function souAct(d){
     souQuiz("Charles Town · 12 April 1715","The last entry",
       leafCard("The board’s journal","12 April 1715","A Yamasee man “came to his Wife and told her … that the Creek Indians had a Design to cut of the Traders first”, William Bray said. “Adjurned till further Summons.”")+
       "<p>How did the warning reach the board?</p>",
-      [["Third-hand, through Bray’s wife","Third-hand","<p>A Yamasee man told Bray’s wife, she told Bray, Bray told the board. Her name is not recorded, and must not be guessed.</p>"],
+      [["Third-hand, through Bray’s wife","Third-hand","<p>A Yamasee man told Bray’s wife, she told Bray, Bray told the board. Her name is not recorded.</p>"],
        ["In a letter from the Creek towns","No letter","<p>No letter came. The warning passed from a Yamasee man, to Bray’s wife, to Bray.</p>"],
        ["From Spanish officers","Not Spanish","<p>The journal names a Yamasee man, Bray’s wife and Bray. Spain is not in this entry.</p>"]],"adjourn",
       function(){
         /* CRNC ii pp. 177-178 (Craven, page-checked), pp. 185-186 (Urmston) */
         fortResult("Good Friday, 1715",
           "<p>Three days later the Yamasee killed the traders and the agent in their towns. In the war that followed, colonists and Yamasee were killed.</p>"+
-          leafCard("Governor Charles Craven","23 May 1715, asking the Crown for help","Of the board’s messengers: “they were knock’d on the head by the Indians”. Of one fight: “with the loss of Eleven men killed outright and twenty wounded on our side”.")+
-          leafCard("John Urmston, in North Carolina","12 June 1715; not there","The Indians fell on the traders, “who they pretend had wrong’d ’em”."),[]);});
+          /* review, 28 Nov: was "Of the board's messengers" (Craven: "we dispatched the Messengers") and "The Indians fell on the
+             traders" (Urmston: fell "upon the Inhabitants", then "Murther of ... Agents & Traders"); CRNC ii pp. 177-178, 185-186 */
+          leafCard("Governor Charles Craven","23 May 1715, asking the Crown for help","Of the messengers sent to the Yamasee: “they were knock’d on the head by the Indians”. Of one fight: “with the loss of Eleven men killed outright and twenty wounded on our side”.")+
+          leafCard("John Urmston, in North Carolina","12 June 1715; not there","The Indians fell on the inhabitants, and killed agents and traders “who they pretend had wrong’d ’em”."),[]);});
     return;
   }
   /* 4 · ebenezer */
@@ -39843,8 +39860,10 @@ function souAct(d){
       leafCard("An Account of the Negroe Insurrection in South Carolina","1739; its writer unknown","“Some Angola Negroes assembled, to the number of Twenty; and one who was called Jemmy was their Captain”. They marched “calling out Liberty”, “with Colours displayed, and two Drums beating”.",
         "“pursuing all the white people they met with, and killing Man Woman and Child when they could come up to them”. Of the militia: those taken “were after being examined, shot on the Spot”, and the writer praises the planters for putting them “to an easy death”.")+
       "<p>Oglethorpe wanted it “inserted in some News papers”. How does that change how you read it?</p>",
-      [["It was written to persuade readers","For readers","<p>“Easy death” and “the honour of the Carolina Planters” are the writer’s words for shootings without trial, written for the press.</p>"],
-       ["It is a court’s record of a trial","No trial","<p>The account says those taken were shot “on the Spot”. No trial is described.</p>"],
+      /* review, 28 Nov: the results said "shootings" and quoted "shot on the Spot" on screen; "killed" for every side, and
+         "taken and Shot" belongs behind the link (CH13-RECORD, Content and framing, XIV-7) */
+      [["It was written to persuade readers","For readers","<p>“Easy death” and “the honour of the Carolina Planters” are the writer’s words for killings without trial, written for the press.</p>"],
+       ["It is a court’s record of a trial","No trial","<p>Those taken were killed on the spot “after being examined”, the account says. No trial is described.</p>"],
        ["It is the rebels’ own story","Not theirs","<p>No enslaved person’s account survives. The only word it gives them is “Liberty”.</p>"]],"fair");
     return;
   }
@@ -40268,17 +40287,20 @@ CONTENT.ch14={
     q:[
       {stim:"Lord Baltimore, 1633: the Catholics aboard are “to be silent upon all occasions of discourse concerning matters of Religion”.",
        q:"Why would a Catholic proprietor order this?",
-       o:["Protestants were the larger number","Catholics were the larger number","The King had ordered silence","The Jesuits forbade all talk"],a:0},
+       o:["Protestants were the larger number","Catholics were the larger number","The King had ordered them to keep silent","The Jesuits forbade all talk of faith"],a:0},
       {stim:"Andrew White, 1634, who was there: the English “bought the space of thirtie miles”. A Relation, London 1635: the Yaocomaco shared their town.",
        q:"Why might the two accounts differ?",
        o:["Different readers","Different rivers","One is a forgery","A Yaocomaco wrote one"],a:0},
       {stim:"St. Mary’s, 1648: Margaret Brent asked for a vote “for her selfe” and a second as Lord Baltimore’s attorney.",
        q:"What did the governor do?",
        o:["Refused her any vote","Granted both votes","Granted her one vote","Sent the question to England"],a:0},
-      {stim:"Maryland, 1649: no one “professing to beleive in Jesus Christ” to be troubled for religion; to deny the Trinity, death.",
-       q:"Who did the act protect?",
-       o:["Christians","Every faith","Catholics only","Protestants only"],a:0},
-      {stim:"Carolina, 1663: a servant’s land due “at the Expiration of the first Term of their servitude”; twenty acres “To the Owner of every Negro-Man or Slave”.",
+      /* review, 28 Nov: the stimulus stated its answer ("professing to beleive in Jesus Christ" -> "Christians"); now the
+         record's teaching hook 16, the act's list of insults (AM i pp. 244-246) */
+      {stim:"Maryland, 1649: a fine for calling anyone “popish prest”, “Jesuite”, “puritan”, “Lutheran”, “Calvenist” or “Anabaptist” in a reproachful manner.",
+       q:"What does the list show about Maryland’s people?",
+       o:["Many kinds of Christians lived there","Nearly every settler there was Catholic","Nearly every settler there was a Puritan","Only Catholics were protected from insult"],a:0},
+      /* review, 28 Nov: the stimulus quoted "To the Owner", which stated the answer (Salley Car. p. 60) */
+      {stim:"Carolina, 1663: a servant’s land due “at the Expiration of the first Term of their servitude”; twenty acres for each “Negro-Man or Slave, brought thither to settle within the first year”.",
        q:"Whom did the land for an enslaved man reward?",
        o:["His owner","The man himself","The ship’s master","The Proprietors"],a:0},
       {stim:"New Netherland, 1644: eleven freed, their children bound. Maryland, 1664: slaves “shall serue Durante Vita”, children slaves “as their ffathers were”.",
@@ -40286,26 +40308,29 @@ CONTENT.ch14={
        o:["Freed no parent","Bound the children","Named slaves in law","Freed all after seven years"],a:0},
       {stim:"Carolina, 1669: slaves may join any church; every freeman has “absolute power and authority over his negro slaves, of what opinion or religion soever”.",
        q:"What did joining a church change for a slave?",
-       o:["Nothing in his bondage","It made him free","It gave him a vote","It freed his children"],a:0},
+       o:["It left him enslaved","It made him free","It gave him a vote","It freed his children"],a:0},
       {stim:"Henry Woodward, 1674: the Westo trade “drest deare skins furrs and young Indian Slaves”.",
        q:"What does his list show about the trade?",
-       o:["People were traded like goods","Only furs were traded","The Westo refused trade","Traders paid in coin"],a:0},
-      {stim:"The board of the Indian trade, 1712: a trader held a captive “for Security of his Debt” of 39 deerskins.",
-       q:"What does the entry show?",
-       o:["Debts were secured with people","Debts were paid only in coin","The board ended the trade","The captive was set free"],a:0},
+       o:["Captives were trade goods","Only furs and skins were traded","The Westo refused to trade","Traders paid the Westo in coin"],a:0},
+      /* review, 28 Nov: "What does the entry show? / Debts were secured with people" restated the stimulus's "for Security of
+         his Debt"; now the board's order (JCIT p. 28) */
+      {stim:"The board of the Indian trade, 1712: a trader held Enaclega’s slave “for Security of his Debt” of 39 deerskins.",
+       q:"What did the board order?",
+       o:["The slave returned, the skins paid","The slave freed, the debt cancelled","The slave kept until the debt was paid","The trader’s licence taken away"],a:0},
       {stim:"The board’s journal, 1713: Yamasee kings said they could do nothing about a sale “without the Consent of their Townes”.",
        q:"How did their words reach the journal?",
-       o:["Through a sworn interpreter","In a letter from the kings","In a treaty they wrote","From the governor’s memory"],a:0},
+       o:["By a sworn interpreter","In a letter from the kings","In a treaty they wrote","From the governor’s memory"],a:0},
       {stim:"12 April 1715: a Yamasee man told Bray’s wife of a design on the traders; Bray told the board. It ended “Adjurned till further Summons.”",
        q:"What kind of evidence is the warning?",
        o:["A third-hand report","An eyewitness letter","A Yamasee record","A signed confession"],a:0},
       {stim:"Governor Craven, 1715: “I have caused about two hundred stout negro men to be enlisted”, marching against the Yamasee.",
        q:"What does this show?",
-       o:["Enslaved men were armed when needed","Enslaved men could never be armed","Carolina had freed its slaves","The Yamasee armed the enslaved"],a:0},
+       o:["The colony armed enslaved men","Enslaved men could never be armed","Carolina had freed its slaves","The Yamasee armed the enslaved"],a:0},
       {stim:"The trustees, 1741: rice is “Work of Hardship proper for Negroes”. Ebenezer, 1739: “we laugh at such a Talking”.",
        q:"Which claim rests on the writers’ own harvest?",
        o:["Ebenezer’s","The trustees’","Both of them","Neither of them"],a:0},
-      {stim:"Historians on Carolina’s rice: Africans as “the prime movers”, or a regime “hybrid, synthetic rather than European or African”.",
+      /* review, 28 Nov: "prime movers" attributed (Coclanis, of "some scholars"; SC Encyclopedia, "Rice") */
+      {stim:"Carolina’s rice: some scholars find Africans “the prime movers”, Coclanis writes; Eltis and others call it “hybrid, synthetic rather than European or African”.",
        q:"What should a historian say of whose knowledge it was?",
        o:["That it is still argued","That it was African, settled","That it was European, settled","That no rice was grown"],a:0},
       {stim:"Georgia’s charter, 1732: “many of our poor subjects are, through misfortunes and want of employment, reduced to great necessity”.",
@@ -40316,7 +40341,7 @@ CONTENT.ch14={
        o:["An interpreted English report","Oueekachumpa’s own letter","A Creek town’s written record","Oglethorpe’s private diary"],a:0},
       {stim:"Georgia’s act of 1735: slaves had “Obstructed the Increase of English and Christain Inhabitants … who alone can in case of a War be relyed on”.",
        q:"What kind of reason is this?",
-       o:["Military","Moral","Religious","Legal"],a:0},
+       o:["Military","Moral","Economic","Legal"],a:0},   /* review, 28 Nov: was "Religious", arguable from "Christain Inhabitants"; the scene's own keys instead */
       {stim:"Savannah, 1738: “The Want of the Use of Negroes, with proper Limitations”. Darien, 1739: “shocking to human Nature”.",
        q:"What do the two petitions show?",
        o:["Georgians disagreed","Georgians all wanted slaves","Georgians all opposed slavery","Only the trustees had a view"],a:0},
@@ -40328,7 +40353,7 @@ CONTENT.ch14={
        o:["It was written to persuade","It is a court’s record","It is the rebels’ own story","It was kept from London"],a:0},
       {stim:"The account, 1739: “about 40 Negroes and 20 whites were killed”. A historian today: “About forty whites and probably as many blacks”.",
        q:"What should a historian do with the counts?",
-       o:["Give both, attributed","Add them together","Keep the older only","Keep the newer only"],a:0},
+       o:["Give both, sourced","Add them together","Keep the older only","Keep the newer only"],a:0},
       {stim:"Savannah, 1738: slaves “so many to each white Man”. Georgia, 1750: “four Male Negroes” for each armed white man servant.",
        q:"Whose idea did the repeal adopt?",
        o:["Savannah’s ratio","Darien’s fifth reason","Ebenezer’s request","The trustees’ ban"],a:0}]},
@@ -40899,7 +40924,9 @@ const CHAPTERS=[
    ready:true,world:"ch14",pace:2.5,near:9,
    /* the content note and "what students bring" (record, "Content and framing"; CH14-DESIGN):
       the opening card says once what the record supports; the board does the rest */
-   intro:function(){ return "From 1634 a Catholic lord’s colony on the Chesapeake; then Carolina; in 1733 Georgia. You may know “founded for religious freedom”, “the South always had slavery”, “a debtors’ colony”: the record says otherwise, colony by colony. Slavery in law, a war, a rising, killings on every side, period words: told in the sources’ words, none shown."; },
+   /* review, 28 Nov: was "the record says otherwise, colony by colony"; the design asks the card to say once what the record
+      supports (Maryland 1649; Georgia 1735; the charter's "poor subjects") */
+   intro:function(){ return "From 1634 a Catholic lord’s colony on the Chesapeake; then Carolina; in 1733 Georgia. You may know “founded for religious freedom”, “the South always had slavery”, “a debtors’ colony”. The papers show freedom for some faiths, Georgia banning slavery, and “poor subjects”. Slavery in law, a war, a rising, killings on every side: in the sources’ words, none shown."; },
    obj:function(){ return "Live eight scenes, 1633 to 1739. After each, fill the comparison board’s last three columns. Then sit with the Georgia trustees’ secretary."; },
    goals:function(){
      const w=souW(), need=souNeed();
@@ -40921,7 +40948,7 @@ const CHAPTERS=[
    /* SC Stat. vii pp. 397, 399 (the act of 1740, page-checked); CRNC ii p. 178 (Craven, 1715);
       CRG i p. 57 (the repeal; the calendar, addendum dispute 36) */
    end:{head:"Durante Vita — Complete",yr:"Chapter XIV · 1741",nextWorld:null,
-     body:"<p>South Carolina, 1740: “negroes and Indians”, “free Indians in amity” excepted, are “absolute slaves” and “chattels personal”; a slave who struck a white person “may be lawfully killed”, lawmakers wrote. In 1715 Craven had armed “two hundred stout negro men”.</p>"+
+     body:"<p>South Carolina, 1740: “negroes and Indians”, “free Indians in amity” excepted, are “absolute slaves” and “chattels personal”; a slave who struck a white person examining him “may be lawfully killed”, lawmakers wrote. In 1715 Craven had armed “two hundred stout negro men”.</p>"+
        "<p>Georgia gave way: from 1 January 1750 (Old Style; 1751 in our calendar), “four Male Negroes” per armed white servant.</p>"}},
 ];
 /* The title screen is shown before any world begins, so it needs painting once here.
@@ -41017,7 +41044,7 @@ const PATCH_NOTES=[
    head:"Chapter XIV: Durante Vita",
    lines:[
      "<b>A new chapter: Maryland, Carolina and Georgia, 1633 to 1739</b>",
-     "Baltimore’s colony and Margaret Brent’s two votes, the act that made slavery “Durante Vita”, Carolina’s board of the Indian trade, rice at Ebenezer, the Creek towns at Savannah, Georgia’s ban on slavery and the petitions over it.",
+     "Baltimore’s colony and Margaret Brent’s request for two votes, the act that made slavery “Durante Vita”, Carolina’s board of the Indian trade, rice at Ebenezer, the Creek towns at Savannah, Georgia’s ban on slavery and the petitions over it.",
      "<b>A note for teachers</b>",
      "This chapter includes slavery and captivity written into law, the Yamasee War, the Stono rising and its suppression, killings on every side, and period words. All of it is told in documents, with the writer named. None of it is drawn.",
      "<b>The comparison board is complete</b>",
@@ -42496,7 +42523,7 @@ updateInk();
    chased once per session; a failed or offline fetch does nothing at all; and the
    reload carries ?v= so it cannot be answered from the same cache that caused it.
    Existing query parameters are preserved, so ?admin survives an update. */
-const BUILD="20261128-0519";
+const BUILD="20261128-0531";
 (function(){
   try{
     if(!window.fetch||location.protocol==="file:")return;
