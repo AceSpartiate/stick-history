@@ -1,8 +1,8 @@
-/* voice_drill.js - play Chapters I to XIII start to finish and write down every line
+/* voice_drill.js - play Chapters I to XIV start to finish and write down every line
    the game speaks that has no recording (it would fall back to the browser's flat voice).
    Load the game over http (no save needed), then in the console:
 
-     window.DRILL_ONLY=['ch1'];   // optional: any of ch1..ch13
+     window.DRILL_ONLY=['ch1'];   // optional: any of ch1..ch14
      fetch('tools/voice_drill.js').then(r=>r.text()).then(eval)
 
    and read window.DRILL ({log, spoke, read, miss:[[text, world, how]], errs}) when log ends
@@ -107,6 +107,15 @@
     D.log.push('ch13 day '+w.day+' closed '+!!w.did.closed);
     await sleep(1500);await cont();await muster();await ending("ch13");
     D.log.push('ch13 done '+!!w.done+' board '+Object.keys(S.compare.cells).length+' sent '+Object.keys(S.compare.sent).length);}
+  /* Chapter XIV: as XIII, the board's last three columns; scene 6's reasons are a row sheet
+     (opt() marks each row and presses Done) */
+  async function ch14(){if(typeof souW!=='function')return;const act=actF("sou",souAct);delete S.works.ch14;S.compare={cells:{},sent:{}};beginWorld("ch14");await sleep(1500);await cont();const w=souW();
+    for(let g=0;g<120&&!w.did.closed;g++){const need=souNeed();
+      if(!need){await talkAll();await cont();await next(act);continue;}
+      if(!await step(act,need,w.did))break;}
+    D.log.push('ch14 day '+w.day+' closed '+!!w.did.closed);
+    await sleep(1500);await cont();await muster();await ending("ch14");
+    D.log.push('ch14 done '+!!w.done+' board '+Object.keys(S.compare.cells).length+' sent '+Object.keys(S.compare.sent).length);}
   /* ==================== CHAPTERS I TO V ====================
      Older chapters have no need() function to follow, so each is played by hand from its own
      act functions: every person spoken to (wrong answers too), every document, sheet and
@@ -374,9 +383,9 @@
     D.log.push('ch5 done '+!!w.done);}
 
   const only=window.DRILL_ONLY;   /* e.g. ['ch9'] or ['ch1'] to play one chapter */
-  const all={ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,ch10,ch11,ch12,ch13};
+  const all={ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,ch10,ch11,ch12,ch13,ch14};
   (async()=>{if(!only||only.some(k=>/^ch[1-5]$/.test(k)))genFixed();
-    for(const f of (only?only.map(k=>all[k]):[ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,ch10,ch11,ch12,ch13])){try{await f();}catch(e){D.log.push('ERR '+e+' '+(e.stack||'').split('\n')[1]);}}
+    for(const f of (only?only.map(k=>all[k]):[ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,ch10,ch11,ch12,ch13,ch14])){try{await f();}catch(e){D.log.push('ERR '+e+' '+(e.stack||'').split('\n')[1]);}}
     if(bak)localStorage.setItem("stickhistory.save.v1",bak);else localStorage.removeItem("stickhistory.save.v1");
     D.log.push('ALL DONE');})();
   return 'drill started';

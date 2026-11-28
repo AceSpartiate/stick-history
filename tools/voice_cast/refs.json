@@ -254,5 +254,21 @@
  "pastorius": {
   "text": "is right and reasonable; here ought to be likewise liberty of ye body, except of evildoers, wch is an other case.",
   "desc": "A German scholar and Quaker in his late thirties, a village clerk and schoolmaster: careful, grave and gentle, a thoughtful medium voice, a German accent of the 1600s."
+ },
+ "mdclerk": {
+  "text": "Came Mrs Margarett Brent and requested to have vote in the howse for her selfe and voyce allso.",
+  "desc": "An English clerk of a small colonial assembly in his thirties, reading out his own entry: precise, dry and matter-of-fact, a clear medium voice, an English accent of the early 1600s, not American."
+ },
+ "izard": {
+  "text": "Charles Town, seventeen twelve to seventeen fifteen: the board of the Indian trade heard Native complaints through sworn interpreters and ordered traders to stop.",
+  "desc": "An English planter and colonial commissioner in his forties, reading the board's orders: formal, firm and a little weary, a measured low voice, an English accent of the early 1600s, not American."
+ },
+ "boltzius": {
+  "text": "Ebenezer, seventeen thirty-nine: Salzburgers who grew rice themselves answered the claim that rice was work only for enslaved Africans.",
+  "desc": "A German Lutheran pastor in his late thirties, speaking for his congregation of farmers: earnest, warm and plain, a steady medium voice, a German accent of the 1700s."
+ },
+ "oglethorpe": {
+  "text": "I desire you would have ye Inclosed account of the Insurrection of the Carolina Negroes inserted in some News papers.",
+  "desc": "An English gentleman soldier of about forty-three, governing a young colony: brisk, confident and commanding, a strong clear voice, an English accent of the early 1600s, not American."
  }
 }

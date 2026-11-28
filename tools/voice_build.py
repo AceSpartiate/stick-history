@@ -54,6 +54,8 @@ VOICES = {
     "gardener": (27, 0.99), "mason": (26, 0.96), "underhill": (25, 1.04), "hutchinson": (21, 1.0),
     # Chapter XIII
     "devries": (27, 0.95), "hart": (24, 1.02), "penn": (26, 1.00), "pastorius": (25, 0.97),
+    # Chapter XIV
+    "mdclerk": (24, 1.03), "izard": (27, 0.97), "boltzius": (25, 0.96), "oglethorpe": (26, 1.04),
 }
 FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 
@@ -61,7 +63,11 @@ FEMALE = (21, 1.0)  # bf_emma, for any speaker marked voice:"female"
 # has never heard; each is how the place is said locally today.
 SAY = [(r"\bKecoughtan\b", "Kick-oh-tan"), (r"\bPaspahegh\b", "Pass-pa-hay"),
        (r"\bweroance(s?)\b", r"wero-ance\1"), (r"\bPowhatan\b", "Pow-a-tan"),
-       (r"\b([Cc])orne\b", r"\1orn")]   # "theire Corne" was read "Kornay" (Whisper, 27 Nov)
+       (r"\b([Cc])orne\b", r"\1orn"),   # "theire Corne" was read "Kornay" (Whisper, 27 Nov)
+       # 28 Nov: abbreviations now stay inside their sentence, so say them as words
+       (r"\bSt\. (?=[A-Z])", "Saint "), (r"\bCapt\. ", "Captain "), (r"\bGov\. ", "Governor "),
+       (r"\bSr\. (?=[A-Z])", "Sir "), (r"\bpp\. ", "pages "), (r"\bp\. (?=\d)", "page "),
+       (r"\bMessrs\. ", "Messieurs "), (r"\bCol\. ", "Colonel ")]
 
 
 def fnv1a(s):
